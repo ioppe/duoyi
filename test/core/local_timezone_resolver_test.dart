@@ -35,15 +35,15 @@ void main() {
     expect(tz.local.name, 'America/Mexico_City');
   });
 
-  test('系统和原生都只返回 UTC 类时区时才回退应用默认时区', () async {
+  test('真实 UTC 系统时区保持 UTC，不替换为上海', () async {
     SharedPreferences.setMockInitialValues({});
     LocalTimezoneResolver.debugSystemTimeZoneReader = () async => 'Etc/UTC';
     LocalTimezoneResolver.debugNativeSystemTimeZoneReader = () async => 'GMT';
 
     await LocalTimezoneResolver.refresh();
 
-    expect(LocalTimezoneResolver.currentIana, 'Asia/Shanghai');
-    expect(tz.local.name, isNot(anyOf('UTC', 'Etc/UTC', 'GMT', 'Etc/GMT')));
+    expect(LocalTimezoneResolver.currentIana, 'Etc/UTC');
+    expect(tz.local.name, 'Etc/UTC');
   });
 
   test('Android 非 IANA 的墨西哥时区名称会归一为墨西哥城', () async {
@@ -57,7 +57,7 @@ void main() {
     expect(tz.local.name, 'America/Mexico_City');
   });
 
-  test('固定保存的 UTC 会被迁移回应用默认时区', () async {
+  test('用户固定 UTC 被保存并在刷新后恢复', () async {
     SharedPreferences.setMockInitialValues({
       LocalTimezoneResolver.modePreferenceKey: LocalTimezoneResolver.fixedValue,
       LocalTimezoneResolver.preferenceKey: 'UTC',
@@ -65,8 +65,8 @@ void main() {
 
     await LocalTimezoneResolver.refresh();
 
-    expect(LocalTimezoneResolver.currentIana, 'Asia/Shanghai');
-    expect(tz.local.name, isNot('UTC'));
+    expect(LocalTimezoneResolver.currentIana, 'UTC');
+    expect(tz.local.name, 'UTC');
   });
 
   test('用户仍可手动固定应用内时区并写入本地偏好', () async {

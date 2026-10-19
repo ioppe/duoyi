@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -67,7 +68,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
   }
 
   void _showNewEditor(BuildContext context) {
-    final now = DateTime.now();
+    final now = AppClock.now();
     showCountdownEditor(
       context,
       showDelete: false,
@@ -99,6 +100,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<CountdownProvider>();
     final routeTitleStyle = appSecondaryRouteTitleTextStyle(context);
     final items = [...provider.items]
@@ -274,13 +276,13 @@ class _CountdownEditSheetState extends State<_CountdownEditSheet> {
   }
 
   DateTime _remindAtFor(CountdownItem item) {
-    return DateTime(
+    return AppClock.date(
       item.targetDate.year,
       item.targetDate.month,
-      item.targetDate.day,
+      item.targetDate.day - item.remindDaysBefore,
       item.remindHour,
       item.remindMinute,
-    ).subtract(Duration(days: item.remindDaysBefore));
+    );
   }
 
   Future<_ReminderPreflightResult> _checkReminderBeforeSave(
@@ -418,7 +420,7 @@ class _CountdownEditSheetState extends State<_CountdownEditSheet> {
     );
     if (next.remind) {
       final remindAt = _remindAtFor(next);
-      if (!remindAt.isAfter(DateTime.now())) {
+      if (!remindAt.isAfter(AppClock.now())) {
         reminderWarning = I18n.tr('countdown.reminder.time_past');
         next = next.copyWith(remind: false, reminderKind: ReminderKind.off);
         setState(() => _remind = false);
@@ -508,6 +510,7 @@ class _CountdownEditSheetState extends State<_CountdownEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final targetText = I18nDateFormat.date(_targetDate);
     final timeText = I18nDateFormat.timeOfDay(
       hour: _remindTime.hour,

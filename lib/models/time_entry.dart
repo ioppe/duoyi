@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 
 const _timeEntryUuid = Uuid();
@@ -66,8 +67,10 @@ class TimeEntry {
     return seconds <= 0 ? 0 : seconds;
   }
 
-  String get dayKey =>
-      '${startAt.year}-${startAt.month.toString().padLeft(2, '0')}-${startAt.day.toString().padLeft(2, '0')}';
+  String get dayKey {
+    final day = AppClock.toLocal(startAt);
+    return '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+  }
 
   bool overlaps(DateTime start, DateTime end) {
     return startAt.isBefore(end) && endAt.isAfter(start);

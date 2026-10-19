@@ -72,7 +72,8 @@ void main() {
       expect(today, contains('SmartScheduleAdvisor.suggestToday'));
       expect(today, contains('CompletionVisibilityPolicy.shouldShowInToday'));
       expect(today, contains('limit: 5'));
-      expect(today, contains('final actionNow = DateTime.now();'));
+      expect(today, contains('final actionNow = AppClock.now();'));
+      expect(today, contains('return !todo.dueAt!.isBefore(now);'));
       expect(today, contains('scheduleTodoForToday('));
       expect(today, isNot(contains('waitForReminderSync: false')));
       expect(today, contains('_TodayProductivityCard'));
@@ -109,7 +110,7 @@ void main() {
       expect(today, contains('CompletionVisibilityPolicy.visualState(todo)'));
       expect(today, contains('List<TodoItem> _visibleTodayOverviewTodos('));
       expect(today, contains('if (due == null) return true;'));
-      expect(today, contains('return !due.isBefore(now);'));
+      expect(today, contains('if (dueDay.isBefore(today)) return false;'));
       expect(today, contains('_visibleTodayOverviewTodos(todoP.todos, now)'));
       expect(today, contains('class _TodayTodoStatusPill'));
       expect(today, contains('TodoVisualState.completed'));

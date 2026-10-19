@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
 import '../core/domain_event_bus.dart';
 import '../models/habit.dart';
 import '../models/time_entry.dart';
@@ -155,7 +156,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<void> incrementHabit(String id) async {
-    await incrementHabitForDate(id, DateTime.now());
+    await incrementHabitForDate(id, AppClock.now());
   }
 
   Future<void> incrementHabitForDate(
@@ -216,7 +217,7 @@ class HabitProvider extends ChangeNotifier {
   }
 
   Future<void> decrementHabit(String id) async {
-    await decrementHabitForDate(id, DateTime.now());
+    await decrementHabitForDate(id, AppClock.now());
   }
 
   Future<void> decrementHabitForDate(String id, DateTime date) async {
@@ -278,13 +279,13 @@ class HabitProvider extends ChangeNotifier {
   }
 
   DateTime _timeForHabitRecord(DateTime date) {
-    final now = DateTime.now();
+    final now = AppClock.now();
     if (date.year == now.year &&
         date.month == now.month &&
         date.day == now.day) {
       return now;
     }
-    return DateTime(date.year, date.month, date.day, 23, 59);
+    return AppClock.date(date.year, date.month, date.day, 23, 59);
   }
 
   void _recalcStreak(int idx) {
@@ -294,7 +295,7 @@ class HabitProvider extends ChangeNotifier {
       return;
     }
     int streak = 0;
-    final now = DateTime.now();
+    final now = AppClock.today();
     for (int i = 0; i < 365; i++) {
       final d = now.subtract(Duration(days: i));
       if (h.isCompletedForDate(d)) {
@@ -309,7 +310,7 @@ class HabitProvider extends ChangeNotifier {
 
   void _recalcFlexStreak(Habit h) {
     var streak = 0;
-    var bounds = h.periodBoundsForDate(DateTime.now());
+    var bounds = h.periodBoundsForDate(AppClock.now());
     for (int i = 0; i < 120; i++) {
       final completed =
           h.flexProgressForDate(bounds.start)?.isCompleted ?? false;
@@ -338,7 +339,7 @@ class HabitProvider extends ChangeNotifier {
   Future<void> endHabit(String id, {DateTime? at}) async {
     final idx = _habits.indexWhere((h) => h.id == id);
     if (idx == -1) return;
-    final base = at ?? DateTime.now();
+    final base = at ?? AppClock.now();
     final day = DateTime(base.year, base.month, base.day);
     final habit = _habits[idx];
     final endDate = day.subtract(const Duration(days: 1));
@@ -362,7 +363,7 @@ class HabitProvider extends ChangeNotifier {
 
   Map<String, int> combinedHeatmap(int weeks) {
     final data = <String, int>{};
-    final now = DateTime.now();
+    final now = AppClock.today();
     for (int w = 0; w < weeks; w++) {
       for (int d = 0; d < 7; d++) {
         final date = now.subtract(Duration(days: w * 7 + (6 - d)));
@@ -387,7 +388,7 @@ class HabitProvider extends ChangeNotifier {
   // --- Weekly stats ---
 
   List<double> last7DaysCompletion() {
-    final now = DateTime.now();
+    final now = AppClock.today();
     return List.generate(7, (i) {
       final d = now.subtract(Duration(days: 6 - i));
       final active = _habits.where((h) => h.activeForDate(d)).toList();
@@ -399,22 +400,14 @@ class HabitProvider extends ChangeNotifier {
 
   bool _habitExistsOnDate(Habit habit, DateTime date) {
     final day = DateTime(date.year, date.month, date.day);
-    final start = habit.startDate == null
-        ? DateTime(
-            habit.createdAt.year,
-            habit.createdAt.month,
-            habit.createdAt.day,
-          )
-        : DateTime(
-            habit.startDate!.year,
-            habit.startDate!.month,
-            habit.startDate!.day,
-          );
+    final start = AppClock.dateOnly(
+      habit.startDate ?? AppClock.toLocal(habit.createdAt),
+    );
     return !day.isBefore(start);
   }
 
   List<double> currentWeekProgress() {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final weekStart = DateTime(
       now.year,
       now.month,

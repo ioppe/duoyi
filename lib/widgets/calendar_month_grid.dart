@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/lunar_calendar.dart';
@@ -26,6 +27,8 @@ class CalendarMonthGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
+    final today = AppClock.now();
     final firstDay = DateTime(focusedMonth.year, focusedMonth.month, 1);
     final lastDay = DateTime(focusedMonth.year, focusedMonth.month + 1, 0);
     final startOffset = (firstDay.weekday - 1) % 7; // 周一起
@@ -118,9 +121,9 @@ class CalendarMonthGrid extends StatelessWidget {
                           date.month == selectedDay.month &&
                           date.day == selectedDay.day;
                       final isToday =
-                          date.year == DateTime.now().year &&
-                          date.month == DateTime.now().month &&
-                          date.day == DateTime.now().day;
+                          date.year == today.year &&
+                          date.month == today.month &&
+                          date.day == today.day;
                       final selectedBackground = Color.alphaBlend(
                         cs.primary.withValues(
                           alpha: Theme.of(context).brightness == Brightness.dark

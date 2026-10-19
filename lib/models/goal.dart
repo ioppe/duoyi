@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../core/app_clock.dart';
 import 'recurrence.dart';
 
 const _uuid = Uuid();
@@ -606,9 +607,14 @@ class GoalItem {
 
   int get daysRemaining {
     if (targetDate == null) return -1;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final t = DateTime(targetDate!.year, targetDate!.month, targetDate!.day);
+    final now = AppClock.now();
+    // Count calendar dates rather than 24-hour periods across DST.
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final t = DateTime.utc(
+      targetDate!.year,
+      targetDate!.month,
+      targetDate!.day,
+    );
     return t.difference(today).inDays;
   }
 

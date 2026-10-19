@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'app_date_picker.dart';
@@ -55,6 +56,7 @@ class HabitDateRangeFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     return AppSurfaceCard(
       padding: const EdgeInsets.all(12),
       borderRadius: BorderRadius.circular(16),
@@ -94,7 +96,7 @@ class HabitDateRangeFields extends StatelessWidget {
     final last = endDate == null
         ? DateTime(2100, 12, 31)
         : habitDateOnly(endDate!);
-    final initial = _clampDay(startDate ?? DateTime.now(), first, last);
+    final initial = _clampDay(startDate ?? AppClock.now(), first, last);
     final picked = await AppDatePicker.pickSolar(
       context,
       initialDate: initial,
@@ -111,7 +113,7 @@ class HabitDateRangeFields extends StatelessWidget {
         : habitDateOnly(startDate!);
     final last = DateTime(2100, 12, 31);
     final initial = _clampDay(
-      endDate ?? startDate ?? DateTime.now(),
+      endDate ?? startDate ?? AppClock.now(),
       first,
       last,
     );

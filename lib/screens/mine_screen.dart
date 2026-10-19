@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:io' show Directory, File;
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
@@ -93,6 +94,7 @@ class MineScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = context.select<ThemeProvider, _MineThemeSlice>(
       (provider) => (
         strings: provider.brand.strings,
@@ -966,8 +968,8 @@ class MineScreen extends StatelessWidget {
   }
 
   int _weeklyFocus(PomodoroProvider p) {
-    final now = DateTime.now();
-    final weekAgo = now.subtract(const Duration(days: 7));
+    final now = AppClock.now();
+    final weekAgo = AppClock.date(now.year, now.month, now.day - 7);
     return p.sessions
             .where(
               (s) => s.type.name == 'focus' && s.startTime.isAfter(weekAgo),
@@ -1924,7 +1926,8 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final cached = context.read<AiService>().weeklyReviewForDay(DateTime.now());
+    AppClock.watch(context);
+    final cached = context.read<AiService>().weeklyReviewForDay(AppClock.now());
     if (cached != null && _result == null) {
       _result = cached.content;
       _summary = cached.summary;
@@ -1934,7 +1937,7 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
   }
 
   Future<void> _run() async {
-    final cached = context.read<AiService>().weeklyReviewForDay(DateTime.now());
+    final cached = context.read<AiService>().weeklyReviewForDay(AppClock.now());
     if (cached != null) {
       setState(() {
         _result = cached.content;
@@ -1951,7 +1954,7 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
     });
     try {
       final ai = context.read<AiService>();
-      final now = DateTime.now();
+      final now = AppClock.now();
       final range = _reviewRange(now);
       final completed = widget.todoProvider.completedTodos
           .where((t) => _inRange(t.completedAt ?? t.updatedAt, range))
@@ -1994,7 +1997,10 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
     final start = now.weekday == DateTime.monday
         ? thisMonday.subtract(const Duration(days: 7))
         : thisMonday;
-    return (start: start, end: start.add(const Duration(days: 7)));
+    return (
+      start: AppClock.date(start.year, start.month, start.day),
+      end: AppClock.date(start.year, start.month, start.day + 7),
+    );
   }
 
   String _reviewRangeLabel(DateTime now) => I18n.tr(
@@ -2009,6 +2015,7 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final hasReview = _result != null;
     return AppSurfaceCard(
@@ -2121,7 +2128,7 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                "${I18n.tr('mine.ai.hint_prefix')}${_reviewRangeLabel(DateTime.now())}${I18n.tr('mine.ai.hint_suffix')}",
+                "${I18n.tr('mine.ai.hint_prefix')}${_reviewRangeLabel(AppClock.now())}${I18n.tr('mine.ai.hint_suffix')}",
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ),

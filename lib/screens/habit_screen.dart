@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../core/app_clock.dart';
 import '../core/desktop_tokens.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -672,6 +673,7 @@ class _HabitScreenState extends State<HabitScreen>
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<HabitProvider>();
     final s = context.watch<ThemeProvider>().brand.strings;
     final activeHabits = provider.habits
@@ -1311,7 +1313,7 @@ const double _habitSwipeOpenThreshold = 36;
 bool _habitCanEnd(Habit habit) {
   final endDate = habit.endDate;
   if (endDate == null) return true;
-  final now = DateTime.now();
+  final now = AppClock.now();
   final today = DateTime(now.year, now.month, now.day);
   final endDay = DateTime(endDate.year, endDate.month, endDate.day);
   return !endDay.isBefore(today);
@@ -1331,12 +1333,13 @@ class _HabitCheckinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final isNegative = habit.kind == HabitKind.negative;
     final todayCount = habit.todayCount();
-    final flexProgress = habit.flexProgressForDate(DateTime.now());
+    final flexProgress = habit.flexProgressForDate(AppClock.now());
     final progress = habit.todayProgress();
     final isDone = habit.isCompletedToday();
     final isFlexDone = flexProgress?.isCompleted ?? false;
@@ -1615,7 +1618,7 @@ class _HabitCheckinCard extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     final isNegative = habit.kind == HabitKind.negative;
     final currentCount = habit.todayCount();
-    final currentFlexProgress = habit.flexProgressForDate(DateTime.now());
+    final currentFlexProgress = habit.flexProgressForDate(AppClock.now());
     if (!isNegative &&
         habit.hasFlexRule &&
         (currentFlexProgress?.isCompleted ?? false)) {
@@ -1654,7 +1657,7 @@ class _HabitCheckinCard extends StatelessWidget {
     final updatedMatches = provider.habits.where((item) => item.id == habit.id);
     final displayHabit = updatedMatches.isEmpty ? habit : updatedMatches.first;
     final updatedCount = displayHabit.todayCount();
-    final flexProgress = displayHabit.flexProgressForDate(DateTime.now());
+    final flexProgress = displayHabit.flexProgressForDate(AppClock.now());
     final flexMessage = flexProgress == null
         ? '已打卡「${displayHabit.name}」 $updatedCount/${displayHabit.targetCount}'
         : flexProgress.isCompleted
@@ -2117,12 +2120,18 @@ ReminderPlan _habitPopupDailyReminderPlan(List<TimeOfDay> times) {
 
 DateTime? _nextHabitReminderTriggerForTimes(List<TimeOfDay> times) {
   DateTime? next;
-  final now = DateTime.now();
+  final now = AppClock.now();
   for (final time in times) {
-    var target = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    var target = AppClock.date(
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
     if (!target.isAfter(now)) {
-      final tomorrow = now.add(const Duration(days: 1));
-      target = DateTime(
+      final tomorrow = AppClock.today().add(const Duration(days: 1));
+      target = AppClock.date(
         tomorrow.year,
         tomorrow.month,
         tomorrow.day,

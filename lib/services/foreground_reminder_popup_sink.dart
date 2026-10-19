@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/app_clock.dart';
 import 'reminder_sinks.dart';
 
 typedef ReminderPopupContextGetter = BuildContext? Function();
@@ -34,7 +35,7 @@ class ForegroundReminderPopupSink implements ReminderPopupSink {
     ReminderPopupForegroundGetter? isForegroundGetter,
     DateTime Function()? nowGetter,
   }) : isForegroundGetter = isForegroundGetter ?? _defaultIsForeground,
-       nowGetter = nowGetter ?? DateTime.now;
+       nowGetter = nowGetter ?? AppClock.now;
 
   @override
   Future<void> scheduleOnce({
@@ -523,13 +524,14 @@ class ForegroundReminderPopupSink implements ReminderPopupSink {
     List<int>? weekdays,
     DateTime now,
   ) {
-    var next = DateTime(now.year, now.month, now.day, hour, minute);
+    now = AppClock.toLocal(now);
+    var next = AppClock.date(now.year, now.month, now.day, hour, minute);
     final repeatDays = (weekdays ?? const <int>[])
         .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
         .toSet();
     while (!next.isAfter(now) ||
         (repeatDays.isNotEmpty && !repeatDays.contains(next.weekday))) {
-      next = next.add(const Duration(days: 1));
+      next = AppClock.date(next.year, next.month, next.day + 1, hour, minute);
     }
     return next;
   }

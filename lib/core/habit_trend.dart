@@ -1,4 +1,5 @@
 import '../models/habit.dart';
+import 'app_clock.dart';
 
 enum HabitTrendDirection { up, down, flat }
 
@@ -92,10 +93,14 @@ HabitTrendSummary buildHabitTrendSummary(
   HabitTrendWindow window = HabitTrendWindow.days30,
   DateTime? today,
 }) {
-  final end = _dateOnly(today ?? DateTime.now());
-  final start = end.subtract(Duration(days: window.days - 1));
-  final previousEnd = start.subtract(const Duration(days: 1));
-  final previousStart = previousEnd.subtract(Duration(days: window.days - 1));
+  final end = _dateOnly(today ?? AppClock.today());
+  final start = DateTime(end.year, end.month, end.day - window.days + 1);
+  final previousEnd = DateTime(start.year, start.month, start.day - 1);
+  final previousStart = DateTime(
+    previousEnd.year,
+    previousEnd.month,
+    previousEnd.day - window.days + 1,
+  );
   final points = _buildTrendPoints(habit, start, end);
   final previousPoints = _buildTrendPoints(habit, previousStart, previousEnd);
   final activePoints = points.where((point) => point.active).toList();
@@ -126,7 +131,7 @@ List<HabitTrendPoint> _buildTrendPoints(
   for (
     var date = start;
     !date.isAfter(end);
-    date = date.add(const Duration(days: 1))
+    date = DateTime(date.year, date.month, date.day + 1)
   ) {
     final active = habit.activeForDate(date);
     points.add(

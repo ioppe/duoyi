@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 
@@ -41,11 +42,11 @@ class HabitHeatmap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = AppClock.today();
     final thisMonday = today.subtract(Duration(days: today.weekday - 1));
     final startDate = thisMonday.subtract(Duration(days: (weeks - 1) * 7));
     final columns = weeks;

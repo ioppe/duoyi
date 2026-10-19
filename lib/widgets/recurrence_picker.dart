@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import '../core/i18n_date_format.dart';
 import '../models/recurrence.dart';
@@ -71,6 +72,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final controlText = appSecondaryControlTextStyle(context);
     final labelText = appSecondaryControlLabelStyle(context);
@@ -236,8 +238,8 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     context,
                     initialDate:
                         _endDate ??
-                        DateTime.now().add(const Duration(days: 90)),
-                    firstDate: DateTime.now(),
+                        AppClock.today().add(const Duration(days: 90)),
+                    firstDate: AppClock.today(),
                     lastDate: DateTime(2099, 12, 31),
                     title: '结束日期',
                   );

@@ -6,6 +6,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import '../core/local_timezone_resolver.dart';
 import 'native_reminder_ringtone.dart';
@@ -1069,7 +1070,7 @@ class LocalNotifications {
       legacyWeekdayNotificationId(base, weekday);
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
+    final now = AppClock.now();
     var scheduled = tz.TZDateTime(
       tz.local,
       now.year,
@@ -1079,7 +1080,14 @@ class LocalNotifications {
       minute,
     );
     if (!scheduled.isAfter(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+      scheduled = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + 1,
+        hour,
+        minute,
+      );
     }
     return scheduled;
   }
@@ -1087,7 +1095,14 @@ class LocalNotifications {
   tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
     var scheduled = _nextInstanceOfTime(hour, minute);
     while (scheduled.weekday != weekday) {
-      scheduled = scheduled.add(const Duration(days: 1));
+      scheduled = tz.TZDateTime(
+        tz.local,
+        scheduled.year,
+        scheduled.month,
+        scheduled.day + 1,
+        hour,
+        minute,
+      );
     }
     return scheduled;
   }

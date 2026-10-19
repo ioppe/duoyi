@@ -1,4 +1,6 @@
 import 'package:uuid/uuid.dart';
+import '../core/app_clock.dart';
+import '../core/todo_filters.dart';
 import '../core/i18n.dart';
 import '../core/todo_kanban.dart';
 import 'goal.dart' show FocusLink, ReminderConfig, ReminderKind, ReminderPlan;
@@ -198,7 +200,7 @@ class TodoItem {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) : id = id ?? uuid.v4(),
-       date = date ?? DateTime.now(),
+       date = date ?? AppClock.now(),
        kanbanColumnId =
            kanbanColumnId ??
            (isCompleted
@@ -240,11 +242,11 @@ class TodoItem {
     'assigneeId': assigneeId,
     'tags': tags,
     'attachments': attachments.map((a) => a.toJson()).toList(),
-    'dueDate': dueDate?.toIso8601String(),
+    'dueDate': dueDate == null ? null : serializeTodoDueDate(dueDate!),
     'date': date.toIso8601String(),
     // 旧字段保留，方便旧代码与降级读取。
     'hasReminder': hasReminder,
-    'reminderAt': reminderAt?.toIso8601String(),
+    'reminderAt': reminderAt?.toUtc().toIso8601String(),
     // 新字段。
     'reminder': reminderPlan
         .toLegacyReminderConfig(fallback: reminder)
@@ -450,8 +452,13 @@ class TodoItem {
       ? 0.0
       : subtasks.where((s) => s.isCompleted).length / subtasks.length;
 
+  DateTime? get localDueDate =>
+      dueDate == null ? null : todoDateInAppZone(dueDate!);
+
+  DateTime? get dueAt => dueDate == null ? null : todoDueAt(dueDate!);
+
   bool get isOverdue =>
-      !isCompleted && dueDate != null && dueDate!.isBefore(DateTime.now());
+      !isCompleted && dueAt != null && dueAt!.isBefore(AppClock.now());
 }
 
 String _legacyKanbanColumnId(Map<String, dynamic> json) {

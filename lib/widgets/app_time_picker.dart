@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import 'surface_components.dart';
@@ -30,7 +31,7 @@ class AppTimePicker {
   }
 
   static TimeOfDay nextHalfHour([DateTime? from]) {
-    final now = from ?? DateTime.now();
+    final now = from ?? AppClock.now();
     if (now.minute < 30) return TimeOfDay(hour: now.hour, minute: 30);
     return TimeOfDay(hour: (now.hour + 1) % 24, minute: 0);
   }
@@ -125,6 +126,7 @@ class _AppTimePickerSheetState extends State<_AppTimePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return AppModalSheet(

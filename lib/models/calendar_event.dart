@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+import '../core/app_clock.dart';
 
 import '../core/i18n.dart';
 
@@ -80,6 +83,38 @@ class CalendarEvent {
     return null;
   }
 
+  /// Timed instants follow the application zone; all-day dates stay floating.
+  CalendarEvent inAppTimeZone() {
+    if (type != CalendarEventType.event &&
+        type != CalendarEventType.pomodoro &&
+        type != CalendarEventType.timeEntry) {
+      return this;
+    }
+    if (time == null && type == CalendarEventType.event) return this;
+    final instant =
+        type == CalendarEventType.pomodoro ||
+        type == CalendarEventType.timeEntry;
+    final local = instant || date.isUtc || date is tz.TZDateTime
+        ? AppClock.toLocal(date)
+        : AppClock.date(
+            date.year,
+            date.month,
+            date.day,
+            time!.hour,
+            time!.minute,
+          );
+    final end = endDate;
+    return copyWith(
+      date: local,
+      endDate: end == null
+          ? null
+          : instant
+          ? AppClock.toLocal(end)
+          : _appWallTime(end),
+      time: TimeOfDay.fromDateTime(local),
+    );
+  }
+
   CalendarEvent copyWith({
     String? id,
     String? title,
@@ -123,8 +158,14 @@ class CalendarEvent {
   Map<String, dynamic> toJson() => {
     'id': id,
     'title': title,
-    'date': date.toIso8601String(),
-    'endDate': endDate?.toIso8601String(),
+    'date': time == null
+        ? date.toIso8601String()
+        : inAppTimeZone().date.toUtc().toIso8601String(),
+    'endDate': time == null
+        ? endDate?.toIso8601String()
+        : endDate == null
+        ? null
+        : _appWallTime(endDate!).toUtc().toIso8601String(),
     'type': type.name,
     'color': color.toARGB32(),
     'isCompleted': isCompleted,
@@ -178,4 +219,18 @@ class CalendarEvent {
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? ''),
     );
   }
+}
+
+DateTime _appWallTime(DateTime value) {
+  if (value.isUtc || value is tz.TZDateTime) return AppClock.toLocal(value);
+  return AppClock.date(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+    value.millisecond,
+    value.microsecond,
+  );
 }

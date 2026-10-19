@@ -7,6 +7,7 @@ import '../models/habit.dart';
 import '../models/pomodoro.dart';
 import '../models/time_entry.dart';
 import '../models/todo.dart';
+import 'app_clock.dart';
 import 'period_report.dart';
 
 export 'period_report.dart';
@@ -32,9 +33,15 @@ class ReportEngine {
     required List<PomodoroSession> sessions,
     required List<TimeEntry> timeEntries,
   }) {
-    final endExclusive = DateTime(end.year, end.month, end.day + 1);
+    final startInstant = AppClock.date(start.year, start.month, start.day);
+    final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
+    final startDate = AppClock.dateOnly(start);
+    final endDate = DateTime(end.year, end.month, end.day + 1);
 
-    bool inRange(DateTime d) => !d.isBefore(start) && d.isBefore(endExclusive);
+    bool inRange(DateTime d) =>
+        !d.isBefore(startInstant) && d.isBefore(endExclusive);
+    bool dateInRange(DateTime d) =>
+        !d.isBefore(startDate) && d.isBefore(endDate);
 
     final created = todos.where((t) => inRange(t.createdAt)).length;
     final completed = todos.where((t) {
@@ -47,7 +54,7 @@ class ReportEngine {
     for (final h in habits) {
       for (final entry in h.completions.entries) {
         final d = _parseDateKey(entry.key);
-        if (d != null && inRange(d) && h.activeForDate(d)) {
+        if (d != null && dateInRange(d) && h.activeForDate(d)) {
           habitCheckIns += entry.value;
         }
       }
@@ -97,10 +104,9 @@ class ReportEngine {
     required List<TimeEntry> timeEntries,
     DateTime? now,
   }) {
-    final base = now ?? DateTime.now();
-    final today = DateTime(base.year, base.month, base.day);
-    final start = today.subtract(Duration(days: today.weekday - 1));
-    final end = start.add(const Duration(days: 6));
+    final base = now == null ? AppClock.now() : AppClock.toLocal(now);
+    final start = DateTime(base.year, base.month, base.day - base.weekday + 1);
+    final end = DateTime(start.year, start.month, start.day + 6);
     return buildReport(
       start: start,
       end: end,
@@ -119,7 +125,7 @@ class ReportEngine {
     required List<TimeEntry> timeEntries,
     DateTime? now,
   }) {
-    final base = now ?? DateTime.now();
+    final base = now == null ? AppClock.now() : AppClock.toLocal(now);
     final start = DateTime(base.year, base.month, 1);
     final end = DateTime(base.year, base.month + 1, 0);
     return buildReport(

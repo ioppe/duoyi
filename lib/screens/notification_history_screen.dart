@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -151,6 +152,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final service = context.watch<NotificationService>();
     final history = service.history;
     final filteredHistory = _filteredHistory(history);
@@ -2835,10 +2837,10 @@ bool _sameDays(List<int> a, List<int> b) {
 }
 
 DateTime? _nextSlotTrigger(DailyReminderSlot slot) {
-  final now = DateTime.now();
+  final now = AppClock.now();
   for (var offset = 0; offset <= 7; offset++) {
-    final date = now.add(Duration(days: offset));
-    final target = DateTime(
+    final date = AppClock.today().add(Duration(days: offset));
+    final target = AppClock.date(
       date.year,
       date.month,
       date.day,
@@ -3645,7 +3647,7 @@ String _notificationTypeLabel(NotificationType type) {
 }
 
 String _formatNotificationTime(DateTime value) {
-  final local = value.toLocal();
+  final local = AppClock.toLocal(value);
   String two(int n) => n.toString().padLeft(2, '0');
   return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
 }

@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
@@ -481,7 +482,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   Future<void> _pickDueDate() async {
     final picked = await AppDatePicker.pickSolar(
       context,
-      initialDate: _todo.dueDate ?? DateTime.now(),
+      initialDate: _todo.localDueDate ?? AppClock.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2099, 12, 31),
       title: '截止日期',
@@ -515,11 +516,15 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   /// 同步新 `reminderPlan` 与旧 `reminder / hasReminder / reminderAt` 镜像。
   void _applyReminderPlan(ReminderPlan plan) {
     final legacy = plan.toLegacyReminderConfig(fallback: _todo.reminder);
-    final nowForMirror = DateTime.now();
+    final nowForMirror = AppClock.now();
     DateTime? mirroredAt;
     if (legacy.enabled && legacy.hour != null && legacy.minute != null) {
-      final base = _todo.dueDate ?? _todo.reminderAt ?? nowForMirror;
-      mirroredAt = DateTime(
+      final base =
+          _todo.localDueDate ??
+          (_todo.reminderAt == null
+              ? nowForMirror
+              : AppClock.toLocal(_todo.reminderAt!));
+      mirroredAt = AppClock.date(
         base.year,
         base.month,
         base.day,
@@ -628,6 +633,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<TodoProvider>();
     if (_missingTodo || !provider.todos.any((t) => t.id == widget.todoId)) {
       return Scaffold(
@@ -816,7 +822,9 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
               leading: const Icon(Icons.event_outlined),
               title: const Text('截止日期'),
               subtitle: Text(
-                _todo.dueDate == null ? '未设置' : _formatYmd(_todo.dueDate!),
+                _todo.localDueDate == null
+                    ? '未设置'
+                    : _formatYmd(_todo.localDueDate!),
               ),
               trailing: _todo.dueDate == null
                   ? const Icon(Icons.chevron_right)
@@ -2132,7 +2140,7 @@ String _shareError(Object error) =>
     userVisibleApiError(error, fallbackMessage: '共享空间服务暂不可用，请稍后重试或联系管理员');
 
 String _formatCommentTime(DateTime value) {
-  return I18nDateFormat.shortDateTime(value);
+  return I18nDateFormat.shortDateTime(AppClock.toLocal(value));
 }
 
 /// 优先级 Chip 行。

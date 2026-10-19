@@ -57,7 +57,7 @@ void main() {
         ),
       );
       // 兜底跳过仍保留（remindDaysBefore 极大等极端场景）。
-      expect(source, contains('if (!remindAt.isAfter(DateTime.now()))'));
+      expect(source, contains('if (!remindAt.isAfter(AppClock.now()))'));
     });
   });
 }

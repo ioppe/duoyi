@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/app_version.dart';
+import 'core/app_config.dart';
+import 'core/app_clock.dart';
 import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
@@ -252,6 +254,7 @@ Future<void> _runStartupStoragePhase(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppConfig.validate();
 
   // 全局未捕获异常兜底：框架/平台异常摘要落盘本地日志，绝不抛出或弹 UI。
   CrashGuard.install();
@@ -288,9 +291,10 @@ void main() async {
   final calendarSyncProvider = CalendarSyncProvider();
   final aiService = AiService();
   final appUpdate = AppUpdateService(
-    repo: 'dq52099/duoyi',
+    repo: AppConfig.updateRepository,
     currentVersion: AppVersion.name,
     currentVersionCode: AppVersion.build,
+    backendBaseUrlGetter: () => authProvider.baseUrl,
   );
   var cloudSyncStartSerial = 0;
 
@@ -954,8 +958,10 @@ void main() async {
   bool isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  bool isInRange(DateTime date, DateTime start, DateTime end) =>
-      !date.isBefore(start) && date.isBefore(end);
+  bool isInRange(DateTime date, DateTime start, DateTime end) {
+    final day = AppClock.dateOnly(date);
+    return !day.isBefore(start) && day.isBefore(end);
+  }
 
   String dateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -968,7 +974,7 @@ void main() async {
   Future<void> refreshAchievementsNow({
     bool silentUnlockFeedback = false,
   }) async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
     final weekStart = today.subtract(Duration(days: today.weekday - 1));
@@ -977,12 +983,16 @@ void main() async {
 
     final todayCompletedTodos = todoProvider.todos.where((todo) {
       if (!todo.isCompleted) return false;
-      final completedAt = todo.completedAt ?? todo.date;
+      final completedAt = todo.completedAt == null
+          ? todo.date
+          : AppClock.toLocal(todo.completedAt!);
       return isSameDay(completedAt, today);
     }).length;
     final weeklyCompletedTodos = todoProvider.todos.where((todo) {
       if (!todo.isCompleted) return false;
-      final completedAt = todo.completedAt ?? todo.date;
+      final completedAt = todo.completedAt == null
+          ? todo.date
+          : AppClock.toLocal(todo.completedAt!);
       final inWeek = isInRange(completedAt, weekStart, weekEnd);
       if (inWeek) activeDays.add(dateKey(completedAt));
       return inWeek;
@@ -1007,14 +1017,18 @@ void main() async {
     );
     final todayFocusMinutes =
         focusSessions
-            .where((session) => isInRange(session.endTime, today, tomorrow))
+            .where(
+              (session) =>
+                  isInRange(AppClock.toLocal(session.endTime), today, tomorrow),
+            )
             .fold<int>(0, (sum, session) => sum + session.durationSeconds) ~/
         60;
     final weeklyFocusMinutes =
         focusSessions
             .where((session) {
-              final inWeek = isInRange(session.endTime, weekStart, weekEnd);
-              if (inWeek) activeDays.add(dateKey(session.endTime));
+              final localEnd = AppClock.toLocal(session.endTime);
+              final inWeek = isInRange(localEnd, weekStart, weekEnd);
+              if (inWeek) activeDays.add(dateKey(localEnd));
               return inWeek;
             })
             .fold<int>(0, (sum, session) => sum + session.durationSeconds) ~/
@@ -1322,6 +1336,8 @@ void main() async {
     notificationProgressMidnightTimer?.cancel();
     final delay = _durationUntilNextLocalDay();
     notificationProgressMidnightTimer = Timer(delay, () {
+      AppClock.notifyDayChanged();
+      refreshUserStats();
       if (preferencesProvider.notificationTodayProgress) {
         unawaited(syncNotificationQuickAddDeduped());
       }
@@ -1353,6 +1369,12 @@ void main() async {
   );
   timeAuditProvider.addListener(queueReportDigestReminderSync);
   scheduleNotificationProgressMidnightRefresh();
+  LocalTimezoneResolver.timezoneListenable.addListener(() {
+    scheduleNotificationProgressMidnightRefresh();
+    refreshUserStats();
+    unawaited(refreshAchievementsNow(silentUnlockFeedback: true));
+    unawaited(syncNotificationQuickAddDeduped());
+  });
   refreshUserStats();
   refreshAchievements();
 
@@ -1361,7 +1383,7 @@ void main() async {
       'daily rollover',
       () => CompletionVisibilityPolicy.runDailyRollover(
         todoProvider,
-        DateTime.now(),
+        AppClock.now(),
         goalProvider: goalProvider,
       ),
     );
@@ -1393,7 +1415,12 @@ void main() async {
   authProvider.onServerConfigChanged = (cfg) {
     aiService.updateFromServerConfig(cfg);
   };
+  var lastUpdateServer = authProvider.baseUrl;
   authProvider.addListener(() {
+    if (lastUpdateServer != authProvider.baseUrl) {
+      lastUpdateServer = authProvider.baseUrl;
+      appUpdate.resetForServerChange();
+    }
     aiService.attachClient(authProvider.client);
     focusRoomProvider.apiClientGetter = () => authProvider.client;
   });
@@ -1530,7 +1557,7 @@ void main() async {
   String? currentAuthReminderIdentity() {
     final state = authProvider.state;
     if (!state.isLoggedIn) return null;
-    return state.token;
+    return '${authProvider.baseUrl}|${state.token}';
   }
 
   Future<void> startCloudSyncAfterAuth({
@@ -1955,7 +1982,7 @@ Future<bool> _pushHomeWidget(
   DiaryProvider d,
   ThemeProvider tp,
 ) async {
-  final now = DateTime.now();
+  final now = AppClock.now();
   final today = DateTime(now.year, now.month, now.day);
   final activeToday = t.visibleTodayTodos(now)
     ..sort((a, b) {
@@ -3324,8 +3351,8 @@ Future<bool> _syncNotificationQuickAdd(
 }
 
 Duration _durationUntilNextLocalDay() {
-  final now = DateTime.now();
-  final nextDay = DateTime(now.year, now.month, now.day + 1, 0, 0, 2);
+  final now = AppClock.now();
+  final nextDay = AppClock.date(now.year, now.month, now.day + 1, 0, 0, 2);
   final delay = nextDay.difference(now);
   return delay.isNegative ? const Duration(seconds: 2) : delay;
 }
@@ -3335,7 +3362,7 @@ String _todayTaskProgressNotificationBody(
   required HabitProvider habits,
   required GoalProvider goals,
 }) {
-  final now = DateTime.now();
+  final now = AppClock.now();
   final visibleTodos = todos
       .where((todo) => CompletionVisibilityPolicy.shouldShowInToday(todo, now))
       .toList(growable: false);
@@ -3732,7 +3759,7 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final now = DateTime.now();
+    final now = AppClock.now();
     _lastLifecycleDay = DateTime(now.year, now.month, now.day);
     _lastIana = LocalTimezoneResolver.currentIana;
     _lastExactAlarmGranted = _initialExactAlarmGranted;
@@ -3799,9 +3826,12 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       _checkUpdatePolicy(force: true);
       _refreshAccountProfileOnResume();
       // 先处理时区变更（可能影响调度），再做跨日 rollover。
-      _maybeResyncOnTimezoneChange();
-      _maybeRunDailyRolloverOnResume();
-      _refreshNotificationProgressOnResume();
+      unawaited(() async {
+        await _maybeResyncOnTimezoneChange();
+        if (!mounted) return;
+        _maybeRunDailyRolloverOnResume();
+        _refreshNotificationProgressOnResume();
+      }());
       _refreshNotificationPermissionsOnResume();
     }
   }
@@ -3863,33 +3893,22 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
   /// 对应 Requirements 8.6 / 8.8：
   /// - 8.6：resumed 且 IANA 变化时重新 `tz.setLocalLocation` 并 resync；
   /// - 8.8：resync 后新调度的 `(hour, minute)` 仍等于用户原设定。
-  void _maybeResyncOnTimezoneChange() {
+  Future<void> _maybeResyncOnTimezoneChange() async {
     final prevIana = _lastIana;
-
-    // ignore: discarded_futures
-    Future.microtask(() async {
-      try {
-        await LocalTimezoneResolver.refresh();
-      } catch (_) {
-        // 时区刷新失败（例如平台暂时不可用）不应阻断其它 lifecycle 钩子。
-        return;
-      }
+    try {
+      await LocalTimezoneResolver.refresh();
+      if (!mounted) return;
+      context.read<PreferencesProvider>().refreshResolvedTimeZone();
       final currentIana = LocalTimezoneResolver.currentIana;
-      if (prevIana != null && prevIana == currentIana) {
-        return;
-      }
+      if (prevIana != null && prevIana == currentIana) return;
       _lastIana = currentIana;
-      try {
-        await _queueFullReminderResyncCallback?.call(
-          delay: Duration.zero,
-          reason: 'system timezone changed',
-        );
-      } catch (e, st) {
-        debugPrint(
-          '[DuoyiApp] reminder resync on timezone change failed: $e\n$st',
-        );
-      }
-    });
+      await _queueFullReminderResyncCallback?.call(
+        delay: Duration.zero,
+        reason: 'system timezone changed',
+      );
+    } catch (e, st) {
+      debugPrint('[DuoyiApp] timezone refresh/resync failed: $e\n$st');
+    }
   }
 
   /// 从系统设置返回时刷新通知 / 闹钟权限状态。
@@ -3930,13 +3949,15 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
   /// 后台场景下也能按时执行。时区刷新由 [_maybeResyncOnTimezoneChange]
   /// 负责，不在这里重复。
   void _maybeRunDailyRolloverOnResume() {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final today = DateTime(now.year, now.month, now.day);
     final last = _lastLifecycleDay;
     _lastLifecycleDay = today;
     if (last != null && last.isAtSameMomentAs(today)) {
       return;
     }
+    // 本地日发生滚动：通知 AppClock 的监听方（今日页、统计等）刷新。
+    AppClock.notifyDayChanged();
 
     // 同步读取 TodoProvider / GoalProvider，避免在异步 gap 之后再使用 BuildContext。
     // `DuoyiApp` 是应用根 widget，`mainShellKey` 在冷启动初期可能尚未 attach，
@@ -3992,6 +4013,7 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       locale: locale.flutterLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
+      builder: (context, child) => AppClockScope(child: child!),
       theme: brand.theme,
       home: mustUpdate
           ? const Stack(children: [ForceUpdateGate()])
@@ -4197,6 +4219,7 @@ class MainShellState extends State<MainShell> {
     // 小组件 tab）仍走编译期 WebTarget.isDesktopWebBuild，移动包不受影响。
     return LayoutBuilder(
       builder: (context, constraints) {
+        AppClock.watch(context);
         if (WebTarget.isWidescreenLayout(constraints.maxWidth)) {
           return _buildDesktopWebShell(
             context: context,

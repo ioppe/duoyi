@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/diary_insights.dart';
@@ -30,6 +31,7 @@ class DiaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<DiaryProvider>();
     final entries = provider.entries;
     final insights = DiaryInsightEngine.buildInsights(entries);
@@ -258,10 +260,8 @@ class DiaryScreen extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: pct,
                               minHeight: 10,
-                              backgroundColor:
-                                  cs.surfaceContainerHighest.withValues(
-                                    alpha: isDark ? 0.12 : 0.22,
-                                  ),
+                              backgroundColor: cs.surfaceContainerHighest
+                                  .withValues(alpha: isDark ? 0.12 : 0.22),
                             ),
                           ),
                         ),
@@ -702,7 +702,7 @@ class _DiaryEditScreenState extends State<DiaryEditScreen> {
     final e = widget.entry;
     _content = TextEditingController(text: e?.content ?? '');
     _tag = TextEditingController();
-    _date = e?.date ?? widget.initialDate ?? DateTime.now();
+    _date = e?.date ?? widget.initialDate ?? AppClock.today();
     _mood = e?.mood;
     _weather = e?.weather;
     _tags = [...?e?.tags];
@@ -742,6 +742,7 @@ class _DiaryEditScreenState extends State<DiaryEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final lunar = LunarCalendar.fromSolar(_date);
     final cs = Theme.of(context).colorScheme;
     final routeBackground = Theme.of(context).brightness == Brightness.dark

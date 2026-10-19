@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../core/app_config.dart';
 import '../core/smart_date_parser.dart';
 import '../core/smart_todo_draft.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,7 +102,7 @@ class AiService extends ChangeNotifier {
         'user': userPrompt,
         'temperature': temperature,
         'max_tokens': maxTokens,
-      }, const Duration(seconds: 75));
+      }, AppConfig.aiTimeout);
       final content = (res['content'] ?? '').toString();
       return content;
     } on ApiException catch (e) {

@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -48,6 +49,7 @@ class _TimeAuditScreenState extends State<TimeAuditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<TimeAuditProvider>();
     _openInitialEntryIfNeeded(provider);
     final entries = _entriesFor(provider);
@@ -249,22 +251,26 @@ class _TimeAuditScreenState extends State<TimeAuditScreen> {
   }
 
   List<TimeEntry> _entriesFor(TimeAuditProvider provider) {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
-    final monthStart = DateTime(now.year, now.month, 1);
+    final now = AppClock.now();
+    final todayStart = AppClock.date(now.year, now.month, now.day);
+    final weekStart = AppClock.date(
+      now.year,
+      now.month,
+      now.day - now.weekday + 1,
+    );
+    final monthStart = AppClock.date(now.year, now.month, 1);
     return switch (_range) {
       _AuditRange.today => provider.entriesInRange(
         todayStart,
-        todayStart.add(const Duration(days: 1)),
+        AppClock.date(now.year, now.month, now.day + 1),
       ),
       _AuditRange.week => provider.entriesInRange(
         weekStart,
-        weekStart.add(const Duration(days: 7)),
+        AppClock.date(weekStart.year, weekStart.month, weekStart.day + 7),
       ),
       _AuditRange.month => provider.entriesInRange(
         monthStart,
-        DateTime(now.year, now.month + 1, 1),
+        AppClock.date(now.year, now.month + 1, 1),
       ),
       _AuditRange.all => provider.entries,
     };
@@ -527,11 +533,7 @@ class _CalendarAuditView extends StatelessWidget {
   Widget build(BuildContext context) {
     final grouped = <DateTime, List<TimeEntry>>{};
     for (final entry in entries) {
-      final day = DateTime(
-        entry.startAt.year,
-        entry.startAt.month,
-        entry.startAt.day,
-      );
+      final day = AppClock.dateOnly(AppClock.toLocal(entry.startAt));
       grouped.putIfAbsent(day, () => <TimeEntry>[]).add(entry);
     }
     final days = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
@@ -564,11 +566,7 @@ class _TrendAuditView extends StatelessWidget {
   Widget build(BuildContext context) {
     final grouped = <DateTime, List<TimeEntry>>{};
     for (final entry in entries) {
-      final day = DateTime(
-        entry.startAt.year,
-        entry.startAt.month,
-        entry.startAt.day,
-      );
+      final day = AppClock.dateOnly(AppClock.toLocal(entry.startAt));
       grouped.putIfAbsent(day, () => <TimeEntry>[]).add(entry);
     }
     final days = grouped.keys.toList()..sort();
@@ -1107,8 +1105,10 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
           : (entry.durationSeconds ~/ 60).clamp(1, 1440).toString(),
     );
     _category = entry?.category ?? TimeEntryCategory.focus;
-    _startAt = entry?.startAt ?? DateTime.now();
-    _endAt = entry?.endAt ?? DateTime.now().add(const Duration(minutes: 25));
+    _startAt = AppClock.toLocal(entry?.startAt ?? AppClock.now());
+    _endAt = AppClock.toLocal(
+      entry?.endAt ?? AppClock.now().add(const Duration(minutes: 25)),
+    );
   }
 
   @override
@@ -1121,6 +1121,7 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     return AppModalSheet(
       title: widget.entry == null
           ? I18n.tr('time_audit.sheet.add_title')
@@ -1213,7 +1214,7 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
   Future<void> _pickStart() async {
     final date = await AppDatePicker.pickSolar(
       context,
-      initialDate: _startAt,
+      initialDate: AppClock.toLocal(_startAt),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
       title: I18n.tr('time_audit.picker.start_date'),
@@ -1222,14 +1223,14 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
     if (!mounted) return;
     final time = await AppTimePicker.show(
       context,
-      initialTime: TimeOfDay.fromDateTime(_startAt),
+      initialTime: TimeOfDay.fromDateTime(AppClock.toLocal(_startAt)),
       title: I18n.tr('time_audit.picker.start_time'),
       minuteStep: 5,
     );
     if (time == null) return;
     if (!mounted) return;
     setState(() {
-      _startAt = DateTime(
+      _startAt = AppClock.date(
         date.year,
         date.month,
         date.day,
@@ -1244,7 +1245,7 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
   Future<void> _pickEnd() async {
     final date = await AppDatePicker.pickSolar(
       context,
-      initialDate: _endAt,
+      initialDate: AppClock.toLocal(_endAt),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
       title: I18n.tr('time_audit.picker.end_date'),
@@ -1253,14 +1254,14 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
     if (!mounted) return;
     final time = await AppTimePicker.show(
       context,
-      initialTime: TimeOfDay.fromDateTime(_endAt),
+      initialTime: TimeOfDay.fromDateTime(AppClock.toLocal(_endAt)),
       title: I18n.tr('time_audit.picker.end_time'),
       minuteStep: 5,
     );
     if (time == null) return;
     if (!mounted) return;
     setState(
-      () => _endAt = DateTime(
+      () => _endAt = AppClock.date(
         date.year,
         date.month,
         date.day,
@@ -1281,8 +1282,8 @@ class _TimeEntrySheetState extends State<_TimeEntrySheet> {
       title: _titleCtrl.text.trim().isEmpty
           ? I18n.tr('time_audit.default_title')
           : _titleCtrl.text.trim(),
-      startAt: _startAt,
-      endAt: endAt,
+      startAt: _startAt.toUtc(),
+      endAt: endAt.toUtc(),
       category: _category,
       source: TimeEntrySource.manual,
       note: _noteCtrl.text.trim(),
@@ -1342,11 +1343,12 @@ class _Chip extends StatelessWidget {
   }
 }
 
-String _formatDateTime(DateTime d) => I18nDateFormat.shortDateTime(d);
+String _formatDateTime(DateTime d) =>
+    I18nDateFormat.shortDateTime(AppClock.toLocal(d));
 
-String _clock(DateTime d) => I18nDateFormat.time(d);
+String _clock(DateTime d) => I18nDateFormat.time(AppClock.toLocal(d));
 
-String _date(DateTime d) => I18nDateFormat.date(d);
+String _date(DateTime d) => I18nDateFormat.date(AppClock.toLocal(d));
 
 String _formatDuration(int seconds) {
   if (seconds >= 3600) {

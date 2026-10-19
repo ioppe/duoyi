@@ -19,9 +19,10 @@ void main() {
       isNot(contains('Colors.grey')),
       reason: '心情统计弹窗内不应残留固定 Colors.grey 取色',
     );
+    // 允许格式化换行：`cs.surfaceContainerHighest` 后可能换行再接 `.withValues`。
     expect(
-      stats,
-      contains('surfaceContainerHighest.withValues'),
+      stats.replaceAll(RegExp(r'\s+'), ' '),
+      contains('surfaceContainerHighest .withValues'),
       reason: '进度条轨道应使用主题容器色',
     );
     expect(stats, contains('Brightness.dark'), reason: '轨道透明度需按亮暗分支');

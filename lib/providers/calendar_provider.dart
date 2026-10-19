@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_clock.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/calendar_aggregator.dart';
 import '../models/calendar_event.dart';
 import '../models/todo.dart';
@@ -195,9 +197,9 @@ class CalendarProvider extends ChangeNotifier {
     );
     _events
       ..clear()
-      ..addAll(nextEvents)
-      ..addAll(_localEvents)
-      ..addAll(_externalEvents);
+      ..addAll(nextEvents.map(_inAppTimeZone))
+      ..addAll(_localEvents.map(_inAppTimeZone))
+      ..addAll(_externalEvents.map(_inAppTimeZone));
 
     if (!_eventsEqual(previousEvents, _events)) {
       _lastRebuildSignature = signature;
@@ -206,6 +208,9 @@ class CalendarProvider extends ChangeNotifier {
     }
     _lastRebuildSignature = signature;
   }
+
+  CalendarEvent _inAppTimeZone(CalendarEvent event) =>
+      LocalTimezoneResolver.isInitialized ? event.inAppTimeZone() : event;
 
   int _buildSignature(
     List<TodoItem> todos,
@@ -220,14 +225,13 @@ class CalendarProvider extends ChangeNotifier {
     List<GoalItem>? goals,
     List<TimeEntry>? timeEntries,
   }) {
-    final now = DateTime.now();
-    final todayKey = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).millisecondsSinceEpoch;
+    final now = AppClock.now();
+    final todayKey = '${now.year}-${now.month}-${now.day}';
     return Object.hashAll([
       todayKey,
+      LocalTimezoneResolver.isInitialized
+          ? LocalTimezoneResolver.currentIana
+          : 'system',
       colorScheme.primary,
       _hashTodos(todos),
       _hashHabits(habits),
@@ -587,8 +591,15 @@ class CalendarProvider extends ChangeNotifier {
     final start = _dateOnly(event.date);
     final end = _eventVisibleEndDate(event, start);
     if (end.isBefore(start)) return <DateTime>[start];
-    final dayCount = end.difference(start).inDays + 1;
-    return List.generate(dayCount, (index) => start.add(Duration(days: index)));
+    final dates = <DateTime>[];
+    for (
+      var day = start;
+      !day.isAfter(end);
+      day = DateTime(day.year, day.month, day.day + 1)
+    ) {
+      dates.add(day);
+    }
+    return dates;
   }
 
   List<String> _eventDateKeys(CalendarEvent event) {
@@ -607,7 +618,7 @@ class CalendarProvider extends ChangeNotifier {
         endDate.millisecond == 0 &&
         endDate.microsecond == 0;
     if (endsAtMidnight && end.isAfter(start)) {
-      end = end.subtract(const Duration(days: 1));
+      end = DateTime(end.year, end.month, end.day - 1);
     }
     return end;
   }

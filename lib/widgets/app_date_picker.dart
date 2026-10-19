@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -158,6 +159,7 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final result = AppDatePickerResult(
@@ -170,7 +172,7 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
       subtitle: widget.subtitle,
       actions: [
         TextButton.icon(
-          onPressed: () => _setSolar(DateTime.now()),
+          onPressed: () => _setSolar(AppClock.now()),
           icon: const Icon(Icons.today_outlined, size: 18),
           label: const Text('今天'),
         ),
@@ -477,11 +479,12 @@ class _SolarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
     final day = DateTime(cell.date.year, cell.date.month, cell.date.day);
-    final today = DateTime.now();
+    final today = AppClock.now();
     final isToday = _sameDate(day, today);
     final isSelected = _sameDate(day, selectedDay);
     final disabled =

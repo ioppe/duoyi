@@ -1,4 +1,5 @@
 import '../models/pomodoro.dart';
+import 'app_clock.dart';
 
 class FocusTagStat {
   final String tag;
@@ -108,20 +109,21 @@ class FocusTagStats {
       for (final tag in orderedTags)
         tag: {for (final b in bucketDefs) b.key: 0},
     };
-    final endExclusive = DateTime(end.year, end.month, end.day + 1);
+    final startInstant = AppClock.date(start.year, start.month, start.day);
+    final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
 
     for (final session in sessions) {
       if (session.type != PomodoroType.focus || session.durationSeconds <= 0) {
         continue;
       }
-      if (session.startTime.isBefore(start) ||
+      if (session.startTime.isBefore(startInstant) ||
           !session.startTime.isBefore(endExclusive)) {
         continue;
       }
       final tag = _normalizeTag(session.tag);
       final tagBuckets = minutesByTag[tag];
       if (tagBuckets == null) continue;
-      final key = _bucketKey(session.startTime, bucket);
+      final key = _bucketKey(AppClock.toLocal(session.startTime), bucket);
       if (!tagBuckets.containsKey(key)) continue;
       tagBuckets[key] = tagBuckets[key]! + (session.durationSeconds ~/ 60);
     }
@@ -157,7 +159,7 @@ class FocusTagStats {
         for (
           var cursor = DateTime(start.year, start.month, start.day);
           !cursor.isAfter(DateTime(end.year, end.month, end.day));
-          cursor = cursor.add(const Duration(days: 1))
+          cursor = DateTime(cursor.year, cursor.month, cursor.day + 1)
         ) {
           defs.add(
             _FocusTagTrendBucketDef(

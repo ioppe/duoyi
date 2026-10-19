@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../core/app_clock.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/platform_info.dart';
 import 'local_notifications.dart';
@@ -67,8 +68,8 @@ class AlarmScheduleIssue {
 ///   后者需要 Apple 单独批准的 entitlement）。
 /// - Linux / macOS / Windows：退化为普通通知（无全屏效果）。
 ///
-/// 所有调度走 [FlutterLocalNotificationsPlugin.zonedSchedule]，时间统一使用
-/// `tz.TZDateTime.from(when, tz.local)` 以获得"壁钟时间"语义。
+/// 上游用 AppClock.date 构造应用时区壁钟；zonedSchedule 前的
+/// `tz.TZDateTime.from(when, tz.local)` 只保留该 occurrence 的绝对时刻。
 class AlarmService implements ReminderAlarmSink, ReminderPendingSink {
   static final AlarmService instance = AlarmService._();
   AlarmService._();
@@ -1597,7 +1598,7 @@ class AlarmService implements ReminderAlarmSink, ReminderPendingSink {
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
+    final now = AppClock.now();
     var scheduled = tz.TZDateTime(
       tz.local,
       now.year,
@@ -1607,7 +1608,14 @@ class AlarmService implements ReminderAlarmSink, ReminderPendingSink {
       minute,
     );
     if (!scheduled.isAfter(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+      scheduled = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day + 1,
+        hour,
+        minute,
+      );
     }
     return scheduled;
   }
@@ -1615,7 +1623,14 @@ class AlarmService implements ReminderAlarmSink, ReminderPendingSink {
   tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
     var scheduled = _nextInstanceOfTime(hour, minute);
     while (scheduled.weekday != weekday) {
-      scheduled = scheduled.add(const Duration(days: 1));
+      scheduled = tz.TZDateTime(
+        tz.local,
+        scheduled.year,
+        scheduled.month,
+        scheduled.day + 1,
+        hour,
+        minute,
+      );
     }
     return scheduled;
   }

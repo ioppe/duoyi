@@ -91,8 +91,10 @@ void main() {
     );
     expect(provider, contains('? _config.autoStartBreaks'));
     expect(provider, contains(': _config.autoStartFocus'));
-    expect(provider, contains('final lastDate = _lastDate ??= _todayKey();'));
-    expect(provider, isNot(contains('_lastDate!')));
+    // 写元数据前必须先按应用时区刷新“今天”，再用已刷新的键持久化，
+    // 避免跨日/换时区后仍写入旧日期。
+    expect(provider, contains('_lastDate = _todayKey();'));
+    expect(provider, contains('final lastDate = _lastDate!;'));
     expect(
       provider,
       isNot(

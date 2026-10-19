@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/desktop_tokens.dart';
 import '../core/design_tokens.dart';
@@ -85,12 +87,13 @@ class _TodoScreenState extends State<TodoScreen> {
   TodoFilterState<EisenhowerQuadrant, TodoPriority>? _derivedFilter;
   TodoKanbanBoardConfig? _derivedKanbanConfig;
   int? _derivedMinuteKey;
+  String? _derivedTimezone;
 
   _TodoDerivedData _computeDerivedData({
     required TodoProvider todoProvider,
     required int minuteKey,
   }) {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final baseTodos = todoProvider.visibleListTodos;
     final filteredTodos = filterTodos(
       baseTodos,
@@ -100,7 +103,7 @@ class _TodoScreenState extends State<TodoScreen> {
       priorityOf: (todo) => todo.priority,
       tagsOf: (todo) => todo.tags,
       listGroupNameOf: (todo) => todo.listGroupName,
-      dueDateOf: (todo) => todo.dueDate,
+      dueDateOf: (todo) => todo.localDueDate,
       isCompletedOf: (todo) => todo.isCompleted,
       isArchivedAfterRolloverOf: (todo) => todo.isArchivedAfterRollover,
     );
@@ -146,6 +149,7 @@ class _TodoScreenState extends State<TodoScreen> {
         _derivedRevision == todoProvider.revision &&
         identical(_derivedFilter, _filter) &&
         identical(_derivedKanbanConfig, _kanbanConfig) &&
+        _derivedTimezone == LocalTimezoneResolver.currentIana &&
         _derivedMinuteKey == minuteKey) {
       return derived;
     }
@@ -158,6 +162,7 @@ class _TodoScreenState extends State<TodoScreen> {
     _derivedFilter = _filter;
     _derivedKanbanConfig = _kanbanConfig;
     _derivedMinuteKey = minuteKey;
+    _derivedTimezone = LocalTimezoneResolver.currentIana;
     return computed;
   }
 
@@ -689,9 +694,9 @@ class _TodoScreenState extends State<TodoScreen> {
                                   final legacy = plan.toLegacyReminderConfig(
                                     fallback: todo.reminder,
                                   );
-                                  final now = DateTime.now();
+                                  final now = AppClock.now();
                                   final base = todo.date;
-                                  var mirroredAt = DateTime(
+                                  var mirroredAt = AppClock.date(
                                     base.year,
                                     base.month,
                                     base.day,
@@ -827,12 +832,13 @@ class _TodoScreenState extends State<TodoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final todoProvider = context.watch<TodoProvider>();
     final habitProvider = context.watch<HabitProvider>();
     final goalProvider = context.watch<GoalProvider>();
     final shareProvider = context.watch<ShareProvider>();
     final s = context.watch<ThemeProvider>().brand.strings;
-    final now = DateTime.now();
+    final now = AppClock.now();
     final derived = _derivedDataFor(todoProvider);
     final baseTodos = derived.baseTodos;
     final filteredTodos = derived.filteredTodos;
@@ -1031,7 +1037,7 @@ class _TodoScreenState extends State<TodoScreen> {
               TextButton.icon(
                 onPressed: () async {
                   await context.read<TodoProvider>().postponeOverdue(
-                    DateTime.now(),
+                    AppClock.now(),
                   );
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1216,7 +1222,10 @@ class _TodoTodaySummaryCard extends StatelessWidget {
       if (!todo.isCompleted) return false;
       final completedAt = todo.completedAt;
       if (completedAt == null) return false;
-      return CompletionVisibilityPolicy.dateOnly(completedAt) == today;
+      return CompletionVisibilityPolicy.dateOnly(
+            AppClock.toLocal(completedAt),
+          ) ==
+          today;
     }).length;
     final todayTotal = todayDone + todoCount;
     final overdueCount = todos.where((todo) => todo.isOverdue).length;
@@ -2238,7 +2247,8 @@ class _KanbanColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final color = Color(column.colorValue);
-    final groupedTodos = _groupKanbanTodos(todos, groupMode, DateTime.now());
+    AppClock.watch(context);
+    final groupedTodos = _groupKanbanTodos(todos, groupMode, AppClock.now());
     final listEntries = <_KanbanColumnListEntry>[
       for (final group in groupedTodos) ...[
         if (groupMode != TodoKanbanGroupMode.none)
@@ -4269,7 +4279,7 @@ class _QuadrantListScreenState extends State<QuadrantListScreen> {
     final todos = filterTodos(
       baseTodos,
       effectiveFilter,
-      now: DateTime.now(),
+      now: AppClock.now(),
       quadrantOf: (todo) => todo.quadrant,
       priorityOf: (todo) => todo.priority,
       tagsOf: (todo) => todo.tags,

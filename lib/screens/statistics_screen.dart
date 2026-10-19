@@ -11,6 +11,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../core/app_clock.dart';
 import '../core/desktop_tokens.dart';
 import '../core/focus_tag_stats.dart';
 import '../core/i18n_date_format.dart';
@@ -54,7 +55,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   String? _aiReportError;
 
   (DateTime, DateTime) get _rangeBounds {
-    final now = DateTime.now();
+    final now = AppClock.now();
     switch (_range) {
       case _Range.week:
         final monday = DateTime(
@@ -72,6 +73,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final todoProv = context.watch<TodoProvider>();
     final goalProv = context.watch<GoalProvider>();
     final habitProv = context.watch<HabitProvider>();
@@ -114,7 +116,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       },
       report: report,
       comparison: comparison,
-      generatedAt: DateTime.now(),
+      generatedAt: AppClock.now(),
     );
     final productivityTrend = _buildProductivityTrend(
       range: _range,
@@ -132,13 +134,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       timeEntries: timeAuditProv.entries,
       diaries: diaryProv.entries,
     );
-    final auditEntries = timeAuditProv.entriesInRange(start, end);
+    final rangeStart = AppClock.date(start.year, start.month, start.day);
+    final rangeEnd = AppClock.date(end.year, end.month, end.day + 1);
+    final auditEntries = timeAuditProv.entriesInRange(rangeStart, rangeEnd);
     final auditTotalMinutes =
-        timeAuditProv.totalSecondsInRange(start, end) ~/ 60;
-    final auditCategorySeconds = timeAuditProv.secondsByCategory(start, end);
-    bool inRange(DateTime d) =>
-        !d.isBefore(DateTime(start.year, start.month, start.day)) &&
-        !d.isAfter(DateTime(end.year, end.month, end.day, 23, 59, 59));
+        timeAuditProv.totalSecondsInRange(rangeStart, rangeEnd) ~/ 60;
+    final auditCategorySeconds = timeAuditProv.secondsByCategory(
+      rangeStart,
+      rangeEnd,
+    );
+    bool inRange(DateTime d) => !d.isBefore(rangeStart) && d.isBefore(rangeEnd);
 
     final completedTodos = todoProv.completedTodos.where((t) {
       final ts = t.completedAt ?? t.updatedAt;
@@ -202,23 +207,33 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       todos: todoProv.todos,
     );
 
-    final diaryInRange = diaryProv.entries.where((d) => inRange(d.date)).length;
+    final diaryInRange = diaryProv.entries
+        .where(
+          (d) =>
+              !AppClock.dateOnly(d.date).isBefore(AppClock.dateOnly(start)) &&
+              !AppClock.dateOnly(d.date).isAfter(AppClock.dateOnly(end)),
+        )
+        .length;
 
     final habitDoneInRange = habitCompletionDates.length;
 
-    final now = DateTime.now();
+    final now = AppClock.now();
     final quadrantStats = _buildQuadrantStats({
       for (final quadrant in EisenhowerQuadrant.values)
         quadrant: todoProv.getQuadrantTodos(quadrant),
     }, now: now);
 
     // Weekly time audit data (always computed, independent of selected range)
-    final weekMonday = DateTime(
+    final weekMonday = AppClock.date(
       now.year,
       now.month,
-      now.day,
-    ).subtract(Duration(days: now.weekday - 1));
-    final weekEnd = weekMonday.add(const Duration(days: 7));
+      now.day - now.weekday + 1,
+    );
+    final weekEnd = AppClock.date(
+      weekMonday.year,
+      weekMonday.month,
+      weekMonday.day + 7,
+    );
     final weekSourceSeconds = timeAuditProv.secondsBySource(
       weekMonday,
       weekEnd,
@@ -670,7 +685,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
     for (final todo in todos) {
       final completedAt = todo.completedAt;
-      if (todo.isCompleted && completedAt != null) add(completedAt, 2);
+      if (todo.isCompleted && completedAt != null) {
+        add(AppClock.toLocal(completedAt), 2);
+      }
     }
     for (final habit in habits) {
       for (final entry in habit.completions.entries) {
@@ -679,11 +696,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       }
     }
     for (final session in sessions) {
-      if (session.type == PomodoroType.focus) add(session.endTime, 2);
+      if (session.type == PomodoroType.focus) {
+        add(AppClock.toLocal(session.endTime), 2);
+      }
     }
     for (final entry in timeEntries) {
       final minutes = entry.durationSeconds ~/ 60;
-      add(entry.startAt, minutes >= 60 ? 2 : 1);
+      add(AppClock.toLocal(entry.startAt), minutes >= 60 ? 2 : 1);
     }
     for (final diary in diaries) {
       add(diary.date, 1);
@@ -741,12 +760,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       final active = items.where((todo) => !todo.isCompleted).length;
       final completed = items.where((todo) => todo.isCompleted).length;
       final overdue = items.where((todo) {
-        final due = todo.dueDate;
+        final due = todo.localDueDate;
         if (todo.isCompleted || due == null) return false;
         return DateTime(due.year, due.month, due.day).isBefore(today);
       }).length;
       final dueToday = items.where((todo) {
-        final due = todo.dueDate;
+        final due = todo.localDueDate;
         if (todo.isCompleted || due == null) return false;
         return due.year == today.year &&
             due.month == today.month &&
@@ -2158,8 +2177,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   bool _isDateTimeInRange(DateTime value, DateTime start, DateTime end) {
-    final startDate = DateTime(start.year, start.month, start.day);
-    final endExclusive = DateTime(end.year, end.month, end.day + 1);
+    final startDate = AppClock.date(start.year, start.month, start.day);
+    final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
     return !value.isBefore(startDate) && value.isBefore(endExclusive);
   }
 
@@ -2416,7 +2435,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     TimeEntryCategory.other => Icons.more_horiz,
   };
 
-  String _formatDateTime(DateTime d) => I18nDateFormat.shortDateTime(d);
+  String _formatDateTime(DateTime d) =>
+      I18nDateFormat.shortDateTime(AppClock.toLocal(d));
 
   String _formatDuration(int seconds) {
     if (seconds >= 3600) {
@@ -2627,7 +2647,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final endNorm = DateTime(end.year, end.month, end.day);
 
     if (range == _Range.year) {
-      for (int m = 1; m <= DateTime.now().month; m++) {
+      for (int m = 1; m <= AppClock.now().month; m++) {
         buckets['$m月'] = 0;
       }
     } else {
@@ -2639,9 +2659,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
 
     for (final s in sessions) {
+      final local = AppClock.toLocal(s.startTime);
       final k = range == _Range.year
-          ? '${s.startTime.month}月'
-          : '${s.startTime.month}/${s.startTime.day}';
+          ? '${local.month}月'
+          : '${local.month}/${local.day}';
       buckets[k] = (buckets[k] ?? 0) + (s.durationSeconds ~/ 60);
     }
 
@@ -4437,7 +4458,7 @@ class _ActivityHeatmapCard extends StatelessWidget {
   }
 
   List<int> _visibleValues() {
-    final today = DateTime.now();
+    final today = AppClock.now();
     final start = DateTime(
       today.year,
       today.month,

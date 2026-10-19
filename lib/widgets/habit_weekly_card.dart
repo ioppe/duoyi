@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/habit_provider.dart';
@@ -12,6 +13,7 @@ class HabitWeeklyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<HabitProvider>();
     final s = context.watch<ThemeProvider>().brand.strings;
     final data = provider.currentWeekProgress();
@@ -24,7 +26,7 @@ class HabitWeeklyCard extends StatelessWidget {
       I18n.tr('habit.weekday.6'),
       I18n.tr('habit.weekday.7'),
     ];
-    final todayDOW = DateTime.now().weekday - 1;
+    final todayDOW = AppClock.now().weekday - 1;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;

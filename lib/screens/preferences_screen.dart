@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/i18n.dart';
+import '../core/app_clock.dart';
+import '../core/i18n_date_format.dart';
 import '../core/web_target.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/surface_components.dart';
+import '../widgets/language_settings_tile.dart';
 
 /// 个性设置入口页。这里只做二级入口，不直接承载具体设置项。
 class PreferencesScreen extends StatelessWidget {
@@ -12,13 +15,14 @@ class PreferencesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    context.watch<LocaleProvider>();
     final routeBackground = Theme.of(context).brightness == Brightness.dark
         ? cs.surface
         : cs.surfaceContainerLowest;
     return Scaffold(
       backgroundColor: routeBackground,
       appBar: AppBar(
-        title: const Text('个性设置'),
+        title: Text(I18n.tr('preferences.title')),
         titleTextStyle: appSecondaryRouteTitleTextStyle(context),
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
@@ -58,7 +62,7 @@ class PreferencesScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '按入口拆分显示、默认行为和导航，不在个性设置里承载通知配置。',
+                          I18n.tr('preferences.entry.description'),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: cs.onSurface.withValues(alpha: 0.66),
@@ -72,14 +76,14 @@ class PreferencesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             AppSettingsSection(
-              title: '个性入口',
-              subtitle: '选择要调整的设置类别',
+              title: I18n.tr('preferences.entry.title'),
+              subtitle: I18n.tr('preferences.entry.subtitle'),
               children: [
                 AppSettingsTile(
                   icon: Icons.tune_outlined,
                   color: cs.primary,
-                  title: '显示与行为',
-                  subtitle: '日期、默认入口、快捷捕获、交互和归档',
+                  title: I18n.tr('preferences.display.title'),
+                  subtitle: I18n.tr('preferences.display.subtitle'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -90,8 +94,8 @@ class PreferencesScreen extends StatelessWidget {
                 AppSettingsTile(
                   icon: Icons.space_dashboard_outlined,
                   color: Colors.blueGrey,
-                  title: '导航入口',
-                  subtitle: '最多 5 个底部入口；我的固定，小组件可隐藏',
+                  title: I18n.tr('preferences.navigation.title'),
+                  subtitle: I18n.tr('preferences.section.bottom_nav.subtitle'),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -131,18 +135,19 @@ class _PersonalizationSettingsScreenState
     ['yyyy年M月d日', '2026年5月7日'],
   ];
   static const _timeZones = [
-    ['system', '跟随手机'],
-    ['Asia/Shanghai', '中国标准时间'],
-    ['America/Mexico_City', '墨西哥城时间'],
-    ['America/Tijuana', '蒂华纳时间'],
-    ['Asia/Tokyo', '日本时间'],
-    ['Asia/Hong_Kong', '香港时间'],
-    ['Asia/Singapore', '新加坡时间'],
-    ['America/New_York', '纽约时间'],
-    ['America/Los_Angeles', '洛杉矶时间'],
-    ['Europe/London', '伦敦时间'],
-    ['Europe/Paris', '巴黎时间'],
-    ['Australia/Sydney', '悉尼时间'],
+    ['system', 'preferences.timezone.follow_system'],
+    ['Asia/Shanghai', 'preferences.timezone.shanghai'],
+    ['America/Mexico_City', 'preferences.timezone.mexico'],
+    ['America/Tijuana', 'preferences.timezone.tijuana'],
+    ['Asia/Tokyo', 'preferences.timezone.tokyo'],
+    ['Asia/Hong_Kong', 'preferences.timezone.hong_kong'],
+    ['Asia/Singapore', 'preferences.timezone.singapore'],
+    ['America/New_York', 'preferences.timezone.new_york'],
+    ['America/Los_Angeles', 'preferences.timezone.los_angeles'],
+    ['Europe/London', 'preferences.timezone.london'],
+    ['Europe/Paris', 'preferences.timezone.paris'],
+    ['Australia/Sydney', 'preferences.timezone.sydney'],
+    ['UTC', 'preferences.timezone.utc'],
   ];
 
   void _scrollToContext(BuildContext target) {
@@ -163,6 +168,8 @@ class _PersonalizationSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final p = context.watch<PreferencesProvider>();
+    context.watch<LocaleProvider>();
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final routeBackground = Theme.of(context).brightness == Brightness.dark
         ? cs.surface
@@ -171,7 +178,7 @@ class _PersonalizationSettingsScreenState
     return Scaffold(
       backgroundColor: routeBackground,
       appBar: AppBar(
-        title: const Text('显示与行为'),
+        title: Text(I18n.tr('preferences.display.title')),
         titleTextStyle: appSecondaryRouteTitleTextStyle(context),
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
@@ -227,21 +234,21 @@ class _PersonalizationSettingsScreenState
             _PreferenceSectionMenu(
               groups: [
                 _PreferenceMenuGroup(
-                  title: '显示默认',
+                  title: I18n.tr('preferences.menu.display'),
                   items: [
                     _PreferenceMenuItem(
                       icon: Icons.calendar_month_outlined,
-                      label: '日期日历',
+                      label: I18n.tr('preferences.menu.calendar'),
                       onTap: () => _scrollToMenuTarget(_dateSectionKey),
                     ),
                     _PreferenceMenuItem(
                       icon: Icons.tune_outlined,
-                      label: '默认行为',
+                      label: I18n.tr('preferences.section.defaults'),
                       onTap: () => _scrollToMenuTarget(_defaultsSectionKey),
                     ),
                     _PreferenceMenuItem(
                       icon: Icons.touch_app_outlined,
-                      label: '交互归档',
+                      label: I18n.tr('preferences.menu.interaction_archive'),
                       onTap: () => _scrollToMenuTarget(_interactionSectionKey),
                     ),
                   ],
@@ -255,6 +262,7 @@ class _PersonalizationSettingsScreenState
                 title: I18n.tr('preferences.section.date'),
                 subtitle: I18n.tr('preferences.section.date.subtitle'),
                 children: [
+                  const LanguageSettingsTile(),
                   AppSettingsTile(
                     icon: Icons.calendar_view_week_outlined,
                     color: cs.primary,
@@ -319,9 +327,8 @@ class _PersonalizationSettingsScreenState
                     icon: Icons.public_outlined,
                     color: Colors.deepOrange,
                     title: I18n.tr('preferences.timezone.title'),
-                    subtitle: p.followSystemTimeZone
-                        ? '${I18n.tr('preferences.timezone.follow_system')}：${p.appTimeZone}'
-                        : p.appTimeZone,
+                    subtitle:
+                        '${p.followSystemTimeZone ? '${I18n.tr('preferences.timezone.follow_system')} · ' : ''}${p.appTimeZone}\n${I18nDateFormat.fullDateTime(AppClock.now())}\n${I18n.tr('preferences.timezone.scope')}',
                     trailing: _compactDropdown<String>(
                       width: 156,
                       value: p.appTimeZoneSelection,
@@ -330,7 +337,7 @@ class _PersonalizationSettingsScreenState
                           DropdownMenuItem(
                             value: z[0],
                             child: Text(
-                              z[1],
+                              I18n.tr(z[1]),
                               style: appSecondaryControlTextStyle(context),
                             ),
                           ),

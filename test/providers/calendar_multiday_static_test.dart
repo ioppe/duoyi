@@ -18,7 +18,8 @@ void main() {
     );
     expect(source, contains('DateTime _eventVisibleEndDate('));
     expect(source, contains('event.endDate'));
-    expect(source, contains('end.difference(start).inDays + 1'));
+    // 逐日递增而非 Duration(days: n) 累加：跨夏令时切换日不会漏/重日期。
+    expect(source, contains('day = DateTime(day.year, day.month, day.day + 1)'));
   });
 
   test('CalendarProvider handles all-day midnight DTEND as exclusive', () {
@@ -32,7 +33,7 @@ void main() {
     expect(source, contains('endDate.second == 0'));
     expect(source, contains('endDate.millisecond == 0'));
     expect(source, contains('endDate.microsecond == 0'));
-    expect(source, contains('end = end.subtract(const Duration(days: 1))'));
+    expect(source, contains('end = DateTime(end.year, end.month, end.day - 1)'));
   });
 
   test('CalendarProvider supports shared workspace calendar filters', () {

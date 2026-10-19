@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,7 @@ class _ShareScreenState extends State<ShareScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final auth = context.watch<AuthProvider>();
     final provider = context.watch<ShareProvider>();
     final cs = Theme.of(context).colorScheme;
@@ -946,7 +948,7 @@ class _EmptyCollaborationLine extends StatelessWidget {
 }
 
 String _formatShortTime(DateTime value) {
-  return I18nDateFormat.shortDateTime(value);
+  return I18nDateFormat.shortDateTime(AppClock.toLocal(value));
 }
 
 class _MemberChip extends StatelessWidget {

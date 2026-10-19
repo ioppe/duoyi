@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/app_clock.dart';
+import '../models/pomodoro.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/design_tokens.dart';
 import '../core/desktop_tokens.dart';
@@ -45,12 +47,12 @@ List<TodoItem> _visibleTodayOverviewTodos(
   final today = CompletionVisibilityPolicy.dateOnly(now);
   return todos.where((todo) {
     if (todo.isArchivedAfterRollover || todo.isCompleted) return false;
-    final due = todo.dueDate;
+    final due = todo.localDueDate;
     if (due == null) return true;
     final dueDay = CompletionVisibilityPolicy.dateOnly(due);
     if (dueDay.isBefore(today)) return false;
     if (CompletionVisibilityPolicy.isDateOnly(due)) return true;
-    return !due.isBefore(now);
+    return !todo.dueAt!.isBefore(now);
   }).toList();
 }
 
@@ -60,21 +62,32 @@ class TodayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final themeProvider = context.watch<ThemeProvider>();
     final s = themeProvider.brand.strings;
 
     final todoP = context.watch<TodoProvider>();
     final habitP = context.watch<HabitProvider>();
-    final todayFocusCount = context.select<PomodoroProvider, int>(
-      (provider) => provider.sessionCountToday,
+    context.select<PomodoroProvider, int>(
+      (provider) => provider.persistedRevision,
     );
+    final todayFocusCount = context
+        .read<PomodoroProvider>()
+        .sessions
+        .where(
+          (session) =>
+              session.type == PomodoroType.focus &&
+              AppClock.dateOnly(AppClock.toLocal(session.endTime)) ==
+                  AppClock.today(),
+        )
+        .length;
     final diaryP = context.watch<DiaryProvider>();
     final anniP = context.watch<AnniversaryProvider>();
     final courseP = context.watch<CourseProvider>();
     final goalP = context.watch<GoalProvider>();
     final user = context.watch<UserProvider>();
 
-    final now = DateTime.now();
+    final now = AppClock.now();
     final todayKey = DateTime(now.year, now.month, now.day);
     final lunar = LunarCalendar.fromSolar(now);
     final term = LunarCalendar.solarTerm(now);
@@ -86,7 +99,9 @@ class TodayScreen extends StatelessWidget {
     final todayTodos = _visibleTodayOverviewTodos(todoP.todos, now);
     final todayTodosCount = todayTodos.length;
     final completedTodayCount = todoP.todos.where((todo) {
-      final completedAt = todo.completedAt;
+      final completedAt = todo.completedAt == null
+          ? null
+          : AppClock.toLocal(todo.completedAt!);
       if (!todo.isCompleted || completedAt == null) return false;
       return completedAt.year == todayKey.year &&
           completedAt.month == todayKey.month &&
@@ -94,15 +109,15 @@ class TodayScreen extends StatelessWidget {
     }).length;
     final noDueTodayTodos = todayTodos.where((todo) => todo.dueDate == null);
     todayTodos.sort((a, b) {
-      final dueA = a.dueDate;
-      final dueB = b.dueDate;
+      final dueA = a.dueAt;
+      final dueB = b.dueAt;
       if (dueA != null && dueB != null) return dueA.compareTo(dueB);
       if (dueA != null) return -1;
       if (dueB != null) return 1;
       return a.quadrant.index.compareTo(b.quadrant.index);
     });
 
-    final todayCourses = courseP.todayCourses
+    final todayCourses = courseP.coursesOfDate(now)
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
     final reminderGroups = _TodayReminderGroups.build(
       todos: todoP.todos,
@@ -340,7 +355,7 @@ class TodayScreen extends StatelessWidget {
         onOpenCourses: () =>
             TodayDetailRouter.open(context, TodaySectionKind.courses),
         onAddToday: (todo) async {
-          final actionNow = DateTime.now();
+          final actionNow = AppClock.now();
           final changed = await context
               .read<TodoProvider>()
               .scheduleTodoForToday(todo.id, now: actionNow);
@@ -907,9 +922,10 @@ class _TodayDesktopDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final now = DateTime.now(); // 用于左侧边栏日历
+    final now = AppClock.now(); // 用于左侧边栏日历
 
     final rightSidebarChildren = <Widget>[
       goalsSection,
@@ -1617,6 +1633,7 @@ class _TodayProductivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final todoP = context.watch<TodoProvider>();
     final habitP = context.watch<HabitProvider>();
     context.select<PomodoroProvider, int>(
@@ -1625,7 +1642,7 @@ class _TodayProductivitySection extends StatelessWidget {
     final pomoP = context.read<PomodoroProvider>();
     final timeEntries = context.watch<TimeAuditProvider>().entries;
 
-    final now = DateTime.now();
+    final now = AppClock.now();
     final todayKey = DateTime(now.year, now.month, now.day);
     final weekStart = todayKey.subtract(Duration(days: todayKey.weekday - 1));
     final weekEnd = todayKey;
@@ -2686,7 +2703,12 @@ class _TodayReminderGroups {
         completed: todo.isCompleted,
       );
       if (todo.isCompleted) {
-        if (_sameDay(todo.completedAt ?? trigger, todayKey)) {
+        if (_sameDay(
+          todo.completedAt == null
+              ? trigger
+              : AppClock.toLocal(todo.completedAt!),
+          todayKey,
+        )) {
           completedToday.add(item);
         }
       } else if (trigger.isBefore(now)) {
@@ -2699,11 +2721,28 @@ class _TodayReminderGroups {
     }
 
     for (final course in courses) {
-      final start = courseSettings.sectionStart(todayKey, course.startSection);
-      final end = courseSettings.sectionEnd(
+      final wallStart = courseSettings.sectionStart(
+        todayKey,
+        course.startSection,
+      );
+      final wallEnd = courseSettings.sectionEnd(
         todayKey,
         course.startSection,
         course.sectionCount,
+      );
+      final start = AppClock.date(
+        wallStart.year,
+        wallStart.month,
+        wallStart.day,
+        wallStart.hour,
+        wallStart.minute,
+      );
+      final end = AppClock.date(
+        wallEnd.year,
+        wallEnd.month,
+        wallEnd.day,
+        wallEnd.hour,
+        wallEnd.minute,
       );
       final item = _TodayReminderItem(
         kind: _TodayReminderKind.course,
@@ -2743,8 +2782,10 @@ class _TodayReminderGroups {
       value.day == day.day;
 
   static DateTime? _todoTriggerTime(TodoItem todo) {
-    if (todo.hasReminder && todo.reminderAt != null) return todo.reminderAt;
-    return todo.dueDate;
+    if (todo.hasReminder && todo.reminderAt != null) {
+      return AppClock.toLocal(todo.reminderAt!);
+    }
+    return todo.dueAt;
   }
 
   static String _todoReminderSubtitle(

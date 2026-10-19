@@ -409,7 +409,7 @@ void main() {
     expect(detail, contains('flexRuleEnabled = habit.hasFlexRule'));
     expect(detail, contains('clearFlexRule: !shouldUseFlex'));
     expect(detail, contains('localizedFlexPeriodGoalLabel(habit)'));
-    expect(detail, contains('habit.flexProgressForDate(DateTime.now())'));
+    expect(detail, contains('habit.flexProgressForDate(AppClock.now())'));
     expect(detail, contains('localizedHabitCountForDate(habit, d)'));
     expect(detail, contains('_localizedHabitStreakUnit(habit)'));
     expect(detail, contains("'habit.flex.period_target'"));
@@ -417,7 +417,7 @@ void main() {
     expect(detail, contains("I18n.tr('habit.flex.monthly_goal_prefix')"));
 
     expect(provider, contains('_recalcFlexStreak'));
-    expect(provider, contains('h.periodBoundsForDate(DateTime.now())'));
+    expect(provider, contains('h.periodBoundsForDate(AppClock.now())'));
     expect(provider, contains('h.previousPeriodBounds(bounds)'));
 
     expect(zh, contains('"habitFlexWeekly": "每周目标"'));

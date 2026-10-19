@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -64,6 +65,7 @@ class _CourseScheduleScreenState extends State<CourseScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<CourseProvider>();
     final settings = provider.settings;
     final week = provider.viewingWeek;
@@ -114,7 +116,9 @@ class _CourseScheduleScreenState extends State<CourseScheduleScreen> {
                 ? const BoxConstraints.tightFor(width: 40, height: 40)
                 : null,
             padding: compactToolbar ? EdgeInsets.zero : null,
-            onPressed: () => provider.setViewingWeek(provider.currentWeek),
+            onPressed: () => provider.setViewingWeek(
+              provider.settings.weekOf(AppClock.now()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -230,8 +234,9 @@ class _ScheduleGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final monday = settings.termStart.add(Duration(days: (week - 1) * 7));
-    final today = DateTime.now();
+    final today = AppClock.now();
 
     const sectionH = 56.0;
     const timeW = 34.0;

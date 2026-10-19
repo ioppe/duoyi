@@ -45,6 +45,9 @@ class LocalTimezoneResolver {
 
   static bool _initialized = false;
   static String _currentIana = defaultIana;
+  static final ValueNotifier<String> timezoneListenable = ValueNotifier(
+    defaultIana,
+  );
 
   /// 解析出的 IANA 名，例如 `Asia/Shanghai`。
   static String get currentIana => _currentIana;
@@ -69,6 +72,7 @@ class LocalTimezoneResolver {
   /// 用于 `AppLifecycleState.resumed` 时对比缓存值，若变化则触发
   /// `ReminderScheduler.resyncAll`。
   static Future<String> refresh() async {
+    if (!_initialized) tzdata.initializeTimeZones();
     final name = await _resolveIanaName();
     _setLocation(name);
     return _currentIana;
@@ -85,7 +89,7 @@ class LocalTimezoneResolver {
       _initialized = true;
       return;
     }
-    final next = _canResolve(name) && !_isUtcLike(name) ? name : defaultIana;
+    final next = _canResolve(name) ? name : defaultIana;
     await p.setString(modePreferenceKey, fixedValue);
     await p.setString(preferenceKey, next);
     _setLocation(next);
@@ -101,11 +105,6 @@ class LocalTimezoneResolver {
           saved != null &&
           saved.isNotEmpty &&
           _canResolve(saved)) {
-        if (_isUtcLike(saved)) {
-          _log('固定应用时区为 UTC 类时区，改用 $defaultIana');
-          await p.setString(preferenceKey, defaultIana);
-          return defaultIana;
-        }
         return saved;
       }
 
@@ -118,7 +117,9 @@ class LocalTimezoneResolver {
         return defaultIana;
       }
 
-      final offsetName = _offsetBasedIanaName(DateTime.now().timeZoneOffset);
+      final offset = DateTime.now().timeZoneOffset;
+      if (offset == Duration.zero) return 'UTC';
+      final offsetName = _offsetBasedIanaName(offset);
       if (offsetName != null) {
         _log('系统时区不可用，按手机 offset 推断为 $offsetName');
         return offsetName;
@@ -133,11 +134,15 @@ class LocalTimezoneResolver {
   }
 
   static Future<String?> _readSystemIanaName() async {
+    String? utcCandidate;
     final debugReader = debugSystemTimeZoneReader;
     if (debugReader != null) {
       try {
         final debugName = await debugReader();
         final normalizedDebugName = _normalizeSystemName(debugName);
+        if (normalizedDebugName != null && _canResolve(normalizedDebugName)) {
+          utcCandidate = normalizedDebugName;
+        }
         if (_isUsableIana(normalizedDebugName)) return normalizedDebugName;
         if (debugName != null) {
           _log('测试注入的系统时区不可用: "$debugName"');
@@ -149,6 +154,9 @@ class LocalTimezoneResolver {
       try {
         final name = await FlutterTimezone.getLocalTimezone();
         final normalizedName = _normalizeSystemName(name);
+        if (normalizedName != null && _canResolve(normalizedName)) {
+          utcCandidate = normalizedName;
+        }
         if (_isUsableIana(normalizedName)) return normalizedName;
         _log('flutter_timezone 返回不可用时区: "$name"');
       } catch (e) {
@@ -158,6 +166,7 @@ class LocalTimezoneResolver {
 
     final nativeName = await _readNativeSystemIanaName();
     if (nativeName != null) return nativeName;
+    if (utcCandidate != null) return utcCandidate;
 
     final dartName = DateTime.now().timeZoneName;
     final normalizedDartName = _normalizeSystemName(dartName);
@@ -248,6 +257,7 @@ class LocalTimezoneResolver {
   }
 
   static void _setLocation(String name) {
+    _initialized = true;
     try {
       tz.setLocalLocation(tz.getLocation(name));
       _currentIana = name;
@@ -256,6 +266,9 @@ class LocalTimezoneResolver {
       final fallback = tz.getLocation(defaultIana);
       tz.setLocalLocation(fallback);
       _currentIana = defaultIana;
+    }
+    if (timezoneListenable.value != _currentIana) {
+      timezoneListenable.value = _currentIana;
     }
   }
 

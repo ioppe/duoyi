@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -47,12 +48,9 @@ Future<void> showPomodoroSessionEditor(
   final durationCtrl = TextEditingController(
     text: (session.durationSeconds ~/ 60).clamp(1, 24 * 60).toString(),
   );
-  var date = DateTime(
-    session.startTime.year,
-    session.startTime.month,
-    session.startTime.day,
-  );
-  var startTime = TimeOfDay.fromDateTime(session.startTime);
+  final localStart = AppClock.toLocal(session.startTime);
+  var date = AppClock.dateOnly(localStart);
+  var startTime = TimeOfDay.fromDateTime(localStart);
   var selectedType = session.type;
   var selectedSound = session.whiteNoiseSound.trim().isEmpty
       ? FocusSoundCatalog.none
@@ -61,7 +59,7 @@ Future<void> showPomodoroSessionEditor(
       ? session.focusRoomId
       : null;
 
-  DateTime combineStart() => DateTime(
+  DateTime combineStart() => AppClock.date(
     date.year,
     date.month,
     date.day,
@@ -74,6 +72,7 @@ Future<void> showPomodoroSessionEditor(
       context: context,
       builder: (sheetCtx) => StatefulBuilder(
         builder: (sheetCtx, setSt) {
+          AppClock.watch(sheetCtx);
           Future<void> previewSound(String value) async {
             setSt(() => selectedSound = value);
             if (value == FocusSoundCatalog.none) {
@@ -109,8 +108,8 @@ Future<void> showPomodoroSessionEditor(
             }
             final start = combineStart();
             final next = session.copyWith(
-              startTime: start,
-              endTime: start.add(Duration(minutes: minutes)),
+              startTime: start.toUtc(),
+              endTime: start.add(Duration(minutes: minutes)).toUtc(),
               durationSeconds: minutes * 60,
               type: selectedType,
               taskName: taskCtrl.text.trim().isEmpty
@@ -2476,7 +2475,7 @@ class _FocusRoomTabState extends State<_FocusRoomTab>
   }
 
   String _formatShortDateTime(DateTime value) {
-    final local = value.toLocal();
+    final local = AppClock.toLocal(value);
     return '${local.month}/${local.day} '
         '${local.hour.toString().padLeft(2, '0')}:'
         '${local.minute.toString().padLeft(2, '0')}';
@@ -3486,7 +3485,7 @@ class _FocusFriendTile extends StatelessWidget {
   }
 
   String _formatFriendTime(DateTime value) {
-    final local = value.toLocal();
+    final local = AppClock.toLocal(value);
     return '${local.month}/${local.day} '
         '${local.hour.toString().padLeft(2, '0')}:'
         '${local.minute.toString().padLeft(2, '0')}';
@@ -4126,6 +4125,7 @@ class _SoundOptionTile extends StatelessWidget {
 class _HistoryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     context.select<PomodoroProvider, int>(
       (provider) => provider.persistedRevision,
     );
@@ -4140,16 +4140,16 @@ class _HistoryTab extends StatelessWidget {
     }
 
     // Weekly chart data - last 7 days
-    final now = DateTime.now();
+    final now = AppClock.today();
     final chartData = List.generate(7, (i) {
       final d = now.subtract(Duration(days: 6 - i));
-      final start = DateTime(d.year, d.month, d.day);
-      final end = start.add(const Duration(days: 1));
+      final start = AppClock.date(d.year, d.month, d.day);
+      final end = AppClock.date(d.year, d.month, d.day + 1);
       return provider.sessions
               .where(
                 (s) =>
                     s.type == PomodoroType.focus &&
-                    s.startTime.isAfter(start) &&
+                    !s.startTime.isBefore(start) &&
                     s.startTime.isBefore(end),
               )
               .fold(0, (sum, s) => sum + s.durationSeconds) ~/
@@ -4332,8 +4332,8 @@ class _HistoryTab extends StatelessWidget {
   ) {
     final map = <String, List<PomodoroSession>>{};
     for (final s in sessions) {
-      final key =
-          '${s.startTime.year}-${s.startTime.month}月${s.startTime.day}日';
+      final local = AppClock.toLocal(s.startTime);
+      final key = '${local.year}-${local.month}月${local.day}日';
       map.putIfAbsent(key, () => []).add(s);
     }
     return map;

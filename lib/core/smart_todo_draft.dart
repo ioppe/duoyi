@@ -7,6 +7,7 @@ import '../models/goal.dart'
         ReminderRuleType;
 import '../models/recurrence.dart';
 import '../models/todo.dart';
+import 'app_clock.dart';
 import 'smart_date_parser.dart';
 
 class SmartTodoDraft {
@@ -68,7 +69,7 @@ class SmartTodoDraftBuilder {
     ReminderKind defaultReminderKind = ReminderKind.push,
   }) {
     final trimmed = _normalizeSpaces(input);
-    final fallbackNow = now ?? DateTime.now();
+    final fallbackNow = now == null ? AppClock.now() : AppClock.toLocal(now);
     final recurrence = _parseRecurrence(trimmed, fallbackNow);
     final parsed = SmartDateParser.parse(
       recurrence.dateInput ?? trimmed,
@@ -80,6 +81,8 @@ class SmartTodoDraftBuilder {
         title: recurrence.isActive
             ? _stripDatePhrases(trimmed, recurrence.matchedTexts)
             : trimmed,
+        // 解析失败时回退到当前应用时区时刻（保留时分），与成功路径的
+        // `date` 语义一致，调用方可直接用作提醒/日程起点。
         date: fallbackNow,
         reminder: const ReminderConfig.disabled(),
         reminderPlan: const ReminderPlan.disabled(),
@@ -91,7 +94,16 @@ class SmartTodoDraftBuilder {
     if (recurrence.isActive &&
         parsed.hasTimeOfDay &&
         parsedDate.isBefore(fallbackNow)) {
-      parsedDate = recurrence.rule.nextAfter(parsedDate) ?? parsedDate;
+      final next = recurrence.rule.nextAfter(AppClock.dateOnly(parsedDate));
+      if (next != null) {
+        parsedDate = AppClock.date(
+          next.year,
+          next.month,
+          next.day,
+          parsedDate.hour,
+          parsedDate.minute,
+        );
+      }
     }
     if (!recurrence.isActive && parsed.hasTimeOfDay) {
       parsedDate = _nudgeSameMinutePastTime(parsedDate, fallbackNow);
@@ -159,7 +171,13 @@ class SmartTodoDraftBuilder {
         parsed.hour == now.hour &&
         parsed.minute == now.minute;
     if (!sameMinute) return parsed;
-    return DateTime(now.year, now.month, now.day, now.hour, now.minute + 1);
+    return parsed.add(
+      Duration(
+        seconds: 60 - parsed.second,
+        milliseconds: -parsed.millisecond,
+        microseconds: -parsed.microsecond,
+      ),
+    );
   }
 
   static String _stripDatePhrases(String input, Iterable<String> matchedTexts) {

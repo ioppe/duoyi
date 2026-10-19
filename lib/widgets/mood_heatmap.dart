@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/i18n_date_format.dart';
 import '../models/diary_entry.dart';
 
@@ -44,10 +45,11 @@ class MoodHeatmap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final now = DateTime.now();
+    final now = AppClock.now();
     // 对齐到周一
     final thisMonday = DateTime(
       now.year,

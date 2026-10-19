@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_clock.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/time_entry.dart';
@@ -305,8 +306,8 @@ class TimeAuditProvider extends ChangeNotifier {
   }
 
   List<TimeEntry> entriesForDate(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
+    final start = AppClock.date(date.year, date.month, date.day);
+    final end = AppClock.date(date.year, date.month, date.day + 1);
     return entriesInRange(start, end);
   }
 
@@ -331,8 +332,19 @@ class TimeAuditProvider extends ChangeNotifier {
   Map<String, int> secondsByDay(DateTime start, DateTime end) {
     final result = <String, int>{};
     for (final entry in entriesInRange(start, end)) {
-      result[entry.dayKey] =
-          (result[entry.dayKey] ?? 0) + _durationWithin(entry, start, end);
+      var cursor = entry.startAt.isBefore(start) ? start : entry.startAt;
+      final clippedEnd = entry.endAt.isAfter(end) ? end : entry.endAt;
+      while (cursor.isBefore(clippedEnd)) {
+        final day = AppClock.toLocal(cursor);
+        final midnight = AppClock.date(day.year, day.month, day.day + 1);
+        final segmentEnd = midnight.isBefore(clippedEnd)
+            ? midnight
+            : clippedEnd;
+        final key = _dateKey(day);
+        result[key] =
+            (result[key] ?? 0) + segmentEnd.difference(cursor).inSeconds;
+        cursor = segmentEnd;
+      }
     }
     return result;
   }

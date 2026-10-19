@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/app_clock.dart';
 import '../core/lunar_calendar.dart';
 import 'goal.dart' show ReminderKind;
 
@@ -116,8 +117,7 @@ class Anniversary {
 
   /// 下一次(含今天)的公历日期
   DateTime get nextOccurrence {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = AppClock.today();
 
     // 单次倒数：原始日期即下一次(过去就停留)
     if (type == AnniversaryType.normal) return originDate;
@@ -163,8 +163,7 @@ class Anniversary {
 
   /// 距离下一次还剩多少天(过去返回负数)
   int get daysRemaining {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = AppClock.today();
     final next = nextOccurrence;
     final n = DateTime(next.year, next.month, next.day);
     return n.difference(today).inDays;
@@ -174,7 +173,7 @@ class Anniversary {
   int? get yearsPassed {
     if (type == AnniversaryType.normal) return null;
     if (ignoreYear) return null;
-    final now = DateTime.now();
+    final now = AppClock.now();
     int years = now.year - originDate.year;
     final thisYearOccur = DateTime(now.year, originDate.month, originDate.day);
     if (thisYearOccur.isAfter(DateTime(now.year, now.month, now.day))) {

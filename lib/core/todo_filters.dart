@@ -1,3 +1,7 @@
+import 'package:timezone/timezone.dart' as tz;
+
+import 'app_clock.dart';
+
 const Object _unset = Object();
 const String ungroupedTodoListName = '未分组';
 
@@ -68,7 +72,7 @@ List<T> filterTodos<T, Q, P>(
   required bool Function(T todo) isCompletedOf,
   required bool Function(T todo) isArchivedAfterRolloverOf,
 }) {
-  final reference = now ?? DateTime.now();
+  final reference = now ?? AppClock.now();
   final today = _dateOnly(reference);
   final next7Days = today.add(const Duration(days: 6));
 
@@ -103,12 +107,15 @@ List<T> filterTodos<T, Q, P>(
       return false;
     }
 
-    final due = dueDateOf(todo);
+    final rawDue = dueDateOf(todo);
+    final due = rawDue == null ? null : todoDateInAppZone(rawDue);
     switch (filter.due) {
       case TodoDueFilter.all:
         return true;
       case TodoDueFilter.overdue:
-        return due != null && !isCompletedOf(todo) && due.isBefore(reference);
+        return due != null &&
+            !isCompletedOf(todo) &&
+            todoDueAt(due).isBefore(reference);
       case TodoDueFilter.dueToday:
         return due != null && _dateOnly(due) == today;
       case TodoDueFilter.next7Days:
@@ -188,3 +195,39 @@ String? _normalizedFilterText(Object? value) {
 
 DateTime _dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
+
+/// Date-only deadlines float; timestamps keep their instant, while legacy
+/// offset-free times are wall times in the selected application zone.
+DateTime todoDateInAppZone(DateTime value) {
+  if (value.isUtc || value is tz.TZDateTime) return AppClock.toLocal(value);
+  if (_isDateOnly(value)) return AppClock.dateOnly(value);
+  return AppClock.date(
+    value.year,
+    value.month,
+    value.day,
+    value.hour,
+    value.minute,
+    value.second,
+    value.millisecond,
+    value.microsecond,
+  );
+}
+
+DateTime todoDueAt(DateTime value) {
+  final local = todoDateInAppZone(value);
+  return !value.isUtc && value is! tz.TZDateTime && _isDateOnly(value)
+      ? AppClock.date(local.year, local.month, local.day, 23, 59, 59, 999, 999)
+      : local;
+}
+
+bool _isDateOnly(DateTime value) =>
+    value.hour == 0 &&
+    value.minute == 0 &&
+    value.second == 0 &&
+    value.millisecond == 0 &&
+    value.microsecond == 0;
+
+String serializeTodoDueDate(DateTime value) =>
+    !value.isUtc && value is! tz.TZDateTime && _isDateOnly(value)
+    ? AppClock.dateOnly(value).toIso8601String()
+    : todoDateInAppZone(value).toUtc().toIso8601String();

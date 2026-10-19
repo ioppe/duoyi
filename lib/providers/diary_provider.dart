@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
 import '../core/domain_event_bus.dart';
 import '../models/diary_entry.dart';
 import 'cloud_sync_provider.dart';
@@ -30,7 +31,7 @@ class DiaryProvider extends ChangeNotifier {
   int get totalCount => _entries.length;
 
   int get thisMonthCount {
-    final now = DateTime.now();
+    final now = AppClock.now();
     return _entries
         .where((e) => e.date.year == now.year && e.date.month == now.month)
         .length;
@@ -43,16 +44,16 @@ class DiaryProvider extends ChangeNotifier {
     final dates = sorted.map((e) => _normalize(e.date)).toSet().toList()
       ..sort((a, b) => b.compareTo(a));
 
-    final today = _normalize(DateTime.now());
+    final today = AppClock.today();
     int streak = 0;
     DateTime cursor = today;
     if (!dates.contains(today)) {
-      cursor = today.subtract(const Duration(days: 1));
+      cursor = DateTime(today.year, today.month, today.day - 1);
       if (!dates.contains(cursor)) return 0;
     }
     while (dates.contains(cursor)) {
       streak++;
-      cursor = cursor.subtract(const Duration(days: 1));
+      cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
     }
     return streak;
   }
@@ -78,12 +79,12 @@ class DiaryProvider extends ChangeNotifier {
 
   /// 心情统计(过去 N 天)
   Map<Mood, int> moodDistribution({int days = 30}) {
-    final now = DateTime.now();
-    final cutoff = now.subtract(Duration(days: days));
+    final today = AppClock.today();
+    final cutoff = DateTime(today.year, today.month, today.day - days + 1);
     final map = <Mood, int>{};
     for (final e in _entries) {
       if (e.mood == null) continue;
-      if (e.date.isBefore(cutoff)) continue;
+      if (_normalize(e.date).isBefore(cutoff)) continue;
       map[e.mood!] = (map[e.mood!] ?? 0) + 1;
     }
     return map;

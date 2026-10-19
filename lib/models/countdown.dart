@@ -1,3 +1,5 @@
+import '../core/app_clock.dart';
+
 import 'goal.dart' show ReminderKind;
 
 int _readInt(Object? value, int fallback, {int? min, int? max}) {
@@ -46,8 +48,7 @@ class CountdownItem {
   }) : updatedAt = updatedAt ?? DateTime.now();
 
   int get daysRemaining {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = AppClock.today();
     final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
     return target.difference(today).inDays;
   }
@@ -67,7 +68,7 @@ class CountdownItem {
   };
 
   factory CountdownItem.fromJson(Map<String, dynamic> json) {
-    final fallbackDate = DateTime.now().add(const Duration(days: 1));
+    final fallbackDate = AppClock.today().add(const Duration(days: 1));
     final targetDate = _readDate(
       json['targetDate'] ?? json['date'] ?? json['originDate'],
       fallbackDate,

@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -309,6 +310,7 @@ class _GoalEditScreenState extends State<GoalEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final shareProvider = context.watch<ShareProvider?>();
     final canEditCurrentWorkspace =
         shareProvider?.canEdit(_workspaceId) ?? true;
@@ -580,7 +582,7 @@ class _GoalEditScreenState extends State<GoalEditScreen> {
 
   String _nextDispatchLabel() {
     if (_recurrence.frequency == RecurrenceFrequency.none) return '不重复';
-    final now = DateTime.now();
+    final now = AppClock.now();
     final today = DateTime(now.year, now.month, now.day);
     final effectiveStart = _goalEffectiveStartDay(
       startDate: _startDate,
@@ -1917,7 +1919,7 @@ class _DateField extends StatelessWidget {
       onTap: () async {
         final picked = await AppDatePicker.pickSolar(
           context,
-          initialDate: date ?? DateTime.now(),
+          initialDate: date ?? AppClock.now(),
           firstDate: DateTime(2000),
           lastDate: DateTime(2099, 12, 31),
           title: label,

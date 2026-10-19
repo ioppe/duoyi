@@ -10,6 +10,7 @@ import '../models/habit.dart';
 import '../models/pomodoro.dart';
 import '../models/time_entry.dart';
 import '../models/todo.dart';
+import 'app_clock.dart';
 import 'completion_visibility_policy.dart';
 
 class CalendarAggregator {
@@ -29,7 +30,7 @@ class CalendarAggregator {
     List<TimeEntry>? timeEntries,
     DateTime? now,
   }) {
-    final reference = now ?? DateTime.now();
+    final reference = now ?? AppClock.now();
     final events = <CalendarEvent>[
       ..._todoEvents(todos, colorScheme, reference),
       ..._habitEvents(habits),
@@ -60,7 +61,9 @@ class CalendarAggregator {
     return CalendarEvent(
       id: 'todo_${t.id}',
       title: t.title,
-      subtitle: t.dueDate == null ? null : '截止 ${_formatDateTime(t.dueDate!)}',
+      subtitle: t.localDueDate == null
+          ? null
+          : '截止 ${_formatDateTime(t.localDueDate!)}',
       date: anchor.date,
       endDate: _todoVisibleEndDate(t, now),
       type: CalendarEventType.todo,
@@ -88,7 +91,7 @@ class CalendarAggregator {
         case ReminderRuleType.weeklyTime:
           return _timedAnchor(t.date, hour, minute);
         case ReminderRuleType.relativeToDue:
-          final due = t.dueDate;
+          final due = t.localDueDate;
           if (due != null) {
             return _timedAnchor(
               due,
@@ -101,7 +104,7 @@ class CalendarAggregator {
         case ReminderRuleType.absolute:
           final reminderAt = t.reminderAt;
           if (reminderAt != null) return _timedAnchorFromDateTime(reminderAt);
-          return _timedAnchor(t.dueDate ?? t.date, hour, minute);
+          return _timedAnchor(t.localDueDate ?? t.date, hour, minute);
       }
     }
 
@@ -112,10 +115,14 @@ class CalendarAggregator {
 
     final legacy = t.reminder;
     if (legacy.enabled && _validClock(legacy.hour, legacy.minute)) {
-      return _timedAnchor(t.dueDate ?? t.date, legacy.hour!, legacy.minute!);
+      return _timedAnchor(
+        t.localDueDate ?? t.date,
+        legacy.hour!,
+        legacy.minute!,
+      );
     }
 
-    final due = t.dueDate;
+    final due = t.localDueDate;
     if (due != null && _hasClockTime(due)) {
       return _TodoCalendarAnchor(
         CompletionVisibilityPolicy.dateOnly(t.date),
@@ -123,7 +130,8 @@ class CalendarAggregator {
       );
     }
 
-    return _timedAnchor(t.date, t.createdAt.hour, t.createdAt.minute);
+    final created = AppClock.toLocal(t.createdAt);
+    return _timedAnchor(t.date, created.hour, created.minute);
   }
 
   static _TodoCalendarAnchor _timedAnchor(
@@ -132,7 +140,7 @@ class CalendarAggregator {
     int minute, {
     int? offsetMinutes,
   }) {
-    final base = DateTime(date.year, date.month, date.day, hour, minute);
+    final base = AppClock.date(date.year, date.month, date.day, hour, minute);
     final shifted = offsetMinutes == null
         ? base
         : base.add(Duration(minutes: offsetMinutes));
@@ -140,7 +148,8 @@ class CalendarAggregator {
   }
 
   static _TodoCalendarAnchor _timedAnchorFromDateTime(DateTime date) {
-    return _TodoCalendarAnchor(date, TimeOfDay.fromDateTime(date));
+    final local = AppClock.toLocal(date);
+    return _TodoCalendarAnchor(local, TimeOfDay.fromDateTime(local));
   }
 
   static bool _validClock(int? hour, int? minute) {
@@ -163,7 +172,7 @@ class CalendarAggregator {
   static DateTime? _todoVisibleEndDate(TodoItem todo, DateTime now) {
     final start = CompletionVisibilityPolicy.dateOnly(todo.date);
     final today = CompletionVisibilityPolicy.dateOnly(now);
-    final due = todo.dueDate;
+    final due = todo.localDueDate;
     if (due == null) {
       if (!todo.isCompleted) {
         if (today.isBefore(start)) return null;
@@ -171,7 +180,9 @@ class CalendarAggregator {
       }
       final completed = todo.completedAt == null
           ? start
-          : CompletionVisibilityPolicy.dateOnly(todo.completedAt!);
+          : CompletionVisibilityPolicy.dateOnly(
+              AppClock.toLocal(todo.completedAt!),
+            );
       final visibleEnd = completed.isBefore(start) ? start : completed;
       return _endOfLocalDay(visibleEnd);
     }
@@ -216,13 +227,13 @@ class CalendarAggregator {
             id: 'pomodoro_${s.id}',
             title: s.taskName ?? '专注 ${s.durationSeconds ~/ 60} 分钟',
             subtitle: _formatDuration(s.durationSeconds),
-            date: s.startTime,
-            endDate: s.endTime,
+            date: AppClock.toLocal(s.startTime),
+            endDate: AppClock.toLocal(s.endTime),
             type: CalendarEventType.pomodoro,
             color: const Color(0xFFE53935),
             isCompleted: true,
             sourceId: s.id,
-            time: TimeOfDay.fromDateTime(s.startTime),
+            time: TimeOfDay.fromDateTime(AppClock.toLocal(s.startTime)),
           ),
     ];
   }
@@ -235,12 +246,12 @@ class CalendarAggregator {
           title: entry.title,
           subtitle:
               '${entry.category.label} · ${_formatDuration(entry.durationSeconds)}',
-          date: entry.startAt,
-          endDate: entry.endAt,
+          date: AppClock.toLocal(entry.startAt),
+          endDate: AppClock.toLocal(entry.endAt),
           type: CalendarEventType.timeEntry,
           color: _timeEntryColor(entry.category),
           sourceId: entry.id,
-          time: TimeOfDay.fromDateTime(entry.startAt),
+          time: TimeOfDay.fromDateTime(AppClock.toLocal(entry.startAt)),
         ),
     ];
   }
@@ -292,11 +303,25 @@ class CalendarAggregator {
       for (final week in course.weeks) {
         final dayOffset = (week - 1) * 7 + (course.weekday - 1);
         final date = settings.termStart.add(Duration(days: dayOffset));
-        final start = settings.sectionStart(date, course.startSection);
-        final end = settings.sectionEnd(
+        final wallStart = settings.sectionStart(date, course.startSection);
+        final wallEnd = settings.sectionEnd(
           date,
           course.startSection,
           course.sectionCount,
+        );
+        final start = AppClock.date(
+          wallStart.year,
+          wallStart.month,
+          wallStart.day,
+          wallStart.hour,
+          wallStart.minute,
+        );
+        final end = AppClock.date(
+          wallEnd.year,
+          wallEnd.month,
+          wallEnd.day,
+          wallEnd.hour,
+          wallEnd.minute,
         );
         events.add(
           CalendarEvent(
@@ -401,7 +426,7 @@ class CalendarAggregator {
   static DateTime _startOf(CalendarEvent event) {
     final time = event.time;
     if (time == null) return event.date;
-    return DateTime(
+    return AppClock.date(
       event.date.year,
       event.date.month,
       event.date.day,
@@ -434,7 +459,7 @@ class CalendarAggregator {
   }
 
   static DateTime _endOfLocalDay(DateTime day) =>
-      DateTime(day.year, day.month, day.day, 23, 59, 59, 999, 999);
+      AppClock.date(day.year, day.month, day.day, 23, 59, 59, 999, 999);
 
   static Color _timeEntryColor(TimeEntryCategory category) =>
       switch (category) {

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/app_clock.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/anniversary_provider.dart';
@@ -44,6 +45,7 @@ class CalendarDayAgenda extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final s = context.watch<ThemeProvider>().brand.strings;
     final anniversaries = context.watch<AnniversaryProvider>();
     final courses = context.watch<CourseProvider>();
@@ -770,7 +772,9 @@ class _DraggableEventCardState extends State<_DraggableEventCard> {
     final matches = provider.todos.where((todo) => todo.id == id);
     if (matches.isEmpty) return;
     final todo = matches.first;
-    final base = todo.dueDate ?? todo.date;
+    final base =
+        todo.localDueDate ??
+        AppClock.date(event.date.year, event.date.month, event.date.day);
     final next = _clampToDay(base.add(delta), event.date);
     await provider.updateTodo(todo.id, todo.copyWith(dueDate: next));
     if (!context.mounted) return;
@@ -789,7 +793,10 @@ class _DraggableEventCardState extends State<_DraggableEventCard> {
     if (matches.isEmpty) return;
     final entry = matches.first;
     final duration = entry.endAt.difference(entry.startAt);
-    final next = _clampToDay(entry.startAt.add(delta), event.date);
+    final next = _clampToDay(
+      AppClock.toLocal(entry.startAt).add(delta),
+      event.date,
+    );
     await provider.update(
       entry.copyWith(startAt: next, endAt: next.add(duration)),
     );
@@ -798,11 +805,17 @@ class _DraggableEventCardState extends State<_DraggableEventCard> {
   }
 
   DateTime _clampToDay(DateTime value, DateTime day) {
-    final start = DateTime(day.year, day.month, day.day);
-    final end = DateTime(day.year, day.month, day.day, 23, 45);
+    final start = AppClock.date(day.year, day.month, day.day);
+    final end = AppClock.date(day.year, day.month, day.day, 23, 45);
     if (value.isBefore(start)) return start;
     if (value.isAfter(end)) return end;
-    return DateTime(day.year, day.month, day.day, value.hour, value.minute);
+    return AppClock.date(
+      day.year,
+      day.month,
+      day.day,
+      value.hour,
+      value.minute,
+    );
   }
 
   void _showDragResult(BuildContext context, DateTime value) {
@@ -820,7 +833,7 @@ TodoVisualState _eventVisualState(CalendarEvent event) {
   if (event.type != CalendarEventType.todo) return TodoVisualState.normal;
   if (event.isCompleted) return TodoVisualState.completed;
   final dueAt = event.endDate;
-  if (dueAt != null && dueAt.isBefore(DateTime.now())) {
+  if (dueAt != null && dueAt.isBefore(AppClock.now())) {
     return TodoVisualState.overdue;
   }
   return TodoVisualState.normal;
@@ -916,27 +929,23 @@ class _CalendarAgendaStatusBadge extends StatelessWidget {
 DateTime _eventStartOnDay(CalendarEvent event, DateTime day) {
   final dayStart = _dateOnly(day);
   final eventDay = _dateOnly(event.date);
-  if (dayStart.isAfter(eventDay)) return dayStart;
+  if (dayStart.isAfter(eventDay)) {
+    return AppClock.date(day.year, day.month, day.day);
+  }
   final time = event.time;
-  if (time == null) return dayStart;
-  return DateTime(day.year, day.month, day.day, time.hour, time.minute);
+  if (time == null) return AppClock.date(day.year, day.month, day.day);
+  return AppClock.date(day.year, day.month, day.day, time.hour, time.minute);
 }
 
 DateTime _eventEndOnDay(CalendarEvent event, DateTime day) {
   final start = _eventStartOnDay(event, day);
-  final dayEnd = _dateOnly(day).add(const Duration(days: 1));
+  final dayEnd = AppClock.date(day.year, day.month, day.day + 1);
   final endDate = event.endDate;
   if (endDate == null || !endDate.isAfter(start)) {
     final fallback = start.add(const Duration(hours: 1));
     return fallback.isAfter(dayEnd) ? dayEnd : fallback;
   }
-  final end = DateTime(
-    endDate.year,
-    endDate.month,
-    endDate.day,
-    endDate.hour,
-    endDate.minute,
-  );
+  final end = endDate;
   if (end.isAfter(dayEnd)) return dayEnd;
   if (end.isBefore(start)) {
     final fallback = start.add(const Duration(hours: 1));

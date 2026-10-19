@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'app_clock.dart';
+
 enum ReportCrossAnalysisBucket { day, month }
 
 enum ReportCrossBucket { day, month }
@@ -516,8 +518,11 @@ class ReportCrossAnalysis {
           end: item.end,
           habitCheckIns: habitCompletions
               .where(
-                (record) =>
-                    _isInRange(record.completedAt, item.start, item.end),
+                (record) => _isFloatingDateInRange(
+                  record.completedAt,
+                  item.start,
+                  item.end,
+                ),
               )
               .length,
           completedTodos: completions
@@ -554,7 +559,11 @@ class ReportCrossAnalysis {
           end: item.end,
           diaryEntries: diaryEntries
               .where(
-                (record) => _isInRange(record.writtenAt, item.start, item.end),
+                (record) => _isFloatingDateInRange(
+                  record.writtenAt,
+                  item.start,
+                  item.end,
+                ),
               )
               .length,
           focusMinutes:
@@ -744,7 +753,7 @@ class ReportCrossAnalysis {
     for (
       var cursor = normalizedStart;
       !cursor.isAfter(normalizedEnd);
-      cursor = cursor.add(const Duration(days: 1))
+      cursor = DateTime(cursor.year, cursor.month, cursor.day + 1)
     ) {
       result.add(
         _ReportBucket(
@@ -758,8 +767,20 @@ class ReportCrossAnalysis {
   }
 
   static bool _isInRange(DateTime value, DateTime start, DateTime end) {
+    final startInstant = AppClock.date(start.year, start.month, start.day);
+    final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
+    return !value.isBefore(startInstant) && value.isBefore(endExclusive);
+  }
+
+  static bool _isFloatingDateInRange(
+    DateTime value,
+    DateTime start,
+    DateTime end,
+  ) {
+    final day = AppClock.dateOnly(value);
+    final startDate = AppClock.dateOnly(start);
     final endExclusive = DateTime(end.year, end.month, end.day + 1);
-    return !value.isBefore(start) && value.isBefore(endExclusive);
+    return !day.isBefore(startDate) && day.isBefore(endExclusive);
   }
 
   static double? _pearson(List<double> xs, List<double> ys) {

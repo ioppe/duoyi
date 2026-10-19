@@ -5,6 +5,7 @@ import '../models/todo.dart';
 import '../providers/goal_provider.dart';
 import '../providers/todo_provider.dart';
 import '../services/recurrence_engine.dart';
+import 'app_clock.dart';
 import 'design_tokens.dart';
 
 /// 一条 Todo 在 UI 上呈现的"语义可视状态"。
@@ -40,7 +41,7 @@ class CompletionVisibilityPolicy {
     final today = dateOnly(now);
     final start = dateOnly(t.date);
     if (today.isBefore(start)) return false;
-    final due = t.dueDate;
+    final due = t.localDueDate;
     if (due == null) return true;
     final dueDay = dateOnly(due);
     if (today.isAfter(dueDay)) return false;
@@ -50,15 +51,15 @@ class CompletionVisibilityPolicy {
   /// 把一条 Todo 映射到它当前的可视语义状态。
   ///
   /// 优先级：`archived` > `completed` > `overdue` > `dueSoon` > `normal`。
-  /// `now` 用于计算"过期 / 临期"，缺省使用 `DateTime.now()`。
+  /// `now` 用于计算"过期 / 临期"，缺省使用应用时区的当前时刻。
   static TodoVisualState visualState(TodoItem t, {DateTime? now}) {
     if (t.isArchivedAfterRollover) return TodoVisualState.archived;
     if (t.isCompleted) return TodoVisualState.completed;
 
-    final due = t.dueDate;
+    final due = t.dueAt;
     if (due == null) return TodoVisualState.normal;
 
-    final reference = now ?? DateTime.now();
+    final reference = now ?? AppClock.now();
     if (due.isBefore(reference)) return TodoVisualState.overdue;
 
     final delta = due.difference(reference);

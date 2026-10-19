@@ -17,6 +17,8 @@
 /// - 仅做"足够好"的启发式匹配；复杂场景建议手动选择日期。
 library;
 
+import 'app_clock.dart';
+
 class SmartDateParseResult {
   /// 解析得到的日期；时间未指定时为 null。
   final DateTime? dateTime;
@@ -52,7 +54,7 @@ class SmartDateParser {
   /// 解析 [input] 中的中文日期/时间表达。
   static SmartDateParseResult parse(String input, {DateTime? now}) {
     if (input.trim().isEmpty) return SmartDateParseResult.empty;
-    final base = now ?? DateTime.now();
+    final base = now == null ? AppClock.now() : AppClock.toLocal(now);
     final today = DateTime(base.year, base.month, base.day);
 
     final relative = _relativeDate(input, today);
@@ -97,6 +99,9 @@ class SmartDateParser {
     return SmartDateParseResult.empty;
   }
 
+  static DateTime _addDays(DateTime date, int days) =>
+      DateTime(date.year, date.month, date.day + days);
+
   static SmartDateParseResult _relativeDate(String input, DateTime today) {
     final relativePattern = RegExp(
       r'([0-9]{1,3}|[零一二两三四五六七八九十]{1,4})\s*'
@@ -109,8 +114,8 @@ class SmartDateParser {
     if (amount <= 0) return SmartDateParseResult.empty;
     final unit = relativeMatch.group(2)!;
     final dateBase = switch (unit) {
-      '天' || '日' => today.add(Duration(days: amount)),
-      '周' || '星期' => today.add(Duration(days: amount * 7)),
+      '天' || '日' => _addDays(today, amount),
+      '周' || '星期' => _addDays(today, amount * 7),
       '个月' || '月' => _addMonthsClamped(today, amount),
       _ => today,
     };
@@ -152,9 +157,7 @@ class SmartDateParser {
     if (match == null) return SmartDateParseResult.empty;
 
     final word = match.group(1)!;
-    final dateBase = word.startsWith('明')
-        ? today.add(const Duration(days: 1))
-        : today;
+    final dateBase = word.startsWith('明') ? _addDays(today, 1) : today;
     final periodWord = word.endsWith('早')
         ? '早上'
         : word.endsWith('晚')
@@ -308,14 +311,13 @@ class SmartDateParser {
     DateTime today, {
     required int weeksFromThisWeek,
   }) {
-    final currentWeekSaturday = today.add(
-      Duration(days: DateTime.saturday - today.weekday),
+    final currentWeekSaturday = _addDays(
+      today,
+      DateTime.saturday - today.weekday,
     );
-    var candidate = currentWeekSaturday.add(
-      Duration(days: weeksFromThisWeek * 7),
-    );
+    var candidate = _addDays(currentWeekSaturday, weeksFromThisWeek * 7);
     if (weeksFromThisWeek == 0 && candidate.isBefore(today)) {
-      candidate = candidate.add(const Duration(days: 7));
+      candidate = _addDays(candidate, 7);
     }
     return DateTime(candidate.year, candidate.month, candidate.day);
   }
@@ -340,8 +342,8 @@ class SmartDateParser {
     if (amount <= 0) return SmartDateParseResult.empty;
     final unit = relativeMatch.group(2)!.toLowerCase();
     final dateBase = switch (unit) {
-      'day' || 'days' => today.add(Duration(days: amount)),
-      'week' || 'weeks' => today.add(Duration(days: amount * 7)),
+      'day' || 'days' => _addDays(today, amount),
+      'week' || 'weeks' => _addDays(today, amount * 7),
       'month' || 'months' => _addMonthsClamped(today, amount),
       _ => today,
     };
@@ -628,7 +630,13 @@ class SmartDateParser {
       }
     }
 
-    return DateTime(dateBase.year, dateBase.month, dateBase.day, hour, minute);
+    return AppClock.date(
+      dateBase.year,
+      dateBase.month,
+      dateBase.day,
+      hour,
+      minute,
+    );
   }
 
   static DateTime? _buildEnglishDateTime(
@@ -663,7 +671,13 @@ class SmartDateParser {
         hour = 0;
       }
     }
-    return DateTime(dateBase.year, dateBase.month, dateBase.day, hour, minute);
+    return AppClock.date(
+      dateBase.year,
+      dateBase.month,
+      dateBase.day,
+      hour,
+      minute,
+    );
   }
 
   /// 将日期词组合解析为具体 DateTime（无时间）。
@@ -691,39 +705,37 @@ class SmartDateParser {
       // 下周一 = 下周一（=本周日 + 1） + (target - 1)
       // 下下周一 = 下下周一 + (target - 1)
       if (dayWord == '本周') {
-        return today.add(Duration(days: targetWeekday - currentWeekday));
+        return _addDays(today, targetWeekday - currentWeekday);
       }
       if (dayWord == '下周') {
         // 下周一的偏移 = 8 - currentWeekday（本周日是 7-currentWeekday，再 +1）
         final mondayNextWeek = 8 - currentWeekday;
-        return today.add(Duration(days: mondayNextWeek + targetWeekday - 1));
+        return _addDays(today, mondayNextWeek + targetWeekday - 1);
       }
       if (dayWord == '下下周') {
         final mondayNextNextWeek = 8 - currentWeekday + 7;
-        return today.add(
-          Duration(days: mondayNextNextWeek + targetWeekday - 1),
-        );
+        return _addDays(today, mondayNextNextWeek + targetWeekday - 1);
       }
       // 无 dayWord 前缀的孤立"周一" → 取最近的下一个周X
       var diff = targetWeekday - currentWeekday;
       if (diff <= 0) diff += 7;
-      return today.add(Duration(days: diff));
+      return _addDays(today, diff);
     }
 
     switch (dayWord) {
       case '今天':
         return today;
       case '明天':
-        return today.add(const Duration(days: 1));
+        return _addDays(today, 1);
       case '后天':
-        return today.add(const Duration(days: 2));
+        return _addDays(today, 2);
       case '大后天':
-        return today.add(const Duration(days: 3));
+        return _addDays(today, 3);
       case '本周':
       case '下周':
-        return today.add(Duration(days: 8 - today.weekday));
+        return _addDays(today, 8 - today.weekday);
       case '下下周':
-        return today.add(Duration(days: 15 - today.weekday));
+        return _addDays(today, 15 - today.weekday);
     }
     return null;
   }
@@ -735,7 +747,7 @@ class SmartDateParser {
       case 'tonight':
         return today;
       case 'tomorrow':
-        return today.add(const Duration(days: 1));
+        return _addDays(today, 1);
     }
 
     final parts = normalized.split(' ');
@@ -754,15 +766,15 @@ class SmartDateParser {
     if (targetWeekday == null) return null;
     final currentWeekday = today.weekday;
     if (prefix == 'this') {
-      return today.add(Duration(days: targetWeekday - currentWeekday));
+      return _addDays(today, targetWeekday - currentWeekday);
     }
     if (prefix == 'next') {
       final mondayNextWeek = 8 - currentWeekday;
-      return today.add(Duration(days: mondayNextWeek + targetWeekday - 1));
+      return _addDays(today, mondayNextWeek + targetWeekday - 1);
     }
     var diff = targetWeekday - currentWeekday;
     if (diff <= 0) diff += 7;
-    return today.add(Duration(days: diff));
+    return _addDays(today, diff);
   }
 
   static int _parseAmount(String value) {

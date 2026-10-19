@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_clock.dart';
 import '../core/i18n_date_format.dart';
 import '../core/iterable_extensions.dart';
 import '../models/calendar_event.dart';
@@ -43,9 +44,10 @@ Future<void> showLocalCalendarEventEditor(
   String? workspaceId,
 }) async {
   final provider = context.read<CalendarProvider>();
+  event = event?.inAppTimeZone();
   final titleCtrl = TextEditingController(text: event?.title ?? '');
   final noteCtrl = TextEditingController(text: event?.note ?? '');
-  var startDate = _dateOnly(initialDate ?? event?.date ?? DateTime.now());
+  var startDate = _dateOnly(initialDate ?? event?.date ?? AppClock.now());
   var endDate = _localEventInclusiveEndDate(event) ?? startDate;
   var allDay = event?.time == null;
   var startTime = event?.time ?? const TimeOfDay(hour: 9, minute: 0);
@@ -58,139 +60,143 @@ Future<void> showLocalCalendarEventEditor(
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AppDialog(
-          title: Text(event == null ? '新建日程' : '编辑日程'),
-          content: AppSecondaryControlTheme(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '日程标题',
-                      prefixIcon: Icon(Icons.event_note_outlined),
+        builder: (dialogContext, setDialogState) {
+          AppClock.watch(dialogContext);
+          return AppDialog(
+            title: Text(event == null ? '新建日程' : '编辑日程'),
+            content: AppSecondaryControlTheme(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '日程标题',
+                        prefixIcon: Icon(Icons.event_note_outlined),
+                      ),
+                      autofocus: true,
                     ),
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.today_outlined),
-                    title: const Text('全天'),
-                    subtitle: const Text('适合假期、出差、生日等跨天安排'),
-                    value: allDay,
-                    onChanged: (value) => setDialogState(() => allDay = value),
-                  ),
-                  _DatePickTile(
-                    icon: Icons.event_available_outlined,
-                    title: '开始日期',
-                    value: startDate,
-                    onTap: () async {
-                      final picked = await AppDatePicker.pickSolar(
-                        dialogContext,
-                        initialDate: startDate,
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime(2100),
-                        title: '开始日期',
-                      );
-                      if (picked == null || !dialogContext.mounted) return;
-                      setDialogState(() {
-                        startDate = _dateOnly(picked);
-                        if (endDate.isBefore(startDate)) {
-                          endDate = startDate;
-                        }
-                      });
-                    },
-                  ),
-                  _DatePickTile(
-                    icon: Icons.event_busy_outlined,
-                    title: '结束日期',
-                    value: endDate,
-                    onTap: () async {
-                      final picked = await AppDatePicker.pickSolar(
-                        dialogContext,
-                        initialDate: endDate,
-                        firstDate: startDate,
-                        lastDate: DateTime(2100),
-                        title: '结束日期',
-                      );
-                      if (picked == null || !dialogContext.mounted) return;
-                      setDialogState(() => endDate = _dateOnly(picked));
-                    },
-                  ),
-                  if (!allDay) ...[
-                    _TimePickTile(
-                      icon: Icons.schedule_outlined,
-                      title: '开始时间',
-                      value: startTime,
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.today_outlined),
+                      title: const Text('全天'),
+                      subtitle: const Text('适合假期、出差、生日等跨天安排'),
+                      value: allDay,
+                      onChanged: (value) =>
+                          setDialogState(() => allDay = value),
+                    ),
+                    _DatePickTile(
+                      icon: Icons.event_available_outlined,
+                      title: '开始日期',
+                      value: startDate,
                       onTap: () async {
-                        final picked = await AppTimePicker.show(
+                        final picked = await AppDatePicker.pickSolar(
                           dialogContext,
-                          initialTime: startTime,
-                          title: '开始时间',
-                          minuteStep: 5,
+                          initialDate: startDate,
+                          firstDate: DateTime(1900),
+                          lastDate: DateTime(2100),
+                          title: '开始日期',
                         );
                         if (picked == null || !dialogContext.mounted) return;
-                        setDialogState(() => startTime = picked);
+                        setDialogState(() {
+                          startDate = _dateOnly(picked);
+                          if (endDate.isBefore(startDate)) {
+                            endDate = startDate;
+                          }
+                        });
                       },
                     ),
-                    _TimePickTile(
-                      icon: Icons.timelapse_outlined,
-                      title: '结束时间',
-                      value: endTime,
+                    _DatePickTile(
+                      icon: Icons.event_busy_outlined,
+                      title: '结束日期',
+                      value: endDate,
                       onTap: () async {
-                        final picked = await AppTimePicker.show(
+                        final picked = await AppDatePicker.pickSolar(
                           dialogContext,
-                          initialTime: endTime,
-                          title: '结束时间',
-                          minuteStep: 5,
+                          initialDate: endDate,
+                          firstDate: startDate,
+                          lastDate: DateTime(2100),
+                          title: '结束日期',
                         );
                         if (picked == null || !dialogContext.mounted) return;
-                        setDialogState(() => endTime = picked);
+                        setDialogState(() => endDate = _dateOnly(picked));
                       },
+                    ),
+                    if (!allDay) ...[
+                      _TimePickTile(
+                        icon: Icons.schedule_outlined,
+                        title: '开始时间',
+                        value: startTime,
+                        onTap: () async {
+                          final picked = await AppTimePicker.show(
+                            dialogContext,
+                            initialTime: startTime,
+                            title: '开始时间',
+                            minuteStep: 5,
+                          );
+                          if (picked == null || !dialogContext.mounted) return;
+                          setDialogState(() => startTime = picked);
+                        },
+                      ),
+                      _TimePickTile(
+                        icon: Icons.timelapse_outlined,
+                        title: '结束时间',
+                        value: endTime,
+                        onTap: () async {
+                          final picked = await AppTimePicker.show(
+                            dialogContext,
+                            initialTime: endTime,
+                            title: '结束时间',
+                            minuteStep: 5,
+                          );
+                          if (picked == null || !dialogContext.mounted) return;
+                          setDialogState(() => endTime = picked);
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final option in _localEventColors)
+                            _ColorChoice(
+                              color: option,
+                              selected: color == option,
+                              onTap: () => setDialogState(() => color = option),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: noteCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '备注',
+                        prefixIcon: Icon(Icons.notes_outlined),
+                      ),
+                      maxLines: 2,
                     ),
                   ],
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final option in _localEventColors)
-                          _ColorChoice(
-                            color: option,
-                            selected: color == option,
-                            onTap: () => setDialogState(() => color = option),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: noteCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '备注',
-                      prefixIcon: Icon(Icons.notes_outlined),
-                    ),
-                    maxLines: 2,
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('保存'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
       ),
     );
     if (saved != true || !context.mounted) return;
@@ -237,6 +243,8 @@ class CalendarEventSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
+    final event = this.event.inAppTimeZone();
     final cs = Theme.of(context).colorScheme;
     return AppModalSheet(
       title: event.title,
@@ -876,18 +884,19 @@ class CalendarEventSheet extends StatelessWidget {
     final entry = provider.entries.where((e) => e.id == sourceId).firstOrNull;
     if (entry == null) return;
 
+    final localStart = AppClock.toLocal(entry.startAt);
     final picked = await AppTimePicker.show(
       context,
-      initialTime: TimeOfDay.fromDateTime(entry.startAt),
+      initialTime: TimeOfDay.fromDateTime(localStart),
       title: '调整开始时间',
       subtitle: '保留当前日期和时长，自动更新结束时间',
     );
     if (picked == null || !context.mounted) return;
 
-    final startAt = DateTime(
-      entry.startAt.year,
-      entry.startAt.month,
-      entry.startAt.day,
+    final startAt = AppClock.date(
+      localStart.year,
+      localStart.month,
+      localStart.day,
       picked.hour,
       picked.minute,
     );
@@ -905,7 +914,7 @@ class CalendarEventSheet extends StatelessWidget {
     final todo = provider.todos.where((t) => t.id == sourceId).firstOrNull;
     if (todo == null) return;
 
-    final base = todo.dueDate ?? todo.date;
+    final base = todo.localDueDate ?? todo.date;
     final picked = await AppTimePicker.show(
       context,
       initialTime: TimeOfDay.fromDateTime(base),
@@ -914,7 +923,7 @@ class CalendarEventSheet extends StatelessWidget {
     );
     if (picked == null || !context.mounted) return;
 
-    final dueDate = DateTime(
+    final dueDate = AppClock.date(
       todo.date.year,
       todo.date.month,
       todo.date.day,
@@ -1038,7 +1047,13 @@ class CalendarEventSheet extends StatelessWidget {
   }
 
   DateTime _sameTime(DateTime date, DateTime time) {
-    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    return AppClock.date(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
   }
 
   String _timeText(CalendarEvent event) {
@@ -1211,14 +1226,14 @@ _LocalEventTimeRange _normalizeLocalEventTime({
       end: endDate.add(const Duration(days: 1)),
     );
   }
-  final start = DateTime(
+  final start = AppClock.date(
     startDate.year,
     startDate.month,
     startDate.day,
     startTime.hour,
     startTime.minute,
   );
-  var end = DateTime(
+  var end = AppClock.date(
     endDate.year,
     endDate.month,
     endDate.day,

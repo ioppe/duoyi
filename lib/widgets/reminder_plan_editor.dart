@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 
 import '../core/design_tokens.dart';
@@ -42,6 +43,7 @@ class ReminderPlanEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final rules = plan.rules;
     final cs = Theme.of(context).colorScheme;
     return Column(
@@ -121,7 +123,7 @@ class ReminderPlanEditor extends StatelessWidget {
       minute: defaultTime.minute,
       fullScreen: allowAlarm && defaultKind == ReminderKind.alarm,
       weekdays: type == ReminderRuleType.weeklyTime
-          ? [DateTime.now().weekday]
+          ? [AppClock.now().weekday]
           : const <int>[],
     );
   }
@@ -367,7 +369,7 @@ class _ReminderRuleSheetState extends State<_ReminderRuleSheet> {
     _offsetMinutes = r?.offsetMinutes ?? -30;
     _weekdays = r?.weekdays.isNotEmpty == true
         ? [...r!.weekdays]
-        : [DateTime.now().weekday];
+        : [AppClock.now().weekday];
     _vibrate = r?.vibrate ?? true;
     _fullScreen = r?.fullScreen ?? _kind == ReminderKind.alarm;
     _snoozeMinutes = r?.snoozeMinutes ?? 0;
@@ -376,6 +378,7 @@ class _ReminderRuleSheetState extends State<_ReminderRuleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     return AppModalSheet(
       title: widget.initial == null ? '添加提醒' : '编辑提醒',
       actions: [
@@ -820,7 +823,7 @@ String _formatTimeOfDay(TimeOfDay time) {
 }
 
 TimeOfDay nextHalfHourTimeOfDay([DateTime? from]) {
-  final now = from ?? DateTime.now();
+  final now = from ?? AppClock.now();
   if (now.minute < 30) {
     return TimeOfDay(hour: now.hour, minute: 30);
   }

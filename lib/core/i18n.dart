@@ -4,14 +4,12 @@
 /// - 当前项目 200+ 处中文硬编码；一次性全替换不现实。
 /// - 引入 `AppLocale.zh` / `AppLocale.en` + `tr(key)` 函数式 API。
 /// - 高频公共词条先入表，调用方按需迁移；未命中的 key 直接返回中文回退。
-/// - `LocaleProvider` 持久化用户偏好（默认 `zh`）。
+/// - `LocaleProvider` 默认跟随系统，也可持久化用户显式选择。
 ///
 /// 添加新词条：在 `_zh` 与 `_en` 中同步追加同一 key。
 library;
 
-import 'dart:ui';
-
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppLocale { zh, en }
@@ -71,10 +69,32 @@ const Map<String, String> _zh = <String, String>{
   'nav.mine': '我的',
   // 设置
   'settings.language': '界面语言',
+  'settings.language.system': '跟随系统',
+  'preferences.display.title': '显示与行为',
+  'preferences.display.subtitle': '语言、日期、默认入口、交互和归档',
+  'preferences.entry.description': '按类别管理语言、日期、默认行为和导航。',
+  'preferences.entry.title': '个性入口',
+  'preferences.entry.subtitle': '选择要调整的设置类别',
+  'preferences.navigation.title': '导航入口',
+  'preferences.menu.display': '语言与日期',
+  'preferences.menu.calendar': '日期日历',
+  'preferences.menu.interaction_archive': '交互归档',
+  'preferences.timezone.shanghai': '中国标准时间',
+  'preferences.timezone.mexico': '墨西哥城时间',
+  'preferences.timezone.tijuana': '蒂华纳时间',
+  'preferences.timezone.tokyo': '日本时间',
+  'preferences.timezone.hong_kong': '香港时间',
+  'preferences.timezone.singapore': '新加坡时间',
+  'preferences.timezone.new_york': '纽约时间',
+  'preferences.timezone.los_angeles': '洛杉矶时间',
+  'preferences.timezone.london': '伦敦时间',
+  'preferences.timezone.paris': '巴黎时间',
+  'preferences.timezone.sydney': '悉尼时间',
+  'preferences.timezone.utc': '协调世界时（UTC）',
+  'preferences.timezone.scope': '应用内日期、今日统计和提醒采用此时区；设备系统时区保持不变。',
   'settings.language.zh': '简体中文',
   'settings.language.en': 'English',
-  'settings.language.description':
-      '说明：当前 v2 阶段已迁移高频公共词条（按钮、导航、提醒、共享）。剩余页面文案随后续迭代逐步翻译，未翻译部分会回退到中文显示。',
+  'settings.language.description': '默认跟随系统语言，也可手动选择。修改后立即生效，并保存在本机。',
   // 单位/日期
   'unit.minute': '分钟',
   'unit.min': '分',
@@ -130,7 +150,7 @@ const Map<String, String> _zh = <String, String>{
   'preferences.first_day.current_sunday': '当前为周日',
   'preferences.date_format.title': '日期格式',
   'preferences.timezone.title': '应用时区',
-  'preferences.timezone.follow_system': '跟随手机',
+  'preferences.timezone.follow_system': '跟随系统',
   'preferences.lunar.title': '显示农历',
   'preferences.lunar.subtitle': '影响日历月视图与今日卡',
   'preferences.section.defaults': '默认行为',
@@ -306,6 +326,50 @@ const Map<String, String> _zh = <String, String>{
   'search.kind.event': '日程',
   'search.kind.time_entry': '时间足迹',
   // 账号与个人资料
+  'auth.connection_changed': '登录连接已变更，请重试。',
+  'auth.server.address': '服务器地址',
+  'auth.server.hint': 'https://your-server.example',
+  'auth.server.invalid': '请输入完整的 HTTP 或 HTTPS 服务器地址，不含账号、查询参数或片段。',
+  'auth.server.sign_out_first': '请先退出当前账号，再切换服务器。',
+  'auth.token.title': '连接到你的服务器',
+  'auth.token.login': '令牌',
+  'auth.token.subtitle.web': '输入访问令牌，登录当前站点的账号。',
+  'auth.server.current_site': '网页版固定连接当前站点。',
+  'auth.token.subtitle': '填写服务器地址和访问令牌，即可登录并同步账号数据。',
+  'auth.token.label': '访问令牌',
+  'auth.token.required': '请输入有效的访问令牌，令牌中不能包含空格。',
+  'auth.token.invalid_response': '服务器未返回有效的账号信息，请检查服务器地址。',
+  'auth.token.help': '先在服务器的网页版登录，在“我的 → 个人资料 → 访问令牌”中创建令牌。',
+  'auth.token.password_login': '使用账号密码登录',
+  'auth.token.use_token': '使用访问令牌登录',
+  'auth.token.show': '显示令牌',
+  'auth.token.hide': '隐藏令牌',
+  'tokens.title': '访问令牌',
+  'tokens.subtitle': '管理连接到此账号的设备',
+  'tokens.help': '为每台设备创建独立令牌。将服务器地址和令牌填入安装版登录页；撤销后该令牌立即失效。',
+  'tokens.empty': '还没有访问令牌。创建一个，用于连接手机或桌面客户端。',
+  'tokens.name': '令牌名称',
+  'tokens.name_hint': '例如：我的手机',
+  'tokens.name_required': '请输入令牌名称。',
+  'tokens.expiry': '有效期',
+  'tokens.never_expires': '无过期时间',
+  'tokens.days_30': '30 天',
+  'tokens.days_90': '90 天',
+  'tokens.days_365': '1 年',
+  'tokens.created': '令牌已创建',
+  'tokens.copy_notice': '完整令牌仅显示这一次，请复制并妥善保存。',
+  'tokens.copy': '复制令牌',
+  'tokens.copied': '令牌已复制',
+  'tokens.last_used': '上次使用时间',
+  'tokens.not_used': '尚未使用',
+  'tokens.expires_at': '过期时间',
+  'tokens.revoked': '已撤销',
+  'tokens.expired': '已过期',
+  'tokens.current': '当前设备',
+  'tokens.revoke': '撤销',
+  'tokens.revoke_title': '撤销访问令牌？',
+  'tokens.revoke_message': '使用此令牌的设备将无法继续连接。',
+  'tokens.revoke_current': '这是当前设备使用的令牌，撤销后将退出登录。',
   'auth.login.title': '登录',
   'auth.register.title': '注册账号',
   'auth.login': '登录',
@@ -1149,10 +1213,36 @@ const Map<String, String> _en = <String, String>{
   'nav.widget': 'Widgets',
   'nav.mine': 'Me',
   'settings.language': 'Display language',
+  'settings.language.system': 'Follow system',
+  'preferences.display.title': 'Display and behavior',
+  'preferences.display.subtitle':
+      'Language, dates, startup, interactions, and archiving',
+  'preferences.entry.description':
+      'Manage language, dates, defaults, and navigation by category.',
+  'preferences.entry.title': 'Personal settings',
+  'preferences.entry.subtitle': 'Choose a settings category',
+  'preferences.navigation.title': 'Navigation',
+  'preferences.menu.display': 'Language and dates',
+  'preferences.menu.calendar': 'Date and calendar',
+  'preferences.menu.interaction_archive': 'Interactions and archiving',
+  'preferences.timezone.shanghai': 'China Standard Time',
+  'preferences.timezone.mexico': 'Mexico City',
+  'preferences.timezone.tijuana': 'Tijuana',
+  'preferences.timezone.tokyo': 'Japan',
+  'preferences.timezone.hong_kong': 'Hong Kong',
+  'preferences.timezone.singapore': 'Singapore',
+  'preferences.timezone.new_york': 'New York',
+  'preferences.timezone.los_angeles': 'Los Angeles',
+  'preferences.timezone.london': 'London',
+  'preferences.timezone.paris': 'Paris',
+  'preferences.timezone.sydney': 'Sydney',
+  'preferences.timezone.utc': 'Coordinated Universal Time (UTC)',
+  'preferences.timezone.scope':
+      'App dates, daily statistics, and reminders use this time zone. Your device time zone stays unchanged.',
   'settings.language.zh': 'Simplified Chinese',
   'settings.language.en': 'English',
   'settings.language.description':
-      'In v2, common terms such as actions, navigation, reminders, and sharing have English translations. Untranslated page copy falls back to Chinese while coverage expands.',
+      'Follow your system language or choose a language. Changes apply immediately and are saved on this device.',
   'unit.minute': 'minutes',
   'unit.min': 'min',
   'unit.hour': 'hours',
@@ -1208,7 +1298,7 @@ const Map<String, String> _en = <String, String>{
   'preferences.first_day.current_sunday': 'Currently Sunday',
   'preferences.date_format.title': 'Date format',
   'preferences.timezone.title': 'App time zone',
-  'preferences.timezone.follow_system': 'Follow phone',
+  'preferences.timezone.follow_system': 'Follow system',
   'preferences.lunar.title': 'Show lunar calendar',
   'preferences.lunar.subtitle': 'Affects month view and Today cards',
   'preferences.section.defaults': 'Default behavior',
@@ -1414,6 +1504,60 @@ const Map<String, String> _en = <String, String>{
   'search.kind.course': 'Course',
   'search.kind.event': 'Event',
   'search.kind.time_entry': 'Time log',
+  'auth.connection_changed':
+      'The sign-in connection changed. Please try again.',
+  'auth.server.address': 'Server address',
+  'auth.server.hint': 'https://your-server.example',
+  'auth.server.invalid':
+      'Enter a complete HTTP or HTTPS server address without credentials, query parameters, or fragments.',
+  'auth.server.sign_out_first': 'Sign out before switching servers.',
+  'auth.token.title': 'Connect to your server',
+  'auth.token.login': 'Token',
+  'auth.token.subtitle.web': 'Enter an access token to sign in to this site.',
+  'auth.server.current_site': 'The web app connects to the current site.',
+  'auth.token.subtitle':
+      'Enter your server address and access token to sign in and sync your account.',
+  'auth.token.label': 'Access token',
+  'auth.token.required': 'Enter a valid access token without spaces.',
+  'auth.token.invalid_response':
+      'The server did not return a valid account. Check the server address.',
+  'auth.token.help':
+      'Sign in on your server’s website, then create a token in “Me → Profile → Access tokens”.',
+  'auth.token.password_login': 'Sign in with your password',
+  'auth.token.use_token': 'Sign in with an access token',
+  'auth.token.show': 'Show token',
+  'auth.token.hide': 'Hide token',
+  'tokens.title': 'Access tokens',
+  'tokens.subtitle': 'Manage devices connected to this account',
+  'tokens.help':
+      'Create a separate token for each device. Enter the server address and token in the installed app. Revoking a token takes effect immediately.',
+  'tokens.empty':
+      'No access tokens yet. Create one to connect your phone or desktop app.',
+  'tokens.name': 'Token name',
+  'tokens.name_hint': 'For example: My phone',
+  'tokens.name_required': 'Enter a token name.',
+  'tokens.expiry': 'Valid for',
+  'tokens.never_expires': 'No expiration',
+  'tokens.days_30': '30 days',
+  'tokens.days_90': '90 days',
+  'tokens.days_365': '1 year',
+  'tokens.created': 'Token created',
+  'tokens.copy_notice':
+      'The full token is shown only once. Copy it and store it securely.',
+  'tokens.copy': 'Copy token',
+  'tokens.copied': 'Token copied',
+  'tokens.last_used': 'Last used',
+  'tokens.not_used': 'Not used yet',
+  'tokens.expires_at': 'Expires',
+  'tokens.revoked': 'Revoked',
+  'tokens.expired': 'Expired',
+  'tokens.current': 'This device',
+  'tokens.revoke': 'Revoke',
+  'tokens.revoke_title': 'Revoke access token?',
+  'tokens.revoke_message':
+      'Devices using this token will no longer be able to connect.',
+  'tokens.revoke_current':
+      'This device uses this token. Revoking it will sign you out.',
   'auth.login.title': 'Sign in',
   'auth.register.title': 'Create account',
   'auth.login': 'Sign in',
@@ -2304,37 +2448,73 @@ class I18n {
 }
 
 /// 持久化的 locale 偏好。
-class LocaleProvider extends ChangeNotifier {
+class LocaleProvider extends ChangeNotifier with WidgetsBindingObserver {
   static const _key = 'duoyi_locale_v1';
+  static const systemValue = 'system';
 
-  AppLocale _locale = AppLocale.zh;
+  AppLocale _locale = defaultLocaleForPlatform();
+  AppLocale? _preferredLocale;
+  bool _observing = false;
 
   AppLocale get locale => _locale;
-
+  bool get followsSystem => _preferredLocale == null;
+  String get selection => _preferredLocale?.storageValue ?? systemValue;
   Locale get flutterLocale => _locale.flutterLocale;
 
-  static AppLocale defaultLocaleForPlatform() {
-    return AppLocaleX.fromLanguageCode(
-      PlatformDispatcher.instance.locale.languageCode,
+  static AppLocale defaultLocaleForPlatform() => AppLocaleX.fromLanguageCode(
+    WidgetsBinding.instance.platformDispatcher.locale.languageCode,
+  );
+
+  void _applyLocale(AppLocale value) {
+    final changed = _locale != value;
+    _locale = value;
+    I18n.setLocale(value);
+    if (changed) notifyListeners();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (!followsSystem) return;
+    _applyLocale(
+      locales == null || locales.isEmpty
+          ? defaultLocaleForPlatform()
+          : AppLocaleX.fromLanguageCode(locales.first.languageCode),
     );
   }
 
   Future<void> loadFromStorage() async {
+    if (!_observing) {
+      WidgetsBinding.instance.addObserver(this);
+      _observing = true;
+    }
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
-    _locale = AppLocaleX.fromStorageValue(raw) ?? defaultLocaleForPlatform();
-    if (raw != null && raw != _locale.storageValue) {
-      await prefs.setString(_key, _locale.storageValue);
+    _preferredLocale = AppLocaleX.fromStorageValue(raw);
+    if (_preferredLocale != null && raw != _preferredLocale!.storageValue) {
+      await prefs.setString(_key, _preferredLocale!.storageValue);
     }
-    I18n.setLocale(_locale);
+    _applyLocale(_preferredLocale ?? defaultLocaleForPlatform());
   }
 
-  Future<void> setLocale(AppLocale locale) async {
-    if (_locale == locale) return;
-    _locale = locale;
-    I18n.setLocale(locale);
+  Future<void> setLocale(AppLocale locale) => _setPreference(locale);
+  Future<void> followSystem() => _setPreference(null);
+  Future<void> setSelection(String value) =>
+      _setPreference(AppLocaleX.fromStorageValue(value));
+
+  Future<void> _setPreference(AppLocale? locale) async {
+    final preferenceChanged = _preferredLocale != locale;
+    _preferredLocale = locale;
+    final effective = locale ?? defaultLocaleForPlatform();
+    final effectiveChanged = effective != _locale;
+    _applyLocale(effective);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, locale.storageValue);
-    notifyListeners();
+    await prefs.setString(_key, selection);
+    if (preferenceChanged && !effectiveChanged) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_observing) WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 }

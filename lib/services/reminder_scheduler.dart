@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_clock.dart';
 import '../core/brand_strings.dart';
 import '../core/i18n.dart';
 import '../models/anniversary.dart';
@@ -88,7 +89,7 @@ TodoReminderPreflightResult preflightTodoReminderPlan(
   TodoItem todo, {
   DateTime? now,
 }) {
-  final effectiveNow = now ?? DateTime.now();
+  final effectiveNow = now == null ? AppClock.now() : AppClock.toLocal(now);
   final plan = _effectiveTodoPlanForPreflight(todo);
   final enabledRules = plan.enabled
       ? plan.rules
@@ -265,7 +266,7 @@ DateTime? _relativeTodoReminderAnchor(TodoItem todo) =>
     todo.dueDate ?? todo.reminderAt;
 
 DateTime _dateAtTimeForPreflight(DateTime date, int hour, int minute) {
-  return DateTime(date.year, date.month, date.day, hour, minute);
+  return AppClock.date(date.year, date.month, date.day, hour, minute);
 }
 
 bool _validTimeForPreflight(int? hour, int? minute) {
@@ -279,6 +280,8 @@ bool _validTimeForPreflight(int? hour, int? minute) {
 
 DateTime? _coerceJustMissedOneShotReminder(DateTime when, DateTime now) {
   if (when.isAfter(now)) return when;
+  when = AppClock.toLocal(when);
+  now = AppClock.toLocal(now);
   final missedBy = now.difference(when);
   final sameLocalMinute =
       when.year == now.year &&
@@ -289,13 +292,13 @@ DateTime? _coerceJustMissedOneShotReminder(DateTime when, DateTime now) {
   if (sameLocalMinute &&
       !missedBy.isNegative &&
       missedBy <= _sameMinuteReminderGrace) {
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-    ).add(const Duration(minutes: 1));
+    return now.add(
+      Duration(
+        seconds: 60 - now.second,
+        milliseconds: -now.millisecond,
+        microseconds: -now.microsecond,
+      ),
+    );
   }
   return null;
 }
@@ -1652,7 +1655,8 @@ class ReminderScheduler {
         continue;
       }
       final nextDate = a.nextOccurrence;
-      if (nextDate.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
+      final today = AppClock.today();
+      if (nextDate.isBefore(DateTime(today.year, today.month, today.day - 1))) {
         await _cancelAnniversary(a.id);
         _forgetReminderDisplay('anniversary', a.id);
         await registry.removeObject('anniversary', a.id);
@@ -1668,8 +1672,11 @@ class ReminderScheduler {
     }
     final scopes = <String, String>{};
     for (final a in wanted.values) {
-      final remindAt = _anniversaryReminderAt(a);
-      if (!remindAt.isAfter(DateTime.now())) continue;
+      final remindAt = rollAnniversaryRemindAtForward(
+        _anniversaryReminderAt(a),
+        AppClock.now(),
+      );
+      if (!remindAt.isAfter(AppClock.now())) continue;
       scopes[a.id] = _anniversaryScope(a, remindAt);
       _rememberAnniversaryReminderDisplay(a, remindAt);
     }
@@ -1705,9 +1712,9 @@ class ReminderScheduler {
       // 推进到下一年同一时刻再注册，避免该周年被跳过后整年漏提醒。
       final remindAt = rollAnniversaryRemindAtForward(
         _anniversaryReminderAt(a),
-        DateTime.now(),
+        AppClock.now(),
       );
-      if (!remindAt.isAfter(DateTime.now())) {
+      if (!remindAt.isAfter(AppClock.now())) {
         continue;
       }
       final scope = scopes[a.id]!;
@@ -1748,7 +1755,7 @@ class ReminderScheduler {
   }
 
   Future<void> _syncCountdownsLocked(Iterable<CountdownItem> items) async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final wanted = <String, CountdownItem>{};
     final scopes = <String, String>{};
     for (final item in items) {
@@ -3567,7 +3574,7 @@ class ReminderScheduler {
   }) {
     final plan = _effectiveTodoPlan(t);
     if (!plan.enabled || plan.rules.isEmpty) return const <_ResolvedRule>[];
-    final now = DateTime.now();
+    final now = AppClock.now();
     final resolved = <_ResolvedRule>[];
     for (final rule in plan.rules) {
       if (!rule.enabled || rule.kind == ReminderKind.off) continue;
@@ -3704,7 +3711,7 @@ class ReminderScheduler {
         ? ReminderPlan.fromLegacy(g.reminder)
         : const ReminderPlan.disabled();
     if (!plan.enabled || plan.rules.isEmpty) return const <_ResolvedRule>[];
-    final now = DateTime.now();
+    final now = AppClock.now();
     final resolved = <_ResolvedRule>[];
     for (final rule in plan.rules) {
       if (!rule.enabled || rule.kind == ReminderKind.off) continue;
@@ -3841,11 +3848,7 @@ class ReminderScheduler {
         if (!_validTime(hour, minute)) return null;
         final when = _dateAtTime(anchorDate, hour, minute);
         if (!when.isAfter(now)) {
-          final tomorrow = DateTime(
-            now.year,
-            now.month,
-            now.day,
-          ).add(const Duration(days: 1));
+          final tomorrow = AppClock.date(now.year, now.month, now.day + 1);
           final fallback = _dateAtTime(tomorrow, hour, minute);
           if (!fallback.isAfter(now)) return null;
           return _buildOnceRule(
@@ -4015,18 +4018,17 @@ class ReminderScheduler {
   // -------------------------------------------------------------------------
 
   DateTime _dateAtTime(DateTime date, int hour, int minute) {
-    return DateTime(date.year, date.month, date.day, hour, minute);
+    return AppClock.date(date.year, date.month, date.day, hour, minute);
   }
 
   DateTime _countdownReminderAt(CountdownItem item) {
-    final target = DateTime(
+    return AppClock.date(
       item.targetDate.year,
       item.targetDate.month,
-      item.targetDate.day,
+      item.targetDate.day - item.remindDaysBefore,
       item.remindHour,
       item.remindMinute,
     );
-    return target.subtract(Duration(days: item.remindDaysBefore));
   }
 
   String _countdownScope(CountdownItem item, DateTime when) {
@@ -4349,7 +4351,7 @@ class ReminderScheduler {
   /// 目标锚定日：未设置开始日期时按创建日开启；提醒只从今天或未来开始注册。
   DateTime _goalAnchorDate(GoalItem g, DateTime now) {
     final today = DateTime(now.year, now.month, now.day);
-    final start = g.startDate ?? g.createdAt;
+    final start = g.startDate ?? AppClock.toLocal(g.createdAt);
     final startDay = DateTime(start.year, start.month, start.day);
     return startDay.isAfter(today) ? startDay : today;
   }
@@ -4394,13 +4396,13 @@ class ReminderScheduler {
 
   DateTime _anniversaryReminderAt(Anniversary item) {
     final next = item.nextOccurrence;
-    return DateTime(
+    return AppClock.date(
       next.year,
       next.month,
-      next.day,
+      next.day - item.remindDaysBefore,
       item.remindHour,
       item.remindMinute,
-    ).subtract(Duration(days: item.remindDaysBefore));
+    );
   }
 
   String _anniversaryScope(Anniversary item, DateTime when) {
@@ -4420,7 +4422,7 @@ class ReminderScheduler {
 /// 闰日（2/29）推进后由 DateTime 自动滚动到 3/1。未来时刻原样返回。
 DateTime rollAnniversaryRemindAtForward(DateTime remindAt, DateTime now) {
   if (remindAt.isAfter(now)) return remindAt;
-  return DateTime(
+  return AppClock.date(
     remindAt.year + 1,
     remindAt.month,
     remindAt.day,

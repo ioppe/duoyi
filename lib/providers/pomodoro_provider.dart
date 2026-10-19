@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
 import '../core/domain_event_bus.dart';
 import '../core/focus_sound_catalog.dart';
 import '../models/pomodoro.dart';
@@ -74,7 +75,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<PomodoroSession> get sessions => _sessions;
   List<PomodoroFocusPenalty> get penalties => List.unmodifiable(_penalties);
   int get persistedRevision => _persistedRevision;
-  int get sessionCountToday => _sessionCountToday;
+  int get sessionCountToday => todayFocusSessions.length;
   FocusDndStatus get focusDndStatus => _dndStatus;
   bool get focusDndActive => _dndActive;
   FocusDistractionStatus get focusDistractionStatus => _distractionStatus;
@@ -223,24 +224,28 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _checkDayReset() {
-    final today = _todayKey();
-    if (_lastDate != today) {
-      _sessionCountToday = 0;
-      _lastDate = today;
-      _saveMeta();
-    }
+    // Today's count is a view of the stored instants, including after a zone change.
+    // Reading a different day must not write sync metadata or erase its history.
+    _sessionCountToday = todayFocusSessions.length;
+    _lastDate = _todayKey();
   }
 
   String _todayKey() {
-    final n = DateTime.now();
+    final n = AppClock.now();
     return '${n.year}-${n.month}-${n.day}';
   }
 
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _isSameDay(DateTime a, DateTime b) {
+    final localA = AppClock.toLocal(a);
+    final localB = AppClock.toLocal(b);
+    return localA.year == localB.year &&
+        localA.month == localB.month &&
+        localA.day == localB.day;
+  }
 
   Future<void> _saveMeta() async {
-    final lastDate = _lastDate ??= _todayKey();
+    _checkDayReset();
+    final lastDate = _lastDate!;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('pomodoro_count_today', _sessionCountToday);
     await prefs.setString('pomodoro_last_date', lastDate);
@@ -476,7 +481,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     final removed = _sessions.removeAt(idx);
     await CloudSyncProvider.recordDeletedItem('pomodoro_sessions', removed.id);
     if (removed.type == PomodoroType.focus &&
-        _isSameDay(removed.startTime, DateTime.now())) {
+        _isSameDay(removed.startTime, AppClock.now())) {
       await _refreshTodayFocusMeta();
     }
 
@@ -524,11 +529,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _affectsTodayFocusCount(PomodoroSession session) {
     return session.type == PomodoroType.focus &&
-        _isSameDay(session.startTime, DateTime.now());
+        _isSameDay(session.startTime, AppClock.now());
   }
 
   Future<void> _refreshTodayFocusMeta() async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     _sessionCountToday = _sessions
         .where(
           (s) => s.type == PomodoroType.focus && _isSameDay(s.startTime, now),
@@ -1211,16 +1216,17 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         .where(
           (s) =>
               s.type == PomodoroType.focus &&
-              s.startTime.isAfter(start) &&
+              !s.startTime.isBefore(start) &&
               s.startTime.isBefore(end),
         )
         .toList();
   }
 
   List<PomodoroSession> get todayFocusSessions {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day);
-    return getSessionsForDateRange(start, now.add(const Duration(days: 1)));
+    final now = AppClock.now();
+    final start = AppClock.date(now.year, now.month, now.day);
+    final end = AppClock.date(now.year, now.month, now.day + 1);
+    return getSessionsForDateRange(start, end);
   }
 
   int get totalFocusMinutes {
@@ -1231,7 +1237,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   List<PomodoroFocusPenalty> get todayPenalties {
-    final now = DateTime.now();
+    final now = AppClock.now();
     return _penalties
         .where((p) => _isSameDay(p.occurredAt, now))
         .toList(growable: false);

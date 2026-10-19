@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import 'goal.dart'
     show ReminderKind, ReminderPlan, ReminderRule, ReminderRuleType;
@@ -487,12 +488,12 @@ class Habit {
     return targetCount > 0 ? (count / targetCount).clamp(0.0, 1.0) : 0.0;
   }
 
-  double todayProgress() => progressForDate(DateTime.now());
+  double todayProgress() => progressForDate(AppClock.now());
 
   String dateKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  String todayKey() => dateKey(DateTime.now());
+  String todayKey() => dateKey(AppClock.now());
 
   int countForDate(DateTime d) => completions[dateKey(d)] ?? 0;
   double progressForDate(DateTime d) {
@@ -503,7 +504,7 @@ class Habit {
 
   /// 正向习惯：今日完成 >= 目标即"达标"；
   /// 负向习惯：今日为零即"戒除成功"。
-  bool isCompletedToday() => isCompletedForDate(DateTime.now());
+  bool isCompletedToday() => isCompletedForDate(AppClock.now());
 
   bool isCompletedForDate(DateTime d) {
     if (!activeForDate(d)) return false;
@@ -516,7 +517,7 @@ class Habit {
   bool activeForDate(DateTime d) =>
       isWithinDateRange(d) && activeWeekdays.contains(d.weekday - 1);
 
-  bool isActiveToday() => activeForDate(DateTime.now());
+  bool isActiveToday() => activeForDate(AppClock.now());
 
   HabitPeriodBounds periodBoundsForDate(DateTime date) {
     final day = DateTime(date.year, date.month, date.day);
@@ -631,7 +632,7 @@ class Habit {
 
   Map<String, int> heatmapData(int weeks) {
     final data = <String, int>{};
-    final now = DateTime.now();
+    final now = AppClock.today();
     final safeTarget = targetCount < 1 ? 1 : targetCount;
     for (int w = 0; w < weeks; w++) {
       for (int d = 0; d < 7; d++) {
@@ -674,7 +675,7 @@ class Habit {
   }
 
   double weeklyCompletionRate() {
-    final now = DateTime.now();
+    final now = AppClock.today();
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final completed = completionCountInRange(monday, now);
     var expected = 0;

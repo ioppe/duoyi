@@ -137,11 +137,14 @@ void main() {
 
     expect(source, contains('class _PreferenceMenuGroup'));
     expect(source, contains('_PreferenceSectionMenu('));
-    expect(source, contains("title: '显示默认'"));
-    expect(source, contains("label: '日期日历'"));
-    expect(source, contains("label: '默认行为'"));
-    expect(source, contains("label: '交互归档'"));
-    expect(source, contains("title: '导航入口'"));
+    expect(source, contains("title: I18n.tr('preferences.menu.display')"));
+    expect(source, contains("label: I18n.tr('preferences.menu.calendar')"));
+    expect(source, contains("label: I18n.tr('preferences.section.defaults')"));
+    expect(
+      source,
+      contains("label: I18n.tr('preferences.menu.interaction_archive')"),
+    );
+    expect(source, contains("title: I18n.tr('preferences.navigation.title')"));
     expect(source, contains('const BottomNavSettingsScreen()'));
     expect(source, contains('fontSize: 11'));
     expect(source, contains('appSecondaryMenuItemTextStyle('));

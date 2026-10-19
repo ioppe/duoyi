@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/habit_grouping.dart';
 import '../core/habit_icons.dart';
@@ -557,6 +558,7 @@ class HabitDetailScreen extends StatefulWidget {
 class _HabitDetailScreenState extends State<HabitDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<HabitProvider>();
     final matches = provider.habits.where((h) => h.id == widget.habitId);
     if (matches.isEmpty) {
@@ -597,7 +599,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final heatmapData = habit.heatmapData(20);
     final cs = Theme.of(context).colorScheme;
     final color = Color(habit.colorValue);
-    final flexProgress = habit.flexProgressForDate(DateTime.now());
+    final flexProgress = habit.flexProgressForDate(AppClock.now());
     final streakUnit = _localizedHabitStreakUnit(habit);
     final todayLabel = habit.kind == HabitKind.negative
         ? _habitCountLabel(habit.todayCount(), habitUnit(habit))
@@ -803,7 +805,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: 30,
             itemBuilder: (_, i) {
-              final d = DateTime.now().subtract(Duration(days: i));
+              final d = AppClock.today().subtract(Duration(days: i));
               final activeForDay = habit.activeForDate(d);
               final count = habit.countForDate(d);
               final progress = habit.progressForDate(d);
@@ -1343,13 +1345,13 @@ DateTime? _nextHabitReminderTrigger(ReminderRule rule) {
   final hour = rule.hour;
   final minute = rule.minute;
   if (hour == null || minute == null) return null;
-  final now = DateTime.now();
+  final now = AppClock.now();
   final weekdays = rule.type == ReminderRuleType.weeklyTime
       ? rule.weekdays.where((day) => day >= 1 && day <= 7).toSet()
       : const <int>{};
   for (var offset = 0; offset <= 7; offset++) {
-    final date = now.add(Duration(days: offset));
-    final target = DateTime(date.year, date.month, date.day, hour, minute);
+    final date = AppClock.today().add(Duration(days: offset));
+    final target = AppClock.date(date.year, date.month, date.day, hour, minute);
     if (!target.isAfter(now)) continue;
     if (weekdays.isNotEmpty && !weekdays.contains(target.weekday)) continue;
     return target;

@@ -742,7 +742,7 @@ object ReminderRingtoneScheduler {
     private fun normalizeTimeZone(timezoneId: String?): String {
         val systemDefault = TimeZone.getDefault().id
         val normalized = timezoneId?.trim().orEmpty()
-        if (normalized.isBlank() || normalized == "UTC" || normalized == "Etc/UTC") {
+        if (normalized.isBlank()) {
             return systemDefault
         }
         val resolved = TimeZone.getTimeZone(normalized)

@@ -53,7 +53,7 @@ void main() {
     expect(source, contains('DateTime _eventStartOnDay('));
     expect(source, contains('DateTime _eventEndOnDay('));
     expect(source, contains('int _minutesFromDayStart(DateTime value)'));
-    expect(source, contains('final dayEnd = _dateOnly(day).add'));
+    expect(source, contains('final dayEnd = AppClock.date('));
     expect(source, contains('math.max(30, end.difference(start).inMinutes)'));
     expect(source, contains('compact: clampedHeight < 88'));
     expect(source, contains('final bool compact'));
@@ -74,7 +74,7 @@ void main() {
       expect(source, contains('TodoVisualState.completed'));
       expect(source, contains('TodoVisualState.overdue'));
       expect(source, contains("label: isCompleted ? '已完成' : '逾期'"));
-      expect(source, contains('dueAt.isBefore(DateTime.now())'));
+      expect(source, contains('dueAt.isBefore(AppClock.now())'));
       expect(source, contains('Color.alphaBlend('));
       expect(source, contains('statusColor.withValues(alpha: 0.24)'));
     }

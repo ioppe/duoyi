@@ -636,17 +636,24 @@ class PreferencesProvider extends ChangeNotifier {
     _notifyPreferenceKeys(const [_kFirstDayOfWeek]);
   }
 
+  void refreshResolvedTimeZone() {
+    final resolved = LocalTimezoneResolver.currentIana;
+    if (_appTimeZone == resolved) return;
+    _appTimeZone = resolved;
+    notifyListeners();
+  }
+
   Future<void> setAppTimeZone(String value) async {
     final next = value == LocalTimezoneResolver.followSystemValue
         ? LocalTimezoneResolver.followSystemValue
-        : value == 'UTC' || value.isEmpty
+        : value.isEmpty
         ? LocalTimezoneResolver.defaultIana
         : value;
     _followSystemTimeZone = next == LocalTimezoneResolver.followSystemValue;
     await LocalTimezoneResolver.setApplicationTimeZone(next);
     _appTimeZone = LocalTimezoneResolver.currentIana;
-    await onAppTimeZoneChanged?.call();
     _notifyPreferenceKeys(const [_kAppTimeZoneMode, _kAppTimeZone]);
+    await onAppTimeZoneChanged?.call();
   }
 
   Future<void> setDailyReminderSlot(int index, DailyReminderSlot slot) async {

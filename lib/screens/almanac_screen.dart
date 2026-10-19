@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/lunar_calendar.dart';
@@ -34,6 +35,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   static final DateTime _lastSupportedDate = DateTime(2099, 12, 31);
 
   late DateTime _date;
+  DateTime _lastToday = AppClock.today();
   final Map<String, _MonthCalendarData> _monthDataCache =
       <String, _MonthCalendarData>{};
   final Map<String, List<_MonthHighlight>> _fixedMonthHighlightCache =
@@ -42,7 +44,16 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   @override
   void initState() {
     super.initState();
-    _date = _clampDate(widget.initialDate ?? DateTime.now());
+    _date = _clampDate(widget.initialDate ?? AppClock.now());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppClock.watch(context);
+    final today = AppClock.today();
+    if (today != _lastToday && _date == _lastToday) _date = _clampDate(today);
+    _lastToday = today;
   }
 
   DateTime _clampDate(DateTime value) {
@@ -65,7 +76,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   }
 
   void _goToday() {
-    final today = _clampDate(DateTime.now());
+    final today = _clampDate(AppClock.now());
     final alreadyToday =
         _date.year == today.year &&
         _date.month == today.month &&
@@ -165,6 +176,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     const pageTitle = '万年历';
     final selectedDate = _date;
     final almanacDetail = LunarCalendar.almanacDetail(selectedDate);
@@ -1920,10 +1932,11 @@ class _MonthCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final now = DateTime.now();
+    final now = AppClock.now();
     final today = DateTime(now.year, now.month, now.day);
     final compact = MediaQuery.sizeOf(context).width < 380;
     final cellHeight = compact ? 46.0 : 48.0;

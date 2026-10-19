@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
@@ -278,6 +279,7 @@ class _NoteListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     return AppSurfaceCard(
       margin: const EdgeInsets.only(bottom: 12),
@@ -402,7 +404,7 @@ class _NoteListCard extends StatelessWidget {
                 const SizedBox(width: 10),
               ],
               Text(
-                I18nDateFormat.fullDateTime(note.updatedAt),
+                I18nDateFormat.fullDateTime(AppClock.toLocal(note.updatedAt)),
                 style: TextStyle(
                   fontSize: 11,
                   color: cs.onSurfaceVariant.withValues(alpha: 0.72),

@@ -1,4 +1,5 @@
 import '../models/pomodoro.dart';
+import 'app_clock.dart';
 import 'focus_tag_stats.dart';
 
 enum FocusReportPeriod { week, month, all }
@@ -81,21 +82,17 @@ class FocusReportBuilder {
     required FocusReportPeriod period,
     DateTime? now,
   }) {
-    final end = now ?? DateTime.now();
+    final end = now == null ? AppClock.now() : AppClock.toLocal(now);
     final start = switch (period) {
-      FocusReportPeriod.week => DateTime(
+      FocusReportPeriod.week => AppClock.date(
         end.year,
         end.month,
-        end.day,
-      ).subtract(Duration(days: end.weekday - 1)),
-      FocusReportPeriod.month => DateTime(end.year, end.month),
+        end.day - end.weekday + 1,
+      ),
+      FocusReportPeriod.month => AppClock.date(end.year, end.month),
       FocusReportPeriod.all => DateTime.fromMillisecondsSinceEpoch(0),
     };
-    final endExclusive = DateTime(
-      end.year,
-      end.month,
-      end.day,
-    ).add(const Duration(days: 1));
+    final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
     final focusSessions =
         sessions
             .where(
@@ -122,7 +119,8 @@ class FocusReportBuilder {
           session.durationSeconds > max ? session.durationSeconds : max,
     );
     final activeDays = {
-      for (final session in focusSessions) _dateKey(session.startTime),
+      for (final session in focusSessions)
+        _dateKey(AppClock.toLocal(session.startTime)),
     }.length;
     final penaltyList = periodPenalties.toList();
     return FocusReport(

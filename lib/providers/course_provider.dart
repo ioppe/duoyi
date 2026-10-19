@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
 import '../models/course_schedule.dart';
 import 'cloud_sync_provider.dart';
 
@@ -18,7 +19,7 @@ class CourseProvider extends ChangeNotifier {
   int get viewingWeek => _viewingWeek;
 
   int get currentWeek {
-    final week = _settings.weekOf(DateTime.now());
+    final week = _settings.weekOf(AppClock.today());
     return week == 0 ? 1 : week;
   }
 
@@ -108,5 +109,5 @@ class CourseProvider extends ChangeNotifier {
   }
 
   /// 今天的课
-  List<CourseItem> get todayCourses => coursesOfDate(DateTime.now());
+  List<CourseItem> get todayCourses => coursesOfDate(AppClock.today());
 }

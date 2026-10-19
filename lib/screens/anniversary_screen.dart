@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -126,6 +127,7 @@ class _AnniversaryScreenState extends State<AnniversaryScreen>
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final provider = context.watch<AnniversaryProvider>();
     _openInitialAnniversaryIfNeeded(provider);
     final theme = Theme.of(context);
@@ -953,7 +955,7 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
     final e = widget.editing;
     _title = TextEditingController(text: e?.title ?? '');
     _desc = TextEditingController(text: e?.description ?? '');
-    _date = e?.originDate ?? DateTime.now().add(const Duration(days: 1));
+    _date = e?.originDate ?? AppClock.today().add(const Duration(days: 1));
     _type = e?.type ?? widget.fixedType ?? AnniversaryType.memorial;
     _cal = e?.calendarType ?? AnniversaryCalendarType.solar;
     _colorValue = e?.colorValue ?? 0xFFE91E63;
@@ -1001,13 +1003,13 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
 
   DateTime _remindAtFor(Anniversary item) {
     final nextDate = item.nextOccurrence;
-    return DateTime(
+    return AppClock.date(
       nextDate.year,
       nextDate.month,
-      nextDate.day,
+      nextDate.day - item.remindDaysBefore,
       item.remindHour,
       item.remindMinute,
-    ).subtract(Duration(days: item.remindDaysBefore));
+    );
   }
 
   Future<_AnniversaryReminderPreflightResult> _checkReminderBeforeSave(
@@ -1136,7 +1138,7 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
     var reminderWarning = '';
     if (item.remind) {
       final remindAt = _remindAtFor(item);
-      if (!remindAt.isAfter(DateTime.now())) {
+      if (!remindAt.isAfter(AppClock.now())) {
         reminderWarning = I18n.tr('anniversary.reminder.time_past');
         item = _buildItem(remind: false, kind: ReminderKind.off);
         setState(() => _remind = false);
@@ -1235,6 +1237,7 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final lunar = LunarCalendar.fromSolar(_date);
     final cs = Theme.of(context).colorScheme;
     final fieldLabelStyle = appSecondaryControlLabelStyle(

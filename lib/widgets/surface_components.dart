@@ -438,6 +438,84 @@ class AppSecondaryControlTheme extends StatelessWidget {
   }
 }
 
+/// Readable account forms, with room for touch input and multiline helpers.
+class AppFormFieldTheme extends StatelessWidget {
+  final Widget child;
+
+  const AppFormFieldTheme({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSecondaryControlTheme(
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final cs = theme.colorScheme;
+          final inputText = (theme.textTheme.bodyLarge ?? const TextStyle())
+              .copyWith(fontSize: DesignTokens.fontSizeMd, height: 1.5);
+          final labelText = inputText.copyWith(
+            fontSize: DesignTokens.fontSizeBody,
+            height: 1.4,
+            color: cs.onSurfaceVariant,
+          );
+          OutlineInputBorder border(Color color, {double width = 1}) =>
+              OutlineInputBorder(
+                borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+                borderSide: BorderSide(color: color, width: width),
+              );
+          final decoration = theme.inputDecorationTheme.copyWith(
+            isDense: false,
+            constraints: const BoxConstraints(
+              minHeight: DesignTokens.formFieldMinHeight,
+            ),
+            contentPadding: const EdgeInsets.all(DesignTokens.spaceLg),
+            prefixIconConstraints: const BoxConstraints.tightFor(
+              width: DesignTokens.formFieldMinHeight,
+              height: DesignTokens.formFieldMinHeight,
+            ),
+            suffixIconConstraints: const BoxConstraints.tightFor(
+              width: DesignTokens.formFieldMinHeight,
+              height: DesignTokens.formFieldMinHeight,
+            ),
+            labelStyle: labelText,
+            // InputDecorator scales floating labels to 75% of this size.
+            floatingLabelStyle: labelText.copyWith(
+              fontSize: DesignTokens.fontSizeBody / 0.75,
+              color: cs.primary,
+            ),
+            hintStyle: inputText.copyWith(color: cs.onSurfaceVariant),
+            helperStyle: labelText,
+            helperMaxLines: 3,
+            errorMaxLines: 3,
+            alignLabelWithHint: true,
+            enabledBorder: border(cs.outlineVariant.withValues(alpha: 0.55)),
+            focusedBorder: border(
+              cs.primary.withValues(alpha: 0.80),
+              width: 1.5,
+            ),
+            errorBorder: border(cs.error),
+            focusedErrorBorder: border(cs.error, width: 1.5),
+          );
+          return Theme(
+            data: theme.copyWith(
+              textTheme: theme.textTheme.copyWith(
+                bodyLarge: inputText.copyWith(color: cs.onSurface),
+                titleMedium: inputText.copyWith(color: cs.onSurface),
+              ),
+              inputDecorationTheme: decoration,
+              dropdownMenuTheme: theme.dropdownMenuTheme.copyWith(
+                textStyle: inputText.copyWith(color: cs.onSurface),
+                inputDecorationTheme: decoration,
+              ),
+            ),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+}
+
 class AppSecondaryMenuText extends StatelessWidget {
   final String text;
   final Color? color;

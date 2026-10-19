@@ -32,7 +32,7 @@ void main() {
     expect(provider, contains('local event reminder cancel failed'));
     expect(main, contains('calendarProvider.localEventReminderCanceller'));
     expect(main, contains('notificationService.cancelCalendarReminder'));
-    expect(provider, contains('..addAll(_localEvents)'));
+    expect(provider, contains('..addAll(_localEvents.map(_inAppTimeZone))'));
     expect(provider, contains('_hashCalendarEvents(_localEvents)'));
   });
 

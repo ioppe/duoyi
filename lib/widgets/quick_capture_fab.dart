@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/ai_command.dart';
@@ -804,6 +805,7 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final aiEnabled = context.watch<AiService>().enabled;
     return Column(

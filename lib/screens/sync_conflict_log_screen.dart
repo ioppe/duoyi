@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -51,6 +52,7 @@ class _SyncConflictLogScreenState extends State<SyncConflictLogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final routeBackground = Theme.of(context).brightness == Brightness.dark
         ? cs.surface
@@ -173,7 +175,7 @@ class _SyncConflictLogScreenState extends State<SyncConflictLogScreen> {
   }
 
   String _formatTime(DateTime value) {
-    return I18nDateFormat.shortDateTime(value);
+    return I18nDateFormat.shortDateTime(AppClock.toLocal(value));
   }
 }
 

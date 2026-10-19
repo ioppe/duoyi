@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
+import '../core/calendar_view.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -50,8 +53,11 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  DateTime _selectedDay = DateTime.now();
-  DateTime _focusedMonth = DateTime.now();
+  DateTime _selectedDay = AppClock.today();
+  DateTime _focusedMonth = AppClock.today();
+  DateTime _lastToday = AppClock.today();
+  CalendarProvider? _calendarView;
+  Object? _lastCalendarViewSignature;
   Set<CalendarEventType>? _activeTypes;
   String? _activeProjectKey;
   String? _activeWorkspaceId;
@@ -74,6 +80,18 @@ class _CalendarScreenState extends State<CalendarScreen>
     _tabController.addListener(_handleTabControllerChanged);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppClock.watch(context);
+    final today = AppClock.today();
+    if (today != _lastToday && _isSameDate(_selectedDay, _lastToday)) {
+      _selectedDay = today;
+      _focusedMonth = DateTime(today.year, today.month);
+    }
+    _lastToday = today;
+  }
+
   void _handleTabControllerChanged() {
     if (!mounted || _tabController.indexIsChanging) return;
     setState(() {});
@@ -83,6 +101,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   void dispose() {
     _tabController.removeListener(_handleTabControllerChanged);
     _tabController.dispose();
+    _calendarView?.dispose();
     super.dispose();
   }
 
@@ -171,7 +190,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     required TimeAuditProvider timeAuditProvider,
     required ColorScheme colorScheme,
   }) {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final todayKey = DateTime(
       now.year,
       now.month,
@@ -179,6 +198,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     ).millisecondsSinceEpoch;
     return Object.hashAll([
       todayKey,
+      LocalTimezoneResolver.currentIana,
       colorScheme.primary,
       calendarProvider.sourceRevision,
       _todoSignature(todoProvider.todos),
@@ -675,13 +695,14 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final todoProvider = context.watch<TodoProvider>();
     final habitProvider = context.watch<HabitProvider>();
     context.select<PomodoroProvider, int>(
       (provider) => provider.persistedRevision,
     );
     final pomodoroProvider = context.read<PomodoroProvider>();
-    final calendarProvider = context.watch<CalendarProvider>();
+    final calendarSource = context.watch<CalendarProvider>();
     final anniversaryProvider = context.watch<AnniversaryProvider>();
     final countdownProvider = context.watch<CountdownProvider>();
     final courseProvider = context.watch<CourseProvider>();
@@ -696,7 +717,7 @@ class _CalendarScreenState extends State<CalendarScreen>
       todoProvider: todoProvider,
       habitProvider: habitProvider,
       pomodoroProvider: pomodoroProvider,
-      calendarProvider: calendarProvider,
+      calendarProvider: calendarSource,
       anniversaryProvider: anniversaryProvider,
       countdownProvider: countdownProvider,
       courseProvider: courseProvider,
@@ -706,10 +727,43 @@ class _CalendarScreenState extends State<CalendarScreen>
       colorScheme: cs,
     );
 
+    final viewSignature = _calendarInputSignature(
+      todoProvider: todoProvider,
+      habitProvider: habitProvider,
+      pomodoroProvider: pomodoroProvider,
+      calendarProvider: calendarSource,
+      anniversaryProvider: anniversaryProvider,
+      countdownProvider: countdownProvider,
+      courseProvider: courseProvider,
+      diaryProvider: diaryProvider,
+      goalProvider: goalProvider,
+      timeAuditProvider: timeAuditProvider,
+      colorScheme: cs,
+    );
+    if (_lastCalendarViewSignature != viewSignature) {
+      _calendarView?.dispose();
+      _calendarView = buildCalendarView(
+        source: calendarSource,
+        todos: todoProvider.todos,
+        habits: habitProvider.habits,
+        sessions: pomodoroProvider.sessions,
+        colorScheme: cs,
+        anniversaries: anniversaryProvider.items,
+        countdowns: countdownProvider.items,
+        courses: courseProvider.courses,
+        courseSettings: courseProvider.settings,
+        diaries: diaryProvider.entries,
+        goals: goalProvider.goals,
+        timeEntries: timeAuditProvider.entries,
+      );
+      _lastCalendarViewSignature = viewSignature;
+    }
+    final calendarProvider = _calendarView!;
+
     final workspaceOptions = _workspaceOptions(
       todoProvider.todos,
       goalProvider.goals,
-      calendarProvider.localEvents,
+      calendarSource.localEvents,
       shareProvider.workspaces,
     );
     final effectiveWorkspaceId =
@@ -763,7 +817,7 @@ class _CalendarScreenState extends State<CalendarScreen>
             icon: const Icon(Icons.more_horiz),
             onSelected: (value) {
               if (value == 'today') {
-                final now = DateTime.now();
+                final now = AppClock.today();
                 setState(() {
                   _selectedDay = now;
                   _focusedMonth = DateTime(now.year, now.month);
@@ -1160,7 +1214,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     _CalendarProjectOption option,
     List<TodoItem> todos,
   ) async {
-    final today = DateTime.now();
+    final today = AppClock.now();
     final todayKey = DateTime(today.year, today.month, today.day);
     final completed = todos.where((todo) => todo.isCompleted).length;
     final overdue = todos.where((todo) => todo.isOverdue).length;
@@ -1404,11 +1458,11 @@ class _CalendarScreenState extends State<CalendarScreen>
     final noteCtrl = TextEditingController();
     final durationCtrl = TextEditingController(text: '30');
     var category = TimeEntryCategory.work;
-    final now = DateTime.now();
+    final now = AppClock.now();
     var startTime = TimeOfDay.fromDateTime(
       _isSameDate(_selectedDay, now)
           ? now
-          : DateTime(
+          : AppClock.date(
               _selectedDay.year,
               _selectedDay.month,
               _selectedDay.day,
@@ -1504,7 +1558,7 @@ class _CalendarScreenState extends State<CalendarScreen>
     final minutes = int.tryParse(durationCtrl.text.trim()) ?? 0;
     if (title.isEmpty || minutes <= 0) return;
     if (!mounted) return;
-    final start = DateTime(
+    final start = AppClock.date(
       _selectedDay.year,
       _selectedDay.month,
       _selectedDay.day,

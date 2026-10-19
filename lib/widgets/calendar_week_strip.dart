@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_clock.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/i18n_date_format.dart';
 import '../models/calendar_event.dart';
@@ -53,12 +54,13 @@ class CalendarWeekStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final monday = selectedDay.subtract(
       Duration(days: selectedDay.weekday - 1),
     );
     final days = List.generate(7, (i) => monday.add(Duration(days: i)));
-    final today = DateTime.now();
+    final today = AppClock.now();
     final weekEvents = [
       for (final d in days)
         _WeekDayEvents(
@@ -459,7 +461,7 @@ TodoVisualState _weekEventVisualState(CalendarEvent event) {
   final dueAt = event.endDate;
   if (event.type == CalendarEventType.todo &&
       dueAt != null &&
-      dueAt.isBefore(DateTime.now())) {
+      dueAt.isBefore(AppClock.now())) {
     return TodoVisualState.overdue;
   }
   return TodoVisualState.normal;
