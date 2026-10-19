@@ -22,6 +22,9 @@ class DesignTokens {
   static const double space4xl = 40;
   static const double space5xl = 48;
 
+  // ----- Account form fields -----
+  static const double formFieldMinHeight = 56;
+
   // ----- Default palette -----
   static const Color defaultPageBackground = Color(0xFFF6F7F9);
   static const Color defaultSurface = Color(0xFFFFFFFF);
