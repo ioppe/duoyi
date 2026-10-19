@@ -1,13 +1,16 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/i18n.dart';
+import '../core/design_tokens.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/api_client.dart';
 import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
+import 'server_token_login.dart';
 
 const double _loginContentMaxWidth = 420;
 
@@ -34,7 +37,11 @@ class _LoginActionField extends StatelessWidget {
           children: [
             Expanded(child: field),
             const SizedBox(width: 8),
-            SizedBox(width: actionWidth, height: 34, child: action),
+            SizedBox(
+              width: actionWidth,
+              height: DesignTokens.formFieldMinHeight,
+              child: action,
+            ),
           ],
         );
       },
@@ -50,6 +57,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pwdCtrl = TextEditingController();
   final _confirmPwdCtrl = TextEditingController();
   final _inviteCtrl = TextEditingController();
+  final _serverCtrl = TextEditingController();
+  bool _tokenLogin = !kIsWeb;
   final _pwdFocus = FocusNode();
   bool _isRegister = false;
   bool _emailLogin = false;
@@ -64,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _serverCtrl.text = context.read<AuthProvider>().baseUrl;
     _userCtrl.addListener(_refreshControls);
     _emailCtrl.addListener(_refreshControls);
   }
@@ -80,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _pwdCtrl.dispose();
     _confirmPwdCtrl.dispose();
     _inviteCtrl.dispose();
+    _serverCtrl.dispose();
     _pwdFocus.dispose();
     super.dispose();
   }
@@ -103,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     final passwordLogin = !_isRegister && !_emailLogin;
     try {
+      if (!kIsWeb) await auth.configureServer(_serverCtrl.text);
       if (_isRegister) {
         await auth.register(
           username: _userCtrl.text.trim(),
@@ -125,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (mounted) Navigator.pop(context);
     } on ApiException catch (e) {
+      if (!mounted) return;
       if (passwordLogin && _isInvalidCredentialsError(e)) {
         setState(() {
           _error = I18n.tr('auth.error.invalid_credentials');
@@ -135,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _error = userVisibleApiError(e));
       }
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -159,6 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _message = null;
     });
     try {
+      if (!kIsWeb) await auth.configureServer(_serverCtrl.text);
       final result = await auth.sendEmailCode(
         email: email,
         purpose: _isRegister ? 'bind' : 'login',
@@ -280,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required TextEditingController controller,
     required String labelText,
   }) {
-    return AppSecondaryControlTheme(
+    return AppFormFieldTheme(
       child: TextField(
         controller: controller,
         keyboardType: TextInputType.number,
@@ -301,6 +315,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_tokenLogin) {
+      return ServerTokenLogin(
+        onPasswordLogin: () => setState(() {
+          _tokenLogin = false;
+          _emailLogin = false;
+          _serverCtrl.text = context.read<AuthProvider>().baseUrl;
+        }),
+      );
+    }
     final s = context.watch<ThemeProvider>().brand.strings;
     final auth = context.watch<AuthProvider>();
     final cs = Theme.of(context).colorScheme;
@@ -408,29 +431,50 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ],
                             const SizedBox(height: 16),
+                            if (!kIsWeb) ...[
+                              AppFormFieldTheme(
+                                child: TextField(
+                                  key: const ValueKey('password-server-url'),
+                                  controller: _serverCtrl,
+                                  enabled: !_busy && !_sendingEmailCode,
+                                  keyboardType: TextInputType.url,
+                                  autocorrect: false,
+                                  decoration: InputDecoration(
+                                    labelText: I18n.tr('auth.server.address'),
+                                    hintText: I18n.tr('auth.server.hint'),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             if (!_isRegister) ...[
                               AppSecondaryControlTheme(
-                                child: SegmentedButton<bool>(
+                                child: SegmentedButton<int>(
                                   showSelectedIcon: false,
                                   segments: [
                                     ButtonSegment(
-                                      value: false,
+                                      value: 0,
                                       label: Text(
                                         I18n.tr('auth.password_login'),
                                       ),
                                     ),
                                     ButtonSegment(
-                                      value: true,
+                                      value: 1,
                                       label: Text(
                                         I18n.tr('auth.email_code_login'),
                                       ),
                                     ),
+                                    ButtonSegment(
+                                      value: 2,
+                                      label: Text(I18n.tr('auth.token.login')),
+                                    ),
                                   ],
-                                  selected: {_emailLogin},
-                                  onSelectionChanged: _busy
+                                  selected: {_emailLogin ? 1 : 0},
+                                  onSelectionChanged: _busy || _sendingEmailCode
                                       ? null
                                       : (values) => setState(() {
-                                          _emailLogin = values.first;
+                                          _tokenLogin = values.first == 2;
+                                          _emailLogin = values.first == 1;
                                           _error = null;
                                           _message = null;
                                         }),
@@ -439,7 +483,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(height: 10),
                             ],
                             if (!_isRegister && _emailLogin)
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _userCtrl,
                                   keyboardType: TextInputType.emailAddress,
@@ -449,7 +493,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             else
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _userCtrl,
                                   decoration: InputDecoration(
@@ -517,7 +561,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (shouldBindRegistrationEmail) ...[
                                 if (!registrationEmailRequired)
                                   const SizedBox(height: 12),
-                                AppSecondaryControlTheme(
+                                AppFormFieldTheme(
                                   child: TextField(
                                     controller: _emailCtrl,
                                     keyboardType: TextInputType.emailAddress,
@@ -542,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ],
                               const SizedBox(height: 12),
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _displayNameCtrl,
                                   decoration: InputDecoration(
@@ -565,7 +609,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             else if (!_emailLogin)
                               const SizedBox(height: 10),
                             if (!_emailLogin || _isRegister)
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _pwdCtrl,
                                   focusNode: _pwdFocus,
@@ -599,7 +643,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                             if (_isRegister) ...[
                               const SizedBox(height: 12),
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _confirmPwdCtrl,
                                   decoration: InputDecoration(
@@ -611,7 +655,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                             if (_isRegister && auth.inviteCodeRequired) ...[
                               const SizedBox(height: 12),
-                              AppSecondaryControlTheme(
+                              AppFormFieldTheme(
                                 child: TextField(
                                   controller: _inviteCtrl,
                                   decoration: InputDecoration(
@@ -731,6 +775,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _showPasswordResetDialog() async {
+    if (!kIsWeb) {
+      try {
+        await context.read<AuthProvider>().configureServer(_serverCtrl.text);
+      } on ApiException catch (e) {
+        if (mounted) setState(() => _error = userVisibleApiError(e));
+        return;
+      }
+      if (!mounted) return;
+    }
     await showDialog(
       context: context,
       builder: (_) => const _PasswordResetDialog(),
@@ -862,51 +915,53 @@ class _PasswordResetDialogState extends State<_PasswordResetDialog> {
       title: Text(I18n.tr('auth.password_reset.title')),
       icon: const Icon(Icons.lock_reset_outlined),
       shiftForKeyboard: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _accountCtrl,
-            enabled: !_requested,
-            keyboardType: TextInputType.text,
-            decoration: InputDecoration(
-              labelText: I18n.tr('auth.reset_account'),
-              helperText: I18n.tr('auth.reset_account.helper'),
-            ),
-          ),
-          if (_requested) ...[
-            const SizedBox(height: 12),
+      content: AppFormFieldTheme(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             TextField(
-              controller: _codeCtrl,
-              keyboardType: TextInputType.number,
+              controller: _accountCtrl,
+              enabled: !_requested,
+              keyboardType: TextInputType.text,
               decoration: InputDecoration(
-                labelText: I18n.tr('auth.email_code'),
+                labelText: I18n.tr('auth.reset_account'),
+                helperText: I18n.tr('auth.reset_account.helper'),
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _newPwdCtrl,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: I18n.tr('auth.new_password'),
+            if (_requested) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _codeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: I18n.tr('auth.email_code'),
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _newPwdCtrl,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: I18n.tr('auth.new_password'),
+                ),
+              ),
+            ],
+            if (_message != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _message!,
+                style: TextStyle(color: cs.primary, fontSize: 12, height: 1.25),
+              ),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(color: cs.error, fontSize: 12, height: 1.25),
+              ),
+            ],
           ],
-          if (_message != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              _message!,
-              style: TextStyle(color: cs.primary, fontSize: 12, height: 1.25),
-            ),
-          ],
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              _error!,
-              style: TextStyle(color: cs.error, fontSize: 12, height: 1.25),
-            ),
-          ],
-        ],
+        ),
       ),
       actions: [
         TextButton(

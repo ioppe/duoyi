@@ -650,7 +650,7 @@ void main() {
     }
   });
 
-  test('原生每日铃声调度跟随手机时区，不把 UTC 兜底到上海', () {
+  test('原生每日铃声保留显式 UTC，仅缺失时区时跟随手机', () {
     final scheduler = File(
       'android/app/src/main/kotlin/com/duoyi/duoyi/ReminderRingtoneScheduler.kt',
     ).readAsStringSync().replaceAll('\r\n', '\n');
@@ -662,7 +662,9 @@ void main() {
     expect(mainActivity, contains('TimeZone.getDefault().id'));
     expect(mainActivity, contains('"getSystemTimeZoneId"'));
     expect(mainActivity, contains('result.success(TimeZone.getDefault().id)'));
-    expect(scheduler, contains('normalized == "UTC"'));
+    expect(scheduler, contains('if (normalized.isBlank())'));
+    expect(scheduler, isNot(contains('normalized == "UTC"')));
+    expect(scheduler, isNot(contains('normalized == "Etc/UTC"')));
     expect(scheduler, isNot(contains('return "Asia/Shanghai"')));
     expect(mainActivity, isNot(contains('?: "Asia/Shanghai"')));
     expect(scheduler, contains('return systemDefault'));

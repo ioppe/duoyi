@@ -9,6 +9,222 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get settingsLanguageSystem => 'Follow system';
+
+  @override
+  String get preferencesDisplayTitle => 'Display and behavior';
+
+  @override
+  String get preferencesDisplaySubtitle =>
+      'Language, dates, startup, interactions, and archiving';
+
+  @override
+  String get preferencesEntryDescription =>
+      'Manage language, dates, defaults, and navigation by category.';
+
+  @override
+  String get preferencesEntryTitle => 'Personal settings';
+
+  @override
+  String get preferencesEntrySubtitle => 'Choose a settings category';
+
+  @override
+  String get preferencesNavigationTitle => 'Navigation';
+
+  @override
+  String get preferencesMenuDisplay => 'Language and dates';
+
+  @override
+  String get preferencesMenuCalendar => 'Date and calendar';
+
+  @override
+  String get preferencesMenuInteractionArchive => 'Interactions and archiving';
+
+  @override
+  String get preferencesTimezoneShanghai => 'China Standard Time';
+
+  @override
+  String get preferencesTimezoneMexico => 'Mexico City';
+
+  @override
+  String get preferencesTimezoneTijuana => 'Tijuana';
+
+  @override
+  String get preferencesTimezoneTokyo => 'Japan';
+
+  @override
+  String get preferencesTimezoneHongKong => 'Hong Kong';
+
+  @override
+  String get preferencesTimezoneSingapore => 'Singapore';
+
+  @override
+  String get preferencesTimezoneNewYork => 'New York';
+
+  @override
+  String get preferencesTimezoneLosAngeles => 'Los Angeles';
+
+  @override
+  String get preferencesTimezoneLondon => 'London';
+
+  @override
+  String get preferencesTimezoneParis => 'Paris';
+
+  @override
+  String get preferencesTimezoneSydney => 'Sydney';
+
+  @override
+  String get preferencesTimezoneUtc => 'Coordinated Universal Time (UTC)';
+
+  @override
+  String get preferencesTimezoneScope =>
+      'App dates, daily statistics, and reminders use this time zone. Your device time zone stays unchanged.';
+
+  @override
+  String get authTokenLogin => 'Token';
+
+  @override
+  String get authTokenSubtitleWeb =>
+      'Enter an access token to sign in to this site.';
+
+  @override
+  String get authServerCurrentSite =>
+      'The web app connects to the current site.';
+
+  @override
+  String get authConnectionChanged =>
+      'The sign-in connection changed. Please try again.';
+
+  @override
+  String get authServerAddress => 'Server address';
+
+  @override
+  String get authServerHint => 'https://your-server.example';
+
+  @override
+  String get authServerInvalid =>
+      'Enter a complete HTTP or HTTPS server address without credentials, query parameters, or fragments.';
+
+  @override
+  String get authServerSignOutFirst => 'Sign out before switching servers.';
+
+  @override
+  String get authTokenTitle => 'Connect to your server';
+
+  @override
+  String get authTokenSubtitle =>
+      'Enter your server address and access token to sign in and sync your account.';
+
+  @override
+  String get authTokenLabel => 'Access token';
+
+  @override
+  String get authTokenRequired => 'Enter a valid access token without spaces.';
+
+  @override
+  String get authTokenInvalidResponse =>
+      'The server did not return a valid account. Check the server address.';
+
+  @override
+  String get authTokenHelp =>
+      'Sign in on your server’s website, then create a token in “Me → Profile → Access tokens”.';
+
+  @override
+  String get authTokenPasswordLogin => 'Sign in with your password';
+
+  @override
+  String get authTokenUseToken => 'Sign in with an access token';
+
+  @override
+  String get authTokenShow => 'Show token';
+
+  @override
+  String get authTokenHide => 'Hide token';
+
+  @override
+  String get tokensTitle => 'Access tokens';
+
+  @override
+  String get tokensSubtitle => 'Manage devices connected to this account';
+
+  @override
+  String get tokensHelp =>
+      'Create a separate token for each device. Enter the server address and token in the installed app. Revoking a token takes effect immediately.';
+
+  @override
+  String get tokensEmpty =>
+      'No access tokens yet. Create one to connect your phone or desktop app.';
+
+  @override
+  String get tokensName => 'Token name';
+
+  @override
+  String get tokensNameHint => 'For example: My phone';
+
+  @override
+  String get tokensNameRequired => 'Enter a token name.';
+
+  @override
+  String get tokensExpiry => 'Valid for';
+
+  @override
+  String get tokensNeverExpires => 'No expiration';
+
+  @override
+  String get tokensDays30 => '30 days';
+
+  @override
+  String get tokensDays90 => '90 days';
+
+  @override
+  String get tokensDays365 => '1 year';
+
+  @override
+  String get tokensCreated => 'Token created';
+
+  @override
+  String get tokensCopyNotice =>
+      'The full token is shown only once. Copy it and store it securely.';
+
+  @override
+  String get tokensCopy => 'Copy token';
+
+  @override
+  String get tokensCopied => 'Token copied';
+
+  @override
+  String get tokensLastUsed => 'Last used';
+
+  @override
+  String get tokensNotUsed => 'Not used yet';
+
+  @override
+  String get tokensExpiresAt => 'Expires';
+
+  @override
+  String get tokensRevoked => 'Revoked';
+
+  @override
+  String get tokensExpired => 'Expired';
+
+  @override
+  String get tokensCurrent => 'This device';
+
+  @override
+  String get tokensRevoke => 'Revoke';
+
+  @override
+  String get tokensRevokeTitle => 'Revoke access token?';
+
+  @override
+  String get tokensRevokeMessage =>
+      'Devices using this token will no longer be able to connect.';
+
+  @override
+  String get tokensRevokeCurrent =>
+      'This device uses this token. Revoking it will sign you out.';
+
+  @override
   String get appTitle => 'Duoyi';
 
   @override
@@ -205,7 +421,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLanguageDescription =>
-      'In v2, common terms such as actions, navigation, reminders, and sharing have English translations. Untranslated page copy falls back to Chinese while coverage expands.';
+      'Follow your system language or choose a language. Changes apply immediately and are saved on this device.';
 
   @override
   String get preferencesTitle => 'Personal settings';
@@ -240,7 +456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferencesTimezoneTitle => 'App time zone';
 
   @override
-  String get preferencesTimezoneFollowSystem => 'Follow phone';
+  String get preferencesTimezoneFollowSystem => 'Follow system';
 
   @override
   String get preferencesLunarTitle => 'Show lunar calendar';

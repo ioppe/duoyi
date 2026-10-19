@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+import 'app_config.dart';
+
 class WebTarget {
-  static const String raw = String.fromEnvironment(
-    'DUOYI_WEB_TARGET',
-    defaultValue: 'responsive',
-  );
+  static const String raw = AppConfig.webTarget;
 
   /// 仅测试用：非 null 时强制 [isDesktopWebBuild] 返回该值。
   ///

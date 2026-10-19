@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Header, Query, WebSocket, WebSocketDisconnect, UploadFile, File, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from typing import Iterable, Optional
 import asyncio
 import base64
@@ -26,9 +26,29 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from pathlib import Path
 
+if __package__:
+    from .config import (
+        ConfigurationError, load_settings, _db_counts, _default_db_path,
+        _legacy_db_filename, _pubspec_app_version,
+    )
+    from .settings_defaults import DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL, build_settings_defaults
+else:
+    from config import (
+        ConfigurationError, load_settings, _db_counts, _default_db_path,
+        _legacy_db_filename, _pubspec_app_version,
+    )
+    from settings_defaults import DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL, build_settings_defaults
+
+SETTINGS = load_settings()
+BUILD_GIT_SHA = SETTINGS.build_git_sha
+BUILD_TIME = SETTINGS.build_time
+OPENCLAW_MAIL_SCRIPT = SETTINGS.openclaw_mail_script
+OPENCLAW_NODE_BIN = SETTINGS.openclaw_node_bin
+REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
+
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.2"
+API_CONTRACT_VERSION = "2026-06-01.3"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_bind": True,
@@ -37,6 +57,7 @@ API_CONTRACT_FEATURES = {
     "profile_update": True,
     "password_change": True,
     "auth_session": True,
+    "access_tokens": True,
     "admin_coins": True,
     "admin_groups": True,
     "admin_ai_healthcheck": True,
@@ -53,6 +74,9 @@ API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/auth/me",
     "GET /api/me",
     "POST /api/auth/logout",
+    "GET /api/auth/tokens",
+    "POST /api/auth/tokens",
+    "DELETE /api/auth/tokens/{token_id}",
     "GET /api/mobile/apps/duoyi/update",
     "POST /api/auth/email-code",
     "POST /api/auth/email-login",
@@ -115,105 +139,42 @@ API_CONTRACT_ROUTES_HASH = hashlib.sha256(
 def _api_contract_payload() -> dict:
     return {
         "api_contract_version": API_CONTRACT_VERSION,
-        "build_git_sha": os.getenv("GIT_SHA", os.getenv("BUILD_GIT_SHA", "")),
-        "build_time": os.getenv("BUILD_TIME", ""),
+        "build_git_sha": BUILD_GIT_SHA,
+        "build_time": BUILD_TIME,
         "required_routes_hash": API_CONTRACT_ROUTES_HASH,
         "required_routes": API_CONTRACT_REQUIRED_ROUTES,
         "features": API_CONTRACT_FEATURES,
     }
 
 
-def _env_int(name: str, default: int) -> int:
-    try:
-        return int(os.getenv(name, str(default)))
-    except (TypeError, ValueError):
-        return default
-
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+    allow_origins=list(SETTINGS.cors_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def _legacy_db_filename() -> str:
-    return base64.b64decode("ZmluZ2VydGlwX3RpbWUuZGI=").decode()
-
-
-def _db_counts(path: str) -> tuple[int, int]:
-    if not os.path.exists(path) or os.path.getsize(path) == 0:
-        return (0, 0)
-    conn = sqlite3.connect(path)
-    try:
-        tables = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
-        users = (
-            conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-            if "users" in tables
-            else 0
-        )
-        feedback = (
-            conn.execute("SELECT COUNT(*) FROM feedback").fetchone()[0]
-            if "feedback" in tables
-            else 0
-        )
-        return (int(users or 0), int(feedback or 0))
-    except sqlite3.DatabaseError:
-        return (0, 0)
-    finally:
-        conn.close()
-
-
-def _default_db_path() -> str:
-    base_dir = os.path.dirname(__file__)
-    current = os.path.join(base_dir, "duoyi.db")
-    legacy = os.path.join(base_dir, _legacy_db_filename())
-    if os.path.exists(current) and os.path.exists(legacy):
-        current_users, current_feedback = _db_counts(current)
-        legacy_users, legacy_feedback = _db_counts(legacy)
-        if legacy_feedback > current_feedback:
-            return legacy
-        if current_users <= 1 and legacy_users > current_users:
-            return legacy
-        return current
-    if os.path.exists(current) or not os.path.exists(legacy):
-        return current
-    return legacy
-
-
-DB_PATH = os.getenv("DUOYI_DB_PATH", _default_db_path())
-BACKUP_DIR = os.getenv(
-    "SERVER_BACKUP_DIR", os.path.join(os.path.dirname(__file__), "backups")
-)
-AVATAR_UPLOAD_DIR = os.getenv(
-    "DUOYI_AVATAR_UPLOAD_DIR",
-    os.path.join(os.path.dirname(__file__), "uploads", "avatars"),
-)
+# Keep these aliases mutable: integrations and tests override the module globals.
+DB_PATH = SETTINGS.db_path
+BACKUP_DIR = SETTINGS.backup_dir
+AVATAR_UPLOAD_DIR = SETTINGS.avatar_upload_dir
 SERVER_BACKUP_TASK: Optional[asyncio.Task] = None
 REMINDER_EMAIL_TASK: Optional[asyncio.Task] = None
-
-# Feature flags (loaded from DB after init)
-ADMIN_BOOTSTRAP_USER = os.getenv("ADMIN_BOOTSTRAP_USER", "admin")
-ADMIN_BOOTSTRAP_PASSWORD = os.getenv("ADMIN_BOOTSTRAP_PASSWORD", "admin123")
+ADMIN_BOOTSTRAP_USER = SETTINGS.admin_bootstrap_user
+ADMIN_BOOTSTRAP_PASSWORD = SETTINGS.admin_bootstrap_password
 
 TOKENS: dict[str, str] = {}  # user_id -> token
 TOKEN_LAST_ACTIVE: dict[str, datetime] = {}
-SESSION_ONLINE_SECONDS = int(os.getenv("SESSION_ONLINE_SECONDS", "300"))
-FOCUS_ROOM_ONLINE_SECONDS = int(os.getenv("FOCUS_ROOM_ONLINE_SECONDS", "180"))
-FOCUS_ROOM_MAX_WEEKLY_SECONDS = 12 * 60 * 60 * 7
-FOCUS_ROOM_MAX_SESSION_COUNT = 1000
-FOCUS_ROOM_HEARTBEAT_THROTTLE_SECONDS = 10
-FOCUS_ROOM_SESSION_JUMP_WINDOW_SECONDS = 5 * 60
-FOCUS_ROOM_MAX_SESSION_COUNT_JUMP = 20
-FOCUS_FRIEND_REQUEST_LIMIT_PER_DAY = int(
-    os.getenv("FOCUS_FRIEND_REQUEST_LIMIT_PER_DAY", "20")
-)
+ACCESS_TOKEN_LIMIT = 50  # Active, unexpired tokens per account.
+SESSION_ONLINE_SECONDS = SETTINGS.session_online_seconds
+FOCUS_ROOM_ONLINE_SECONDS = SETTINGS.focus_room_online_seconds
+FOCUS_ROOM_MAX_WEEKLY_SECONDS = SETTINGS.focus_room_max_weekly_seconds
+FOCUS_ROOM_MAX_SESSION_COUNT = SETTINGS.focus_room_max_session_count
+FOCUS_ROOM_HEARTBEAT_THROTTLE_SECONDS = SETTINGS.focus_room_heartbeat_throttle_seconds
+FOCUS_ROOM_SESSION_JUMP_WINDOW_SECONDS = SETTINGS.focus_room_session_jump_window_seconds
+FOCUS_ROOM_MAX_SESSION_COUNT_JUMP = SETTINGS.focus_room_max_session_count_jump
+FOCUS_FRIEND_REQUEST_LIMIT_PER_DAY = SETTINGS.focus_friend_request_limit_per_day
 EMAIL_CODE_PROVIDERS = {
     "claw163",
     "openclaw",
@@ -224,54 +185,15 @@ EMAIL_CODE_PROVIDERS = {
     "none",
 }
 EMAIL_CODE_SLOTS = {"primary", "backup"}
-DEFAULT_EMAIL_TITLE = (
-    os.getenv("DUOYI_TITLE")
-    or os.getenv("EMAIL_TITLE")
-    or os.getenv("APP_TITLE")
-    or "多仪"
-)
-DEFAULT_EMAIL_SENDER_NAME = (
-    os.getenv("EMAIL_SENDER_NAME")
-    or os.getenv("EMAIL_FROM_NAME")
-    or os.getenv("MAIL_FROM_NAME")
-    or os.getenv("SENDER_NAME")
-    or DEFAULT_EMAIL_TITLE
-)
-DEFAULT_RESEND_FROM = (
-    os.getenv("RESEND_FROM")
-    or os.getenv("EMAIL_FROM")
-    or os.getenv("MAIL_FROM")
-    or f"{DEFAULT_EMAIL_TITLE} <noreply@mail.6688667.xyz>"
-)
-
-
-def _pubspec_app_version() -> tuple[str, int]:
-    pubspec = Path(__file__).resolve().parents[1] / "pubspec.yaml"
-    try:
-        match = re.search(r"^version:\s*([^\s+]+)(?:\+(\d+))?", pubspec.read_text(), re.M)
-        if match:
-            return match.group(1), int(match.group(2) or "0")
-    except (OSError, ValueError):
-        pass
-    return "1.1.43", 140009
-
-
-_DEFAULT_APP_VERSION, _DEFAULT_APP_VERSION_CODE = _pubspec_app_version()
-APP_CURRENT_VERSION = os.getenv(
-    "APP_CURRENT_VERSION",
-    os.getenv("DUOYI_APP_VERSION", _DEFAULT_APP_VERSION),
-)
-APP_CURRENT_VERSION_CODE = _env_int(
-    "APP_CURRENT_VERSION_CODE",
-    _env_int("DUOYI_APP_VERSION_CODE", _DEFAULT_APP_VERSION_CODE),
-)
-APP_PACKAGE_NAME = os.getenv("APP_PACKAGE_NAME", "com.duoyi.duoyi")
-APP_UPDATE_REPOSITORY = os.getenv("APP_UPDATE_REPOSITORY", "dq52099/duoyi")
-APP_UPDATE_DEFAULT_NOTES = os.getenv("APP_UPDATE_DEFAULT_NOTES", "包含最新修复与体验优化。")
-MOBILE_APK_DIR = os.getenv(
-    "DUOYI_MOBILE_APK_DIR",
-    os.path.join(os.path.dirname(__file__), "mobile_apps"),
-)
+DEFAULT_EMAIL_TITLE = SETTINGS.email_title
+DEFAULT_EMAIL_SENDER_NAME = SETTINGS.email_sender_name
+DEFAULT_RESEND_FROM = SETTINGS.resend_from
+APP_CURRENT_VERSION = SETTINGS.app_current_version
+APP_CURRENT_VERSION_CODE = SETTINGS.app_current_version_code
+APP_PACKAGE_NAME = SETTINGS.app_package_name
+APP_UPDATE_REPOSITORY = SETTINGS.app_update_repository
+APP_UPDATE_DEFAULT_NOTES = SETTINGS.app_update_default_notes
+MOBILE_APK_DIR = SETTINGS.mobile_apk_dir
 ADMIN_ALL_PERMISSION = "*"
 ADMIN_NO_PERMISSION = "__none__"
 ADMIN_PERMISSION_KEYS = {
@@ -318,35 +240,19 @@ ADMIN_PERMISSION_DESCRIPTIONS = {
 }
 
 
-def _env_any(*names: str, default: str = "") -> str:
-    for name in names:
-        value = os.getenv(name)
-        if value is not None:
-            return value
-    return default
+_env_any = SETTINGS.environment.text
+_env_bool = SETTINGS.environment.boolean
+_env_present = SETTINGS.environment.present
+_env_smtp_use_ssl = SETTINGS.environment.smtp_use_ssl
 
 
-def _env_bool(*names: str, default: bool = False) -> bool:
-    raw = _env_any(*names, default="true" if default else "false")
-    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _env_int(*names: str, default: int) -> int:
-    raw = _env_any(*names, default=str(default))
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return default
-
-
-def _env_present(*names: str) -> bool:
-    return any(os.getenv(name) is not None for name in names)
-
-
-def _env_smtp_use_ssl(default_port: int, *names: str) -> bool:
-    if _env_present(*names):
-        return _env_bool(*names, default=default_port == 465)
-    return default_port == 465
+def _env_int(*names: str | int, default: Optional[int] = None) -> int:
+    # Support both historic forms: (name, default) and (*aliases, default=N).
+    if default is None and names and isinstance(names[-1], int):
+        *names, default = names
+    if default is None or not names or not all(isinstance(name, str) for name in names):
+        raise TypeError("_env_int requires environment keys and an integer default")
+    return SETTINGS.environment.integer(*names, default=default)
 
 
 def _utc_now() -> datetime:
@@ -384,16 +290,69 @@ def _drop_session(user_id: str) -> None:
     TOKEN_LAST_ACTIVE.pop(user_id, None)
 
 
-def _online_user_ids(candidate_ids: Optional[Iterable[str]] = None) -> set[str]:
-    cutoff = _utc_now() - timedelta(seconds=SESSION_ONLINE_SECONDS)
-    ids = set(candidate_ids) if candidate_ids is not None else set(TOKENS.keys())
-    return {
-        user_id
-        for user_id in ids
-        if user_id in TOKENS
-        and TOKEN_LAST_ACTIVE.get(user_id) is not None
-        and TOKEN_LAST_ACTIVE[user_id] >= cutoff
-    }
+def _hash_access_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _revoke_user_token(user_id: str, db=None) -> None:
+    """Invalidate all credentials for account security changes, in one transaction."""
+    _drop_session(user_id)
+    own_connection = db is None
+    if own_connection:
+        db = get_db()
+    try:
+        db.execute(
+            "UPDATE access_tokens SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL",
+            (_utc_now_text(), user_id),
+        )
+        if own_connection:
+            db.commit()
+    finally:
+        if own_connection:
+            db.close()
+
+
+def _online_user_ids(
+    candidate_ids: Optional[Iterable[str]] = None, *, db=None
+) -> set[str]:
+    now = _utc_now()
+    cutoff = now - timedelta(seconds=SESSION_ONLINE_SECONDS)
+    ids = set(candidate_ids) if candidate_ids is not None else None
+    if ids == set():
+        return set()
+    own_connection = db is None
+    if own_connection:
+        db = get_db()
+    try:
+        params = [_format_utc(cutoff)]
+        user_filter = ""
+        if ids is not None:
+            user_filter = "AND u.id IN (" + ",".join("?" for _ in ids) + ")"
+            params.extend(ids)
+        # One batch for enabled users and their recently used, unrevoked PATs.
+        rows = db.execute(
+            "SELECT u.id, t.last_used_at, t.expires_at FROM users u "
+            "LEFT JOIN access_tokens t ON t.user_id=u.id AND t.revoked_at IS NULL "
+            "AND t.last_used_at>=? WHERE u.is_disabled=0 " + user_filter,
+            params,
+        ).fetchall()
+        online = set()
+        for row in rows:
+            user_id = row["id"]
+            session_activity = TOKEN_LAST_ACTIVE.get(user_id)
+            if user_id in TOKENS and session_activity is not None and session_activity >= cutoff:
+                online.add(user_id)
+                continue
+            last_used = _parse_server_time(row["last_used_at"])
+            expires_at = _parse_server_time(row["expires_at"])
+            if last_used is not None and last_used >= cutoff and (
+                row["expires_at"] is None or (expires_at is not None and expires_at > now)
+            ):
+                online.add(user_id)
+        return online
+    finally:
+        if own_connection:
+            db.close()
 
 
 def _parse_server_time(value: Optional[str]) -> Optional[datetime]:
@@ -1348,6 +1307,19 @@ def init_db():
             last_login_at TEXT,
             last_active_at TEXT
         );
+        CREATE TABLE IF NOT EXISTS access_tokens (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL CHECK(length(name) BETWEEN 1 AND 80),
+            prefix TEXT NOT NULL,
+            token_hash TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL,
+            last_used_at TEXT,
+            expires_at TEXT,
+            revoked_at TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_access_tokens_user ON access_tokens(user_id);
         CREATE TABLE IF NOT EXISTS sync_data (
             user_id TEXT PRIMARY KEY,
             todos TEXT DEFAULT '[]',
@@ -1802,203 +1774,14 @@ def init_db():
         "ON sync_data(updated_at)"
     )
 
-    default_registration_enabled = _env_bool("ALLOW_PUBLIC_REGISTRATION", default=True)
-    existing_registration_enabled = conn.execute(
-        "SELECT value FROM settings WHERE key=?", ("registration_enabled",)
-    ).fetchone()
-    if existing_registration_enabled is not None:
-        try:
-            default_registration_enabled = bool(json.loads(existing_registration_enabled["value"]))
-        except Exception:
-            default_registration_enabled = str(
-                existing_registration_enabled["value"]
-            ).strip().lower() in {"1", "true", "yes", "on"}
-    default_invite_code_required = os.getenv(
-        "INVITE_CODE_REQUIRED", "false"
-    ).lower() in {"1", "true", "yes"}
-    existing_invite_code_required = conn.execute(
-        "SELECT value FROM settings WHERE key=?", ("invite_code_required",)
-    ).fetchone()
-    if existing_invite_code_required is not None:
-        try:
-            default_invite_code_required = bool(json.loads(existing_invite_code_required["value"]))
-        except Exception:
-            default_invite_code_required = str(
-                existing_invite_code_required["value"]
-            ).strip().lower() in {"1", "true", "yes", "on"}
-
-    email_smtp_host_default = _env_any(
-        "EMAIL_SMTP_HOST",
-        "SMTP_HOST",
-        "MAIL_SMTP_HOST",
-        "MAIL_HOST",
-    )
-    email_smtp_port_default = _env_int(
-        "EMAIL_SMTP_PORT",
-        "SMTP_PORT",
-        "MAIL_SMTP_PORT",
-        "MAIL_PORT",
-        default=465,
-    )
-    email_smtp_username_default = _env_any(
-        "EMAIL_SMTP_USERNAME",
-        "EMAIL_ADDRESS",
-        "SMTP_USERNAME",
-        "SMTP_USER",
-        "MAIL_SMTP_USERNAME",
-        "MAIL_USERNAME",
-        "MAIL_USER",
-        "MAIL_ADDRESS",
-    )
-    email_smtp_password_default = _env_any(
-        "EMAIL_SMTP_PASSWORD",
-        "EMAIL_PASSWORD",
-        "SMTP_PASSWORD",
-        "SMTP_PASS",
-        "MAIL_SMTP_PASSWORD",
-        "MAIL_PASSWORD",
-        "MAIL_PASS",
-    )
-    email_smtp_from_default = _env_any(
-        "EMAIL_SMTP_FROM",
-        "EMAIL_FROM",
-        "MAIL_FROM",
-        "SMTP_FROM",
-        default=email_smtp_username_default,
-    )
-    email_smtp_use_ssl_default = _env_smtp_use_ssl(
-        email_smtp_port_default,
-        "EMAIL_SMTP_USE_SSL",
-        "SMTP_USE_SSL",
-        "MAIL_SMTP_USE_SSL",
-        "MAIL_USE_SSL",
-    )
-    backup_smtp_port_default = _env_int(
-        "BACKUP_EMAIL_SMTP_PORT",
-        "EMAIL_SMTP_PORT",
-        "SMTP_PORT",
-        default=email_smtp_port_default,
-    )
-    backup_smtp_use_ssl_default = _env_smtp_use_ssl(
-        backup_smtp_port_default,
-        "BACKUP_EMAIL_SMTP_USE_SSL",
-        "EMAIL_SMTP_USE_SSL",
-        "SMTP_USE_SSL",
-    )
-    reminder_smtp_port_default = _env_int(
-        "REMINDER_EMAIL_SMTP_PORT",
-        "EMAIL_SMTP_PORT",
-        "SMTP_PORT",
-        default=email_smtp_port_default,
-    )
-    reminder_smtp_use_ssl_default = _env_smtp_use_ssl(
-        reminder_smtp_port_default,
-        "REMINDER_EMAIL_SMTP_USE_SSL",
-        "EMAIL_SMTP_USE_SSL",
-        "SMTP_USE_SSL",
-    )
-    account_primary_provider_default = _env_any(
-        "EMAIL_CODE_PRIMARY_PROVIDER",
-        default=(
-            "smtp"
-            if email_smtp_host_default
-            and email_smtp_username_default
-            and email_smtp_password_default
-            else "claw163"
-        ),
-    )
-
-    # Default settings
-    default_settings = {
-        "invite_code_required": default_invite_code_required,
-        "allow_public_registration": default_registration_enabled,
-        "registration_invite_required": _env_bool(
-            "REGISTRATION_INVITE_REQUIRED",
-            default=default_invite_code_required,
-        ),
-        "registration_enabled": default_registration_enabled,
-        "registration_email_required": _env_bool("REGISTRATION_EMAIL_REQUIRED", default=True),
-        "maintenance_mode": False,
-        "maintenance_message": "",
-        # App update policy exposed through /api/config.
-        "force_update_required": False,
-        "force_app_update_enabled": False,
-        "force_relogin_enabled": False,
-        "force_relogin_issued_at": "",
-        "latest_version": "",
-        "latest_version_name": "",
-        "minimum_supported_version": "",
-        "update_notes": "",
-        "release_notes": "",
-        "update_download_url": "",
-        "default_registration_coins": 100,
-        "download_url": "",
-        # AI 由管理员统一在服务端配置，用户端仅调用 /api/ai/chat 代理
-        "ai_enabled": False,
-        "ai_base_url": os.getenv("AI_BASE_URL", "https://www.boxying.com"),
-        "ai_api_key": os.getenv("AI_API_KEY", ""),
-        "ai_model": os.getenv("AI_MODEL", "gpt-5.4-mini"),
-        "ai_daily_quota": 100,
-        # 云端备份/同步
-        "backup_enabled": True,
-        "backup_max_size_kb": 2048,          # 单用户同步 payload 上限
-        "backup_interval_minutes": 30,       # 客户端 autoSync 最小间隔
-        "backup_retain_days": 0,             # 0=永久保留
-        # 服务器数据库定期备份：本地打包 + 可选 OpenList WebDAV + 可选邮件通知
-        "server_backup_enabled": os.getenv("SERVER_BACKUP_ENABLED", "true").lower() in {"1", "true", "yes"},
-        "server_backup_interval_minutes": int(os.getenv("SERVER_BACKUP_INTERVAL_MINUTES", "720")),
-        "server_backup_retain_days": int(os.getenv("SERVER_BACKUP_RETAIN_DAYS", "14")),
-        "openlist_backup_enabled": os.getenv("OPENLIST_BACKUP_ENABLED", "false").lower() in {"1", "true", "yes"},
-        "openlist_webdav_url": os.getenv("OPENLIST_WEBDAV_URL", "").rstrip("/"),
-        "openlist_public_url": os.getenv("OPENLIST_PUBLIC_URL", "").rstrip("/"),
-        "openlist_username": os.getenv("OPENLIST_USERNAME", ""),
-        "openlist_password": os.getenv("OPENLIST_PASSWORD", ""),
-        "openlist_backup_path": os.getenv("OPENLIST_BACKUP_PATH", "/duoyi-backups"),
-        "backup_email_enabled": os.getenv("BACKUP_EMAIL_ENABLED", "false").lower() in {"1", "true", "yes"},
-        "backup_email_to": os.getenv("BACKUP_EMAIL_TO", ""),
-        "backup_email_from": os.getenv("BACKUP_EMAIL_FROM", email_smtp_from_default),
-        "backup_email_smtp_host": os.getenv("BACKUP_EMAIL_SMTP_HOST", email_smtp_host_default),
-        "backup_email_smtp_port": backup_smtp_port_default,
-        "backup_email_smtp_username": os.getenv("BACKUP_EMAIL_SMTP_USERNAME", email_smtp_username_default),
-        "backup_email_smtp_password": os.getenv("BACKUP_EMAIL_SMTP_PASSWORD", email_smtp_password_default),
-        "backup_email_smtp_use_ssl": backup_smtp_use_ssl_default,
-        # 用户邮件提醒：优先投递到用户登录名中的 email；否则使用 reminder_email_to。
-        "reminder_email_enabled": os.getenv("REMINDER_EMAIL_ENABLED", "false").lower() in {"1", "true", "yes"},
-        "reminder_email_to": os.getenv("REMINDER_EMAIL_TO", ""),
-        "reminder_email_from": os.getenv("REMINDER_EMAIL_FROM", email_smtp_from_default),
-        "reminder_email_smtp_host": os.getenv("REMINDER_EMAIL_SMTP_HOST", email_smtp_host_default),
-        "reminder_email_smtp_port": reminder_smtp_port_default,
-        "reminder_email_smtp_username": os.getenv("REMINDER_EMAIL_SMTP_USERNAME", email_smtp_username_default),
-        "reminder_email_smtp_password": os.getenv("REMINDER_EMAIL_SMTP_PASSWORD", email_smtp_password_default),
-        "reminder_email_smtp_use_ssl": reminder_smtp_use_ssl_default,
-        # 账号邮箱验证码：兼容 RE0/网关的 openclaw/resend/smtp/email_code 配置，同时保留上面的 duoyi 备份/提醒邮件配置。
-        "email_service_enabled": _env_bool("EMAIL_SERVICE_ENABLED", default=True),
-        "email_title": _env_any("DUOYI_TITLE", "EMAIL_TITLE", "APP_TITLE", default=DEFAULT_EMAIL_TITLE),
-        "email_sender_name": _env_any("EMAIL_SENDER_NAME", default=DEFAULT_EMAIL_SENDER_NAME),
-        "email_code_primary_provider": account_primary_provider_default,
-        "email_code_backup_provider": _env_any("EMAIL_CODE_BACKUP_PROVIDER", default="resend"),
-        "email_code_active_slot": _env_any("EMAIL_CODE_ACTIVE_SLOT", default="primary"),
-        "email_auto_switch_enabled": _env_bool("EMAIL_AUTO_SWITCH_ENABLED", default=False),
-        "openclaw_mail_enabled": _env_bool("OPENCLAW_MAIL_ENABLED", default=False),
-        "openclaw_mail_user": _env_any("OPENCLAW_MAIL_USER", "OPENCLAW_MAIL_USERNAME"),
-        "openclaw_mail_api_key": _env_any("OPENCLAW_MAIL_API_KEY", "OPENCLAW_MAIL_KEY"),
-        "resend_base_url": _env_any("RESEND_BASE_URL", default="https://api.resend.com"),
-        "resend_api_key": _env_any("RESEND_API_KEY"),
-        "resend_from": _env_any("RESEND_FROM", default=DEFAULT_RESEND_FROM),
-        "hermes_base_url": _env_any("HERMES_BASE_URL"),
-        "hermes_api_key": _env_any("HERMES_API_KEY"),
-        "system_notice_email_to": _env_any(
-            "SYSTEM_NOTICE_EMAIL_TO",
-            "EMAIL_HOME_ADDRESS",
-            "EMAIL_HOME_CHANNEL",
-        ),
-        "email_smtp_host": email_smtp_host_default,
-        "email_smtp_port": email_smtp_port_default,
-        "email_smtp_username": email_smtp_username_default,
-        "email_smtp_password": email_smtp_password_default,
-        "email_smtp_from": email_smtp_from_default,
-        "email_smtp_use_ssl": email_smtp_use_ssl_default,
+    existing_registration = {
+        row["key"]: row["value"]
+        for row in conn.execute(
+            "SELECT key, value FROM settings WHERE key IN (?, ?)",
+            ("registration_enabled", "invite_code_required"),
+        ).fetchall()
     }
+    default_settings = build_settings_defaults(SETTINGS, existing_registration)
     for k, v in default_settings.items():
         conn.execute(
             "INSERT OR IGNORE INTO settings(key, value) VALUES(?, ?)",
@@ -2020,7 +1803,7 @@ def init_db():
             ("default_registration_coins", json.dumps(100)),
         )
     default_group_time_coins = max(0, min(registration_coins_value, 1000000))
-    if os.getenv("REGISTRATION_EMAIL_REQUIRED") is None:
+    if not _env_present("REGISTRATION_EMAIL_REQUIRED"):
         migrated = conn.execute(
             "SELECT value FROM settings WHERE key=?",
             ("registration_email_required_default_on_migrated",),
@@ -2138,6 +1921,12 @@ def init_db():
         "SELECT 1 FROM users WHERE username=?", (ADMIN_BOOTSTRAP_USER,)
     ).fetchone()
     if cur is None:
+        if not ADMIN_BOOTSTRAP_PASSWORD.strip():
+            conn.rollback()
+            conn.close()
+            raise ConfigurationError(
+                "ADMIN_BOOTSTRAP_PASSWORD: required to create the bootstrap administrator"
+            )
         admin_id = secrets.token_hex(16)
         conn.execute(
             "INSERT INTO users(id, username, password_hash, is_admin, admin_permissions) "
@@ -2179,7 +1968,7 @@ def _ensure_private_workspace(db, user_id: str) -> None:
     )
 
 
-PASSWORD_HASH_SALT = os.getenv("PASSWORD_HASH_SALT", "duoyi_2026")
+PASSWORD_HASH_SALT = SETTINGS.password_hash_salt
 
 
 def _legacy_password_salt() -> str:
@@ -3031,49 +2820,62 @@ def _workspace_activity(
 
 
 def _verify_token(authorization: Optional[str] = Header(None)) -> str:
-    if not authorization or not authorization.startswith("Bearer "):
+    if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing token")
-    token = authorization[7:]
-    user_id = next((uid for uid, t in TOKENS.items() if t == token), None)
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    db = get_db()
-    try:
-        row = db.execute(
-            "SELECT is_disabled FROM users WHERE id=?", (user_id,)
-        ).fetchone()
-        if row is None:
-            _drop_session(user_id)
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-        if row["is_disabled"]:
-            _drop_session(user_id)
-            raise HTTPException(status_code=403, detail="Account disabled")
-    finally:
-        db.close()
-    _touch_session(user_id)
-    return user_id
+    return _verify_token_value(authorization[7:])
 
 
-def _verify_token_value(token: Optional[str]) -> str:
+def _verify_token_in_db(db, token: Optional[str], *, expected_user_id: Optional[str] = None):
+    """Validate the original credential using the caller's write transaction."""
     if not token:
         raise HTTPException(status_code=401, detail="Missing token")
     user_id = next((uid for uid, t in TOKENS.items() if t == token), None)
+    access_token = None
     if user_id is None:
+        access_token = db.execute(
+            "SELECT * FROM access_tokens WHERE token_hash=?",
+            (_hash_access_token(token),),
+        ).fetchone()
+        if access_token is None or access_token["revoked_at"] is not None:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        expires_at = _parse_server_time(access_token["expires_at"])
+        if access_token["expires_at"] is not None and (
+            expires_at is None or expires_at <= _utc_now()
+        ):
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        user_id = access_token["user_id"]
+    if expected_user_id is not None and user_id != expected_user_id:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    row = db.execute("SELECT is_disabled FROM users WHERE id=?", (user_id,)).fetchone()
+    if row is None:
+        _drop_session(user_id)
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if row["is_disabled"]:
+        _revoke_user_token(user_id, db)
+        db.commit()
+        raise HTTPException(status_code=403, detail="Account disabled")
+    return user_id, access_token
+
+
+def _verify_token_value(token: Optional[str]) -> str:
     db = get_db()
     try:
-        row = db.execute(
-            "SELECT is_disabled FROM users WHERE id=?", (user_id,)
-        ).fetchone()
-        if row is None:
-            _drop_session(user_id)
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-        if row["is_disabled"]:
-            _drop_session(user_id)
-            raise HTTPException(status_code=403, detail="Account disabled")
+        # Serialize validation and activity writes with revocation; never cache PATs.
+        db.execute("BEGIN IMMEDIATE")
+        user_id, access_token = _verify_token_in_db(db, token)
+        now = _utc_now()
+        now_text = _format_utc(now)
+        if access_token is not None:
+            db.execute(
+                "UPDATE access_tokens SET last_used_at=? WHERE id=?",
+                (now_text, access_token["id"]),
+            )
+        db.execute("UPDATE users SET last_active_at=? WHERE id=?", (now_text, user_id))
+        db.commit()
     finally:
         db.close()
-    _touch_session(user_id)
+    if access_token is None:
+        TOKEN_LAST_ACTIVE[user_id] = now
     return user_id
 
 
@@ -3118,6 +2920,21 @@ class LoginRequest(BaseModel):
     account: Optional[str] = None
     email: Optional[str] = None
     password: str
+
+
+class AccessTokenCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=80, strict=True)
+    expires_in_days: Optional[int] = Field(default=None, ge=1, le=3650, strict=True)
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Token name must not be blank")
+        return value
 
 
 class ProfileUpdate(BaseModel):
@@ -3886,9 +3703,9 @@ def ai_chat(req: AiChatRequest, user_id: str = Depends(_verify_token)):
                 raise HTTPException(status_code=429, detail=f"今日 AI 额度已用尽 ({used}/{quota})")
 
         base_url = str(
-            _setting_get(db, "ai_base_url", "https://api.openai.com")
+            _setting_get(db, "ai_base_url", DEFAULT_AI_BASE_URL)
         ).rstrip("/")
-        model = str(_setting_get(db, "ai_model", "gpt-4o-mini"))
+        model = str(_setting_get(db, "ai_model", DEFAULT_AI_MODEL))
 
         messages = []
         if req.system:
@@ -3958,14 +3775,14 @@ def admin_ai_test(
             if payload is not None
             and payload.ai_base_url is not None
             and str(payload.ai_base_url).strip()
-            else str(_setting_get(db, "ai_base_url", "https://api.openai.com"))
+            else str(_setting_get(db, "ai_base_url", DEFAULT_AI_BASE_URL))
         ).rstrip("/")
         model = (
             str(payload.ai_model).strip()
             if payload is not None
             and payload.ai_model is not None
             and str(payload.ai_model).strip()
-            else str(_setting_get(db, "ai_model", "gpt-4o-mini"))
+            else str(_setting_get(db, "ai_model", DEFAULT_AI_MODEL))
         )
         if not ai_enabled:
             return {
@@ -4455,14 +4272,13 @@ def _openclaw_mail_send_email(
     api_key = str(runtime.get("openclaw_mail_api_key") or "").strip()
     if not (user and api_key):
         return {"sent": False, "detail": "OpenClaw 邮件未完整配置"}
-    script = Path(
-        os.getenv(
-            "OPENCLAW_MAIL_SCRIPT",
-            "/opt/migrate/code_workspace/boxying-image-gateway/scripts/send_claw_email.mjs",
-        )
-    )
-    if not script.exists():
-        return {"sent": False, "detail": f"OpenClaw 邮件脚本不存在: {script}"}
+    if not OPENCLAW_MAIL_SCRIPT.strip():
+        return {"sent": False, "detail": "OpenClaw 邮件脚本未配置，请设置 OPENCLAW_MAIL_SCRIPT"}
+    script = Path(OPENCLAW_MAIL_SCRIPT)
+    if not script.is_file():
+        return {"sent": False, "detail": "OpenClaw 邮件脚本不存在，请检查 OPENCLAW_MAIL_SCRIPT"}
+    if not shutil.which(OPENCLAW_NODE_BIN):
+        return {"sent": False, "detail": "OpenClaw Node 不可用，请检查 OPENCLAW_MAIL_NODE"}
     env = {
         **os.environ,
         "OPENCLAW_MAIL_USER": user,
@@ -4476,7 +4292,7 @@ def _openclaw_mail_send_email(
     }
     try:
         completed = subprocess.run(
-            ["node", str(script)],
+            [OPENCLAW_NODE_BIN, str(script)],
             check=False,
             capture_output=True,
             text=True,
@@ -5236,7 +5052,7 @@ async def _server_backup_loop() -> None:
 
 async def _reminder_email_loop() -> None:
     while True:
-        await asyncio.sleep(int(os.getenv("REMINDER_EMAIL_POLL_SECONDS", "60")))
+        await asyncio.sleep(REMINDER_EMAIL_POLL_SECONDS)
         try:
             await asyncio.to_thread(dispatch_due_reminder_emails)
         except Exception:
@@ -6019,6 +5835,91 @@ def me(user_id: str = Depends(_verify_token)):
         db.close()
 
 
+def _access_token_metadata(row, *, current: bool = False) -> dict:
+    return {
+        key: row[key]
+        for key in (
+            "id", "name", "prefix", "created_at", "last_used_at", "expires_at", "revoked_at"
+        )
+    } | {"current": current}
+
+
+@app.get("/api/auth/tokens")
+def list_access_tokens(
+    user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
+):
+    current_hash = _hash_access_token(authorization[7:]) if isinstance(authorization, str) else ""
+    db = get_db()
+    try:
+        rows = db.execute(
+            "SELECT * FROM access_tokens WHERE user_id=? ORDER BY created_at DESC, id",
+            (user_id,),
+        ).fetchall()
+        return {"tokens": [
+            _access_token_metadata(row, current=secrets.compare_digest(row["token_hash"], current_hash))
+            for row in rows
+        ]}
+    finally:
+        db.close()
+
+
+@app.post("/api/auth/tokens")
+def create_access_token(
+    req: AccessTokenCreate,
+    user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
+):
+    if not isinstance(authorization, str) or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+    db = get_db()
+    try:
+        # Recheck the credential under the same lock as the quota check and insert.
+        db.execute("BEGIN IMMEDIATE")
+        _verify_token_in_db(db, authorization[7:], expected_user_id=user_id)
+        now = _utc_now()
+        now_text = _format_utc(now)
+        count = db.execute(
+            "SELECT COUNT(*) FROM access_tokens WHERE user_id=? AND revoked_at IS NULL "
+            "AND (expires_at IS NULL OR expires_at>?)",
+            (user_id, now_text),
+        ).fetchone()[0]
+        if count >= ACCESS_TOKEN_LIMIT:
+            raise HTTPException(status_code=400, detail="Access token limit reached")
+        raw_token = "duoyi_pat_" + secrets.token_urlsafe(32)
+        token_id = secrets.token_hex(16)
+        expires_at = (
+            _format_utc(now + timedelta(days=req.expires_in_days))
+            if req.expires_in_days is not None else None
+        )
+        db.execute(
+            "INSERT INTO access_tokens(id, user_id, name, prefix, token_hash, created_at, expires_at) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (token_id, user_id, req.name, raw_token[:18], _hash_access_token(raw_token), now_text, expires_at),
+        )
+        row = db.execute("SELECT * FROM access_tokens WHERE id=?", (token_id,)).fetchone()
+        db.commit()
+        return {"token": raw_token, **_access_token_metadata(row)}
+    finally:
+        db.close()
+
+
+@app.delete("/api/auth/tokens/{token_id}")
+def revoke_access_token(token_id: str, user_id: str = Depends(_verify_token)):
+    db = get_db()
+    try:
+        result = db.execute(
+            "UPDATE access_tokens SET revoked_at=COALESCE(revoked_at, ?) WHERE id=? AND user_id=?",
+            (_utc_now_text(), token_id, user_id),
+        )
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Token not found")
+        db.commit()
+        return {"status": "ok"}
+    finally:
+        db.close()
+
+
 @app.get("/api/me")
 def me_alias(user_id: str = Depends(_verify_token)):
     return me(user_id=user_id)
@@ -6358,7 +6259,7 @@ def confirm_password_reset(req: PasswordResetConfirm):
                 "UPDATE users SET password_hash=?, email_verified=1 WHERE id=?",
                 (_hash_password(password), user["id"]),
             )
-            _drop_session(user["id"])
+            _revoke_user_token(user["id"], db)
             _audit(db, user["id"], user["username"], "password_reset.confirm")
             db.commit()
             return {"ok": True}
@@ -6386,7 +6287,7 @@ def confirm_password_reset(req: PasswordResetConfirm):
             "UPDATE password_reset_tokens SET used_at=? WHERE token_hash=?",
             (_utc_now_text(), token_hash),
         )
-        _drop_session(row["user_id"])
+        _revoke_user_token(row["user_id"], db)
         _audit(db, row["user_id"], row["username"], "password_reset.confirm")
         db.commit()
         return {"ok": True}
@@ -6415,7 +6316,7 @@ def change_password(req: ChangePasswordRequest, user_id: str = Depends(_verify_t
             "UPDATE users SET password_hash=? WHERE id=?",
             (_hash_password(new_password), user_id),
         )
-        _drop_session(user_id)
+        _revoke_user_token(user_id, db)
         _audit(db, user_id, row["username"], "password.change")
         db.commit()
         return {"ok": True}
@@ -6535,7 +6436,23 @@ def get_avatar_upload(filename: str):
 @app.post("/api/me/logout")
 @app.post("/api/user/logout")
 @app.post("/api/account/logout")
-def logout(user_id: str = Depends(_verify_token)):
+def logout(
+    user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
+):
+    if isinstance(authorization, str):
+        db = get_db()
+        try:
+            result = db.execute(
+                "UPDATE access_tokens SET revoked_at=COALESCE(revoked_at, ?) "
+                "WHERE user_id=? AND token_hash=?",
+                (_utc_now_text(), user_id, _hash_access_token(authorization[7:])),
+            )
+            db.commit()
+            if result.rowcount:
+                return {"status": "ok"}
+        finally:
+            db.close()
     _drop_session(user_id)
     return {"status": "ok"}
 
@@ -6665,6 +6582,7 @@ def _focus_room_ranking(db, room_id: str, current_user_id: str) -> dict:
         """,
         (room_id,),
     ).fetchall()
+    online_user_ids = _online_user_ids((row["user_id"] for row in rows), db=db)
     entries = []
     for row in rows:
         last_seen = _parse_server_time(row["last_seen_at"])
@@ -6672,7 +6590,7 @@ def _focus_room_ranking(db, room_id: str, current_user_id: str) -> dict:
             bool(row["active"])
             and last_seen is not None
             and last_seen >= cutoff
-            and row["user_id"] in TOKENS
+            and row["user_id"] in online_user_ids
         )
         entries.append(
             {
@@ -6711,24 +6629,28 @@ def _focus_room_ranking(db, room_id: str, current_user_id: str) -> dict:
     }
 
 
-def _is_user_online(row) -> bool:
+def _is_user_online(row, online_user_ids: Optional[set[str]] = None) -> bool:
     parsed = _parse_server_time(row["last_active_at"])
     cutoff = _utc_now() - timedelta(seconds=SESSION_ONLINE_SECONDS)
-    return parsed is not None and parsed >= cutoff and row["id"] in TOKENS
+    if online_user_ids is None:
+        online_user_ids = _online_user_ids([row["id"]])
+    return parsed is not None and parsed >= cutoff and row["id"] in online_user_ids
 
 
-def _focus_friend_payload(row) -> dict:
+def _focus_friend_payload(row, online_user_ids: Optional[set[str]] = None) -> dict:
     return {
         "user_id": row["id"],
         "username": row["username"],
         "status": _row_get(row, "status", "accepted"),
-        "online": _is_user_online(row),
+        "online": _is_user_online(row, online_user_ids),
         "last_active_at": row["last_active_at"],
         "created_at": row["created_at"],
     }
 
 
-def _focus_friend_request_payload(row, current_user_id: str) -> dict:
+def _focus_friend_request_payload(
+    row, current_user_id: str, online_user_ids: Optional[set[str]] = None
+) -> dict:
     direction = "incoming" if row["friend_user_id"] == current_user_id else "outgoing"
     other_id = row["user_id"] if direction == "incoming" else row["friend_user_id"]
     other_username = (
@@ -6751,7 +6673,8 @@ def _focus_friend_request_payload(row, current_user_id: str) -> dict:
             {
                 "id": other_id,
                 "last_active_at": other_last_active_at,
-            }
+            },
+            online_user_ids,
         ),
         "created_at": row["created_at"],
     }
@@ -6814,6 +6737,7 @@ def _focus_friend_ranking(db, current_user_id: str) -> dict:
         users.append(current)
     users.extend(friend_rows)
     user_ids = [row["id"] for row in users]
+    online_user_ids = _online_user_ids(user_ids, db=db)
 
     stats = {
         user_id: {
@@ -6866,7 +6790,7 @@ def _focus_friend_ranking(db, current_user_id: str) -> dict:
                 "raw_weekly_seconds": raw_weekly_seconds,
                 "weekly_seconds": weekly_seconds,
                 "session_count": session_count,
-                "online": _is_user_online(row),
+                "online": _is_user_online(row, online_user_ids),
                 "active": True,
                 "is_current_user": row["id"] == current_user_id,
                 "last_seen_at": row["last_active_at"],
@@ -6910,6 +6834,7 @@ def _focus_global_ranking(db, current_user_id: str) -> dict:
         """,
         (current_user_id,),
     ).fetchall()
+    online_user_ids = _online_user_ids((row["id"] for row in rows), db=db)
 
     entries = []
     for row in rows:
@@ -6930,7 +6855,7 @@ def _focus_global_ranking(db, current_user_id: str) -> dict:
                 "raw_weekly_seconds": raw_weekly_seconds,
                 "weekly_seconds": weekly_seconds,
                 "session_count": session_count,
-                "online": _is_user_online(row),
+                "online": _is_user_online(row, online_user_ids),
                 "active": True,
                 "is_current_user": row["id"] == current_user_id,
                 "last_seen_at": row["last_active_at"],
@@ -6981,7 +6906,8 @@ def list_focus_friends(user_id: str = Depends(_verify_token)):
             """,
             (user_id,),
         ).fetchall()
-        return {"items": [_focus_friend_payload(row) for row in rows]}
+        online_user_ids = _online_user_ids((row["id"] for row in rows), db=db)
+        return {"items": [_focus_friend_payload(row, online_user_ids) for row in rows]}
     finally:
         db.close()
 
@@ -6990,9 +6916,14 @@ def list_focus_friends(user_id: str = Depends(_verify_token)):
 def list_focus_friend_requests(user_id: str = Depends(_verify_token)):
     db = get_db()
     try:
+        rows = _focus_friend_request_rows(db, user_id)
+        online_user_ids = _online_user_ids(
+            {other_id for row in rows for other_id in (row["user_id"], row["friend_user_id"])},
+            db=db,
+        )
         items = [
-            _focus_friend_request_payload(row, user_id)
-            for row in _focus_friend_request_rows(db, user_id)
+            _focus_friend_request_payload(row, user_id, online_user_ids)
+            for row in rows
         ]
         return {
             "items": items,
@@ -7279,6 +7210,7 @@ def focus_global_leaderboard(user_id: str = Depends(_verify_token)):
 async def focus_global_leaderboard_events(
     interval_seconds: int = Query(15, ge=2, le=60),
     user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
 ):
     async def event_stream():
         while True:
@@ -7287,6 +7219,11 @@ async def focus_global_leaderboard_events(
                 payload = _focus_global_ranking(db, user_id)
             finally:
                 db.close()
+            try:
+                if _verify_token(authorization) != user_id:
+                    return
+            except HTTPException:
+                return
             yield (
                 "event: ranking\n"
                 f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
@@ -7633,6 +7570,7 @@ async def focus_room_events(
     room_id: str,
     interval_seconds: int = Query(15, ge=2, le=60),
     user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
 ):
     clean_room_id = _clean_focus_room_id(room_id)
 
@@ -7643,6 +7581,11 @@ async def focus_room_events(
                 payload = _focus_room_ranking(db, clean_room_id, user_id)
             finally:
                 db.close()
+            try:
+                if _verify_token(authorization) != user_id:
+                    return
+            except HTTPException:
+                return
             yield (
                 "event: ranking\n"
                 f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
@@ -7678,6 +7621,7 @@ async def focus_room_events_ws(websocket: WebSocket, room_id: str):
         interval_seconds = 15
 
     async def send_ranking():
+        _verify_focus_websocket(websocket)
         db = get_db()
         try:
             payload = _focus_room_ranking(db, clean_room_id, user_id)
@@ -7693,11 +7637,14 @@ async def focus_room_events_ws(websocket: WebSocket, room_id: str):
                     websocket.receive_json(),
                     timeout=interval_seconds,
                 )
+                _verify_focus_websocket(websocket)
                 event = message.get("event") if isinstance(message, dict) else None
                 if event in ("ping", "ranking"):
                     await send_ranking()
             except asyncio.TimeoutError:
                 await send_ranking()
+    except HTTPException:
+        await websocket.close(code=1008)
     except WebSocketDisconnect:
         return
 
@@ -7719,6 +7666,7 @@ async def focus_global_leaderboard_events_ws(websocket: WebSocket):
         interval_seconds = 15
 
     async def send_ranking():
+        _verify_focus_websocket(websocket)
         db = get_db()
         try:
             payload = _focus_global_ranking(db, user_id)
@@ -7734,11 +7682,14 @@ async def focus_global_leaderboard_events_ws(websocket: WebSocket):
                     websocket.receive_json(),
                     timeout=interval_seconds,
                 )
+                _verify_focus_websocket(websocket)
                 event = message.get("event") if isinstance(message, dict) else None
                 if event in ("ping", "ranking"):
                     await send_ranking()
             except asyncio.TimeoutError:
                 await send_ranking()
+    except HTTPException:
+        await websocket.close(code=1008)
     except WebSocketDisconnect:
         return
 
@@ -10865,7 +10816,7 @@ def admin_bulk_update_user_status(
         )
         if is_disabled:
             for user_id in user_ids:
-                _drop_session(user_id)
+                _revoke_user_token(user_id, db)
         _audit(
             db,
             actor,
@@ -11068,7 +11019,7 @@ def admin_update_user(
                 (1 if is_disabled_value else 0, user_id),
             )
             if is_disabled_value:
-                _drop_session(user_id)
+                _revoke_user_token(user_id, db)
         if group_id_value is not None:
             _ensure_admin_any_permission(db, actor, ("groups", "coins"))
             group_id = (group_id_value or "").strip() or "group_default"
@@ -11089,7 +11040,7 @@ def admin_update_user(
                 "UPDATE users SET password_hash=? WHERE id=?",
                 (_hash_password(next_password), user_id),
             )
-            _drop_session(user_id)  # force re-login
+            _revoke_user_token(user_id, db)  # force re-login on every device
 
         coin_adjustment_result = None
         if has_coin_adjustment:
@@ -11558,7 +11509,7 @@ def admin_delete_user(user_id: str, actor: str = Depends(_require_admin)):
                     status_code=400, detail="Cannot delete the last admin"
                 )
         db.execute("DELETE FROM users WHERE id=?", (user_id,))
-        _drop_session(user_id)
+        _revoke_user_token(user_id, db)
         _audit(
             db, actor, _get_username(db, actor),
             "user.delete", target=user_id, detail=row["username"]

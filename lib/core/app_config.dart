@@ -1,36 +1,57 @@
-/// 应用硬编码配置 —— APK/Web 编译后即固定，不再可在运行时修改。
-///
-/// 两层策略：
-/// 1. 源码默认值 [defaultServerUrl] —— 需要发布前改动源码；
-/// 2. 构建期注入，通过 `--dart-define=DUOYI_SERVER_URL=https://xxx` 覆盖。
-///
-/// **普通用户看不到也无法修改；管理员亦不在 APP 内改，如要换址须重新构建分发。**
-///
-/// 推荐用法：
-/// ```bash
-/// flutter build apk --release \
-///   --dart-define=DUOYI_SERVER_URL=https://duoyi.mycompany.com
-///
-/// flutter build web --release \
-///   --dart-define=DUOYI_SERVER_URL=https://duoyi.mycompany.com
-///
-/// # 或者与前端同域反代：留空，走相对路径，在 nginx 里把 /api 代到后端
-/// flutter build web --release --dart-define=DUOYI_SERVER_URL=
-/// ```
-class AppConfig {
-  /// 源码默认值 —— 发布前按需改动；
-  /// 留空字符串表示"走相对路径"(前后端同源部署)。
-  static const String defaultServerUrl = 'http://6688667.xyz';
+import 'client_deployment_config.dart';
 
+/// Public, immutable build configuration. Deployments live in
+/// config/deployment.json and are injected with --dart-define-from-file.
+/// The server URL is an initial installed-client value; Web uses its current origin.
+/// AuthProvider owns the active runtime connection.
+class AppConfig {
+  static const String defaultServerUrl = '';
   static const String buildTimeServerUrl = String.fromEnvironment(
     'DUOYI_SERVER_URL',
-    defaultValue: _kSentinel,
+    defaultValue: defaultServerUrl,
+  );
+  static const String webTarget = String.fromEnvironment(
+    'DUOYI_WEB_TARGET',
+    defaultValue: 'responsive',
+  );
+  static const String _updateRepository = String.fromEnvironment(
+    'DUOYI_UPDATE_REPOSITORY',
+  );
+  static const String _httpTimeout = String.fromEnvironment(
+    'DUOYI_HTTP_TIMEOUT_SECONDS',
+    defaultValue: '12',
+  );
+  static const String _fileTimeout = String.fromEnvironment(
+    'DUOYI_FILE_TIMEOUT_SECONDS',
+    defaultValue: '30',
+  );
+  static const String _aiTimeout = String.fromEnvironment(
+    'DUOYI_AI_TIMEOUT_SECONDS',
+    defaultValue: '75',
+  );
+  static const String _updateTimeout = String.fromEnvironment(
+    'DUOYI_UPDATE_TIMEOUT_SECONDS',
+    defaultValue: '8',
   );
 
-  /// 没有通过 --dart-define 时的哨兵值。
-  static const String _kSentinel = '__USE_DEFAULT__';
+  static final ClientDeploymentConfig configuration =
+      ClientDeploymentConfig.fromValues({
+        'DUOYI_SERVER_URL': buildTimeServerUrl,
+        'DUOYI_UPDATE_REPOSITORY': _updateRepository,
+        'DUOYI_WEB_TARGET': webTarget,
+        'DUOYI_HTTP_TIMEOUT_SECONDS': _httpTimeout,
+        'DUOYI_FILE_TIMEOUT_SECONDS': _fileTimeout,
+        'DUOYI_AI_TIMEOUT_SECONDS': _aiTimeout,
+        'DUOYI_UPDATE_TIMEOUT_SECONDS': _updateTimeout,
+      });
 
-  /// 最终使用的服务器地址。返回空串代表相对路径。
-  static String get bakedServerUrl =>
-      buildTimeServerUrl == _kSentinel ? defaultServerUrl : buildTimeServerUrl;
+  static String get bakedServerUrl => configuration.serverUrl;
+  static String get updateRepository => configuration.updateRepository;
+  static Duration get httpTimeout => configuration.httpTimeout;
+  static Duration get fileTimeout => configuration.fileTimeout;
+  static Duration get aiTimeout => configuration.aiTimeout;
+  static Duration get updateTimeout => configuration.updateTimeout;
+
+  /// Accessing the immutable value validates all compile-time configuration.
+  static ClientDeploymentConfig validate() => configuration;
 }

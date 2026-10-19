@@ -98,6 +98,408 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随系统'**
+  String get settingsLanguageSystem;
+
+  /// No description provided for @preferencesDisplayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示与行为'**
+  String get preferencesDisplayTitle;
+
+  /// No description provided for @preferencesDisplaySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'语言、日期、默认入口、交互和归档'**
+  String get preferencesDisplaySubtitle;
+
+  /// No description provided for @preferencesEntryDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'按类别管理语言、日期、默认行为和导航。'**
+  String get preferencesEntryDescription;
+
+  /// No description provided for @preferencesEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'个性入口'**
+  String get preferencesEntryTitle;
+
+  /// No description provided for @preferencesEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择要调整的设置类别'**
+  String get preferencesEntrySubtitle;
+
+  /// No description provided for @preferencesNavigationTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航入口'**
+  String get preferencesNavigationTitle;
+
+  /// No description provided for @preferencesMenuDisplay.
+  ///
+  /// In zh, this message translates to:
+  /// **'语言与日期'**
+  String get preferencesMenuDisplay;
+
+  /// No description provided for @preferencesMenuCalendar.
+  ///
+  /// In zh, this message translates to:
+  /// **'日期日历'**
+  String get preferencesMenuCalendar;
+
+  /// No description provided for @preferencesMenuInteractionArchive.
+  ///
+  /// In zh, this message translates to:
+  /// **'交互归档'**
+  String get preferencesMenuInteractionArchive;
+
+  /// No description provided for @preferencesTimezoneShanghai.
+  ///
+  /// In zh, this message translates to:
+  /// **'中国标准时间'**
+  String get preferencesTimezoneShanghai;
+
+  /// No description provided for @preferencesTimezoneMexico.
+  ///
+  /// In zh, this message translates to:
+  /// **'墨西哥城时间'**
+  String get preferencesTimezoneMexico;
+
+  /// No description provided for @preferencesTimezoneTijuana.
+  ///
+  /// In zh, this message translates to:
+  /// **'蒂华纳时间'**
+  String get preferencesTimezoneTijuana;
+
+  /// No description provided for @preferencesTimezoneTokyo.
+  ///
+  /// In zh, this message translates to:
+  /// **'日本时间'**
+  String get preferencesTimezoneTokyo;
+
+  /// No description provided for @preferencesTimezoneHongKong.
+  ///
+  /// In zh, this message translates to:
+  /// **'香港时间'**
+  String get preferencesTimezoneHongKong;
+
+  /// No description provided for @preferencesTimezoneSingapore.
+  ///
+  /// In zh, this message translates to:
+  /// **'新加坡时间'**
+  String get preferencesTimezoneSingapore;
+
+  /// No description provided for @preferencesTimezoneNewYork.
+  ///
+  /// In zh, this message translates to:
+  /// **'纽约时间'**
+  String get preferencesTimezoneNewYork;
+
+  /// No description provided for @preferencesTimezoneLosAngeles.
+  ///
+  /// In zh, this message translates to:
+  /// **'洛杉矶时间'**
+  String get preferencesTimezoneLosAngeles;
+
+  /// No description provided for @preferencesTimezoneLondon.
+  ///
+  /// In zh, this message translates to:
+  /// **'伦敦时间'**
+  String get preferencesTimezoneLondon;
+
+  /// No description provided for @preferencesTimezoneParis.
+  ///
+  /// In zh, this message translates to:
+  /// **'巴黎时间'**
+  String get preferencesTimezoneParis;
+
+  /// No description provided for @preferencesTimezoneSydney.
+  ///
+  /// In zh, this message translates to:
+  /// **'悉尼时间'**
+  String get preferencesTimezoneSydney;
+
+  /// No description provided for @preferencesTimezoneUtc.
+  ///
+  /// In zh, this message translates to:
+  /// **'协调世界时（UTC）'**
+  String get preferencesTimezoneUtc;
+
+  /// No description provided for @preferencesTimezoneScope.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用内日期、今日统计和提醒采用此时区；设备系统时区保持不变。'**
+  String get preferencesTimezoneScope;
+
+  /// No description provided for @authTokenLogin.
+  ///
+  /// In zh, this message translates to:
+  /// **'令牌'**
+  String get authTokenLogin;
+
+  /// No description provided for @authTokenSubtitleWeb.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入访问令牌，登录当前站点的账号。'**
+  String get authTokenSubtitleWeb;
+
+  /// No description provided for @authServerCurrentSite.
+  ///
+  /// In zh, this message translates to:
+  /// **'网页版固定连接当前站点。'**
+  String get authServerCurrentSite;
+
+  /// No description provided for @authConnectionChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录连接已变更，请重试。'**
+  String get authConnectionChanged;
+
+  /// No description provided for @authServerAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器地址'**
+  String get authServerAddress;
+
+  /// No description provided for @authServerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'https://your-server.example'**
+  String get authServerHint;
+
+  /// No description provided for @authServerInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入完整的 HTTP 或 HTTPS 服务器地址，不含账号、查询参数或片段。'**
+  String get authServerInvalid;
+
+  /// No description provided for @authServerSignOutFirst.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先退出当前账号，再切换服务器。'**
+  String get authServerSignOutFirst;
+
+  /// No description provided for @authTokenTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接到你的服务器'**
+  String get authTokenTitle;
+
+  /// No description provided for @authTokenSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写服务器地址和访问令牌，即可登录并同步账号数据。'**
+  String get authTokenSubtitle;
+
+  /// No description provided for @authTokenLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'访问令牌'**
+  String get authTokenLabel;
+
+  /// No description provided for @authTokenRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入有效的访问令牌，令牌中不能包含空格。'**
+  String get authTokenRequired;
+
+  /// No description provided for @authTokenInvalidResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器未返回有效的账号信息，请检查服务器地址。'**
+  String get authTokenInvalidResponse;
+
+  /// No description provided for @authTokenHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'先在服务器的网页版登录，在“我的 → 个人资料 → 访问令牌”中创建令牌。'**
+  String get authTokenHelp;
+
+  /// No description provided for @authTokenPasswordLogin.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用账号密码登录'**
+  String get authTokenPasswordLogin;
+
+  /// No description provided for @authTokenUseToken.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用访问令牌登录'**
+  String get authTokenUseToken;
+
+  /// No description provided for @authTokenShow.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示令牌'**
+  String get authTokenShow;
+
+  /// No description provided for @authTokenHide.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏令牌'**
+  String get authTokenHide;
+
+  /// No description provided for @tokensTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'访问令牌'**
+  String get tokensTitle;
+
+  /// No description provided for @tokensSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理连接到此账号的设备'**
+  String get tokensSubtitle;
+
+  /// No description provided for @tokensHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'为每台设备创建独立令牌。将服务器地址和令牌填入安装版登录页；撤销后该令牌立即失效。'**
+  String get tokensHelp;
+
+  /// No description provided for @tokensEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有访问令牌。创建一个，用于连接手机或桌面客户端。'**
+  String get tokensEmpty;
+
+  /// No description provided for @tokensName.
+  ///
+  /// In zh, this message translates to:
+  /// **'令牌名称'**
+  String get tokensName;
+
+  /// No description provided for @tokensNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：我的手机'**
+  String get tokensNameHint;
+
+  /// No description provided for @tokensNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入令牌名称。'**
+  String get tokensNameRequired;
+
+  /// No description provided for @tokensExpiry.
+  ///
+  /// In zh, this message translates to:
+  /// **'有效期'**
+  String get tokensExpiry;
+
+  /// No description provided for @tokensNeverExpires.
+  ///
+  /// In zh, this message translates to:
+  /// **'无过期时间'**
+  String get tokensNeverExpires;
+
+  /// No description provided for @tokensDays30.
+  ///
+  /// In zh, this message translates to:
+  /// **'30 天'**
+  String get tokensDays30;
+
+  /// No description provided for @tokensDays90.
+  ///
+  /// In zh, this message translates to:
+  /// **'90 天'**
+  String get tokensDays90;
+
+  /// No description provided for @tokensDays365.
+  ///
+  /// In zh, this message translates to:
+  /// **'1 年'**
+  String get tokensDays365;
+
+  /// No description provided for @tokensCreated.
+  ///
+  /// In zh, this message translates to:
+  /// **'令牌已创建'**
+  String get tokensCreated;
+
+  /// No description provided for @tokensCopyNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'完整令牌仅显示这一次，请复制并妥善保存。'**
+  String get tokensCopyNotice;
+
+  /// No description provided for @tokensCopy.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制令牌'**
+  String get tokensCopy;
+
+  /// No description provided for @tokensCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'令牌已复制'**
+  String get tokensCopied;
+
+  /// No description provided for @tokensLastUsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次使用时间'**
+  String get tokensLastUsed;
+
+  /// No description provided for @tokensNotUsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未使用'**
+  String get tokensNotUsed;
+
+  /// No description provided for @tokensExpiresAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'过期时间'**
+  String get tokensExpiresAt;
+
+  /// No description provided for @tokensRevoked.
+  ///
+  /// In zh, this message translates to:
+  /// **'已撤销'**
+  String get tokensRevoked;
+
+  /// No description provided for @tokensExpired.
+  ///
+  /// In zh, this message translates to:
+  /// **'已过期'**
+  String get tokensExpired;
+
+  /// No description provided for @tokensCurrent.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前设备'**
+  String get tokensCurrent;
+
+  /// No description provided for @tokensRevoke.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销'**
+  String get tokensRevoke;
+
+  /// No description provided for @tokensRevokeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销访问令牌？'**
+  String get tokensRevokeTitle;
+
+  /// No description provided for @tokensRevokeMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用此令牌的设备将无法继续连接。'**
+  String get tokensRevokeMessage;
+
+  /// No description provided for @tokensRevokeCurrent.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是当前设备使用的令牌，撤销后将退出登录。'**
+  String get tokensRevokeCurrent;
+
   /// 应用标题
   ///
   /// In zh, this message translates to:
@@ -491,7 +893,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLanguageDescription.
   ///
   /// In zh, this message translates to:
-  /// **'说明：当前 v2 阶段已迁移高频公共词条（按钮、导航、提醒、共享）。剩余页面文案随后续迭代逐步翻译，未翻译部分会回退到中文显示。'**
+  /// **'默认跟随系统语言，也可手动选择。修改后立即生效，并保存在本机。'**
   String get settingsLanguageDescription;
 
   /// No description provided for @preferencesTitle.
@@ -557,7 +959,7 @@ abstract class AppLocalizations {
   /// No description provided for @preferencesTimezoneFollowSystem.
   ///
   /// In zh, this message translates to:
-  /// **'跟随手机'**
+  /// **'跟随系统'**
   String get preferencesTimezoneFollowSystem;
 
   /// No description provided for @preferencesLunarTitle.

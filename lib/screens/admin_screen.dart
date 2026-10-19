@@ -1,3 +1,4 @@
+import '../core/app_clock.dart';
 import 'dart:async';
 import 'dart:io' show File;
 
@@ -7,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/app_version.dart';
-import '../core/app_config.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/auth_provider.dart';
@@ -895,9 +895,9 @@ class _DashboardTabState extends State<_DashboardTab> {
             icon: Icons.verified_outlined,
             color: Colors.indigo,
             title: '客户端连接',
-            message: AppConfig.bakedServerUrl.isEmpty
+            message: context.watch<AuthProvider>().baseUrl.isEmpty
                 ? '相对路径 (同域反代)'
-                : AppConfig.bakedServerUrl,
+                : context.watch<AuthProvider>().baseUrl,
             margin: const EdgeInsets.only(bottom: 12),
           ),
           _GridCards([
@@ -3883,8 +3883,7 @@ class _BackupSettingsTabState extends State<_BackupSettingsTab> {
           (data['resend_base_url'] ?? 'https://api.resend.com').toString();
       _resendApiKeyCtrl.text = (data['resend_api_key'] ?? '').toString();
       _resendApiKeyMasked = data['resend_api_key_set'] == true;
-      _resendFromCtrl.text =
-          (data['resend_from'] ?? '多仪 <noreply@mail.6688667.xyz>').toString();
+      _resendFromCtrl.text = (data['resend_from'] ?? '').toString();
       _systemNoticeEmailCtrl.text = (data['system_notice_email_to'] ?? '')
           .toString();
       _accountSmtpHostCtrl.text = (data['email_smtp_host'] ?? '').toString();
@@ -6214,7 +6213,7 @@ class _UsersTabState extends State<_UsersTab> {
     if (!hasTimezone) normalized = '${normalized}Z';
     final parsed = DateTime.tryParse(normalized);
     if (parsed == null) return text;
-    final local = parsed.toLocal();
+    final local = AppClock.toLocal(parsed);
     return I18nDateFormat.fullDateTime(local);
   }
 

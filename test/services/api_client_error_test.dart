@@ -19,7 +19,7 @@ void main() {
           isA<ApiException>().having(
             (e) => e.message,
             'message',
-            contains('未配置服务器地址'),
+            contains('登录页配置服务器地址'),
           ),
         ),
       );

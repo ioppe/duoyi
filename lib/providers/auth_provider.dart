@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../core/app_config.dart';
+import '../core/i18n.dart';
+import '../core/server_connection.dart';
 import '../services/account_local_data_cleaner.dart';
 import '../services/api_client.dart';
 
@@ -97,16 +98,18 @@ class AuthState {
   );
 }
 
-/// 登录态 + 连接到服务器的 ApiClient。
-///
-/// 服务器地址完全由 [AppConfig.bakedServerUrl] 决定，不可在运行时修改。
-/// 对于历史版本在本地留下的 `auth_base_url_admin` 键，启动时会清理掉。
+/// 登录态、运行时服务器连接与账号数据边界。
 class AuthProvider extends ChangeNotifier {
+  static const serverUrlStorageKey = 'auth_server_url';
+  static const sessionServerStorageKey = 'auth_state_server_url';
+  final ApiClient Function(String baseUrl, String? token)? _clientFactory;
   AuthState _state = const AuthState();
   late String _baseUrl;
   Map<String, dynamic> _serverConfig = const {};
   late ApiClient _client;
   int _stateMutationSerial = 0;
+  int _authAttemptSerial = 0;
+  Future<void> _accountTransition = Future<void>.value();
   int _refreshMeRequestSerial = 0;
   int _lastAppliedRefreshMeRequestSerial = 0;
   static const _refreshMeMinInterval = Duration(seconds: 30);
@@ -146,21 +149,37 @@ class AuthProvider extends ChangeNotifier {
     ApiClient? client,
     AuthState initialState = const AuthState(),
     String? baseUrl,
-  }) {
+    ApiClient Function(String baseUrl, String? token)? clientFactory,
+  }) : _clientFactory = clientFactory {
     _state = initialState;
-    _baseUrl = baseUrl ?? client?.baseUrl ?? AppConfig.bakedServerUrl;
+    _baseUrl = baseUrl ?? client?.baseUrl ?? ServerConnection.defaultBaseUrl();
     _client = client ?? ApiClient(baseUrl: _baseUrl, token: _state.token);
   }
 
   Future<void> loadFromStorage({bool refreshServerConfig = true}) async {
     final prefs = await SharedPreferences.getInstance();
-    // 清理旧版本可能遗留的本地服务器覆盖；当前策略不允许 APP 内改地址。
     await prefs.remove('auth_base_url');
     await prefs.remove('auth_base_url_admin');
-
-    _baseUrl = AppConfig.bakedServerUrl;
-
-    final raw = prefs.getString('auth_state');
+    final defaultUrl = ServerConnection.defaultBaseUrl();
+    final savedUrl = kIsWeb ? null : prefs.getString(serverUrlStorageKey);
+    try {
+      _baseUrl = savedUrl == null
+          ? defaultUrl
+          : ServerConnection.normalize(savedUrl);
+    } on FormatException {
+      _baseUrl = defaultUrl;
+      await prefs.remove(serverUrlStorageKey);
+    }
+    final savedServer = prefs.getString(sessionServerStorageKey);
+    final expectedServer = ServerConnection.identity(_baseUrl);
+    final legacyServer = ServerConnection.identity(
+      ServerConnection.defaultBaseUrl(isWeb: false),
+    );
+    final sessionMatches =
+        savedServer == expectedServer ||
+        (savedServer == null && expectedServer == legacyServer);
+    final raw = sessionMatches ? prefs.getString('auth_state') : null;
+    if (!sessionMatches) await prefs.remove('auth_state');
     var loadedState = const AuthState();
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -173,7 +192,8 @@ class AuthProvider extends ChangeNotifier {
       await _clearResidualAccountDataIfSignedOut(prefs);
     }
     _state = loadedState;
-    _client = ApiClient(baseUrl: _baseUrl, token: _state.token);
+    _client = _newClient(_baseUrl, _state.token);
+    await prefs.setString(sessionServerStorageKey, expectedServer);
     await _persistAccountDataOwner(prefs, _state);
     notifyListeners();
     if (refreshServerConfig) {
@@ -201,11 +221,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _refreshServerConfigFromServerNow() async {
-    if (_baseUrl.isEmpty) {
-      // 同域相对路径下也可以拉 /api/config
-    }
+    final requestClient = _client;
     try {
-      final cfg = await _client.get('/api/config');
+      final cfg = await requestClient.get('/api/config');
+      if (!identical(requestClient, _client)) return;
       _lastServerConfigRefreshAt = DateTime.now();
       if (jsonEncode(_serverConfig) == jsonEncode(cfg)) return;
       _serverConfig = cfg;
@@ -218,6 +237,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _persistState() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      sessionServerStorageKey,
+      ServerConnection.identity(_baseUrl),
+    );
+    if (!kIsWeb && _baseUrl.isNotEmpty) {
+      await prefs.setString(serverUrlStorageKey, _baseUrl);
+    }
     await prefs.setString('auth_state', json.encode(_state.toJson()));
     await _persistAccountDataOwner(prefs, _state);
   }
@@ -231,6 +257,152 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
+  ApiClient _newClient(String url, String? token) =>
+      _clientFactory?.call(url, token) ?? ApiClient(baseUrl: url, token: token);
+
+  void _resetConnectionConfig() {
+    _serverConfig = const {};
+    _lastServerConfigRefreshAt = null;
+    _serverConfigRefreshInFlight = null;
+    _refreshMeInFlight = null;
+    _lastRefreshMeAt = null;
+    _refreshMeRequestSerial++;
+    onServerConfigChanged?.call(_serverConfig);
+  }
+
+  String _validatedServerUrl(String value) {
+    try {
+      return ServerConnection.normalize(value);
+    } on FormatException {
+      throw ApiException(I18n.tr('auth.server.invalid'));
+    }
+  }
+
+  Future<void> _runAccountTransition(Future<void> Function() action) {
+    final result = _accountTransition.then((_) => action());
+    _accountTransition = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<void> _applyAuthenticatedResponse(
+    Map<String, dynamic> response, {
+    required ApiClient expectedClient,
+    required int attempt,
+    required String reason,
+    String? serverUrl,
+    String? token,
+    ApiClient? nextClient,
+  }) => _runAccountTransition(() async {
+    void checkCurrent() {
+      if (attempt != _authAttemptSerial ||
+          !identical(expectedClient, _client)) {
+        throw ApiException(I18n.tr('auth.connection_changed'));
+      }
+    }
+
+    checkCurrent();
+    final url = serverUrl ?? _baseUrl;
+    var nextState = _stateFromAuthResponse(
+      response,
+      fallbackState: AuthState(token: token),
+      avatarBaseUrl: url,
+    );
+    if (token != null) nextState = nextState.copyWith(token: token);
+    if (!nextState.isLoggedIn || _stableAccountIdentity(nextState) == null) {
+      throw ApiException(I18n.tr('auth.token.invalid_response'));
+    }
+    final previousState = _state;
+    final serverChanged =
+        ServerConnection.identity(url) != ServerConnection.identity(_baseUrl);
+    await _notifyAccountIdentityChanging(
+      previousState,
+      nextState,
+      force: serverChanged,
+    );
+    checkCurrent();
+    _baseUrl = url;
+    _state = nextState;
+    _client = nextClient ?? _newClient(url, _state.token);
+    if (serverChanged || token != null) _resetConnectionConfig();
+    _markAccountMutation(reason);
+    await _persistState();
+    await _notifyAccountPayloadChanged(response);
+    await _notifyAccountProfileChanged();
+    notifyListeners();
+  });
+
+  /// Configure the signed-out password/email flow. Never reuse old credentials.
+  Future<void> configureServer(String value) => _runAccountTransition(() async {
+    if (kIsWeb) return;
+    final url = _validatedServerUrl(value);
+    if (url == _baseUrl) return;
+    if (_state.isLoggedIn) {
+      throw ApiException(I18n.tr('auth.server.sign_out_first'));
+    }
+    _authAttemptSerial++;
+    _baseUrl = url;
+    _client = _newClient(url, null);
+    _resetConnectionConfig();
+    await _persistState();
+    notifyListeners();
+  });
+
+  /// Verify a candidate connection before stopping the current account's sync.
+  Future<void> loginWithToken({
+    required String serverUrl,
+    required String token,
+  }) async {
+    final url = kIsWeb ? _baseUrl : _validatedServerUrl(serverUrl);
+    final secret = token.trim();
+    if (secret.isEmpty || RegExp(r'\s').hasMatch(secret)) {
+      throw ApiException(I18n.tr('auth.token.required'));
+    }
+    final expectedClient = _client;
+    final attempt = ++_authAttemptSerial;
+    final candidate = _newClient(url, secret);
+    final response = await candidate.get('/api/auth/me');
+    await _applyAuthenticatedResponse(
+      response,
+      expectedClient: expectedClient,
+      attempt: attempt,
+      reason: 'token_login',
+      serverUrl: url,
+      token: secret,
+      nextClient: candidate,
+    );
+    await refreshServerConfigFromServer(force: true);
+  }
+
+  Future<List<Map<String, dynamic>>> listAccessTokens() async {
+    final response = await _client.get('/api/auth/tokens');
+    return (response['tokens'] as List)
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createAccessToken({
+    required String name,
+    int? expiresInDays,
+  }) => _client.post('/api/auth/tokens', {
+    'name': name.trim(),
+    'expires_in_days': expiresInDays,
+  });
+
+  Future<void> revokeAccessToken(String id, {bool current = false}) async {
+    final requestClient = _client;
+    final attempt = _authAttemptSerial;
+    await requestClient.delete('/api/auth/tokens/${Uri.encodeComponent(id)}');
+    if (current) {
+      await _clearLocalSession(
+        expectedClient: requestClient,
+        expectedAttempt: attempt,
+      );
+    }
+  }
+
   Future<void> register({
     required String username,
     required String password,
@@ -239,7 +411,9 @@ class AuthProvider extends ChangeNotifier {
     String? displayName,
     String? inviteCode,
   }) async {
-    final res = await _client.post('/api/auth/register', {
+    final requestClient = _client;
+    final attempt = ++_authAttemptSerial;
+    final res = await requestClient.post('/api/auth/register', {
       'username': username,
       'password': password,
       if (email != null && email.isNotEmpty) 'email': email,
@@ -251,19 +425,12 @@ class AuthProvider extends ChangeNotifier {
         'invitation_code': inviteCode,
       },
     });
-    final previousState = _state;
-    final nextState = _stateFromAuthResponse(
+    await _applyAuthenticatedResponse(
       res,
-      fallbackState: const AuthState(),
+      expectedClient: requestClient,
+      attempt: attempt,
+      reason: 'register',
     );
-    await _notifyAccountIdentityChanging(previousState, nextState);
-    _state = nextState;
-    _markAccountMutation('register');
-    _client = ApiClient(baseUrl: _baseUrl, token: _state.token);
-    await _persistState();
-    await _notifyAccountPayloadChanged(res);
-    await _notifyAccountProfileChanged();
-    notifyListeners();
     await refreshServerConfigFromServer();
   }
 
@@ -344,29 +511,26 @@ class AuthProvider extends ChangeNotifier {
     required String username,
     required String password,
   }) async {
-    final res = await _client.post('/api/auth/login', {
+    final requestClient = _client;
+    final attempt = ++_authAttemptSerial;
+    final res = await requestClient.post('/api/auth/login', {
       'username': username,
       'account': username,
       if (_looksLikeEmail(username)) 'email': username,
       'password': password,
     });
-    final previousState = _state;
-    final nextState = _stateFromAuthResponse(
+    await _applyAuthenticatedResponse(
       res,
-      fallbackState: const AuthState(),
+      expectedClient: requestClient,
+      attempt: attempt,
+      reason: 'login',
     );
-    await _notifyAccountIdentityChanging(previousState, nextState);
-    _state = nextState;
-    _markAccountMutation('login');
-    _client = ApiClient(baseUrl: _baseUrl, token: _state.token);
-    await _persistState();
-    await _notifyAccountPayloadChanged(res);
-    await _notifyAccountProfileChanged();
-    notifyListeners();
     await refreshServerConfigFromServer();
   }
 
   Future<void> emailLogin({required String email, required String code}) async {
+    final requestClient = _client;
+    final attempt = ++_authAttemptSerial;
     final res = await _postFirstAvailable(
       const [
         '/api/auth/email-login',
@@ -392,23 +556,18 @@ class AuthProvider extends ChangeNotifier {
       ],
       {'email': email, 'code': code, 'email_code': code},
     );
-    final previousState = _state;
-    final nextState = _stateFromAuthResponse(
+    await _applyAuthenticatedResponse(
       res,
-      fallbackState: const AuthState(),
+      expectedClient: requestClient,
+      attempt: attempt,
+      reason: 'email_login',
     );
-    await _notifyAccountIdentityChanging(previousState, nextState);
-    _state = nextState;
-    _markAccountMutation('email_login');
-    _client = ApiClient(baseUrl: _baseUrl, token: _state.token);
-    await _persistState();
-    await _notifyAccountPayloadChanged(res);
-    await _notifyAccountProfileChanged();
-    notifyListeners();
     await refreshServerConfigFromServer();
   }
 
   Future<void> logout() async {
+    final requestClient = _client;
+    final attempt = ++_authAttemptSerial;
     try {
       if (_state.isLoggedIn) {
         await _sendFirstAvailable(
@@ -427,10 +586,21 @@ class AuthProvider extends ChangeNotifier {
         );
       }
     } catch (_) {}
-    await _clearLocalSession();
+    await _clearLocalSession(
+      expectedClient: requestClient,
+      expectedAttempt: attempt,
+    );
   }
 
-  Future<void> _clearLocalSession() async {
+  Future<void> _clearLocalSession({
+    ApiClient? expectedClient,
+    int? expectedAttempt,
+  }) => _runAccountTransition(() async {
+    if ((expectedClient != null && !identical(expectedClient, _client)) ||
+        (expectedAttempt != null && expectedAttempt != _authAttemptSerial)) {
+      return;
+    }
+    _authAttemptSerial++;
     Object? cleanupError;
     StackTrace? cleanupStackTrace;
     try {
@@ -450,7 +620,7 @@ class AuthProvider extends ChangeNotifier {
     if (cleanupError != null) {
       Error.throwWithStackTrace(cleanupError, cleanupStackTrace!);
     }
-  }
+  });
 
   Future<void> _clearAccountScopedPreferencesAfterLogoutCleanupFailure() async {
     try {
@@ -464,7 +634,7 @@ class AuthProvider extends ChangeNotifier {
     SharedPreferences prefs,
     AuthState loadedState,
   ) async {
-    final currentOwner = _stableAccountIdentity(loadedState);
+    final currentOwner = _scopedAccountIdentity(loadedState);
     if (currentOwner == null) return;
     final storedOwner = prefs
         .getString(AccountLocalDataCleaner.accountDataOwnerKey)
@@ -480,6 +650,12 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
     if (storedOwner == currentOwner) return;
+    // Migrate the existing single-server owner without discarding its data.
+    if (storedOwner == _stableAccountIdentity(loadedState) &&
+        ServerConnection.identity(_baseUrl) ==
+            ServerConnection.identity(ServerConnection.defaultBaseUrl())) {
+      return;
+    }
     debugPrint(
       '[auth] stored account data owner mismatch: $storedOwner -> $currentOwner',
     );
@@ -588,7 +764,7 @@ class AuthProvider extends ChangeNotifier {
     SharedPreferences prefs,
     AuthState state,
   ) async {
-    final owner = _stableAccountIdentity(state);
+    final owner = _scopedAccountIdentity(state);
     if (state.isLoggedIn && owner != null) {
       await prefs.setString(AccountLocalDataCleaner.accountDataOwnerKey, owner);
     } else {
@@ -625,12 +801,15 @@ class AuthProvider extends ChangeNotifier {
     final mutationSerialAtStart = _stateMutationSerial;
     final tokenAtStart = _state.token;
     final userIdAtStart = _state.userId;
+    final clientAtStart = _client;
+    final authAttemptAtStart = _authAttemptSerial;
     debugPrint(
       '[auth-sync] refreshMe#$requestId start reason=$reason '
       'mutation=$mutationSerialAtStart user=${userIdAtStart ?? '-'}',
     );
     try {
       final me = await _getFirstAvailable(const ['/api/auth/me', '/api/me']);
+      if (!identical(clientAtStart, _client)) return;
       _lastRefreshMeAt = DateTime.now();
       _lastRefreshMeToken = tokenAtStart;
       _lastRefreshMeMutationSerial = mutationSerialAtStart;
@@ -673,8 +852,12 @@ class AuthProvider extends ChangeNotifier {
       );
       notifyListeners();
     } on ApiException catch (e) {
+      if (!identical(clientAtStart, _client)) return;
       if (_isAuthExpired(e)) {
-        await _clearLocalSession();
+        await _clearLocalSession(
+          expectedClient: clientAtStart,
+          expectedAttempt: authAttemptAtStart,
+        );
       } else {
         debugPrint('[auth-sync] refreshMe#$requestId failed: ${e.message}');
       }
@@ -923,6 +1106,7 @@ class AuthProvider extends ChangeNotifier {
     Map<String, dynamic> data, {
     bool keepToken = false,
     AuthState? fallbackState,
+    String? avatarBaseUrl,
   }) {
     final fallback = fallbackState ?? _state;
     final source = data['user'] ?? data['profile'] ?? data['data'];
@@ -1009,10 +1193,19 @@ class AuthProvider extends ChangeNotifier {
             _avatarField(
               payload,
               'url',
-              _avatarField(payload, 'path', fallback.avatar),
+              _avatarField(
+                payload,
+                'path',
+                fallback.avatar,
+                baseUrl: avatarBaseUrl,
+              ),
+              baseUrl: avatarBaseUrl,
             ),
+            baseUrl: avatarBaseUrl,
           ),
+          baseUrl: avatarBaseUrl,
         ),
+        baseUrl: avatarBaseUrl,
       ),
       bio: _stringField(payload, 'bio', fallback.bio),
       coinBalance: _intField(
@@ -1072,15 +1265,17 @@ class AuthProvider extends ChangeNotifier {
   String? _avatarField(
     Map<String, dynamic> data,
     String key,
-    String? fallback,
-  ) {
+    String? fallback, {
+    String? baseUrl,
+  }) {
     final value = _stringField(data, key, fallback);
     if (value == null || value.isEmpty) return value;
     final uri = Uri.tryParse(value);
     if (uri == null) return value;
     if (uri.hasScheme || !value.startsWith('/')) return value;
-    if (_baseUrl.isEmpty) return value;
-    var normalizedBase = _baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+    final activeBaseUrl = baseUrl ?? _baseUrl;
+    if (activeBaseUrl.isEmpty) return value;
+    var normalizedBase = activeBaseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
     var normalizedValue = value;
     if (_hasBackendApiPrefix(normalizedValue) &&
         normalizedBase.endsWith(
@@ -1108,10 +1303,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> _getFirstAvailable(List<String> paths) async {
+    final requestClient = _client;
     ApiException? last404;
     for (final path in paths) {
       try {
-        return await _client.requestWithoutRouteDiagnosis('GET', path);
+        return await requestClient.requestWithoutRouteDiagnosis('GET', path);
       } on ApiException catch (e) {
         if (!_isRouteMissing(e)) rethrow;
         last404 = e;
@@ -1126,27 +1322,32 @@ class AuthProvider extends ChangeNotifier {
     Object? body, {
     String featureName = '账号资料',
   }) async {
+    final requestClient = _client;
     ApiException? last404;
     for (final path in paths) {
       for (final method in methods) {
         try {
           return switch (method) {
-            'POST' => await _client.requestWithoutRouteDiagnosis(
+            'POST' => await requestClient.requestWithoutRouteDiagnosis(
               'POST',
               path,
               body,
             ),
-            'PUT' => await _client.requestWithoutRouteDiagnosis(
+            'PUT' => await requestClient.requestWithoutRouteDiagnosis(
               'PUT',
               path,
               body,
             ),
-            'PATCH' => await _client.requestWithoutRouteDiagnosis(
+            'PATCH' => await requestClient.requestWithoutRouteDiagnosis(
               'PATCH',
               path,
               body,
             ),
-            _ => await _client.requestWithoutRouteDiagnosis(method, path, body),
+            _ => await requestClient.requestWithoutRouteDiagnosis(
+              method,
+              path,
+              body,
+            ),
           };
         } on ApiException catch (e) {
           if (!_isRouteMissing(e)) rethrow;
@@ -1154,7 +1355,7 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     }
-    throw await _client.missingRoutesException(
+    throw await requestClient.missingRoutesException(
       featureName: featureName,
       paths: paths,
       fallback: last404,
@@ -1267,9 +1468,12 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _notifyAccountIdentityChanging(
     AuthState previous,
-    AuthState next,
-  ) async {
-    if (!_shouldClearLocalAccountDataBeforeApplying(previous, next)) return;
+    AuthState next, {
+    bool force = false,
+  }) async {
+    if (!force && !_shouldClearLocalAccountDataBeforeApplying(previous, next)) {
+      return;
+    }
     final callback = onAccountIdentityChanging;
     try {
       if (callback == null) {
@@ -1315,6 +1519,13 @@ class AuthProvider extends ChangeNotifier {
       return previousIdentity != nextIdentity;
     }
     return previous.token != next.token;
+  }
+
+  String? _scopedAccountIdentity(AuthState state) {
+    final account = _stableAccountIdentity(state);
+    return account == null
+        ? null
+        : jsonEncode([ServerConnection.identity(_baseUrl), account]);
   }
 
   String? _stableAccountIdentity(AuthState state) {

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('web release and pages deploy keep the public /duoyi/ deployment', () {
+  test('Web release and Pages each use their configured deployment path', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
     final deployScript = File('scripts/deploy_web_prod.sh').readAsStringSync();
     final webJobStart = workflow.indexOf('\n  web:\n');
@@ -17,23 +17,22 @@ void main() {
     expect(releaseJobStart, greaterThan(webJobStart));
 
     final webJob = workflow.substring(webJobStart, deployPagesJobStart);
+    expect(webJob, contains('DUOYI_BUILD_PROFILE'));
+    expect(webJob, contains('scripts/flutter_with_config.py build web'));
+    expect(webJob, contains('--base-href="\$PAGES_PATH"'));
+    expect(webJob, contains('mv build/web build/web-pages'));
     expect(
-      webJob,
-      contains(
-        "DUOYI_WEB_BASE_HREF: \${{ vars.DUOYI_WEB_BASE_HREF || '/duoyi/' }}",
-      ),
+      deployScript,
+      contains('source "\$SCRIPT_DIR/deployment_common.sh"'),
     );
-    expect(
-      webJob,
-      contains('BUILD_ARGS=(--release --base-href "\$DUOYI_WEB_BASE_HREF")'),
-    );
+    expect(deployScript, contains('--base-href="\$BASE_HREF"'));
     expect(webJob, contains('--dart-define=DUOYI_WEB_TARGET=desktop'));
     expect(webJob, contains('--dart-define=DUOYI_WEB_TARGET=mobile'));
     expect(webJob, contains('mv build/web build/web-desktop'));
     expect(webJob, contains('mv build/web build/web-mobile'));
     expect(webJob, contains("github.ref == 'refs/heads/main'"));
     expect(webJob, contains('actions/upload-pages-artifact@v4'));
-    expect(webJob, contains('path: build/web-desktop'));
+    expect(webJob, contains('path: build/web-pages'));
     expect(
       webJob,
       contains(
@@ -62,9 +61,8 @@ void main() {
 
     expect(
       workflow,
-      isNot(contains('flutter build web --release --base-href "/"')),
-      reason:
-          'The public download page links to /duoyi/, so CI must not build a root-based web artifact by default.',
+      contains('DUOYI_PAGES_BASE_HREF'),
+      reason: 'GitHub Pages must not reuse a root-based self-hosted artifact.',
     );
     expect(deployScript, contains('version_family="\${VERSION_NAME%.*}"'));
     expect(deployScript, contains('\${version_family//./\\\\.}\\\\.[0-9]+'));
@@ -81,8 +79,10 @@ void main() {
     expect(downloadPage, isNot(contains('duoyi-v1.1.35.apk')));
 
     final webTarget = File('lib/core/web_target.dart').readAsStringSync();
-    expect(webTarget, contains("String.fromEnvironment("));
-    expect(webTarget, contains("'DUOYI_WEB_TARGET'"));
+    final appConfig = File('lib/core/app_config.dart').readAsStringSync();
+    expect(webTarget, contains('AppConfig.webTarget'));
+    expect(appConfig, contains("String.fromEnvironment("));
+    expect(appConfig, contains("'DUOYI_WEB_TARGET'"));
     expect(webTarget, contains("raw == 'desktop'"));
     expect(webTarget, contains("raw == 'mobile'"));
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -14,7 +15,13 @@ void main() {
     expect(pubspec, contains('version: 1.1.43+140009'));
     expect(appVersion, contains("static const name = '1.1.43';"));
     expect(appVersion, contains('static const build = 140009;'));
-    expect(backend, contains('return "1.1.43", 140009'));
+    final backendConfig = File('backend/config.py').readAsStringSync();
+    expect(backendConfig, contains('def _pubspec_app_version('));
+    expect(backendConfig, contains('"pubspec.yaml"'));
+    expect(
+      backend,
+      contains('APP_CURRENT_VERSION = SETTINGS.app_current_version'),
+    );
     expect(backend, contains('def _normalize_update_version_floor'));
     expect(
       backend,
@@ -241,7 +248,11 @@ void main() {
     );
     expect(workflow, contains('exit 1'));
     expect(workflow, isNot(contains('APK will use debug signing')));
-    expect(workflow, contains("FLUTTER_VERSION: '3.44.1'"));
+    final toolchain =
+        jsonDecode(File('config/toolchain.json').readAsStringSync())
+            as Map<String, dynamic>;
+    expect(toolchain['flutter'], '3.44.1');
+    expect(workflow, contains('needs.configuration.outputs.flutter_version'));
     expect(workflow, isNot(contains("FLUTTER_VERSION: '3.41.9'")));
   });
 

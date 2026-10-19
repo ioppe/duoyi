@@ -6,6 +6,7 @@ import 'package:duoyi/providers/auth_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/screens/login_screen.dart';
 import 'package:duoyi/services/api_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -37,6 +38,10 @@ void main() {
         child: const MaterialApp(home: LoginScreen()),
       ),
     );
+    if (!kIsWeb) {
+      await tester.tap(find.text(I18n.tr('auth.token.password_login')));
+      await tester.pumpAndSettle();
+    }
 
     await tester.enterText(
       find.widgetWithText(TextField, I18n.tr('auth.account')),
@@ -72,5 +77,47 @@ void main() {
     );
     expect(accountField.controller?.text, 'demo');
     expect(passwordField.controller?.text, isEmpty);
+  });
+  testWidgets('login offers a token mode and returns to password mode', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final auth = AuthProvider(baseUrl: 'https://api.example.test');
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
+    );
+    if (!kIsWeb) {
+      await tester.tap(find.text(I18n.tr('auth.token.password_login')));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text(I18n.tr('auth.email_code_login')));
+    await tester.pumpAndSettle();
+    expect(
+      find.widgetWithText(TextField, I18n.tr('auth.verified_email')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text(I18n.tr('auth.token.login')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('access-token')), findsOneWidget);
+    final server = tester.widget<TextField>(
+      find.byKey(const ValueKey('token-server-url')),
+    );
+    expect(server.readOnly, kIsWeb);
+    expect(server.controller?.text, kIsWeb ? Uri.base.origin : auth.baseUrl);
+    await tester.tap(find.text(I18n.tr('auth.token.password_login')));
+    await tester.pumpAndSettle();
+    expect(
+      find.widgetWithText(TextField, I18n.tr('auth.password')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 }

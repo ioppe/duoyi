@@ -8,6 +8,7 @@ void main() {
       'lib/screens/admin_screen.dart',
     ).readAsStringSync();
     final backend = File('backend/main.py').readAsStringSync();
+    final defaults = File('backend/settings_defaults.py').readAsStringSync();
 
     for (final key in [
       'email_service_enabled',
@@ -83,8 +84,8 @@ void main() {
     expect(adminScreen, contains('_reminderSmtpPasswordMasked'));
     expect(adminScreen, contains("payload['reminder_email_smtp_password']"));
     expect(backend, contains('"reminder_email_smtp_password",'));
-    expect(backend, contains('account_primary_provider_default'));
-    expect(backend, contains('default="resend"'));
+    expect(defaults, contains('account_primary_provider_default'));
+    expect(defaults, contains('default="resend"'));
     expect(backend, contains('TITLE, EMAIL_ADDRESS'));
     expect(backend, contains('"title": "email_title"'));
     expect(backend, contains('"email_address": "email_smtp_username"'));

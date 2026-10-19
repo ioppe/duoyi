@@ -9,6 +9,207 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get settingsLanguageSystem => '跟随系统';
+
+  @override
+  String get preferencesDisplayTitle => '显示与行为';
+
+  @override
+  String get preferencesDisplaySubtitle => '语言、日期、默认入口、交互和归档';
+
+  @override
+  String get preferencesEntryDescription => '按类别管理语言、日期、默认行为和导航。';
+
+  @override
+  String get preferencesEntryTitle => '个性入口';
+
+  @override
+  String get preferencesEntrySubtitle => '选择要调整的设置类别';
+
+  @override
+  String get preferencesNavigationTitle => '导航入口';
+
+  @override
+  String get preferencesMenuDisplay => '语言与日期';
+
+  @override
+  String get preferencesMenuCalendar => '日期日历';
+
+  @override
+  String get preferencesMenuInteractionArchive => '交互归档';
+
+  @override
+  String get preferencesTimezoneShanghai => '中国标准时间';
+
+  @override
+  String get preferencesTimezoneMexico => '墨西哥城时间';
+
+  @override
+  String get preferencesTimezoneTijuana => '蒂华纳时间';
+
+  @override
+  String get preferencesTimezoneTokyo => '日本时间';
+
+  @override
+  String get preferencesTimezoneHongKong => '香港时间';
+
+  @override
+  String get preferencesTimezoneSingapore => '新加坡时间';
+
+  @override
+  String get preferencesTimezoneNewYork => '纽约时间';
+
+  @override
+  String get preferencesTimezoneLosAngeles => '洛杉矶时间';
+
+  @override
+  String get preferencesTimezoneLondon => '伦敦时间';
+
+  @override
+  String get preferencesTimezoneParis => '巴黎时间';
+
+  @override
+  String get preferencesTimezoneSydney => '悉尼时间';
+
+  @override
+  String get preferencesTimezoneUtc => '协调世界时（UTC）';
+
+  @override
+  String get preferencesTimezoneScope => '应用内日期、今日统计和提醒采用此时区；设备系统时区保持不变。';
+
+  @override
+  String get authTokenLogin => '令牌';
+
+  @override
+  String get authTokenSubtitleWeb => '输入访问令牌，登录当前站点的账号。';
+
+  @override
+  String get authServerCurrentSite => '网页版固定连接当前站点。';
+
+  @override
+  String get authConnectionChanged => '登录连接已变更，请重试。';
+
+  @override
+  String get authServerAddress => '服务器地址';
+
+  @override
+  String get authServerHint => 'https://your-server.example';
+
+  @override
+  String get authServerInvalid => '请输入完整的 HTTP 或 HTTPS 服务器地址，不含账号、查询参数或片段。';
+
+  @override
+  String get authServerSignOutFirst => '请先退出当前账号，再切换服务器。';
+
+  @override
+  String get authTokenTitle => '连接到你的服务器';
+
+  @override
+  String get authTokenSubtitle => '填写服务器地址和访问令牌，即可登录并同步账号数据。';
+
+  @override
+  String get authTokenLabel => '访问令牌';
+
+  @override
+  String get authTokenRequired => '请输入有效的访问令牌，令牌中不能包含空格。';
+
+  @override
+  String get authTokenInvalidResponse => '服务器未返回有效的账号信息，请检查服务器地址。';
+
+  @override
+  String get authTokenHelp => '先在服务器的网页版登录，在“我的 → 个人资料 → 访问令牌”中创建令牌。';
+
+  @override
+  String get authTokenPasswordLogin => '使用账号密码登录';
+
+  @override
+  String get authTokenUseToken => '使用访问令牌登录';
+
+  @override
+  String get authTokenShow => '显示令牌';
+
+  @override
+  String get authTokenHide => '隐藏令牌';
+
+  @override
+  String get tokensTitle => '访问令牌';
+
+  @override
+  String get tokensSubtitle => '管理连接到此账号的设备';
+
+  @override
+  String get tokensHelp => '为每台设备创建独立令牌。将服务器地址和令牌填入安装版登录页；撤销后该令牌立即失效。';
+
+  @override
+  String get tokensEmpty => '还没有访问令牌。创建一个，用于连接手机或桌面客户端。';
+
+  @override
+  String get tokensName => '令牌名称';
+
+  @override
+  String get tokensNameHint => '例如：我的手机';
+
+  @override
+  String get tokensNameRequired => '请输入令牌名称。';
+
+  @override
+  String get tokensExpiry => '有效期';
+
+  @override
+  String get tokensNeverExpires => '无过期时间';
+
+  @override
+  String get tokensDays30 => '30 天';
+
+  @override
+  String get tokensDays90 => '90 天';
+
+  @override
+  String get tokensDays365 => '1 年';
+
+  @override
+  String get tokensCreated => '令牌已创建';
+
+  @override
+  String get tokensCopyNotice => '完整令牌仅显示这一次，请复制并妥善保存。';
+
+  @override
+  String get tokensCopy => '复制令牌';
+
+  @override
+  String get tokensCopied => '令牌已复制';
+
+  @override
+  String get tokensLastUsed => '上次使用时间';
+
+  @override
+  String get tokensNotUsed => '尚未使用';
+
+  @override
+  String get tokensExpiresAt => '过期时间';
+
+  @override
+  String get tokensRevoked => '已撤销';
+
+  @override
+  String get tokensExpired => '已过期';
+
+  @override
+  String get tokensCurrent => '当前设备';
+
+  @override
+  String get tokensRevoke => '撤销';
+
+  @override
+  String get tokensRevokeTitle => '撤销访问令牌？';
+
+  @override
+  String get tokensRevokeMessage => '使用此令牌的设备将无法继续连接。';
+
+  @override
+  String get tokensRevokeCurrent => '这是当前设备使用的令牌，撤销后将退出登录。';
+
+  @override
   String get appTitle => '多仪';
 
   @override
@@ -204,8 +405,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsLanguageEn => 'English';
 
   @override
-  String get settingsLanguageDescription =>
-      '说明：当前 v2 阶段已迁移高频公共词条（按钮、导航、提醒、共享）。剩余页面文案随后续迭代逐步翻译，未翻译部分会回退到中文显示。';
+  String get settingsLanguageDescription => '默认跟随系统语言，也可手动选择。修改后立即生效，并保存在本机。';
 
   @override
   String get preferencesTitle => '个性设置';
@@ -238,7 +438,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferencesTimezoneTitle => '应用时区';
 
   @override
-  String get preferencesTimezoneFollowSystem => '跟随手机';
+  String get preferencesTimezoneFollowSystem => '跟随系统';
 
   @override
   String get preferencesLunarTitle => '显示农历';

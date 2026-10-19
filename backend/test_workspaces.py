@@ -6,11 +6,14 @@ import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
+from unittest.mock import patch
 
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-import main as api
+# Test-only bootstrap credentials; production has no default password.
+with patch.dict(os.environ, {"ADMIN_BOOTSTRAP_PASSWORD": "admin123"}):
+    import main as api
 
 
 class WorkspaceApiTest(unittest.TestCase):
@@ -527,6 +530,12 @@ class WorkspaceApiTest(unittest.TestCase):
             self.assertIn("POST /api/auth/email-code", payload["required_routes"])
             self.assertIn("POST /api/auth/login", payload["required_routes"])
             self.assertIn("GET /api/auth/me", payload["required_routes"])
+            for route in (
+                "GET /api/auth/tokens",
+                "POST /api/auth/tokens",
+                "DELETE /api/auth/tokens/{token_id}",
+            ):
+                self.assertIn(route, payload["required_routes"])
             self.assertIn("PATCH /api/me/profile", payload["required_routes"])
             self.assertIn("POST /api/me/email", payload["required_routes"])
             self.assertIn("POST /api/me/password", payload["required_routes"])
@@ -554,6 +563,7 @@ class WorkspaceApiTest(unittest.TestCase):
             self.assertTrue(payload["features"]["avatar_upload"])
             self.assertTrue(payload["features"]["admin_coins"])
             self.assertTrue(payload["features"]["mobile_update"])
+            self.assertTrue(payload["features"]["access_tokens"])
 
     def test_api_contract_required_routes_are_registered(self):
         def route_matches(contract_route, registered_route):
@@ -2881,10 +2891,8 @@ class WorkspaceApiTest(unittest.TestCase):
 
     def test_re0_email_config_aliases_drive_account_mail_title_and_smtp(self):
         admin_id = self._make_admin("re0-mail-admin", ["settings", "backup"])
-        default_title_block = inspect.getsource(api).split(
-            "DEFAULT_EMAIL_TITLE = (", 1
-        )[1].split(")\nDEFAULT_EMAIL_SENDER_NAME", 1)[0]
-        self.assertNotIn('os.getenv("TITLE")', default_title_block)
+        defaults = api.load_settings({"TITLE": "unrelated service title", "DUOYI_ENV_FILE": ""})
+        self.assertEqual(defaults.email_title, "多仪")
 
         api.admin_update_system_settings(
             {
@@ -8008,6 +8016,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 "deep_work_room",
                 interval_seconds=2,
                 user_id=owner_id,
+                authorization=owner_headers["Authorization"],
             )
             stream = response.body_iterator
             try:
@@ -8020,6 +8029,7 @@ class WorkspaceApiTest(unittest.TestCase):
             response = await api.focus_global_leaderboard_events(
                 interval_seconds=2,
                 user_id=owner_id,
+                authorization=owner_headers["Authorization"],
             )
             stream = response.body_iterator
             try:
@@ -8103,6 +8113,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 "deep_work_room",
                 interval_seconds=2,
                 user_id=user_id,
+                authorization=f"Bearer {api.TOKENS[user_id]}",
             )
             stream = response.body_iterator
             try:
@@ -8201,6 +8212,7 @@ class WorkspaceApiTest(unittest.TestCase):
             response = await api.focus_global_leaderboard_events(
                 interval_seconds=2,
                 user_id=user_id,
+                authorization=f"Bearer {api.TOKENS[user_id]}",
             )
             stream = response.body_iterator
             try:

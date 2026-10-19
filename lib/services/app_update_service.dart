@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_config.dart';
+import '../core/server_connection.dart';
 import '../core/app_update_policy.dart';
 import 'api_client.dart';
 import 'app_update_installer.dart';
@@ -18,10 +20,11 @@ class AppUpdateService extends ChangeNotifier {
   static const _downloadedAssetNameKey =
       'duoyi_update_downloaded_apk_asset_name';
 
-  final String repo; // e.g. "dq52099/duoyi"
+  final String repo; // owner/repository, supplied by deployment configuration.
   final String currentVersion; // e.g. "1.0.0"
   final int? currentVersionCode;
   final String? backendBaseUrl;
+  final String Function()? backendBaseUrlGetter;
   final http.Client _httpClient;
 
   AppUpdateService({
@@ -29,6 +32,7 @@ class AppUpdateService extends ChangeNotifier {
     required this.currentVersion,
     this.currentVersionCode,
     this.backendBaseUrl,
+    this.backendBaseUrlGetter,
     http.Client? httpClient,
   }) : _httpClient = httpClient ?? http.Client();
 
@@ -43,6 +47,7 @@ class AppUpdateService extends ChangeNotifier {
   bool _forceUpdateRequired = false;
   bool _serverPolicyLoaded = false;
   bool _checking = false;
+  bool _serverPolicyRefreshQueued = false;
   bool _downloading = false;
   bool _installing = false;
   double? _downloadProgress;
@@ -92,6 +97,29 @@ class AppUpdateService extends ChangeNotifier {
     latestVersionCode: _latestVersionCode,
     minimumSupportedVersionCode: _minimumSupportedVersionCode,
   );
+
+  void resetForServerChange() {
+    _latestVersion = null;
+    _latestVersionCode = null;
+    _latestUrl = null;
+    _latestAssetName = null;
+    _latestNotes = null;
+    _minimumSupportedVersion = null;
+    _minimumSupportedVersionCode = null;
+    _forceUpdateBlockedReason = null;
+    _forceUpdateRequired = false;
+    _serverPolicyLoaded = false;
+    _error = null;
+    notifyListeners();
+    _serverPolicyRefreshQueued = true;
+    _runQueuedServerPolicyRefresh();
+  }
+
+  void _runQueuedServerPolicyRefresh() {
+    if (_checking || !_serverPolicyRefreshQueued) return;
+    _serverPolicyRefreshQueued = false;
+    unawaited(checkServerPolicyNow());
+  }
 
   Future<void> checkNow() async {
     if (_checking) return;
@@ -153,6 +181,7 @@ class AppUpdateService extends ChangeNotifier {
     } finally {
       _checking = false;
       notifyListeners();
+      _runQueuedServerPolicyRefresh();
     }
   }
 
@@ -201,6 +230,7 @@ class AppUpdateService extends ChangeNotifier {
     } finally {
       _checking = false;
       notifyListeners();
+      _runQueuedServerPolicyRefresh();
     }
   }
 
@@ -223,7 +253,8 @@ class AppUpdateService extends ChangeNotifier {
       final uri = _backendUri(base, '/api/config');
       final resp = await _httpClient
           .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.updateTimeout);
+      if (base != _serverBaseUrl) return null;
       if (resp.statusCode == 404) return null;
       if (resp.statusCode != 200) {
         throw _BackendUpdateCheckException(
@@ -317,7 +348,8 @@ class AppUpdateService extends ChangeNotifier {
       );
       final resp = await _httpClient
           .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 8));
+          .timeout(AppConfig.updateTimeout);
+      if (base != _serverBaseUrl) return null;
       if (resp.statusCode == 404) return null;
       if (resp.statusCode != 200) {
         throw _BackendUpdateCheckException(
@@ -393,7 +425,10 @@ class AppUpdateService extends ChangeNotifier {
     }
   }
 
-  String get _serverBaseUrl => backendBaseUrl ?? AppConfig.bakedServerUrl;
+  String get _serverBaseUrl =>
+      backendBaseUrlGetter?.call() ??
+      backendBaseUrl ??
+      ServerConnection.defaultBaseUrl();
 
   String _stringValue(dynamic value) => (value ?? '').toString().trim();
 
@@ -600,6 +635,7 @@ class AppUpdateService extends ChangeNotifier {
     required bool keepServerPolicy,
     required bool fillMissingOnly,
   }) async {
+    if (repo.trim().isEmpty) return;
     final uri = Uri.parse('https://api.github.com/repos/$repo/releases/latest');
     final resp = await _httpClient
         .get(
@@ -609,7 +645,7 @@ class AppUpdateService extends ChangeNotifier {
             'Accept': 'application/vnd.github+json',
           },
         )
-        .timeout(const Duration(seconds: 8));
+        .timeout(AppConfig.updateTimeout);
     if (resp.statusCode == 404) {
       if (!keepServerPolicy) {
         _latestVersion = null;

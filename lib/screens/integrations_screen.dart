@@ -1704,18 +1704,19 @@ class _LocaleTab extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.normal),
         ),
         const SizedBox(height: 12),
-        for (final entry in const <(AppLocale, String)>[
-          (AppLocale.zh, 'settings.language.zh'),
-          (AppLocale.en, 'settings.language.en'),
+        for (final entry in const <(String, String)>[
+          ('system', 'settings.language.system'),
+          ('zh', 'settings.language.zh'),
+          ('en', 'settings.language.en'),
         ])
           ListTile(
             leading: Icon(
-              locale.locale == entry.$1
+              locale.selection == entry.$1
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
             ),
             title: Text(I18n.tr(entry.$2)),
-            onTap: () => locale.setLocale(entry.$1),
+            onTap: () => locale.setSelection(entry.$1),
           ),
         const SizedBox(height: 16),
         Text(

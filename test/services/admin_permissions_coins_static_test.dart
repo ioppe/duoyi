@@ -140,7 +140,9 @@ void main() {
       ),
       reason: '默认用户组额度需要同步默认注册时光币。',
     );
-    expect(backend, contains('"default_registration_coins": 100'));
+    final defaults = File('backend/settings_defaults.py').readAsStringSync();
+    expect(defaults, contains('"default_registration_coins": 100'));
+    expect(backend, contains('default_settings = build_settings_defaults('));
     expect(adminApi, contains("detail == 'not found'"));
     expect(
       adminApi,

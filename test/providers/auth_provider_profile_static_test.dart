@@ -474,7 +474,7 @@ void main() {
     for (final field in [
       'class _LoginActionField',
       'final actionWidth = constraints.maxWidth < 360 ? 64.0 : 72.0',
-      'SizedBox(width: actionWidth, height: 34, child: action)',
+      'height: DesignTokens.formFieldMinHeight',
       '_userCtrl.addListener(_refreshControls)',
       '_emailCtrl.addListener(_refreshControls)',
       'if (_busy || _sendingEmailCode) return;',

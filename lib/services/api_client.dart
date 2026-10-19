@@ -4,10 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import '../core/app_config.dart';
+
 /// 跨平台 HTTP 封装(web/android/linux 通用)。
 class ApiClient {
-  static const String requiredApiContractVersion = '2026-06-01.2';
-  static const String requiredApiContractRoutesHash = 'aaa003f86a1ff544';
+  static const String requiredApiContractVersion = '2026-06-01.3';
+  static const String requiredApiContractRoutesHash = '48881df2412c4ae0';
 
   String baseUrl;
   String? token;
@@ -75,9 +77,7 @@ class ApiClient {
 
   Future<String> getText(String path) async {
     if (baseUrl.isEmpty && !kIsWeb) {
-      throw const ApiException(
-        '当前安装包未配置服务器地址，公告、登录和云同步不可用。请在构建时注入 DUOYI_SERVER_URL。',
-      );
+      throw const ApiException('请先在登录页配置服务器地址，再使用登录、公告和云同步。');
     }
     final uri = _uriFor(path);
     final headers = <String, String>{'Accept': 'text/plain, text/csv'};
@@ -89,7 +89,7 @@ class ApiClient {
     try {
       resp = await _httpClient
           .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 30));
+          .timeout(AppConfig.fileTimeout);
     } on TimeoutException {
       throw ApiException('连接服务器超时：${_serverLabel(uri)}');
     } catch (e) {
@@ -121,9 +121,7 @@ class ApiClient {
     bool diagnoseMissingRoute = true,
   }) async {
     if (baseUrl.isEmpty && !kIsWeb) {
-      throw const ApiException(
-        '当前安装包未配置服务器地址，公告、登录和云同步不可用。请在构建时注入 DUOYI_SERVER_URL。',
-      );
+      throw const ApiException('请先在登录页配置服务器地址，再使用登录、公告和云同步。');
     }
     final uri = _uriFor(path);
     final request = http.MultipartRequest(method.toUpperCase(), uri);
@@ -141,9 +139,7 @@ class ApiClient {
 
     http.StreamedResponse streamed;
     try {
-      streamed = await _httpClient
-          .send(request)
-          .timeout(const Duration(seconds: 30));
+      streamed = await _httpClient.send(request).timeout(AppConfig.fileTimeout);
     } on TimeoutException {
       throw ApiException('连接服务器超时：${_serverLabel(uri)}');
     } catch (e) {
@@ -176,9 +172,7 @@ class ApiClient {
 
   Stream<String> streamLines(String path) async* {
     if (baseUrl.isEmpty && !kIsWeb) {
-      throw const ApiException(
-        '当前安装包未配置服务器地址，公告、登录和云同步不可用。请在构建时注入 DUOYI_SERVER_URL。',
-      );
+      throw const ApiException('请先在登录页配置服务器地址，再使用登录、公告和云同步。');
     }
     final uri = _uriFor(path);
     final request = http.Request('GET', uri)
@@ -190,9 +184,7 @@ class ApiClient {
 
     http.StreamedResponse resp;
     try {
-      resp = await _httpClient
-          .send(request)
-          .timeout(const Duration(seconds: 12));
+      resp = await _httpClient.send(request).timeout(AppConfig.httpTimeout);
     } on TimeoutException {
       throw ApiException('连接服务器超时：${_serverLabel(uri)}');
     } catch (e) {
@@ -242,11 +234,9 @@ class ApiClient {
     bool diagnoseMissingRoute = true,
   }) async {
     // baseUrl 为空时走相对路径(web 前后端同域反代)；
-    // 移动端固定构建时注入的 url。
+    // 安装端使用 AuthProvider 保存的运行时服务器地址。
     if (baseUrl.isEmpty && !kIsWeb) {
-      throw const ApiException(
-        '当前安装包未配置服务器地址，公告、登录和云同步不可用。请在构建时注入 DUOYI_SERVER_URL。',
-      );
+      throw const ApiException('请先在登录页配置服务器地址，再使用登录、公告和云同步。');
     }
     final uri = _uriFor(path);
     final headers = <String, String>{'Content-Type': 'application/json'};
@@ -256,7 +246,7 @@ class ApiClient {
 
     http.Response resp;
     final encoded = body == null ? null : json.encode(body);
-    final requestTimeout = timeout ?? const Duration(seconds: 12);
+    final requestTimeout = timeout ?? AppConfig.httpTimeout;
     try {
       switch (method) {
         case 'GET':
@@ -354,7 +344,7 @@ class ApiClient {
 
   String _friendlyNetworkError(Uri uri, Object error) {
     if (uri.host == 'duoyi.example.com') {
-      return '当前仍是示例服务器地址，请在 GitHub Actions 或本地构建中配置 DUOYI_SERVER_URL。';
+      return '当前仍是示例服务器地址，请在登录页填写实际服务器地址。';
     }
     final text = error.toString();
     if (text.contains('Failed host lookup')) return '域名无法解析';

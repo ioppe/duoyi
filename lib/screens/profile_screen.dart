@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../core/i18n.dart';
+import '../core/design_tokens.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/user_provider.dart';
@@ -14,6 +15,7 @@ import '../services/api_client.dart';
 import '../widgets/cached_avatar_image.dart';
 import '../widgets/surface_components.dart';
 import 'login_screen.dart';
+import 'access_tokens_screen.dart';
 
 const double _profileActionButtonHeight = 36;
 const double _profileActionButtonWidth = 68;
@@ -140,7 +142,7 @@ class _ProfileActionField extends StatelessWidget {
     final stacked = MediaQuery.sizeOf(context).width < 360;
     final actionBox = SizedBox(
       width: stacked ? double.infinity : _profileInlineActionWidth(context),
-      height: _profileActionButtonHeight,
+      height: DesignTokens.formFieldMinHeight,
       child: action,
     );
     if (stacked) {
@@ -464,7 +466,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     return AppDialog(
       title: Text(I18n.tr('profile.change_password')),
       icon: const Icon(Icons.lock_reset_outlined),
-      content: AppSecondaryControlTheme(
+      content: AppFormFieldTheme(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -694,7 +696,7 @@ class _EmailBindingDialogState extends State<_EmailBindingDialog> {
     return AppDialog(
       title: Text(I18n.tr('profile.email.binding')),
       icon: const Icon(Icons.alternate_email_outlined),
-      content: AppSecondaryControlTheme(
+      content: AppFormFieldTheme(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1324,9 +1326,9 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
             ),
           ),
           const SizedBox(height: 12),
-          AppSecondaryControlTheme(
+          AppFormFieldTheme(
             child: AppSurfaceCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(DesignTokens.spaceXl),
               child: Column(
                 children: [
                   TextField(
@@ -1335,7 +1337,7 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
                       labelText: I18n.tr('profile.nickname'),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: DesignTokens.spaceXl),
                   TextField(
                     controller: _usernameCtrl,
                     readOnly: true,
@@ -1434,8 +1436,19 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
                     ),
                   ),
                 ),
+                TextButton.icon(
+                  onPressed: (_busy || _avatarBusy)
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AccessTokensScreen(),
+                          ),
+                        ),
+                  icon: const Icon(Icons.key_outlined),
+                  label: Text(I18n.tr('tokens.title')),
+                ),
                 const SizedBox(height: 8),
-                AppSecondaryControlTheme(
+                AppFormFieldTheme(
                   child: TextField(
                     controller: _bioCtrl,
                     minLines: 3,
@@ -1784,9 +1797,9 @@ class _LocalProfileEditorState extends State<_LocalProfileEditor> {
             ),
           ),
           const SizedBox(height: 12),
-          AppSecondaryControlTheme(
+          AppFormFieldTheme(
             child: AppSurfaceCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(DesignTokens.spaceXl),
               child: Column(
                 children: [
                   TextField(
@@ -1795,7 +1808,7 @@ class _LocalProfileEditorState extends State<_LocalProfileEditor> {
                       labelText: I18n.tr('profile.display_name'),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: DesignTokens.spaceXl),
                   TextField(
                     controller: _usernameCtrl,
                     readOnly: true,
@@ -1804,7 +1817,7 @@ class _LocalProfileEditorState extends State<_LocalProfileEditor> {
                       helperText: I18n.tr('profile.username.locked'),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: DesignTokens.spaceXl),
                   TextField(
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
@@ -1812,7 +1825,7 @@ class _LocalProfileEditorState extends State<_LocalProfileEditor> {
                       labelText: I18n.tr('profile.email.local_display'),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: DesignTokens.spaceXl),
                   TextField(
                     controller: _bioCtrl,
                     minLines: 3,

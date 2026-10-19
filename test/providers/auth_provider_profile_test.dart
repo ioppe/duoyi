@@ -421,7 +421,7 @@ void main() {
         prefs.getString(
           account_cleaner.AccountLocalDataCleaner.accountDataOwnerKey,
         ),
-        'id:test-id',
+        jsonEncode([auth.baseUrl, 'id:test-id']),
       );
     },
   );
@@ -611,7 +611,7 @@ void main() {
         prefs.getString(
           account_cleaner.AccountLocalDataCleaner.accountDataOwnerKey,
         ),
-        'id:test-id',
+        jsonEncode([auth.baseUrl, 'id:test-id']),
       );
     },
   );
