@@ -546,9 +546,9 @@ class _TodoScreenState extends State<TodoScreen> {
                   Text('优先级', style: appSecondaryControlLabelStyle(ctx)),
                   const SizedBox(height: 12),
                   AppDropdownField<EisenhowerQuadrant>(
+                    // 外层已经有「优先级」分组标题，这里不再重复浮动标签，
+                    // 否则标题与 labelText 会各显示一次同样的文字。
                     initialValue: quadrant,
-                    labelText: '优先级',
-                    onTap: () => FocusScope.of(ctx).unfocus(),
                     items: const [
                       DropdownMenuItem(
                         value: EisenhowerQuadrant.urgentImportant,

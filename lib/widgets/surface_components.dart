@@ -1376,6 +1376,13 @@ Future<T?> showAppModalSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     requestFocus: false,
+    // 路由层的 Material 会和 AppModalSheet 自己的卡片叠加：它把
+    // bottomSheetTheme.showDragHandle 默认打开后，会在卡片外额外占用
+    // kMinInteractiveDimension 高度并再画一个拖动手柄，于是出现
+    // 「卡片上方浮着一个拖动条」；modalElevation: 4 又让它的投影比实际
+    // 卡片更大。这里把这两项都关掉，拖动条与阴影统一交给 AppModalSheet。
+    showDragHandle: false,
+    elevation: 0,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
       final child = builder(sheetContext);
@@ -1557,11 +1564,14 @@ class AppModalSheet extends StatelessWidget {
       media.size.height,
     );
     final resolvedPadding = padding.resolve(Directionality.of(context));
+    // 卡片现在贴住屏幕底边（不再让 SafeArea 在下方留白），所以底部安全区
+    // 要由内部 padding 自己补上，否则全面屏上内容会压到系统手势条。
+    final bottomSafeInset = media.padding.bottom;
     final sheetPadding = EdgeInsets.fromLTRB(
       resolvedPadding.left,
       resolvedPadding.top,
       resolvedPadding.right,
-      resolvedPadding.bottom,
+      resolvedPadding.bottom + bottomSafeInset,
     );
 
     final children = <Widget>[
@@ -1627,8 +1637,12 @@ class AppModalSheet extends StatelessWidget {
       );
     }
 
+    // 卡片要贴住屏幕底边：bottom 交给内部 padding 处理。若这里保留
+    // bottom: true，卡片会在安全区之上，而路由层的形状/阴影画在下面，
+    // 于是弹窗与它的阴影之间会出现一条错位的缝。
     return SafeArea(
       top: false,
+      bottom: false,
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
