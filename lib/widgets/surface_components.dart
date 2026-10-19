@@ -556,6 +556,7 @@ class AppSectionHeader extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final TextStyle? titleStyle;
   final TextStyle? actionTextStyle;
+  final CrossAxisAlignment crossAxisAlignment;
 
   const AppSectionHeader({
     super.key,
@@ -567,6 +568,7 @@ class AppSectionHeader extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(16, 14, 12, 8),
     this.titleStyle,
     this.actionTextStyle,
+    this.crossAxisAlignment = CrossAxisAlignment.start,
   });
 
   @override
@@ -644,7 +646,7 @@ class AppSectionHeader extends StatelessWidget {
           }
 
           return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: crossAxisAlignment,
             children: [
               Expanded(child: titleColumn),
               const SizedBox(width: 8),

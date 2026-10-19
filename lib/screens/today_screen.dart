@@ -185,18 +185,30 @@ class TodayScreen extends StatelessWidget {
           // 11×1.1 + 间距 2 + 数值 fontSizeMd×1.1，外加卡内边距 20、描边
           // 1、余量 2；宽裕时仍按宽高比走，任意字号下都不溢出。
           final textScaler = MediaQuery.textScalerOf(context);
+          // 所有列数都保留文字实际所需高度，避免两列/桌面布局在放大字体后裁切。
           final minTileExtent =
-              textScaler.scale(11 * 1.1) +
+              textScaler.scale(
+                (desktop
+                        ? DesktopTokens.fontSizeCaption
+                        : DesignTokens.fontSizeXs) *
+                    1.1,
+              ) +
               2 +
-              textScaler.scale(DesignTokens.fontSizeMd * 1.1) +
-              23;
-          final tileExtent = desktop || useTwoColumns
-              ? null
-              : math.max(
-                  ((constraints.maxWidth - 3 * 8) / crossAxisCount) /
-                      aspectRatio,
-                  minTileExtent,
-                );
+              textScaler.scale(
+                desktop
+                    ? DesktopTokens.fontSizeBody * 1.08
+                    : DesignTokens.fontSizeMd * 1.1,
+              ) +
+              (desktop ? 27 : 23);
+          final gridGap = desktop
+              ? DesktopTokens.cardSpacingMedium
+              : DesignTokens.spaceSm;
+          final tileExtent = math.max(
+            (constraints.maxWidth - (crossAxisCount - 1) * gridGap) /
+                crossAxisCount /
+                aspectRatio,
+            minTileExtent,
+          );
 
           // 桌面端使用更大的字体和图标
           final titleStyle = desktop
@@ -448,6 +460,8 @@ class TodayScreen extends StatelessWidget {
     }
 
     Widget goalsSection() {
+      final theme = Theme.of(context);
+      final cs = theme.colorScheme;
       return _section(
         activeGoals.isEmpty
             ? I18n.tr('goal.title')
@@ -462,10 +476,10 @@ class TodayScreen extends StatelessWidget {
               )
             : TodayDetailRouter.open(context, TodaySectionKind.goals),
         child: activeGoals.isEmpty
-            ? ListTile(
-                leading: const Icon(Icons.flag_circle_outlined),
-                title: Text(I18n.tr('goal.new')),
-                subtitle: Text(I18n.tr('today.goal.create.subtitle')),
+            ? _TodaySectionEmptyState(
+                icon: Icons.flag_circle_outlined,
+                title: I18n.tr('goal.new'),
+                subtitle: I18n.tr('today.goal.create.subtitle'),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const GoalEditScreen()),
@@ -475,33 +489,57 @@ class TodayScreen extends StatelessWidget {
                 children: activeGoals.map((g) {
                   final p = g.computedProgress;
                   return ListTile(
-                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spaceLg,
+                      vertical: DesignTokens.spaceSm,
+                    ),
+                    minLeadingWidth: DesignTokens.controlIconSize,
+                    horizontalTitleGap: DesignTokens.spaceMd,
                     leading: Icon(
                       goalIconFromName(g.icon),
                       color: Color(g.colorValue),
-                      size: 18,
+                      size: DesignTokens.controlIconSize,
                     ),
-                    title: Text(g.title),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: p,
-                            minHeight: 5,
-                            color: Color(g.colorValue),
-                            backgroundColor: Color(
-                              g.colorValue,
-                            ).withValues(alpha: 0.15),
+                    title: Text(
+                      g.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: DesignTokens.fontSizeBody,
+                        color: cs.onSurface,
+                        fontWeight: DesignTokens.fontWeightRegular,
+                        height: 1.4,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: DesignTokens.spaceSm),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.radiusXs,
+                              ),
+                              child: LinearProgressIndicator(
+                                value: p,
+                                minHeight: DesignTokens.spaceXs,
+                                color: Color(g.colorValue),
+                                backgroundColor: Color(
+                                  g.colorValue,
+                                ).withValues(alpha: 0.15),
+                              ),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${(p * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ],
+                          const SizedBox(width: DesignTokens.spaceMd),
+                          Text(
+                            '${(p * 100).toStringAsFixed(0)}%',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: DesignTokens.fontSizeSecondary,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     onTap: () => TodayDetailRouter.open(
                       context,
@@ -545,7 +583,12 @@ class TodayScreen extends StatelessWidget {
       body: ListView(
         key: const ValueKey('today_screen_list'),
         restorationId: 'today_screen_list',
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.spaceMd,
+          0,
+          DesignTokens.spaceMd,
+          DesignTokens.space5xl + DesignTokens.spaceXxl,
+        ),
         children: [
           almanacCard,
           const SizedBox(height: 12),
@@ -598,6 +641,9 @@ class TodayScreen extends StatelessWidget {
                       ? null
                       : actionLabel ?? I18n.tr('today.view'),
                   onAction: onMore,
+                  crossAxisAlignment: subtitle == null
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
                   padding: const EdgeInsets.fromLTRB(16, 12, 12, 6),
                   titleStyle: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
@@ -606,6 +652,7 @@ class TodayScreen extends StatelessWidget {
                     color: cs.onSurface,
                   ),
                   actionTextStyle: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: DesignTokens.fontSizeSecondary,
                     fontWeight: FontWeight.normal,
                   ),
                 );
@@ -1450,9 +1497,13 @@ class _TodayDateBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final extraTextHeight =
+        math.max(0.0, textScaler.scale(11) - 11) +
+        math.max(0.0, textScaler.scale(10) - 10);
     return Container(
       width: 68,
-      height: 76,
+      height: 76 + extraTextHeight,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: foreground.withValues(alpha: isDark ? 0.08 : 0.05),
@@ -1905,41 +1956,102 @@ class _TodayTodoEmptyState extends StatelessWidget {
   const _TodayTodoEmptyState({required this.onTap});
 
   @override
+  Widget build(BuildContext context) => _TodaySectionEmptyState(
+    icon: Icons.checklist_rtl_outlined,
+    title: I18n.tr('today.todos.empty'),
+    onTap: onTap,
+  );
+}
+
+/// 今日分区共用空状态：图标、正文和卡片边线统一，文字放大时自然增长。
+class _TodaySectionEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _TodaySectionEmptyState({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.34),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.56),
-              width: 0.7,
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spaceLg,
+        DesignTokens.spaceXxs,
+        DesignTokens.spaceLg,
+        DesignTokens.spaceMd,
+      ),
+      child: Semantics(
+        button: true,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+          onTap: onTap,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(
+              minHeight: DesignTokens.controlMinHeight,
             ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.checklist_rtl_outlined, size: 17, color: cs.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  I18n.tr('today.todos.empty'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.normal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spaceMd,
+              vertical: DesignTokens.spaceSm,
+            ),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.34),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+              border: Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.56),
+                width: 0.7,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: DesignTokens.controlIconSize,
+                  color: cs.primary,
+                ),
+                const SizedBox(width: DesignTokens.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: DesignTokens.fontSizeBody,
+                          color: cs.onSurface,
+                          fontWeight: DesignTokens.fontWeightRegular,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: DesignTokens.spaceXs),
+                        Text(
+                          subtitle!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: DesignTokens.fontSizeSecondary,
+                            color: cs.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

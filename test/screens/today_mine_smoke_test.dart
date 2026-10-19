@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:duoyi/models/todo.dart';
+import 'package:duoyi/models/goal.dart';
+import 'package:duoyi/core/design_tokens.dart';
+import 'package:duoyi/screens/goal_edit_screen.dart';
+import 'package:duoyi/widgets/surface_components.dart';
 import 'package:duoyi/providers/achievement_provider.dart';
 import 'package:duoyi/providers/anniversary_provider.dart';
 import 'package:duoyi/providers/app_lock_provider.dart';
@@ -48,6 +52,7 @@ Widget _wrap(
   Widget child, {
   AuthProvider? authProvider,
   TodoProvider? todoProvider,
+  GoalProvider? goalProvider,
   ThemeData? theme,
   double textScale = 1,
 }) {
@@ -67,7 +72,10 @@ Widget _wrap(
       ChangeNotifierProvider(create: (_) => NoteProvider()),
       ChangeNotifierProvider(create: (_) => AnniversaryProvider()),
       ChangeNotifierProvider(create: (_) => DiaryProvider()),
-      ChangeNotifierProvider(create: (_) => GoalProvider()),
+      if (goalProvider == null)
+        ChangeNotifierProvider(create: (_) => GoalProvider())
+      else
+        ChangeNotifierProvider<GoalProvider>.value(value: goalProvider),
       ChangeNotifierProvider(create: (_) => CourseProvider()),
       ChangeNotifierProvider(create: (_) => AppLockProvider()),
       ChangeNotifierProvider(create: (_) => PreferencesProvider()),
@@ -175,6 +183,130 @@ void main() {
 
     expect(find.text('今日待办'), findsOneWidget);
     expect(find.text('今天暂无待办，点击查看或添加任务'), findsOneWidget);
+  });
+
+  testWidgets('今日目标空状态与待办对齐并使用统一字号', (tester) async {
+    tester.view.physicalSize = const Size(720, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(const TodayScreen(), theme: AppBrands.defaultBrand.theme),
+    );
+    await tester.pumpAndSettle();
+    final title = find.text(I18n.tr('goal.new')).last;
+    final subtitle = find.text(I18n.tr('today.goal.create.subtitle'));
+    TextStyle textStyle(Finder finder) => DefaultTextStyle.of(
+      tester.element(finder),
+    ).style.merge(tester.widget<Text>(finder).style);
+    expect(textStyle(title).fontSize, DesignTokens.fontSizeBody);
+    expect(textStyle(subtitle).fontSize, DesignTokens.fontSizeSecondary);
+    final todo = find.text(I18n.tr('today.todos.empty'));
+    expect(textStyle(todo).fontSize, DesignTokens.fontSizeBody);
+    expect(
+      tester.getTopLeft(title).dx,
+      closeTo(tester.getTopLeft(todo).dx, 0.5),
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.flag_circle_outlined)).size,
+      DesignTokens.controlIconSize,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('今日目标标题与右侧操作垂直居中', (tester) async {
+    tester.view.physicalSize = const Size(720, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(const TodayScreen(), theme: AppBrands.defaultBrand.theme),
+    );
+    await tester.pumpAndSettle();
+    final title = find.text(I18n.tr('goal.title'));
+    expect(
+      find.ancestor(of: title, matching: find.byType(AppSectionHeader)),
+      findsOneWidget,
+    );
+    final action = find.widgetWithText(TextButton, I18n.tr('goal.new'));
+    expect(
+      tester.getCenter(title).dy,
+      closeTo(tester.getCenter(action).dy, 0.5),
+    );
+  });
+
+  testWidgets('今日目标区域窄屏和深色主题放大字体不溢出', (tester) async {
+    addTearDown(tester.view.reset);
+    for (final size in const [
+      Size(320, 844),
+      Size(390, 844),
+      Size(1280, 900),
+    ]) {
+      for (final theme in [
+        AppBrands.defaultBrand.theme,
+        AppBrands.starRail.theme,
+      ]) {
+        for (final populated in [false, true]) {
+          final goals = GoalProvider();
+          const longTitle = '完成本周项目资料整理并核对所有交付内容与下一阶段计划';
+          if (populated) {
+            await goals.add(
+              GoalItem(title: longTitle, autoProgress: false, progress: 0.42),
+            );
+          }
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          await tester.pumpWidget(
+            _wrap(
+              const TodayScreen(),
+              goalProvider: goals,
+              theme: theme,
+              textScale: 1.5,
+            ),
+          );
+          await tester.pumpAndSettle();
+          final target = find.text(
+            populated ? longTitle : I18n.tr('today.goal.create.subtitle'),
+          );
+          await tester.scrollUntilVisible(
+            target,
+            300,
+            scrollable: find.byType(Scrollable).first,
+          );
+          final title = find
+              .text(populated ? longTitle : I18n.tr('goal.new'))
+              .last;
+          await tester.pumpAndSettle();
+          if (populated) {
+            final text = tester.widget<Text>(title);
+            expect(text.maxLines, 2);
+            expect(text.style?.fontSize, DesignTokens.fontSizeBody);
+            expect(find.text('42%'), findsOneWidget);
+          }
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox());
+          goals.dispose();
+        }
+      }
+    }
+  });
+
+  testWidgets('今日目标标题按钮和空状态都能打开新建目标', (tester) async {
+    tester.view.physicalSize = const Size(720, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_wrap(const TodayScreen()));
+    await tester.pumpAndSettle();
+    for (final header in [true, false]) {
+      final entry = header
+          ? find.widgetWithText(TextButton, I18n.tr('goal.new'))
+          : find.text(I18n.tr('goal.new')).last;
+      await tester.ensureVisible(entry);
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(find.byType(GoalEditScreen), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Today todo shows no-due and not-overdue tasks', (tester) async {
