@@ -17,7 +17,7 @@ void main() {
       expect(today, contains(': (useTwoColumns ? 2.55 : 3.65)'));
       expect(mine, contains('class _MineStatsGrid extends StatelessWidget'));
       expect(mine, contains("ValueKey('mine_stats_stable_grid')"));
-      expect(mine, contains('height: compact ? 70 : 64'));
+      expect(mine, contains('height: baseHeight + fontGrowth * 2'));
       expect(mine, contains('RepaintBoundary('));
       expect(mine, isNot(contains('GridView.count(')));
       expect(surface, contains('class AppMetricCard'));
@@ -220,7 +220,7 @@ void main() {
       expect(mine, contains('size: 10'));
       expect(mine, contains('onTap: () => _pickAndSaveAvatar(context)'));
       expect(mine, contains("label: '@\$usernameText'"));
-      expect(mine, contains(r"label: '${I18n.tr('profile.coins')} $coins'"));
+      expect(mine, isNot(contains("I18n.tr('profile.coins')")));
       expect(mine, contains('activeAvatarFrame'));
       expect(mine, contains('defaultAvatarFrameId'));
       expect(mine, contains('onTap: () => _showAvatarPreview(context)'));
@@ -282,7 +282,7 @@ void main() {
       final groups = [
         "title: I18n.tr('mine.group.action_plan')",
         "title: I18n.tr('mine.group.review')",
-        "title: I18n.tr('mine.group.schedule')",
+        "title: I18n.tr('mine.group.tools')",
         "title: I18n.tr('mine.group.personal')",
         "title: I18n.tr('mine.group.data')",
         "title: I18n.tr('mine.group.notifications')",
@@ -359,9 +359,18 @@ void main() {
         contains('hiddenBottomNavApps'),
       );
       expect(mine, contains("label: I18n.tr('mine.tile.more_apps')"));
-      expect(mine, contains('final coins = auth.isLoggedIn'));
-      expect(mine, contains('coinBalance'));
-      expect(mine, contains('auth.coinBalance'));
+      expect(mine, isNot(contains('coinBalance')));
+      expect(mine, isNot(contains("title: I18n.tr('mine.group.schedule')")));
+      for (final key in [
+        'mine_apps_entry',
+        'mine_appearance_entry',
+        'mine_settings_entry',
+        'mine_support_entry',
+      ]) {
+        expect(mine, contains("ValueKey('$key')"));
+      }
+      expect(mine, contains('MineScreen._secondary'));
+      expect(mine, contains('class _MineMenuScreen'));
       expect(
         mine,
         contains("label: I18n.tr('mine.tile.notification_settings')"),

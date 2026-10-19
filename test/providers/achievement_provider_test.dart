@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:duoyi/core/achievements.dart';
+import 'package:duoyi/core/domain_event_bus.dart';
+import 'package:duoyi/core/productivity_challenges.dart';
 import 'package:duoyi/providers/achievement_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -330,6 +332,74 @@ void main() {
       expect(provider.lifetimeCoins, 0);
       expect(provider.rewardLedger, isEmpty);
       expect(provider.unlockedAt, isEmpty);
+      provider.dispose();
+    },
+  );
+  test(
+    'work, challenges and badges preserve historical rewards without issuing new coins',
+    () async {
+      final history = {
+        'balance': 88,
+        'lifetime': 120,
+        'grantIds': ['legacy'],
+        'ledger': [
+          {
+            'id': 'legacy',
+            'title': '历史记录',
+            'coins': 120,
+            'reason': 'history',
+            'awardedAt': '2026-01-01T00:00:00Z',
+          },
+        ],
+        'updatedAt': '2026-01-01T00:00:00Z',
+      };
+      SharedPreferences.setMockInitialValues({
+        'duoyi_virtual_rewards': jsonEncode(history),
+      });
+      final bus = DomainEventBus.instance;
+      final provider = AchievementProvider(bus: bus);
+      await provider.loadFromStorage();
+      await provider.updateContext(
+        const AchievementContext(
+          totalTodos: 3,
+          completedTodos: 3,
+          longestHabitStreak: 0,
+          habitCount: 0,
+          focusMinutes: 25,
+          focusSessions: 1,
+          diaryStreak: 0,
+          diaryCount: 0,
+          goalsTotal: 0,
+          goalsAchieved: 0,
+          anniversaries: 0,
+          courses: 0,
+          notes: 0,
+          todayCompletedTodos: 3,
+          todayFocusMinutes: 25,
+        ),
+      );
+      for (final type in DomainEventType.values) {
+        bus.publish(
+          DomainEvent(
+            type: type,
+            objectId: 'work',
+            metadata: {'durationSeconds': 1500},
+          ),
+        );
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.snapshotFor('first_todo').unlocked, isTrue);
+      expect(provider.takeUnlockedFeedback(), isNotEmpty);
+      expect(provider.challenges.where((item) => item.completed), isNotEmpty);
+      for (final challenge in provider.challenges) {
+        expect(ProductivityChallenges.rewardGrant(challenge).coins, 0);
+      }
+      expect(provider.lastEventAt, isNotNull);
+      expect(provider.coinBalance, 88);
+      expect(provider.lifetimeCoins, 120);
+      expect(provider.rewardLedger, hasLength(1));
+      final prefs = await SharedPreferences.getInstance();
+      expect(jsonDecode(prefs.getString('duoyi_virtual_rewards')!), history);
       provider.dispose();
     },
   );

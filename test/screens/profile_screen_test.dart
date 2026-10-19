@@ -10,6 +10,7 @@ import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/providers/user_provider.dart';
 import 'package:duoyi/core/app_version.dart';
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/screens/mine_screen.dart';
 import 'package:duoyi/screens/profile_screen.dart';
 import 'package:duoyi/services/api_client.dart';
@@ -500,9 +501,16 @@ void main() {
         find.byKey(const ValueKey('mine_header_metadata_compact')),
         findsOneWidget,
       );
-      expect(find.textContaining('时光币'), findsOneWidget);
+      expect(find.textContaining('时光币'), findsNothing);
       expect(find.text('管理员'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(
+        find.text(I18n.tr('mine.menu.support')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text(I18n.tr('mine.menu.support')));
+      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('检查更新'),
@@ -834,7 +842,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('时光币 88'), findsOneWidget);
+    expect(find.textContaining('时光币'), findsNothing);
     expect(find.text('头像 URL 或文字'), findsNothing);
     expect(find.widgetWithText(OutlinedButton, '上传'), findsNothing);
     final usernameField = tester.widget<TextField>(

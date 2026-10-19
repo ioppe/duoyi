@@ -24,6 +24,7 @@ import 'package:duoyi/providers/time_audit_provider.dart';
 import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/providers/user_provider.dart';
 import 'package:duoyi/core/i18n.dart';
+import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/screens/mine_screen.dart';
 import 'package:duoyi/screens/more_apps_screen.dart';
 import 'package:duoyi/screens/profile_screen.dart';
@@ -47,6 +48,8 @@ Widget _wrap(
   Widget child, {
   AuthProvider? authProvider,
   TodoProvider? todoProvider,
+  ThemeData? theme,
+  double textScale = 1,
 }) {
   return MultiProvider(
     providers: [
@@ -87,7 +90,16 @@ Widget _wrap(
         ),
       ),
     ],
-    child: MaterialApp(home: child),
+    child: MaterialApp(
+      theme: theme,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
+      home: child,
+    ),
   );
 }
 
@@ -99,6 +111,56 @@ double? _topOrScrolledAway(WidgetTester tester, Finder finder) {
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('我的首页仅保留四个分类入口，窄屏放大字体与主题不溢出', (tester) async {
+    addTearDown(tester.view.reset);
+    for (final size in const [
+      Size(320, 720),
+      Size(390, 844),
+      Size(1440, 900),
+    ]) {
+      for (final theme in [
+        AppBrands.defaultBrand.theme,
+        AppBrands.starRail.theme,
+      ]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          _wrap(const MineScreen(), theme: theme, textScale: 1.5),
+        );
+        await tester.pumpAndSettle();
+        for (final key in [
+          'mine_apps_entry',
+          'mine_appearance_entry',
+          'mine_settings_entry',
+          'mine_support_entry',
+        ]) {
+          expect(find.byKey(ValueKey(key)), findsOneWidget);
+        }
+        expect(find.text('日程日期'), findsNothing);
+        expect(find.text('通知设置'), findsNothing);
+        expect(find.text('备份'), findsNothing);
+        expect(find.text('万年历'), findsNothing);
+        expect(find.textContaining('时光币'), findsNothing);
+        expect(tester.takeException(), isNull);
+        for (final key in [
+          'mine_apps_entry',
+          'mine_settings_entry',
+          'mine_support_entry',
+        ]) {
+          final entry = find.byKey(ValueKey(key));
+          await tester.ensureVisible(entry);
+          await tester.tap(entry);
+          await tester.pumpAndSettle();
+          expect(find.text('日程日期'), findsNothing);
+          expect(find.textContaining('时光币'), findsNothing);
+          expect(tester.takeException(), isNull);
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+        }
+      }
+    }
   });
 
   testWidgets('Today keeps todo section visible when there is no task', (
@@ -252,7 +314,7 @@ void main() {
     expect(today, contains(': (useTwoColumns ? 2.55 : 3.65)'));
     expect(mine, contains('class _MineStatsGrid extends StatelessWidget'));
     expect(mine, contains("ValueKey('mine_stats_stable_grid')"));
-    expect(mine, contains('height: compact ? 70 : 64'));
+    expect(mine, contains('height: baseHeight + fontGrowth * 2'));
     expect(mine, contains('RepaintBoundary('));
     expect(mine, isNot(contains('GridView.count(')));
     expect(surface, contains('fontSize: 12'));
@@ -299,7 +361,7 @@ void main() {
     );
     expect(
       mine.indexOf("title: I18n.tr('mine.group.review')"),
-      lessThan(mine.indexOf("title: I18n.tr('mine.group.schedule')")),
+      lessThan(mine.indexOf("title: I18n.tr('mine.group.tools')")),
     );
     expect(
       mine.indexOf("title: I18n.tr('mine.group.personal')"),
@@ -326,22 +388,29 @@ void main() {
     await tester.pumpWidget(_wrap(const MineScreen()));
     await tester.pumpAndSettle();
     expect(find.byType(MineScreen), findsOneWidget);
+    expect(find.text('应用与记录'), findsOneWidget);
+    expect(find.text('外观'), findsOneWidget);
+    expect(find.text('设置'), findsOneWidget);
+    expect(find.text('帮助与关于'), findsOneWidget);
+    expect(find.text('日程日期'), findsNothing);
+    expect(find.text('通知设置'), findsNothing);
+    expect(find.text('备份'), findsNothing);
+    expect(find.text('效率评分'), findsOneWidget);
+    expect(find.textContaining('时光币'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('mine_apps_entry')));
+    await tester.pumpAndSettle();
     expect(find.text('行动计划'), findsOneWidget);
     expect(find.text('记录回顾'), findsOneWidget);
-    expect(find.text('日程日期'), findsOneWidget);
-    expect(find.text('智能工具'), findsNothing);
-    expect(find.text('个性安全'), findsOneWidget);
-    expect(find.text('目标管理'), findsOneWidget);
-    expect(find.text('效率评分'), findsOneWidget);
-    expect(find.textContaining('时光币'), findsOneWidget);
-    expect(find.text('修改登录密码'), findsNothing);
-    expect(find.text('综合评分'), findsNothing);
+    expect(find.text('实用工具'), findsOneWidget);
     expect(find.text('纪念日'), findsOneWidget);
     expect(find.text('生日'), findsOneWidget);
     expect(find.text('倒数日'), findsOneWidget);
-    expect(find.text('黄历'), findsNothing);
     expect(find.text('万年历'), findsOneWidget);
-
+    expect(find.text('日程日期'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mine_settings_entry')));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('通知支持'),
       600,
@@ -352,6 +421,10 @@ void main() {
     expect(find.text('导出为日历 (.ics)'), findsOneWidget);
     expect(find.text('备份'), findsOneWidget);
     expect(find.text('恢复数据'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mine_support_entry')));
+    await tester.pumpAndSettle();
     expect(find.text('许愿与反馈'), findsOneWidget);
     expect(find.text('纪念日 · 生日 · 倒数'), findsNothing);
     expect(find.text('黄历 · 万年历'), findsNothing);
@@ -364,7 +437,7 @@ void main() {
   testWidgets('Mine keeps top bar fixed while content scrolls on desktop', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(960, 720);
+    tester.view.physicalSize = const Size(960, 390);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
@@ -400,11 +473,11 @@ void main() {
     expect(targetOffset, greaterThan(0));
 
     final stats = find.text('待办完成');
-    final aiAssistant = find.text('AI 助手');
+    final menuEntry = find.byKey(const ValueKey('mine_apps_entry'));
     final beforeTitleTop = tester.getTopLeft(title).dy;
     final beforeHeaderTop = tester.getTopLeft(header).dy;
     final beforeStatsTop = tester.getTopLeft(stats).dy;
-    final beforeAiAssistantTop = tester.getTopLeft(aiAssistant).dy;
+    final beforeMenuTop = tester.getTopLeft(menuEntry).dy;
 
     scrollable.position.jumpTo(targetOffset);
     await tester.pump();
@@ -420,8 +493,8 @@ void main() {
       anyOf(isNull, lessThan(beforeStatsTop)),
     );
     expect(
-      _topOrScrolledAway(tester, aiAssistant),
-      anyOf(isNull, lessThan(beforeAiAssistantTop)),
+      _topOrScrolledAway(tester, menuEntry),
+      anyOf(isNull, lessThan(beforeMenuTop)),
     );
   });
 
@@ -776,6 +849,8 @@ void main() {
       await tester.pumpWidget(_wrap(const MineScreen()));
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byKey(const ValueKey('mine_apps_entry')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('更多应用'));
       await tester.pumpAndSettle();
 
@@ -958,6 +1033,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byKey(const ValueKey('mine_settings_entry')));
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('通知支持'),
         700,
@@ -967,9 +1044,11 @@ void main() {
       expect(find.text('通知设置'), findsOneWidget);
       expect(find.text('55 条'), findsWidgets);
 
-      await tester.ensureVisible(find.text('通知记录'));
-      final historyLabelCenter = tester.getCenter(find.text('通知记录').first);
-      await tester.tapAt(historyLabelCenter + const Offset(0, 28));
+      final historyEntry = find.byKey(
+        const ValueKey('mine_notification_history_entry'),
+      );
+      await tester.ensureVisible(historyEntry);
+      await tester.tap(historyEntry);
       await tester.pumpAndSettle();
 
       expect(find.text('通知记录'), findsWidgets);
@@ -1156,7 +1235,7 @@ void main() {
     expect(find.text('修改登录密码'), findsOneWidget);
     expect(find.text('old@example.com'), findsOneWidget);
     expect(find.text('已验证'), findsWidgets);
-    expect(find.textContaining('时光币 88'), findsOneWidget);
+    expect(find.textContaining('时光币'), findsNothing);
 
     await tester.enterText(find.widgetWithText(TextField, '昵称'), '新昵称');
     final usernameField = tester.widget<TextField>(

@@ -171,7 +171,6 @@ void main() {
         'controller: _emailCtrl',
         'controller: _emailCodeCtrl',
         'action: _sendButton(context)',
-        "I18n.tr('profile.coins')",
         "I18n.tr('profile.account_id')",
         'addListener(_refreshPreview)',
         'removeListener(_refreshPreview)',
@@ -388,12 +387,16 @@ void main() {
       'runSpacing: 4',
       'class _MineUserLineChip extends StatelessWidget',
       "label: '@\$usernameText'",
-      r"label: '${I18n.tr('profile.coins')} $coins'",
       'Image.file(',
       'String? _localAvatarPath(String value)',
     ]) {
       expect(source, contains(field));
     }
+    expect(source, isNot(contains("I18n.tr('profile.coins')")));
+    expect(
+      File('lib/screens/profile_screen.dart').readAsStringSync(),
+      isNot(contains("I18n.tr('profile.coins')")),
+    );
   });
 
   test('Login screen supports password, email-code login and reset flow', () {

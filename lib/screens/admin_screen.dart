@@ -1,5 +1,6 @@
 import '../core/app_clock.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
@@ -616,9 +617,8 @@ class _AdminGroupSummaryCard extends StatelessWidget {
     final active = group['is_active'] != false;
     final id = (group['id'] ?? '').toString();
     final name = (group['name'] ?? id).toString();
-    final description = (group['description'] ?? '').toString().trim();
+    final description = adminVisibleDescription(group['description']);
     final userCount = _adminIntValue(group['user_count']);
-    final coins = _adminIntValue(group['default_time_coins']);
     final statusColor = active ? Colors.green : cs.onSurfaceVariant;
     return AppSurfaceCard(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
@@ -668,14 +668,6 @@ class _AdminGroupSummaryCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
-                Text(
-                  '默认时光币\n$coins',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.72),
-                    height: 1.25,
-                  ),
-                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
@@ -761,72 +753,6 @@ class _AdminMobileMetaItem extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AdminMobileMetric extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _AdminMobileMetric({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(
-          alpha: theme.brightness == Brightness.dark ? 0.24 : 0.34,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(
-            alpha: theme.brightness == Brightness.dark ? 0.08 : 0.10,
-          ),
-          width: 0.45,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          children: [
-            Icon(icon, size: 15, color: cs.primary),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.58),
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurface,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1125,7 +1051,6 @@ const String _adminNoPermission = '__none__';
 const Map<String, String> _adminPermissionLabels = {
   'settings': '全站设置',
   'users': '用户',
-  'coins': '时光币',
   'backup': '备份',
   'ai': 'AI',
   'announcements': '公告',
@@ -1158,7 +1083,7 @@ const List<_AdminPermissionGroup> _adminPermissionGroups = [
   _AdminPermissionGroup(
     title: '个人数据',
     icon: Icons.person_search_outlined,
-    permissions: ['users', 'coins', 'backup', 'feedback'],
+    permissions: ['users', 'backup', 'feedback'],
   ),
   _AdminPermissionGroup(
     title: '管理功能',
@@ -1258,21 +1183,74 @@ String _adminUserSortLabel(String value) {
   }
 }
 
-List<String> _adminUserPermissions(dynamic raw, {required bool isAdmin}) {
+List<String> _adminUserPermissions(dynamic raw, {required bool isAdmin}) =>
+    parseAdminPermissions(raw, isAdmin: isAdmin);
+
+@visibleForTesting
+List<String> parseAdminPermissions(dynamic raw, {required bool isAdmin}) {
   if (raw is List) {
-    final values = raw.map((e) => e.toString()).where((e) => e.isNotEmpty);
     final normalized = <String>[];
-    for (final value in values) {
+    for (final value in raw.map((e) => e.toString().trim())) {
       if (value == _adminNoPermission) return const [];
       if (value == _adminAllPermission) return const [_adminAllPermission];
-      if (_adminPermissionLabels.containsKey(value) &&
+      // Legacy permissions must survive parsing independently of UI options.
+      if ((_adminPermissionLabels.containsKey(value) || value == 'coins') &&
           !normalized.contains(value)) {
         normalized.add(value);
       }
     }
-    if (normalized.isNotEmpty) return normalized;
+    return normalized;
   }
   return isAdmin ? const [_adminAllPermission] : const [];
+}
+
+final _legacyCurrencyPattern = RegExp(
+  r'coin|时光币|金币|charged|welfare|virtual.?rewards|^balance$|^lifetime$|^ledger(_entry)?$|^credit.?balance$',
+  caseSensitive: false,
+);
+
+@visibleForTesting
+String adminVisibleDescription(dynamic raw) => (raw ?? '')
+    .toString()
+    .split(RegExp(r'[。；;\n]'))
+    .where((part) => !_legacyCurrencyPattern.hasMatch(part))
+    .map((part) => part.trim())
+    .where((part) => part.isNotEmpty)
+    .join('。');
+
+@visibleForTesting
+bool adminAuditActionVisible(String action) =>
+    !_legacyCurrencyPattern.hasMatch(action);
+
+@visibleForTesting
+String adminVisibleAuditDetail(dynamic raw) {
+  Object? sanitize(Object? value) {
+    if (value is Map) {
+      return {
+        for (final entry in value.entries)
+          if (!_legacyCurrencyPattern.hasMatch(entry.key.toString()))
+            entry.key.toString(): sanitize(entry.value),
+      };
+    }
+    if (value is List) {
+      return value
+          .where(
+            (item) => item is! String || !_legacyCurrencyPattern.hasMatch(item),
+          )
+          .map(sanitize)
+          .toList();
+    }
+    if (value is String && _legacyCurrencyPattern.hasMatch(value)) return '';
+    return value;
+  }
+
+  if (raw == null || raw == '') return '';
+  try {
+    final decoded = raw is String ? jsonDecode(raw) : raw;
+    return jsonEncode(sanitize(decoded));
+  } on FormatException {
+    return adminVisibleDescription(raw);
+  }
 }
 
 String _adminPermissionsLabel(
@@ -1281,19 +1259,16 @@ String _adminPermissionsLabel(
 }) {
   if (!isAdmin) return '无管理权限';
   if (permissions.contains(_adminAllPermission)) return '全部权限';
-  if (permissions.isEmpty) return '无管理权限';
-  return permissions.map((key) => _adminPermissionLabels[key] ?? key).join('、');
+  final visible = permissions
+      .where(_adminPermissionLabels.containsKey)
+      .toList();
+  if (visible.isEmpty) return '无管理权限';
+  return visible.map((key) => _adminPermissionLabels[key]!).join('、');
 }
 
 int _adminIntValue(dynamic raw) {
   if (raw is num) return raw.toInt();
   return int.tryParse(raw?.toString() ?? '') ?? 0;
-}
-
-int _adminIntValueOrDefault(dynamic raw, int fallback) {
-  if (raw == null) return fallback;
-  if (raw is String && raw.trim().isEmpty) return fallback;
-  return _adminIntValue(raw);
 }
 
 String _adminAnnouncementSortLabel(String value) {
@@ -2071,13 +2046,7 @@ class _GroupsTabState extends State<_GroupsTab> {
       text: (group?['name'] ?? '').toString(),
     );
     final descCtrl = TextEditingController(
-      text: (group?['description'] ?? '').toString(),
-    );
-    final coinsCtrl = TextEditingController(
-      text: _adminIntValueOrDefault(
-        group?['default_time_coins'],
-        100,
-      ).toString(),
+      text: adminVisibleDescription(group?['description']),
     );
     var isActive = group?['is_active'] != false;
     final saved = await showDialog<bool>(
@@ -2102,16 +2071,6 @@ class _GroupsTabState extends State<_GroupsTab> {
                 ),
                 maxLines: 2,
               ),
-              TextField(
-                controller: coinsCtrl,
-                decoration: const InputDecoration(
-                  labelText: '默认时光币',
-                  helperText: '新注册或分配到该组时使用的默认额度',
-                  prefixIcon: Icon(Icons.toll_outlined),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: isActive,
@@ -2125,7 +2084,6 @@ class _GroupsTabState extends State<_GroupsTab> {
         ),
       ),
     );
-    final coinsText = coinsCtrl.text.trim();
     final name = nameCtrl.text.trim();
     final description = descCtrl.text.trim();
     if (saved != true) return;
@@ -2137,8 +2095,10 @@ class _GroupsTabState extends State<_GroupsTab> {
       await widget.api.saveGroup(
         id: group?['id']?.toString(),
         name: name,
-        description: description,
-        defaultTimeCoins: (int.tryParse(coinsText) ?? 100).clamp(0, 1000000),
+        description:
+            description == adminVisibleDescription(group?['description'])
+            ? (group?['description'] ?? '').toString()
+            : description,
         isActive: isActive,
       );
       await _load(offset: _offset);
@@ -2167,9 +2127,7 @@ class _GroupsTabState extends State<_GroupsTab> {
         title: Text('删除用户组 $name'),
         icon: const Icon(Icons.delete_outline),
         content: Text(
-          userCount > 0
-              ? '该组内 $userCount 个用户会回退到默认用户组，已有时光币记录保留。'
-              : '删除后不会影响已有用户数据。',
+          userCount > 0 ? '该组内 $userCount 个用户会回退到默认用户组。' : '删除后不会影响已有用户数据。',
         ),
         actions: [
           TextButton(
@@ -2229,14 +2187,14 @@ class _GroupsTabState extends State<_GroupsTab> {
               children: [
                 _AdminSettingsSection(
                   title: '用户组管理',
-                  subtitle: '默认普通用户 100 时光币；管理员可调整各组额度和启用状态',
+                  subtitle: '管理成员分组和用户组启用状态',
                   children: [
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final banner = AppInfoBanner(
-                          icon: Icons.toll_outlined,
-                          title: '默认额度',
-                          message: '新用户注册后按所属用户组发放时光币，默认组为 100。',
+                          icon: Icons.groups_2_outlined,
+                          title: '成员分组',
+                          message: '新用户加入默认组，可按使用需求调整分组。',
                           color: cs.primary,
                           margin: EdgeInsets.zero,
                         );
@@ -2348,7 +2306,6 @@ class _SettingsTabState extends State<_SettingsTab> {
   final _msgCtrl = TextEditingController();
   final _latestVersionCtrl = TextEditingController();
   final _minimumVersionCtrl = TextEditingController();
-  final _defaultCoinsCtrl = TextEditingController(text: '100');
   String _updateVersionPreset = _adminUpdatePresetCurrent;
 
   bool _canUseAdminPermission(String permission) {
@@ -2372,7 +2329,6 @@ class _SettingsTabState extends State<_SettingsTab> {
     _msgCtrl.dispose();
     _latestVersionCtrl.dispose();
     _minimumVersionCtrl.dispose();
-    _defaultCoinsCtrl.dispose();
     super.dispose();
   }
 
@@ -2394,8 +2350,6 @@ class _SettingsTabState extends State<_SettingsTab> {
       _groups = List<Map<String, dynamic>>.from(results[1] as List);
       _roles = List<Map<String, dynamic>>.from(results[2] as List);
       _msgCtrl.text = (_data['maintenance_message'] ?? '').toString();
-      _defaultCoinsCtrl.text = (_data['default_registration_coins'] ?? 100)
-          .toString();
       final latestVersion = (_data['latest_version'] ?? '').toString().trim();
       final minimumVersion = (_data['minimum_supported_version'] ?? '')
           .toString()
@@ -2440,9 +2394,6 @@ class _SettingsTabState extends State<_SettingsTab> {
             : null,
         updateNotes: key == 'update_notes' ? value : null,
         updateDownloadUrl: key == 'update_download_url' ? value : null,
-        defaultRegistrationCoins: key == 'default_registration_coins'
-            ? (value is int ? value : int.tryParse(value.toString()) ?? 100)
-            : null,
       );
       _data[key] = value;
     } on ApiException catch (e) {
@@ -2501,13 +2452,7 @@ class _SettingsTabState extends State<_SettingsTab> {
       text: (group?['name'] ?? '').toString(),
     );
     final descCtrl = TextEditingController(
-      text: (group?['description'] ?? '').toString(),
-    );
-    final coinsCtrl = TextEditingController(
-      text: _adminIntValueOrDefault(
-        group?['default_time_coins'],
-        100,
-      ).toString(),
+      text: adminVisibleDescription(group?['description']),
     );
     var isActive = group?['is_active'] != false;
     final saved = await showDialog<bool>(
@@ -2532,16 +2477,6 @@ class _SettingsTabState extends State<_SettingsTab> {
                 ),
                 maxLines: 2,
               ),
-              TextField(
-                controller: coinsCtrl,
-                decoration: const InputDecoration(
-                  labelText: '默认时光币',
-                  helperText: '新注册或分配到该组时使用的默认额度',
-                  prefixIcon: Icon(Icons.toll_outlined),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: isActive,
@@ -2565,11 +2500,11 @@ class _SettingsTabState extends State<_SettingsTab> {
       await widget.api.saveGroup(
         id: group?['id']?.toString(),
         name: name,
-        description: descCtrl.text.trim(),
-        defaultTimeCoins: (int.tryParse(coinsCtrl.text.trim()) ?? 100).clamp(
-          0,
-          1000000,
-        ),
+        description:
+            descCtrl.text.trim() ==
+                adminVisibleDescription(group?['description'])
+            ? (group?['description'] ?? '').toString()
+            : descCtrl.text.trim(),
         isActive: isActive,
       );
       await _reloadGroupsRoles();
@@ -3039,7 +2974,7 @@ class _SettingsTabState extends State<_SettingsTab> {
 
     return _AdminSettingsSection(
       title: '用户组与角色',
-      subtitle: '管理默认时光币、成员分组和管理员权限模板',
+      subtitle: '管理成员分组和管理员权限模板',
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
@@ -3167,7 +3102,7 @@ class _SettingsTabState extends State<_SettingsTab> {
         children: [
           _AdminSettingsSection(
             title: '账户、注册与用户组',
-            subtitle: '控制新用户入口、邀请码、邮箱验证和默认用户组额度',
+            subtitle: '控制新用户入口、邀请码和邮箱验证',
             children: [
               AppSwitchTile(
                 icon: Icons.person_add_alt_1_outlined,
@@ -3198,22 +3133,6 @@ class _SettingsTabState extends State<_SettingsTab> {
                 onChanged: _saving('registration_email_required')
                     ? null
                     : (v) => _set('registration_email_required', v),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _defaultCoinsCtrl,
-                decoration: const InputDecoration(
-                  labelText: '默认用户组时光币',
-                  helperText: '新注册普通用户默认获得的额度，管理员可继续在用户列表单独调整',
-                  prefixIcon: Icon(Icons.toll_outlined),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onEditingComplete: () {
-                  final coins =
-                      int.tryParse(_defaultCoinsCtrl.text.trim()) ?? 100;
-                  _set('default_registration_coins', coins.clamp(0, 1000000));
-                },
               ),
             ],
           ),
@@ -5282,12 +5201,11 @@ class _UsersTabState extends State<_UsersTab> {
         permissions.contains(permission);
   }
 
-  bool get _canManageCoins => _canUseAdminPermission('coins');
   bool get _canManageUsers => _canUseAdminPermission('users');
   bool get _canManageGroups => _canUseAdminPermission('groups');
   bool get _canManageRoles => _canUseAdminPermission('roles');
   bool get _canManagePermissions => _canUseAdminPermission('permissions');
-  bool get _canAssignGroups => _canManageGroups || _canManageCoins;
+  bool get _canAssignGroups => _canManageGroups;
   bool get _canManageAdminAccess => _canManageRoles || _canManagePermissions;
   bool get _canManageUserAdminAccess =>
       _canManageUsers && _canManageAdminAccess;
@@ -6088,81 +6006,6 @@ class _UsersTabState extends State<_UsersTab> {
     }
   }
 
-  Future<void> _adjustCoins(Map<String, dynamic> u) async {
-    final deltaCtrl = TextEditingController();
-    final reasonCtrl = TextEditingController();
-    final username = u['username'].toString();
-    final balance = _adminIntValue(u['coin_balance']);
-    final lifetime = _adminIntValue(u['lifetime_coins']);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        title: Text('调整 $username 的时光币'),
-        icon: const Icon(Icons.toll_outlined),
-        content: _adminDialogForm(
-          maxWidth: 430,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text('当前 $balance · 累计 $lifetime'),
-            ),
-            TextField(
-              controller: deltaCtrl,
-              decoration: const InputDecoration(
-                labelText: '调整数量',
-                helperText: '正数增加，负数扣减',
-                prefixIcon: Icon(Icons.toll_outlined),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(signed: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
-              ],
-            ),
-            TextField(
-              controller: reasonCtrl,
-              decoration: const InputDecoration(
-                labelText: '原因 (可选)',
-                helperText: '会写入管理员操作记录',
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: _adminDialogActions(ctx, saveLabel: '提交调整'),
-      ),
-    );
-    if (ok != true) return;
-    final delta = int.tryParse(deltaCtrl.text.trim()) ?? 0;
-    if (delta == 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('调整数量不能为 0')));
-      }
-      return;
-    }
-    try {
-      final adjusted = await widget.api.adjustUserCoins(
-        u['user_id'].toString(),
-        delta: delta,
-        reason: reasonCtrl.text,
-      );
-      u['coin_balance'] = adjusted['balance'];
-      u['lifetime_coins'] = adjusted['lifetime'];
-      await _load(quiet: true);
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('时光币已调整')));
-    } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(userVisibleApiError(e))));
-      }
-    }
-  }
-
   Future<void> _delete(Map<String, dynamic> u) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -6258,8 +6101,6 @@ class _UsersTabState extends State<_UsersTab> {
       '最近活跃: ${_formatLastActive(u['last_active_at'])}',
       '反馈数: ${u['feedback_count'] ?? 0}',
       '当前排序: ${_adminUserSortLabel(_sort)}',
-      '时光币: ${_adminIntValue(u['coin_balance'])}',
-      '累计时光币: ${_adminIntValue(u['lifetime_coins'])}',
     ];
     await showDialog<void>(
       context: context,
@@ -6320,15 +6161,6 @@ class _UsersTabState extends State<_UsersTab> {
               ).showSnackBar(const SnackBar(content: Text('缺少用户管理权限')));
             }
             break;
-          case 'coins':
-            if (_canManageCoins) {
-              await _adjustCoins(u);
-            } else if (mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('缺少时光币管理权限')));
-            }
-            break;
           case 'disable':
             if (_canManageUsers) {
               await _toggleDisable(u);
@@ -6385,13 +6217,6 @@ class _UsersTabState extends State<_UsersTab> {
                   : '设置用户组/角色（无权限）',
             ),
           ),
-          PopupMenuItem(
-            value: 'coins',
-            enabled: _canManageCoins,
-            child: AppSecondaryMenuText(
-              _canManageCoins ? '调整时光币' : '调整时光币（无权限）',
-            ),
-          ),
           if (_canManageUsers && !isSelf)
             PopupMenuItem(
               value: 'disable',
@@ -6428,8 +6253,6 @@ class _UsersTabState extends State<_UsersTab> {
       u['admin_permissions'],
       isAdmin: admin,
     );
-    final coinBalance = _adminIntValue(u['coin_balance']);
-    final lifetimeCoins = _adminIntValue(u['lifetime_coins']);
     final canSelectForBulk = _canManageUsers;
     final selected = canSelectForBulk && _selectedUserIds.contains(userId);
     final registeredAt = _formatServerTime(u['created_at']);
@@ -6561,17 +6384,6 @@ class _UsersTabState extends State<_UsersTab> {
                     style: subtleText,
                   ),
                 ),
-                SizedBox(
-                  width: 118,
-                  child: Text(
-                    '$coinBalance / $lifetimeCoins',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: mainText,
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -6706,26 +6518,6 @@ class _UsersTabState extends State<_UsersTab> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _AdminMobileMetric(
-                            label: '当前时光币',
-                            value: '$coinBalance',
-                            icon: Icons.toll_outlined,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _AdminMobileMetric(
-                            label: '累计时光币',
-                            value: '$lifetimeCoins',
-                            icon: Icons.savings_outlined,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 10,
                       runSpacing: 6,
@@ -6776,14 +6568,6 @@ class _UsersTabState extends State<_UsersTab> {
     final selectedIds = _selectedCurrentPageUserIds;
     final allCurrentPageSelected =
         selectableIds.isNotEmpty && selectedIds.length == selectableIds.length;
-    final pageCoinBalance = _users.fold<int>(
-      0,
-      (sum, user) => sum + _adminIntValue(user['coin_balance']),
-    );
-    final pageLifetimeCoins = _users.fold<int>(
-      0,
-      (sum, user) => sum + _adminIntValue(user['lifetime_coins']),
-    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final compactAdminFilters = constraints.maxWidth < 720;
@@ -6960,9 +6744,9 @@ class _UsersTabState extends State<_UsersTab> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final summaryText = !_canManageUsers
-                              ? '本页 ${_users.length} 个 · 时光币 $pageCoinBalance / 累计 $pageLifetimeCoins'
+                              ? '本页 ${_users.length} 个'
                               : (selectedIds.isEmpty
-                                    ? '本页 ${_users.length} 个 · 时光币 $pageCoinBalance / 累计 $pageLifetimeCoins'
+                                    ? '本页 ${_users.length} 个'
                                     : '已选 ${selectedIds.length} 个 · 当前页批量操作');
                           final summary = Text(
                             summaryText,
@@ -9149,7 +8933,12 @@ class _AuditLogTabState extends State<_AuditLogTab> {
       if (!mounted || loadSerial != _loadSerial) return;
       setState(() {
         _page = page;
-        _items = page.items;
+        _items = page.items
+            .where(
+              (item) =>
+                  adminAuditActionVisible((item['action'] ?? '').toString()),
+            )
+            .toList();
       });
     } catch (e) {
       if (!mounted || loadSerial != _loadSerial) return;
@@ -9269,8 +9058,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                   final action = (item['action'] ?? '').toString();
                   final actor = (item['actor_name'] ?? item['actor'] ?? '-')
                       .toString();
-                  final target = (item['target'] ?? '').toString();
-                  final detail = (item['detail'] ?? '').toString();
+                  final target = adminVisibleDescription(item['target']);
+                  final detail = adminVisibleAuditDetail(item['detail']);
                   final createdAt = (item['created_at'] ?? '').toString();
                   return _AdminListTileCard(
                     margin: const EdgeInsets.only(bottom: 8),

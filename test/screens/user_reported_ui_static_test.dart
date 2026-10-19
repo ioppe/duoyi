@@ -60,14 +60,20 @@ void main() {
       final source = File('lib/screens/mine_screen.dart').readAsStringSync();
       final body = _sourceBlock(
         source,
-        'body: ListView(',
+        'body: SafeArea(',
         'int _todoRate(TodoProvider t)',
       );
 
       expect(body, contains("restorationId: 'mine_screen_list'"));
       expect(body, contains('mineHeader'));
       expect(body, contains('mineStats'));
-      expect(body, contains('aiAssistant'));
+      expect(body, contains('mine_apps_entry'));
+      final apps = _sourceBlock(
+        source,
+        'final appSections = <Widget>[',
+        'final settingsSections = <Widget>[',
+      );
+      expect(apps, contains('aiAssistant'));
       expect(body.indexOf('mineHeader'), lessThan(body.indexOf('mineStats')));
       expect(source, contains('appBar: AppBar('));
       expect(source, contains('title: Text(s.mineTitle)'));
@@ -99,7 +105,7 @@ void main() {
       expect(stableGrid, contains('RepaintBoundary('));
       expect(stableGrid, contains("ValueKey('mine_stats_stable_grid')"));
       expect(stableGrid, contains('SizedBox('));
-      expect(stableGrid, contains('height: compact ? 70 : 64'));
+      expect(stableGrid, contains('height: baseHeight + fontGrowth * 2'));
       expect(stableGrid, contains('Row('));
       expect(stableGrid, isNot(contains('shrinkWrap: true')));
       expect(stableGrid, isNot(contains('NeverScrollableScrollPhysics')));

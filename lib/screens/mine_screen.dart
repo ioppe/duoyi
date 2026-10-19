@@ -16,7 +16,6 @@ import '../providers/theme_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/notification_service.dart';
 import '../providers/auth_provider.dart';
-import '../providers/achievement_provider.dart';
 import '../services/ai_service.dart';
 import '../services/app_update_installer.dart';
 import '../services/app_update_service.dart';
@@ -68,7 +67,6 @@ typedef _MineAuthSlice = ({
   String? username,
   String? displayName,
   String? avatar,
-  int coinBalance,
   bool isLoggedIn,
   bool isAdmin,
 });
@@ -82,15 +80,22 @@ typedef _MineProfileSlice = ({
   int productivityScore,
 });
 
+enum _MineMenu { apps, settings, support }
+
 class MineScreen extends StatelessWidget {
   final List<int>? visibleBottomNavTabs;
   final bool useShellBackground;
+  final _MineMenu? _menu;
 
   const MineScreen({
     super.key,
     this.visibleBottomNavTabs,
     this.useShellBackground = false,
-  });
+  }) : _menu = null;
+
+  const MineScreen._secondary(_MineMenu menu, {this.visibleBottomNavTabs})
+    : _menu = menu,
+      useShellBackground = false;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +138,6 @@ class MineScreen extends StatelessWidget {
         username: state.username,
         displayName: state.displayName,
         avatar: state.avatar,
-        coinBalance: state.coinBalance,
         isLoggedIn: state.isLoggedIn,
         isAdmin: state.isAdmin,
       );
@@ -151,9 +155,6 @@ class MineScreen extends StatelessWidget {
     );
     final updateLatestVersion = context.select<AppUpdateService, String?>(
       (service) => service.latestVersion,
-    );
-    final coinBalance = context.select<AchievementProvider, int>(
-      (provider) => provider.coinBalance,
     );
     final cs = Theme.of(context).colorScheme;
     final avatarFrame = theme.avatarFrame;
@@ -312,7 +313,6 @@ class MineScreen extends StatelessWidget {
           final username = auth.isLoggedIn
               ? _firstNonEmpty([auth.username, profile.username])
               : profile.username;
-          final coins = auth.isLoggedIn ? auth.coinBalance : coinBalance;
           final accountAction = SizedBox(
             width: auth.isLoggedIn ? 38 : 54,
             height: 30,
@@ -358,11 +358,6 @@ class MineScreen extends StatelessWidget {
                   color: cs.primary,
                 );
           final rewardChips = <Widget>[
-            _MineUserLineChip(
-              label: '${I18n.tr('profile.coins')} $coins',
-              icon: Icons.savings_outlined,
-              color: cs.secondary,
-            ),
             if (auth.isLoggedIn && auth.isAdmin)
               _MineUserLineChip(
                 label: I18n.tr('mine.badge.admin'),
@@ -404,7 +399,7 @@ class MineScreen extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(
-                                      fontSize: 15,
+                                      fontSize: DesignTokens.fontSizeMd,
                                       color: cs.onSurface,
                                       height: 1.18,
                                     ),
@@ -511,10 +506,440 @@ class MineScreen extends StatelessWidget {
           )
         : child;
 
+    final appSections = <Widget>[
+      if (aiEnabled) capped(aiAssistant),
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.action_plan'),
+          children: [
+            _Tile(
+              icon: Icons.flag_circle_outlined,
+              label: I18n.tr('goal.title'),
+              color: Colors.orange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(child: GoalScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.timer,
+              label: I18n.tr('mine.tile.pomodoro'),
+              color: Colors.red,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: PomodoroScreen(useShellBackground: true),
+                  ),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.apps_outlined,
+              label: I18n.tr('mine.tile.more_apps'),
+              subtitle: I18n.tr('mine.tile.more_apps.subtitle'),
+              color: Colors.blueGrey,
+              onTap: () => _openMoreApplications(context),
+            ),
+          ],
+        ),
+      ),
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.review'),
+          children: [
+            _Tile(
+              icon: Icons.access_time,
+              label: I18n.tr('time_audit.title'),
+              color: Colors.teal,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: TimeAuditScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.pie_chart_outline,
+              label: I18n.tr('mine.tile.statistics'),
+              color: Colors.indigo,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: StatisticsScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.book_outlined,
+              label: I18n.tr('diary.title'),
+              color: Colors.teal,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(child: DiaryScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.edit_note,
+              label: I18n.tr('note.title'),
+              color: Colors.amber.shade700,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(child: NoteScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.emoji_events_outlined,
+              label: I18n.tr('mine.tile.achievements'),
+              color: Colors.amber,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: AchievementsScreen()),
+                ),
+              ),
+            ),
+            if (aiEnabled)
+              _Tile(
+                icon: Icons.history,
+                label: I18n.tr('ai_history.title'),
+                color: Colors.purple,
+                trailing: aiReviewHistoryCount == 0
+                    ? null
+                    : Text(
+                        '$aiReviewHistoryCount',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const BrandRouteSurface(child: AiHistoryScreen()),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.tools'),
+          children: [
+            _Tile(
+              icon: Icons.school_outlined,
+              label: I18n.tr('mine.tile.courses'),
+              color: Colors.blue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: CourseScheduleScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.calendar_month_outlined,
+              label: I18n.tr('today.almanac.title'),
+              color: Colors.green,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: AlmanacScreen(
+                      initialMode: AlmanacEntryMode.calendar,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.hourglass_bottom_outlined,
+              label: I18n.tr('countdown.title'),
+              color: Colors.deepOrange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: CountdownScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.event_available_outlined,
+              label: I18n.tr('anniversary.title'),
+              color: Colors.pink,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: anniversary.MemorialAnniversaryScreen(),
+                  ),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.cake_outlined,
+              label: I18n.tr('anniversary.birthday'),
+              color: Colors.purple,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: anniversary.BirthdayScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+    final settingsSections = <Widget>[
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.personal'),
+          children: [
+            _Tile(
+              icon: Icons.tune,
+              label: I18n.tr('preferences.title'),
+              color: Colors.indigo,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: PreferencesScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.lock_outline,
+              label: I18n.tr('app_lock.title'),
+              color: Colors.red.shade400,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: LockSettingsScreen()),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      // 云同步状态卡：上次同步时间 / 进行中 / 未同步角标 / 失败原因
+      // 与自动重试提示，紧贴"数据协作"分组（含同步冲突记录入口）上方。
+      capped(const SyncStatusCard()),
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.data'),
+          children: [
+            _Tile(
+              icon: Icons.groups_2_outlined,
+              label: I18n.tr('share.title'),
+              color: Colors.cyan,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(child: ShareScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.extension_outlined,
+              label: I18n.tr('mine.tile.integrations'),
+              color: Colors.deepPurple,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: IntegrationsScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.sync_problem_outlined,
+              label: I18n.tr('sync_conflict.title'),
+              color: Colors.orange,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: SyncConflictLogScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.event_note_outlined,
+              label: I18n.tr('export.title'),
+              color: Colors.lightBlue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: ExportScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.backup_outlined,
+              label: I18n.tr('mine.tile.backup'),
+              color: Colors.brown,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: BackupScreen(initialMode: BackupEntryMode.backup),
+                  ),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.restore_outlined,
+              label: I18n.tr('mine.tile.restore'),
+              color: Colors.blueGrey,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BrandRouteSurface(
+                    child: BackupScreen(initialMode: BackupEntryMode.restore),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.group.notifications'),
+          children: [
+            _Tile(
+              key: const ValueKey('mine_notification_history_entry'),
+              icon: Icons.history_toggle_off_outlined,
+              label: I18n.tr('mine.tile.notification_history'),
+              subtitle: notificationHistoryCount == 0
+                  ? I18n.tr('mine.tile.notification_history.empty')
+                  : '$notificationHistoryCount${I18n.tr('mine.tile.notification_history.count_suffix')}',
+              color: Colors.blueGrey,
+              trailing: notificationHistoryCount == 0
+                  ? null
+                  : hasUnreadNotificationHistory
+                  ? const _UnreadDot()
+                  : null,
+              onTap: () => _openNotificationHistory(context),
+            ),
+            _Tile(
+              icon: Icons.notifications_outlined,
+              label: I18n.tr('mine.tile.notification_settings'),
+              subtitle: I18n.tr('mine.tile.notification_settings.subtitle'),
+              color: Colors.orange,
+              onTap: () => _openNotificationSettings(context),
+            ),
+            if (auth.isLoggedIn && auth.isAdmin)
+              _Tile(
+                icon: Icons.admin_panel_settings_outlined,
+                label: I18n.tr('mine.tile.admin'),
+                color: Colors.deepOrange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const BrandRouteSurface(child: AdminScreen()),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ];
+    final supportSections = <Widget>[
+      capped(
+        _TileGroup(
+          columns: tileColumns,
+          title: I18n.tr('mine.menu.support'),
+          children: [
+            _Tile(
+              icon: Icons.campaign_outlined,
+              label: I18n.tr('announcement.title'),
+              color: Colors.cyan,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BrandRouteSurface(child: AnnouncementsScreen()),
+                ),
+              ),
+            ),
+            _Tile(
+              icon: Icons.forum_outlined,
+              label: I18n.tr('mine.tile.feedback'),
+              subtitle: I18n.tr('mine.tile.feedback.subtitle'),
+              color: Colors.indigo,
+              onTap: () => _openFeedback(context, 'feature'),
+            ),
+            _Tile(
+              icon: Icons.system_update,
+              label: I18n.tr('mine.tile.check_updates'),
+              color: Colors.teal,
+              trailing: updateChecking
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : (updateHasUpdate
+                        ? _UpdateAvailableBadge(version: updateLatestVersion)
+                        : null),
+              onTap: () => _showUpdateDialog(context, updater),
+            ),
+            _Tile(
+              icon: Icons.info_outline,
+              label: s.mineAboutLabel,
+              color: Colors.grey,
+              onTap: () => _aboutDialog(context),
+            ),
+          ],
+        ),
+      ),
+    ];
+
+    // 二级路由继续通过本组件的 selectors 读取最新状态，避免保存菜单快照。
+    final menu = _menu;
+    if (menu != null) {
+      return _MineMenuScreen(
+        title: I18n.tr(switch (menu) {
+          _MineMenu.apps => 'mine.menu.apps',
+          _MineMenu.settings => 'mine.menu.settings',
+          _MineMenu.support => 'mine.menu.support',
+        }),
+        sections: switch (menu) {
+          _MineMenu.apps => appSections,
+          _MineMenu.settings => settingsSections,
+          _MineMenu.support => supportSections,
+        },
+      );
+    }
+
     return Scaffold(
       backgroundColor: scaffoldBackground,
       appBar: AppBar(
         title: Text(s.mineTitle),
+        titleTextStyle: appSecondaryRouteTitleTextStyle(context),
         backgroundColor: toolbarBackground,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -525,440 +950,80 @@ class MineScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        key: const PageStorageKey<String>('mine_screen_list'),
-        restorationId: 'mine_screen_list',
-        children: [
-          capped(mineHeader),
-          capped(mineStats),
-          capped(aiAssistant),
-          const SizedBox(height: 12),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.action_plan'),
-              children: [
-                _Tile(
-                  icon: Icons.flag_circle_outlined,
-                  label: I18n.tr('goal.title'),
-                  color: Colors.orange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: GoalScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.timer,
-                  label: I18n.tr('mine.tile.pomodoro'),
-                  color: Colors.red,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: PomodoroScreen(useShellBackground: true),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.apps_outlined,
-                  label: I18n.tr('mine.tile.more_apps'),
-                  subtitle: I18n.tr('mine.tile.more_apps.subtitle'),
-                  color: Colors.blueGrey,
-                  onTap: () => _openMoreApplications(context),
-                ),
-              ],
-            ),
-          ),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.review'),
-              children: [
-                _Tile(
-                  icon: Icons.access_time,
-                  label: I18n.tr('time_audit.title'),
-                  color: Colors.teal,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: TimeAuditScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.pie_chart_outline,
-                  label: I18n.tr('mine.tile.statistics'),
-                  color: Colors.indigo,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: StatisticsScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.book_outlined,
-                  label: I18n.tr('diary.title'),
-                  color: Colors.teal,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: DiaryScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.edit_note,
-                  label: I18n.tr('note.title'),
-                  color: Colors.amber.shade700,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: NoteScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.emoji_events_outlined,
-                  label: I18n.tr('mine.tile.achievements'),
-                  color: Colors.amber,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: AchievementsScreen()),
-                    ),
-                  ),
-                ),
-                if (aiEnabled)
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          key: const PageStorageKey<String>('mine_screen_list'),
+          restorationId: 'mine_screen_list',
+          padding: const EdgeInsets.only(bottom: DesignTokens.spaceXxl),
+          children: [
+            capped(mineHeader),
+            capped(mineStats),
+            const SizedBox(height: DesignTokens.spaceLg),
+            capped(
+              _TileGroup(
+                columns: tileColumns,
+                title: I18n.tr('mine.menu.title'),
+                children: [
                   _Tile(
-                    icon: Icons.history,
-                    label: I18n.tr('ai_history.title'),
-                    color: Colors.purple,
-                    trailing: aiReviewHistoryCount == 0
-                        ? null
-                        : Text(
-                            '$aiReviewHistoryCount',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const BrandRouteSurface(child: AiHistoryScreen()),
-                      ),
-                    ),
+                    key: const ValueKey('mine_apps_entry'),
+                    icon: Icons.apps_outlined,
+                    label: I18n.tr('mine.menu.apps'),
+                    subtitle: I18n.tr('mine.menu.apps.subtitle'),
+                    color: cs.primary,
+                    onTap: () => _openMenuPage(context, _MineMenu.apps),
                   ),
-              ],
-            ),
-          ),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.schedule'),
-              children: [
-                _Tile(
-                  icon: Icons.school_outlined,
-                  label: I18n.tr('mine.tile.courses'),
-                  color: Colors.blue,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: CourseScheduleScreen(),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.calendar_month_outlined,
-                  label: I18n.tr('today.almanac.title'),
-                  color: Colors.green,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: AlmanacScreen(
-                          initialMode: AlmanacEntryMode.calendar,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.hourglass_bottom_outlined,
-                  label: I18n.tr('countdown.title'),
-                  color: Colors.deepOrange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: CountdownScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.event_available_outlined,
-                  label: I18n.tr('anniversary.title'),
-                  color: Colors.pink,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: anniversary.MemorialAnniversaryScreen(),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.cake_outlined,
-                  label: I18n.tr('anniversary.birthday'),
-                  color: Colors.purple,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: anniversary.BirthdayScreen(),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.personal'),
-              children: [
-                _Tile(
-                  icon: Icons.palette,
-                  label: s.mineThemeLabel,
-                  color: cs.primary,
-                  trailing: Text(
-                    theme.brandName,
-                    style: TextStyle(color: cs.primary, fontSize: 11),
-                  ),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: ThemePickerScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.tune,
-                  label: I18n.tr('preferences.title'),
-                  color: Colors.indigo,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: PreferencesScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.lock_outline,
-                  label: I18n.tr('app_lock.title'),
-                  color: Colors.red.shade400,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: LockSettingsScreen()),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 云同步状态卡：上次同步时间 / 进行中 / 未同步角标 / 失败原因
-          // 与自动重试提示，紧贴"数据协作"分组（含同步冲突记录入口）上方。
-          capped(const SyncStatusCard()),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.data'),
-              children: [
-                _Tile(
-                  icon: Icons.groups_2_outlined,
-                  label: I18n.tr('share.title'),
-                  color: Colors.cyan,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: ShareScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.extension_outlined,
-                  label: I18n.tr('mine.tile.integrations'),
-                  color: Colors.deepPurple,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: IntegrationsScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.sync_problem_outlined,
-                  label: I18n.tr('sync_conflict.title'),
-                  color: Colors.orange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: SyncConflictLogScreen(),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.event_note_outlined,
-                  label: I18n.tr('export.title'),
-                  color: Colors.lightBlue,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: ExportScreen()),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.backup_outlined,
-                  label: I18n.tr('mine.tile.backup'),
-                  color: Colors.brown,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: BackupScreen(
-                          initialMode: BackupEntryMode.backup,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                _Tile(
-                  icon: Icons.restore_outlined,
-                  label: I18n.tr('mine.tile.restore'),
-                  color: Colors.blueGrey,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BrandRouteSurface(
-                        child: BackupScreen(
-                          initialMode: BackupEntryMode.restore,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          capped(
-            _TileGroup(
-              columns: tileColumns,
-              title: I18n.tr('mine.group.notifications'),
-              children: [
-                _Tile(
-                  icon: Icons.history_toggle_off_outlined,
-                  label: I18n.tr('mine.tile.notification_history'),
-                  subtitle: notificationHistoryCount == 0
-                      ? I18n.tr('mine.tile.notification_history.empty')
-                      : '$notificationHistoryCount${I18n.tr('mine.tile.notification_history.count_suffix')}',
-                  color: Colors.blueGrey,
-                  trailing: notificationHistoryCount == 0
-                      ? null
-                      : hasUnreadNotificationHistory
-                      ? const _UnreadDot()
-                      : null,
-                  onTap: () => _openNotificationHistory(context),
-                ),
-                _Tile(
-                  icon: Icons.notifications_outlined,
-                  label: I18n.tr('mine.tile.notification_settings'),
-                  subtitle: I18n.tr('mine.tile.notification_settings.subtitle'),
-                  color: Colors.orange,
-                  onTap: () => _openNotificationSettings(context),
-                ),
-                if (auth.isLoggedIn && auth.isAdmin)
                   _Tile(
-                    icon: Icons.admin_panel_settings_outlined,
-                    label: I18n.tr('mine.tile.admin'),
-                    color: Colors.deepOrange,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const BrandRouteSurface(child: AdminScreen()),
+                    key: const ValueKey('mine_appearance_entry'),
+                    icon: Icons.palette_outlined,
+                    label: I18n.tr('mine.menu.appearance'),
+                    subtitle: I18n.tr('mine.menu.appearance.subtitle'),
+                    color: cs.secondary,
+                    trailing: Text(
+                      theme.brandName,
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontSize: DesignTokens.fontSizeSecondary,
                       ),
                     ),
+                    onTap: () =>
+                        _openBrandedRoute(context, const ThemePickerScreen()),
                   ),
-                _Tile(
-                  icon: Icons.campaign_outlined,
-                  label: I18n.tr('announcement.title'),
-                  color: Colors.cyan,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const BrandRouteSurface(child: AnnouncementsScreen()),
-                    ),
+                  _Tile(
+                    key: const ValueKey('mine_settings_entry'),
+                    icon: Icons.settings_outlined,
+                    label: I18n.tr('mine.menu.settings'),
+                    subtitle: I18n.tr('mine.menu.settings.subtitle'),
+                    color: cs.primary,
+                    trailing: hasUnreadNotificationHistory
+                        ? const _UnreadDot()
+                        : null,
+                    onTap: () => _openMenuPage(context, _MineMenu.settings),
                   ),
-                ),
-                _Tile(
-                  icon: Icons.forum_outlined,
-                  label: I18n.tr('mine.tile.feedback'),
-                  subtitle: I18n.tr('mine.tile.feedback.subtitle'),
-                  color: Colors.indigo,
-                  onTap: () => _openFeedback(context, 'feature'),
-                ),
-                _Tile(
-                  icon: Icons.system_update,
-                  label: I18n.tr('mine.tile.check_updates'),
-                  color: Colors.teal,
-                  trailing: updateChecking
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : (updateHasUpdate
-                            ? _UpdateAvailableBadge(
-                                version: updateLatestVersion,
-                              )
-                            : null),
-                  onTap: () => _showUpdateDialog(context, updater),
-                ),
-                _Tile(
-                  icon: Icons.info_outline,
-                  label: s.mineAboutLabel,
-                  color: Colors.grey,
-                  onTap: () => _aboutDialog(context),
-                ),
-              ],
+                  _Tile(
+                    key: const ValueKey('mine_support_entry'),
+                    icon: Icons.help_outline,
+                    label: I18n.tr('mine.menu.support'),
+                    subtitle: I18n.tr('mine.menu.support.subtitle'),
+                    color: cs.secondary,
+                    trailing: updateHasUpdate
+                        ? _UpdateAvailableBadge(version: updateLatestVersion)
+                        : null,
+                    onTap: () => _openMenuPage(context, _MineMenu.support),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  void _openMenuPage(BuildContext context, _MineMenu menu) {
+    _openBrandedRoute(
+      context,
+      MineScreen._secondary(menu, visibleBottomNavTabs: visibleBottomNavTabs),
     );
   }
 
@@ -1862,13 +1927,20 @@ class _MineStatsGrid extends StatelessWidget {
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 520;
           final columns = compact ? 2 : 4;
+          final baseHeight = compact ? 70.0 : 64.0;
+          final fontGrowth =
+              (MediaQuery.textScalerOf(
+                        context,
+                      ).scale(DesignTokens.fontSizeBody) -
+                      DesignTokens.fontSizeBody)
+                  .clamp(0.0, double.infinity);
           final rows = <Widget>[];
 
           for (var index = 0; index < cards.length; index += columns) {
             final rowCards = cards.skip(index).take(columns).toList();
             rows.add(
               SizedBox(
-                height: compact ? 70 : 64,
+                height: baseHeight + fontGrowth * 2,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -2138,6 +2210,39 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
   }
 }
 
+class _MineMenuScreen extends StatelessWidget {
+  final String title;
+  final List<Widget> sections;
+
+  const _MineMenuScreen({required this.title, required this.sections});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final background = theme.brightness == Brightness.dark
+        ? cs.surface
+        : cs.surfaceContainerLowest;
+    return Scaffold(
+      backgroundColor: background,
+      appBar: AppBar(
+        title: Text(title),
+        titleTextStyle: appSecondaryRouteTitleTextStyle(context),
+        backgroundColor: background,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          key: ValueKey('mine_menu_$title'),
+          padding: const EdgeInsets.symmetric(vertical: DesignTokens.spaceLg),
+          children: sections,
+        ),
+      ),
+    );
+  }
+}
+
 class _TileGroup extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -2209,6 +2314,7 @@ class _TileGroup extends StatelessWidget {
           if (i > 0)
             Divider(
               height: 1,
+              thickness: 0.5,
               indent: 44,
               color: cs.outlineVariant.withValues(alpha: 0.14),
             ),
@@ -2287,6 +2393,7 @@ class _Tile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _Tile({
+    super.key,
     required this.icon,
     required this.label,
     this.subtitle,
@@ -2328,18 +2435,20 @@ class _Tile extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: appSecondaryMenuItemTextStyle(
-                        context,
-                      ).copyWith(height: 1.2, color: cs.onSurface),
+                      style: appSecondaryMenuItemTextStyle(context).copyWith(
+                        fontSize: DesignTokens.fontSizeBody,
+                        height: 1.4,
+                        color: cs.onSurface,
+                      ),
                     ),
                     if (subtitle != null && subtitle!.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle!,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
+                          fontSize: DesignTokens.fontSizeSecondary,
                           height: 1.15,
                           color: cs.onSurface.withValues(alpha: 0.58),
                         ),

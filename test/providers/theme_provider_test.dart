@@ -86,16 +86,14 @@ void main() {
   );
 
   test(
-    'widget theme overrides persist and stay limited to unlocked items',
+    'widget theme overrides accept every legal resource and persist',
     () async {
       final provider = ThemeProvider();
 
-      await provider.unlockBrand('re0');
-      await provider.unlockCardSkin('paper_card');
       expect(await provider.setWidgetBackgroundBrand('re0'), isTrue);
       expect(await provider.setWidgetCardSkin('paper_card'), isTrue);
-      expect(await provider.setWidgetBackgroundBrand('genshin'), isFalse);
-      expect(await provider.setWidgetCardSkin('mint_card'), isFalse);
+      expect(await provider.setWidgetBackgroundBrand('missing-brand'), isFalse);
+      expect(await provider.setWidgetCardSkin('missing-skin'), isFalse);
 
       final prefs = await SharedPreferences.getInstance();
       final persisted =
@@ -233,7 +231,10 @@ void main() {
 
       expect(provider.brand.id, 'defaultBrand');
       expect(provider.themeSwitchCount, 0);
-      expect(provider.unlockedBrandIds, {'defaultBrand'});
+      expect(
+        provider.unlockedBrandIds,
+        provider.brands.map((item) => item.id).toSet(),
+      );
       expect(
         provider.activeFocusBackdrop.id,
         ThemeProvider.defaultFocusBackdropId,
@@ -242,6 +243,80 @@ void main() {
         provider.activeWidgetBackgroundId,
         ThemeProvider.widgetFollowThemeId,
       );
+    },
+  );
+  test(
+    'all resources are free with empty storage and legacy restricted state',
+    () async {
+      final provider = ThemeProvider();
+      expect(provider.brands, hasLength(9));
+      expect(provider.focusBackdrops, hasLength(5));
+      expect(provider.avatarFrames, hasLength(4));
+      expect(provider.cardSkins, hasLength(4));
+      await provider.applyShopStateFromServer({
+        'activeBrand': 'liquidGlass',
+        'unlockedBrandIds': ['defaultBrand'],
+      });
+      expect(provider.brand.id, 'liquidGlass');
+      for (final brand in provider.brands) {
+        expect(provider.isBrandUnlocked(brand.id), isTrue);
+        expect(await provider.setBrand(brand.id), isTrue);
+        expect(await provider.setWidgetBackgroundBrand(brand.id), isTrue);
+      }
+      for (final item in provider.focusBackdrops) {
+        expect(await provider.setFocusBackdrop(item.id), isTrue);
+      }
+      for (final item in provider.avatarFrames) {
+        expect(await provider.setAvatarFrame(item.id), isTrue);
+      }
+      for (final item in provider.cardSkins) {
+        expect(await provider.setCardSkin(item.id), isTrue);
+        expect(await provider.setWidgetCardSkin(item.id), isTrue);
+      }
+      final beforeInvalid = provider.shopStateSnapshot;
+      expect(await provider.setBrand('invalid'), isFalse);
+      expect(await provider.setFocusBackdrop('invalid'), isFalse);
+      expect(await provider.setAvatarFrame('invalid'), isFalse);
+      expect(await provider.setCardSkin('invalid'), isFalse);
+      expect(await provider.setWidgetBackgroundBrand('invalid'), isFalse);
+      expect(await provider.setWidgetCardSkin('invalid'), isFalse);
+      expect(provider.shopStateSnapshot, beforeInvalid);
+      final restored = ThemeProvider();
+      await restored.loadFromStorage();
+      expect(restored.shopStateSnapshot, provider.shopStateSnapshot);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('duoyi_virtual_rewards'), isNull);
+      provider.resetLocalState();
+      expect(provider.unlockedBrandIds, hasLength(9));
+      expect(await provider.setBrand('liquidGlass'), isTrue);
+    },
+  );
+  test(
+    'queued appearance changes preserve every selection and switch count',
+    () async {
+      final provider = ThemeProvider();
+      expect(
+        await Future.wait([
+          provider.setBrand('re0'),
+          provider.setFocusBackdrop('forest_focus'),
+          provider.setAvatarFrame('golden_frame'),
+          provider.setCardSkin('paper_card'),
+          provider.setWidgetBackgroundBrand('genshin'),
+          provider.setWidgetCardSkin('mint_card'),
+          provider.setBrand('defaultBrand'),
+        ]),
+        everyElement(isTrue),
+      );
+      expect(provider.brand.id, 'defaultBrand');
+      expect(provider.themeSwitchCount, 2);
+      expect(provider.activeFocusBackdrop.id, 'forest_focus');
+      expect(provider.activeAvatarFrame.id, 'golden_frame');
+      expect(provider.activeCardSkin.id, 'paper_card');
+      expect(provider.activeWidgetBackgroundId, 'genshin');
+      expect(provider.activeWidgetCardSkinId, 'mint_card');
+      final restored = ThemeProvider();
+      await restored.loadFromStorage();
+      expect(restored.shopStateSnapshot, provider.shopStateSnapshot);
     },
   );
 }

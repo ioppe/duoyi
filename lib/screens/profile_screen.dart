@@ -1198,7 +1198,6 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
             bool emailVerified,
             String? displayName,
             String? avatar,
-            int coinBalance,
           })
         >((auth) {
           final state = auth.state;
@@ -1209,7 +1208,6 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
             emailVerified: state.emailVerified,
             displayName: state.displayName,
             avatar: state.avatar,
-            coinBalance: state.coinBalance,
           );
         });
     final avatarFrame = context.select<ThemeProvider, AvatarFrameReward>(
@@ -1306,11 +1304,6 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
                         spacing: 8,
                         runSpacing: 6,
                         children: [
-                          _ProfileMetricChip(
-                            icon: Icons.savings_outlined,
-                            label: I18n.tr('profile.coins'),
-                            value: '${account.coinBalance}',
-                          ),
                           if (account.username?.trim().isNotEmpty == true)
                             _ProfileMetricChip(
                               icon: Icons.badge_outlined,

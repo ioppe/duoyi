@@ -1260,9 +1260,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAvatarSelected => 'Avatar selected. Save to apply it.';
 
   @override
-  String get profileCoins => 'Coins';
-
-  @override
   String get profileAccountId => 'Account';
 
   @override
@@ -3215,6 +3212,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mineGroupNotifications => 'Notifications';
 
   @override
+  String get mineMenuTitle => 'Features & settings';
+
+  @override
+  String get mineMenuApps => 'Apps & records';
+
+  @override
+  String get mineMenuAppsSubtitle => 'Goals, focus, records, and tools';
+
+  @override
+  String get mineMenuAppearance => 'Appearance';
+
+  @override
+  String get mineMenuAppearanceSubtitle => 'Themes, avatars, and card styles';
+
+  @override
+  String get mineMenuSettings => 'Settings';
+
+  @override
+  String get mineMenuSettingsSubtitle =>
+      'Preferences, notifications, security, and data';
+
+  @override
+  String get mineMenuSupport => 'Help & about';
+
+  @override
+  String get mineMenuSupportSubtitle =>
+      'Announcements, feedback, updates, and version';
+
+  @override
+  String get mineGroupTools => 'Tools';
+
+  @override
+  String get appearanceTitle => 'Themes & appearance';
+
+  @override
+  String get appearanceSubtitle => 'All styles are available to use';
+
+  @override
+  String get appearanceApply => 'Use';
+
+  @override
+  String get appearanceApplied => 'In use';
+
+  @override
+  String get appearanceFree => 'Available';
+
+  @override
+  String get appearanceFocusSubtitle =>
+      'Choose focus backgrounds and decorations';
+
+  @override
+  String get appearanceAvatarSubtitle => 'Choose avatar decorations';
+
+  @override
+  String get appearanceCardSubtitle => 'Choose card styles';
+
+  @override
+  String get appearanceAppliedMessage => 'Style applied';
+
+  @override
+  String get achievementsSummarySubtitle =>
+      'Track progress and unlocked achievements';
+
+  @override
+  String get achievementsChallengesSubtitle =>
+      'Complete challenges and keep your rhythm';
+
+  @override
   String get mineTilePomodoro => 'Focus timer';
 
   @override
@@ -3275,7 +3340,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mineLogoutConfirmContent =>
-      'Signing out clears local account data (coins, theme, habits, tasks, and other caches). Data re-syncs from the current account after you sign in again.';
+      'Signing out clears local account data (theme, habits, tasks, and other caches). Data re-syncs from the current account after you sign in again.';
 
   @override
   String get mineLogoutDone => 'Signed out. Local account data was cleared.';

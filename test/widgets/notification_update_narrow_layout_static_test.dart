@@ -106,9 +106,10 @@ void main() {
     expect(logout, contains("I18n.tr('mine.logout.cleanup_failed')"));
     expect(
       I18n.tr('mine.logout.confirm_content'),
-      contains('时光币、主题、习惯、待办'),
+      contains('主题、习惯、待办'),
       reason: '退出确认必须列出会被清空的账号数据类型',
     );
+    expect(I18n.tr('mine.logout.confirm_content'), isNot(contains('时光币')));
     expect(I18n.tr('mine.logout.done'), contains('本机账号数据已清理'));
     expect(
       I18n.tr('mine.logout.cleanup_failed'),

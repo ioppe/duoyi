@@ -13,6 +13,14 @@ class AccountLocalDataCleaner {
   AccountLocalDataCleaner._();
 
   static const accountDataOwnerKey = 'duoyi_account_data_owner_v1';
+  // 只有游客在外观页主动选择后才写入；登录/切换/退出仍将它一并清理。
+  static const guestAppearanceMarkerKey = 'duoyi_guest_appearance_v1';
+  static const appearancePreferenceKeys = <String>{
+    'active_brand',
+    'theme_switch_count',
+    'theme_unlocked_brands',
+    'theme_shop_state',
+  };
   static int _accountDataGeneration = 0;
 
   static int get accountDataGeneration => _accountDataGeneration;
@@ -27,6 +35,7 @@ class AccountLocalDataCleaner {
 
   static const accountScopedKeys = <String>{
     accountDataOwnerKey,
+    guestAppearanceMarkerKey,
     'todos',
     'habits',
     'pomodoro_sessions',

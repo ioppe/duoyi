@@ -670,16 +670,43 @@ class AuthProvider extends ChangeNotifier {
     SharedPreferences prefs,
   ) async {
     if (!_hasStoredAccountScopedData(prefs)) return;
+    // 免费外观允许游客使用。只恢复明确由游客选择的外观，绝不恢复账号数据。
+    final keepGuestAppearance =
+        prefs.getBool(AccountLocalDataCleaner.guestAppearanceMarkerKey) ==
+            true &&
+        !prefs.containsKey(AccountLocalDataCleaner.accountDataOwnerKey) &&
+        !prefs.containsKey('auth_state');
+    final appearance = <String, Object>{
+      if (keepGuestAppearance)
+        for (final key in AccountLocalDataCleaner.appearancePreferenceKeys)
+          if (prefs.get(key) case final Object value) key: value,
+    };
     debugPrint('[auth] clearing residual account data while signed out');
     if (onAccountLoggedOut == null) {
       await AccountLocalDataCleaner.clearSharedPreferences();
-      return;
+    } else {
+      try {
+        await _notifyAccountLoggedOut();
+      } catch (_) {
+        await _clearAccountScopedPreferencesAfterLogoutCleanupFailure();
+        rethrow;
+      }
     }
-    try {
-      await _notifyAccountLoggedOut();
-    } catch (_) {
-      await _clearAccountScopedPreferencesAfterLogoutCleanupFailure();
-      rethrow;
+    for (final entry in appearance.entries) {
+      switch (entry.value) {
+        case final String value:
+          await prefs.setString(entry.key, value);
+        case final int value:
+          await prefs.setInt(entry.key, value);
+        case final List<String> value:
+          await prefs.setStringList(entry.key, value);
+      }
+    }
+    if (keepGuestAppearance) {
+      await prefs.setBool(
+        AccountLocalDataCleaner.guestAppearanceMarkerKey,
+        true,
+      );
     }
   }
 

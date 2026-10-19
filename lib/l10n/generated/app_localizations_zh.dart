@@ -1190,9 +1190,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileAvatarSelected => '头像已选择，点击保存后生效';
 
   @override
-  String get profileCoins => '时光币';
-
-  @override
   String get profileAccountId => '账号';
 
   @override
@@ -3076,6 +3073,69 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mineGroupNotifications => '通知支持';
 
   @override
+  String get mineMenuTitle => '功能与设置';
+
+  @override
+  String get mineMenuApps => '应用与记录';
+
+  @override
+  String get mineMenuAppsSubtitle => '目标、专注、记录与实用工具';
+
+  @override
+  String get mineMenuAppearance => '外观';
+
+  @override
+  String get mineMenuAppearanceSubtitle => '主题、头像与卡片样式';
+
+  @override
+  String get mineMenuSettings => '设置';
+
+  @override
+  String get mineMenuSettingsSubtitle => '偏好、通知、安全与数据';
+
+  @override
+  String get mineMenuSupport => '帮助与关于';
+
+  @override
+  String get mineMenuSupportSubtitle => '公告、反馈、更新与版本信息';
+
+  @override
+  String get mineGroupTools => '实用工具';
+
+  @override
+  String get appearanceTitle => '主题与外观';
+
+  @override
+  String get appearanceSubtitle => '所有样式均可直接使用';
+
+  @override
+  String get appearanceApply => '使用';
+
+  @override
+  String get appearanceApplied => '已使用';
+
+  @override
+  String get appearanceFree => '自由选择';
+
+  @override
+  String get appearanceFocusSubtitle => '选择专注时的背景与装饰';
+
+  @override
+  String get appearanceAvatarSubtitle => '选择头像装饰';
+
+  @override
+  String get appearanceCardSubtitle => '选择信息卡片样式';
+
+  @override
+  String get appearanceAppliedMessage => '已应用所选样式';
+
+  @override
+  String get achievementsSummarySubtitle => '记录进步与已解锁成就';
+
+  @override
+  String get achievementsChallengesSubtitle => '完成挑战，保持节奏';
+
+  @override
   String get mineTilePomodoro => '番茄专注';
 
   @override
@@ -3134,7 +3194,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get mineLogoutConfirmContent =>
-      '退出后会清空本机账号数据（时光币、主题、习惯、待办等本地缓存），重新登录后再从当前账号同步。';
+      '退出后会清空本机账号数据（主题、习惯、待办等本地缓存），重新登录后再从当前账号同步。';
 
   @override
   String get mineLogoutDone => '已退出登录，本机账号数据已清理';

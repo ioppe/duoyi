@@ -9,7 +9,6 @@ import '../core/achievements.dart';
 import '../core/domain_event_bus.dart';
 import '../core/growth_levels.dart';
 import '../core/productivity_challenges.dart';
-import '../core/virtual_rewards.dart';
 import '../services/account_local_data_cleaner.dart';
 import 'notification_service.dart';
 
@@ -342,18 +341,12 @@ class AchievementProvider extends ChangeNotifier {
   void _subscribe() {
     _eventSub ??= _bus.events.listen((event) {
       _lastEventAt = event.occurredAt;
-      final grant = VirtualRewardRules.forEvent(event);
-      var rewardsChanged = false;
-      if (grant != null) {
-        rewardsChanged = _award(grant, awardedAt: event.occurredAt);
-      }
-      _rebuildSnapshots(rewardsChanged: rewardsChanged);
+      _rebuildSnapshots();
     });
   }
 
   void _rebuildSnapshots({
     bool notify = true,
-    bool rewardsChanged = false,
     bool silentUnlockFeedback = false,
   }) {
     final context = _context;
@@ -399,11 +392,8 @@ class AchievementProvider extends ChangeNotifier {
           ),
         )
         .toList(growable: false);
-    var shouldSaveRewards = rewardsChanged;
-    shouldSaveRewards |= _awardCompletedChallenges(context);
 
-    // 切号 / 登录基线回填期间，强制走静默路径：仍记录解锁与发币，
-    // 但不弹 Toast、不发系统通知，避免早已解锁的成就被重复“庆祝”。
+    // 切号 / 登录基线回填期间仍记录成就解锁，抑制重复的解锁反馈。
     final silent = silentUnlockFeedback || _unlockFeedbackSuppressed;
 
     if (newlyUnlocked.isNotEmpty) {
@@ -413,16 +403,6 @@ class AchievementProvider extends ChangeNotifier {
           newlyUnlocked.where(
             (achievement) => !_notifiedAchievementIds.contains(achievement.id),
           ),
-        );
-      }
-      for (final achievement in newlyUnlocked) {
-        shouldSaveRewards |= _award(
-          VirtualRewardRules.forAchievement(
-            id: achievement.id,
-            title: achievement.title,
-            description: achievement.description,
-          ),
-          awardedAt: _unlockedAt[achievement.id] ?? DateTime.now(),
         );
       }
     }
@@ -446,11 +426,11 @@ class AchievementProvider extends ChangeNotifier {
       _notifiedAchievementIds.addAll(achievementIdsToMarkNotified);
     }
 
-    if (newlyUnlocked.isNotEmpty || shouldSaveRewards) {
+    if (newlyUnlocked.isNotEmpty) {
       unawaited(
         _persistChangesThenNotify(
           saveAchievements: newlyUnlocked.isNotEmpty,
-          saveRewards: shouldSaveRewards,
+          saveRewards: false,
           notify: notify,
           achievementIdsToMarkNotified: achievementIdsToMarkNotified,
           achievementsToNotify: achievementsToNotify,
@@ -508,41 +488,6 @@ class AchievementProvider extends ChangeNotifier {
     if (notify) {
       notifyListeners();
     }
-  }
-
-  bool _awardCompletedChallenges(AchievementContext context) {
-    var changed = false;
-    for (final challenge in ProductivityChallenges.build(context)) {
-      if (!challenge.completed) continue;
-      changed |= _award(
-        ProductivityChallenges.rewardGrant(challenge),
-        awardedAt: DateTime.now(),
-      );
-    }
-    return changed;
-  }
-
-  bool _award(RewardGrant grant, {required DateTime awardedAt}) {
-    if (grant.coins <= 0 || _rewardGrantIds.contains(grant.id)) {
-      return false;
-    }
-    _rewardGrantIds.add(grant.id);
-    _coinBalance += grant.coins;
-    _lifetimeCoins += grant.coins;
-    _rewardLedger.insert(
-      0,
-      RewardLedgerEntry(
-        id: grant.id,
-        title: grant.title,
-        coins: grant.coins,
-        reason: grant.reason,
-        awardedAt: awardedAt,
-      ),
-    );
-    if (_rewardLedger.length > 50) {
-      _rewardLedger.removeRange(50, _rewardLedger.length);
-    }
-    return true;
   }
 
   bool _loadRewardsFromPrefs(SharedPreferences prefs) {

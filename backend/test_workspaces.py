@@ -186,7 +186,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertIn("avatar", cols)
         self.assertEqual(avatar, "")
 
-    def test_registration_default_user_group_grants_100_time_coins(self):
+    def test_registration_preserves_default_configuration_without_granting_coins(self):
         db = api.get_db()
         try:
             api._setting_set(db, "registration_email_required", False)
@@ -199,9 +199,10 @@ class WorkspaceApiTest(unittest.TestCase):
             api.RegisterRequest(username="default-coins-user", password="pass123456")
         )
 
-        self.assertEqual(registered["coin_balance"], 100)
-        self.assertEqual(registered["lifetime_coins"], 100)
-        self.assertEqual(registered["user"]["coin_balance"], 100)
+        self.assertEqual(registered["coin_balance"], 0)
+        self.assertEqual(registered["lifetime_coins"], 0)
+        self.assertEqual(registered["user"]["coin_balance"], 0)
+        self.assertEqual(api.sync(api.SyncRequest(), user_id=registered["user_id"])["virtual_rewards"].get("ledger", []), [])
 
     def test_init_db_preserves_zero_default_group_time_coins(self):
         db = api.get_db()
@@ -262,9 +263,9 @@ class WorkspaceApiTest(unittest.TestCase):
             api.RegisterRequest(username="migrated-default-group-user", password="pass123456")
         )
 
-        self.assertEqual(registered["coin_balance"], 72)
-        self.assertEqual(registered["lifetime_coins"], 72)
-        self.assertEqual(registered["user"]["coin_balance"], 72)
+        self.assertEqual(registered["coin_balance"], 0)
+        self.assertEqual(registered["lifetime_coins"], 0)
+        self.assertEqual(registered["user"]["coin_balance"], 0)
 
     def test_legacy_password_hash_migrates_on_login(self):
         user_id = self._register("legacy-password")
@@ -1182,7 +1183,8 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(created_payload["group_id"], group_id)
         self.assertEqual(created_payload["role_id"], role_id)
         self.assertIn("feedback", created_payload["permissions"])
-        self.assertEqual(created_payload["coin_balance"], 130)
+        self.assertEqual(created_payload["coin_balance"], 0)
+        self.assertEqual(created_payload["virtual_rewards"].get("ledger", []), [])
 
     def test_user_admin_can_read_groups_and_roles_for_assignment(self):
         admin_id = self._make_admin("user-group-reader-admin", ["users"])
@@ -1460,9 +1462,16 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(denied.exception.status_code, 400)
         self.assertIn("last active admin", denied.exception.detail)
 
-    def test_admin_group_assignment_grants_target_group_default_coins_once(self):
+    def test_admin_group_assignment_preserves_history_without_default_grants(self):
         admin_id = self._make_admin("group-assignment-admin", ["users", "groups"])
         target_id = self._register("group-assignment-target")
+        history = {"balance": 23, "lifetime": 70, "ledger": [{"id": "legacy", "coins": 70}], "updatedAt": "2026-01-01T00:00:00Z"}
+        db = api.get_db()
+        try:
+            db.execute("UPDATE sync_data SET virtual_rewards=? WHERE user_id=?", (json.dumps(history), target_id))
+            db.commit()
+        finally:
+            db.close()
         headers = {"Authorization": f"Bearer {api.TOKENS[admin_id]}"}
 
         with TestClient(api.app) as client:
@@ -1487,10 +1496,11 @@ class WorkspaceApiTest(unittest.TestCase):
 
         self.assertEqual(assigned.status_code, 200)
         self.assertEqual(assigned.json()["group_id"], group_id)
-        self.assertEqual(assigned.json()["coin_balance"], 80)
-        self.assertEqual(assigned.json()["lifetime_coins"], 80)
+        self.assertEqual(assigned.json()["coin_balance"], 23)
+        self.assertEqual(assigned.json()["lifetime_coins"], 70)
         self.assertEqual(repeated.status_code, 200)
-        self.assertEqual(repeated.json()["coin_balance"], 80)
+        self.assertEqual(repeated.json()["coin_balance"], 23)
+        self.assertEqual(api.sync(api.SyncRequest(), user_id=target_id)["virtual_rewards"], history)
 
     def test_admin_group_assignment_requires_group_or_coin_permission(self):
         admin_id = self._make_admin("users-only-group-admin", ["users"])
@@ -1568,10 +1578,10 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(created_user.status_code, 403)
         self.assertEqual(assigned_by_coin.status_code, 200, assigned_by_coin.text)
         self.assertEqual(assigned_by_coin.json()["group_id"], "restricted_group")
-        self.assertEqual(assigned_by_coin.json()["coin_balance"], 90)
+        self.assertEqual(assigned_by_coin.json()["coin_balance"], 0)
         self.assertEqual(created_by_coin.status_code, 200, created_by_coin.text)
         self.assertEqual(created_by_coin.json()["group_id"], "restricted_group")
-        self.assertEqual(created_by_coin.json()["coin_balance"], 90)
+        self.assertEqual(created_by_coin.json()["coin_balance"], 0)
         self.assertEqual(coin_only_created_user.status_code, 403)
         db = api.get_db()
         try:
@@ -2103,7 +2113,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(update.status_code, 200, update.text)
         self.assertEqual(update.json()["group_id"], group_id)
         self.assertEqual(update.json()["role_id"], "role_user")
-        self.assertEqual(update.json()["coin_balance"], 125)
+        self.assertEqual(update.json()["coin_balance"], 0)
         self.assertEqual(target_balance.status_code, 200, target_balance.text)
         self.assertEqual(target_balance.json()["balance"], 175)
         self.assertEqual(coin_balance.status_code, 200, coin_balance.text)
@@ -2309,11 +2319,11 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertTrue(created_user.json()["is_admin"])
         self.assertTrue(created_disabled_user.json()["is_disabled"])
         self.assertIn("feedback", created_user.json()["permissions"])
-        self.assertEqual(created_user.json()["coin_balance"], 99)
+        self.assertEqual(created_user.json()["coin_balance"], 0)
         self.assertEqual(mixed_user_update.status_code, 400, mixed_user_update.text)
         after_mixed_item = after_mixed_users.json()["items"][0]
         self.assertFalse(after_mixed_item["is_disabled"])
-        self.assertEqual(after_mixed_item["coin_balance"], 99)
+        self.assertEqual(after_mixed_item["coin_balance"], 0)
         self.assertFalse(camel_admin_demote.json()["is_admin"])
         self.assertFalse(disabled_user_enable.json()["is_disabled"])
         self.assertEqual(time_coin_balance.json()["balance"], 150)
@@ -8923,7 +8933,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertTrue(any(item["id"] == group_id for item in groups_page.json()["items"]))
         self._assert_p0_http_ok(assigned, "PATCH /api/admin/users/{id} groupId")
         self.assertEqual(assigned.json()["group_id"], group_id)
-        self.assertEqual(assigned.json()["coin_balance"], 321)
+        self.assertEqual(assigned.json()["coin_balance"], 0)
         self._assert_p0_http_ok(
             target_balance,
             "PUT /api/admin/users/{id}/time-coin-balance",
@@ -9013,19 +9023,19 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertFalse(created_user.json()["is_admin"])
         self.assertFalse(created_user.json()["is_disabled"])
         self.assertEqual(created_user.json()["group_id"], group_id)
-        self.assertEqual(created_user.json()["coin_balance"], 25)
+        self.assertEqual(created_user.json()["coin_balance"], 0)
         self.assertEqual(normal_route_adjust.status_code, 403)
         self.assertEqual(normal_generic_adjust.status_code, 403)
         self._assert_p0_http_ok(
             admin_time_coin_adjust,
             "PATCH /api/admin/users/{id}/time-coin/adjust",
         )
-        self.assertEqual(admin_time_coin_adjust.json()["balance"], 32)
+        self.assertEqual(admin_time_coin_adjust.json()["balance"], 7)
         self._assert_p0_http_ok(users_page, "GET /api/admin/users")
         user_items = users_page.json()["items"]
         self.assertEqual(len(user_items), 1)
         self.assertEqual(user_items[0]["group_id"], group_id)
-        self.assertEqual(user_items[0]["coin_balance"], 32)
+        self.assertEqual(user_items[0]["coin_balance"], 7)
         self._assert_p0_http_ok(groups_page, "GET /api/admin/userGroups")
         group_items = {
             item["id"]: item
@@ -9037,7 +9047,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(unchanged["virtual_rewards"].get("balance", 0), 0)
         self.assertEqual(unchanged["virtual_rewards"].get("lifetime", 0), 0)
 
-    def test_theme_shop_apply_deducts_coins_and_updates_me(self):
+    def test_theme_shop_apply_is_free_and_preserves_historical_rewards(self):
         user_id = self._register("theme-shop-user")
         headers = {"Authorization": f"Bearer {api.TOKENS[user_id]}"}
         db = api.get_db()
@@ -9045,7 +9055,7 @@ class WorkspaceApiTest(unittest.TestCase):
             rewards = {
                 "balance": 200,
                 "lifetime": 200,
-                "ledger": [],
+                "ledger": [{"id": "legacy", "coins": 200, "title": "history"}],
                 "updatedAt": "2026-06-01T00:00:00Z",
             }
             db.execute(
@@ -9084,15 +9094,17 @@ class WorkspaceApiTest(unittest.TestCase):
 
         self._assert_p0_http_ok(purchased, "POST /api/theme-shop/apply")
         payload = purchased.json()
-        self.assertEqual(payload["charged"], 140)
-        self.assertEqual(payload["coin_balance"], 60)
+        self.assertEqual(payload["charged"], 0)
+        self.assertEqual(payload["coin_balance"], 200)
+        self.assertIsNone(payload["ledger_entry"])
+        self.assertEqual(payload["virtual_rewards"], rewards)
         self.assertEqual(payload["lifetime_coins"], 200)
-        self.assertEqual(payload["user"]["coin_balance"], 60)
+        self.assertEqual(payload["user"]["coin_balance"], 200)
         self.assertEqual(payload["theme_shop_state"]["activeBrand"], "re0")
         self.assertIn("re0", payload["theme_shop_state"]["unlockedBrandIds"])
         self.assertIn("updatedAt", payload["theme_shop_state"])
         self._assert_p0_http_ok(me_after_purchase, "GET /api/auth/me")
-        self.assertEqual(me_after_purchase.json()["coin_balance"], 60)
+        self.assertEqual(me_after_purchase.json()["coin_balance"], 200)
         self.assertEqual(
             me_after_purchase.json()["theme_shop_state"]["activeBrand"], "re0"
         )
@@ -9102,16 +9114,17 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(me_after_purchase.json()["active_brand"], "re0")
         self._assert_p0_http_ok(reused, "POST /api/theme-shop/apply reused")
         self.assertEqual(reused.json()["charged"], 0)
-        self.assertEqual(reused.json()["coin_balance"], 60)
-        self.assertEqual(insufficient.status_code, 400)
-
+        self.assertEqual(reused.json()["coin_balance"], 200)
+        self.assertEqual(reused.json()["server_version"], payload["server_version"])
+        self.assertEqual(insufficient.status_code, 200)
+        self.assertEqual(insufficient.json()["charged"], 0)
+        self.assertEqual(insufficient.json()["theme_shop_state"]["activeFocusBackdropId"], "forest_focus")
         after = api.sync(api.SyncRequest(), user_id=user_id)
-        self.assertEqual(after["virtual_rewards"]["balance"], 60)
+        self.assertEqual(after["virtual_rewards"], rewards)
         self.assertEqual(after["theme_shop_state"]["activeBrand"], "re0")
-        self.assertNotIn(
-            "forest_focus",
-            after["theme_shop_state"].get("unlockedFocusBackdropIds", []),
-        )
+        self.assertEqual(after["theme_shop_state"]["switchCount"], 1)
+        for item_type, (_, unlocked_key) in api.THEME_SHOP_FIELDS.items():
+            self.assertEqual(set(after["theme_shop_state"][unlocked_key]), set(api.THEME_SHOP_CATALOG[item_type]))
 
     def test_theme_shop_state_merge_unions_unlocks_and_keeps_new_active(self):
         merged = api._merge_theme_shop_state(
@@ -9130,9 +9143,51 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(merged["activeBrand"], "genshin")
         self.assertEqual(
             set(merged["unlockedBrandIds"]),
-            {"defaultBrand", "re0", "genshin"},
+            set(api.THEME_SHOP_CATALOG["brand"]),
         )
         self.assertEqual(merged["updatedAt"], "2026-06-01T01:00:00Z")
+
+    def test_free_appearance_all_catalogs_apply_at_zero_balance_and_sync_exits(self):
+        user_id = self._register("free-appearance-user")
+        headers = {"Authorization": f"Bearer {api.TOKENS[user_id]}"}
+        with TestClient(api.app) as client:
+            before = client.get("/api/auth/me", headers=headers).json()
+            self.assertEqual(before["coin_balance"], 0)
+            for item_type, (_, unlocked_key) in api.THEME_SHOP_FIELDS.items():
+                self.assertEqual(set(before["theme_shop_state"][unlocked_key]), set(api.THEME_SHOP_CATALOG[item_type]))
+            for item_type, catalog in api.THEME_SHOP_CATALOG.items():
+                active_key, unlocked_key = api.THEME_SHOP_FIELDS[item_type]
+                for item_id in catalog:
+                    response = client.post("/api/me/theme-shop/apply", json={"item_type": item_type, "item_id": item_id}, headers=headers)
+                    self.assertEqual(response.status_code, 200, response.text)
+                    payload = response.json()
+                    self.assertEqual(payload["charged"], 0)
+                    self.assertEqual(payload["coin_balance"], 0)
+                    self.assertIsNone(payload["ledger_entry"])
+                    self.assertEqual(payload["theme_shop_state"][active_key], item_id)
+                    self.assertEqual(payload["virtual_rewards"].get("ledger", []), [])
+            inactive = client.post("/api/theme-shop/apply", json={"type": "brand", "id": "re0", "enabled": False}, headers=headers)
+            self.assertEqual(inactive.status_code, 200)
+            self.assertFalse(inactive.json()["activated"])
+            self.assertEqual(inactive.json()["theme_shop_state"]["activeBrand"], "liquidGlass")
+            invalid = client.post("/api/theme-shop/apply", json={"type": "brand", "id": "unknown"}, headers=headers)
+            self.assertEqual(invalid.status_code, 400)
+            unauthenticated = client.post("/api/theme-shop/apply", json={"type": "brand", "id": "re0"})
+            self.assertIn(unauthenticated.status_code, (401, 403))
+        db = api.get_db()
+        try:
+            row = db.execute("SELECT * FROM sync_data WHERE user_id=?", (user_id,)).fetchone()
+            pulled = api._sync_payload_from_row(db, user_id, row)
+        finally:
+            db.close()
+        for item_type, (_, unlocked_key) in api.THEME_SHOP_FIELDS.items():
+            self.assertEqual(set(pulled["theme_shop_state"][unlocked_key]), set(api.THEME_SHOP_CATALOG[item_type]))
+
+    def test_group_edit_omitting_historical_default_keeps_existing_value(self):
+        admin_id = self._make_admin("free-group-admin", ["groups"])
+        group = api._admin_save_group(None, api.AdminGroupUpsert(name="historical-group", defaultTimeCoins=321), admin_id)
+        updated = api._admin_save_group(group["id"], api.AdminGroupUpsert(name="renamed-group"), admin_id)
+        self.assertEqual(updated["default_time_coins"], 321)
 
     def test_p0_feedback_detail_reply_close_delete_visibility_and_errors(self):
         admin_id = self._make_admin("p0-feedback-admin", ["feedback"])

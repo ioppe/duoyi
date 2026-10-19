@@ -536,6 +536,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '测试生日');
     await tester.pump();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('anniversary_editor_save_button')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, '添加').last);
     await tester.pumpAndSettle();
 
@@ -572,6 +576,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '测试纪念日');
     await tester.pump();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('anniversary_editor_save_button')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, '添加').last);
     await tester.pumpAndSettle();
 
@@ -675,6 +683,10 @@ void main() {
     expect(find.text('倒数日'), findsNothing);
     await tester.enterText(find.byType(TextField).first, '不会新增倒数日');
     await tester.pump();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('anniversary_editor_save_button')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, '添加'));
     await tester.pumpAndSettle();
 

@@ -1833,7 +1833,7 @@ def init_db():
         (
             "group_default",
             "默认用户",
-            f"新注册用户默认分组，注册赠送 {default_group_time_coins} 时光币。",
+            "新注册用户默认分组。",
             default_group_time_coins,
             100,
             100,
@@ -2283,9 +2283,7 @@ THEME_SHOP_CATALOG = {
         "zzz": 220,
         "yanyun": 240,
         "botw": 260,
-        # 与客户端 brandCost（premiumBrandCost 120 + AppBrands.all 索引 8 × 20）一致。
-        # 缺了它，登录用户在主题商店兑换 liquidGlass 会被 400 拒绝，
-        # 且登录同步时 activeBrand 会被回退为 defaultBrand。
+        # Keep every client theme ID available to legacy apply/sync routes.
         "liquidGlass": 280,
     },
     "focus_backdrop": {
@@ -2355,7 +2353,7 @@ def _theme_shop_cost(item_type: str, item_id: str) -> int:
     catalog = THEME_SHOP_CATALOG.get(item_type) or {}
     if item_id not in catalog:
         raise HTTPException(status_code=400, detail="主题商店物品不存在")
-    return int(catalog[item_id])
+    return 0
 
 
 def _theme_shop_list(value) -> list[str]:
@@ -2373,13 +2371,13 @@ def _normalize_theme_shop_state(raw: dict) -> dict:
     state = dict(raw if isinstance(raw, dict) else {})
     for item_type, default_id in THEME_SHOP_DEFAULTS.items():
         active_key, unlocked_key = THEME_SHOP_FIELDS[item_type]
+        catalog = THEME_SHOP_CATALOG[item_type]
         unlocked = _theme_shop_list(state.get(unlocked_key))
-        if default_id not in unlocked:
-            unlocked.insert(0, default_id)
+        for item_id in catalog:
+            if item_id not in unlocked:
+                unlocked.append(item_id)
         active = str(state.get(active_key) or "").strip()
-        if active in (THEME_SHOP_CATALOG.get(item_type) or {}) and active not in unlocked:
-            unlocked.append(active)
-        if active not in unlocked:
+        if active not in catalog:
             active = default_id
         state[active_key] = active
         state[unlocked_key] = unlocked
@@ -3027,7 +3025,7 @@ class ThemeShopApplyRequest(BaseModel):
     id: Optional[str] = None
     title: Optional[str] = None
     name: Optional[str] = None
-    activate: Optional[bool] = True
+    activate: Optional[bool] = None
     enabled: Optional[bool] = None
 
 
@@ -5934,7 +5932,7 @@ def apply_theme_shop_item(
     item_id = str(req.item_id or req.itemId or req.id or "").strip()
     if not item_id:
         raise HTTPException(status_code=400, detail="主题商店物品不能为空")
-    cost = _theme_shop_cost(item_type, item_id)
+    _theme_shop_cost(item_type, item_id)  # Validate the catalog ID.
     activate = req.activate if req.activate is not None else req.enabled
     activate = True if activate is None else bool(activate)
 
@@ -5949,9 +5947,8 @@ def apply_theme_shop_item(
             (user_id,),
         ).fetchone()
         rewards = _json_object(row["virtual_rewards"] if row else "{}")
-        theme_state = _normalize_theme_shop_state(
-            _json_object(row["theme_shop_state"] if row else "{}")
-        )
+        raw_theme_state = _json_object(row["theme_shop_state"] if row else "{}")
+        theme_state = _normalize_theme_shop_state(raw_theme_state)
 
         def _num(value, fallback=0) -> int:
             try:
@@ -5972,34 +5969,7 @@ def apply_theme_shop_item(
 
         balance = _num(rewards.get("balance"))
         lifetime = max(_num(rewards.get("lifetime"), balance), balance)
-        if not already_unlocked and cost > 0:
-            if balance < cost:
-                raise HTTPException(status_code=400, detail="时光币不足")
-            balance -= cost
-            charged = cost
-            ledger = rewards.get("ledger")
-            if not isinstance(ledger, list):
-                ledger = []
-            ledger_entry = {
-                "id": f"theme-shop:{int(_utc_now().timestamp() * 1000000)}:{secrets.token_hex(4)}",
-                "title": (req.title or req.name or "兑换主题装饰").strip()
-                or "兑换主题装饰",
-                "coins": -cost,
-                "reason": "主题商店",
-                "awardedAt": now,
-            }
-            rewards.update(
-                {
-                    "balance": balance,
-                    "lifetime": lifetime,
-                    "ledger": [
-                        ledger_entry,
-                        *[item for item in ledger if isinstance(item, dict)],
-                    ][:50],
-                    "updatedAt": now,
-                }
-            )
-        elif "balance" not in rewards or "lifetime" not in rewards:
+        if "balance" not in rewards or "lifetime" not in rewards:
             rewards.update(
                 {
                     "balance": balance,
@@ -6008,7 +5978,7 @@ def apply_theme_shop_item(
                 }
             )
 
-        changed = False
+        changed = theme_state != raw_theme_state
         if not already_unlocked:
             unlocked.append(item_id)
             changed = True
@@ -8757,7 +8727,7 @@ def _sync_payload_from_row(db, user_id: str, row: Optional[sqlite3.Row]) -> dict
         "achievement_states": _obj("achievement_states"),
         "virtual_rewards": _obj("virtual_rewards"),
         "focus_rooms": _obj("focus_rooms"),
-        "theme_shop_state": _obj("theme_shop_state"),
+        "theme_shop_state": _normalize_theme_shop_state(_obj("theme_shop_state")),
         "preferences": _obj("preferences"),
         "quick_capture_templates": _obj("quick_capture_templates"),
         "deleted_items": _obj("deleted_items"),
@@ -11253,52 +11223,9 @@ def _grant_default_coins(
     title: str,
     reason: str,
 ) -> None:
-    coins = max(0, min(int(coins or 0), 1000000))
-    if coins <= 0:
-        return
-    db.execute("INSERT OR IGNORE INTO sync_data(user_id) VALUES(?)", (user_id,))
-    row = db.execute(
-        "SELECT virtual_rewards, sync_version FROM sync_data WHERE user_id=?",
-        (user_id,),
-    ).fetchone()
-    rewards = _json_object(row["virtual_rewards"] if row else "{}")
-
-    def _num(value, fallback=0) -> int:
-        try:
-            return int(value)
-        except Exception:
-            return fallback
-
-    now = _utc_now_text()
-    ledger = rewards.get("ledger")
-    if not isinstance(ledger, list):
-        ledger = []
-    entry = {
-        "id": f"{entry_prefix}:{int(_utc_now().timestamp() * 1000000)}:{secrets.token_hex(4)}",
-        "title": title,
-        "coins": coins,
-        "reason": reason,
-        "awardedAt": now,
-    }
-    balance = max(0, _num(rewards.get("balance")) + coins)
-    lifetime = max(_num(rewards.get("lifetime"), balance), balance)
-    rewards.update(
-        {
-            "balance": balance,
-            "lifetime": lifetime,
-            "ledger": [entry, *[item for item in ledger if isinstance(item, dict)]][:50],
-            "updatedAt": now,
-        }
-    )
-    next_sync_version = int(row["sync_version"] or 0) + 1 if row else 1
-    db.execute(
-        """
-        UPDATE sync_data
-        SET virtual_rewards=?, sync_version=?, updated_at=?
-        WHERE user_id=?
-        """,
-        (json.dumps(rewards, ensure_ascii=False), next_sync_version, now, user_id),
-    )
+    # Keep the helper and legacy configuration contract, without automatic grants.
+    # Historical rewards and manual compatibility APIs retain their original data.
+    return
 
 
 @app.post("/api/admin/welfare-grants")

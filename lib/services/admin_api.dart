@@ -439,13 +439,13 @@ class AdminApi {
     String? id,
     required String name,
     String description = '',
-    int defaultTimeCoins = 100,
+    int? defaultTimeCoins,
     bool isActive = true,
   }) {
     final body = <String, dynamic>{
       'name': name,
       'description': description,
-      'default_time_coins': defaultTimeCoins,
+      'default_time_coins': ?defaultTimeCoins,
       'is_active': isActive,
     };
     final groupId = id?.trim();

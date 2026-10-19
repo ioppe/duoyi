@@ -64,7 +64,7 @@ class ThemeProvider extends ChangeNotifier {
   static const _switchCountKey = 'theme_switch_count';
   static const _unlockedBrandsKey = 'theme_unlocked_brands';
   static const _shopStateKey = 'theme_shop_state';
-  static const premiumBrandCost = 120;
+  static const premiumBrandCost = 0;
   static const defaultFocusBackdropId = 'classic_focus';
   static const defaultAvatarFrameId = 'simple_frame';
   static const defaultCardSkinId = 'plain_card';
@@ -83,7 +83,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'morning_focus',
       name: '晨光书桌',
       description: '适合清晨阅读和学习的暖色背景',
-      cost: 80,
+      cost: 0,
       icon: Icons.wb_sunny_outlined,
       colors: [Color(0xFFFFB74D), Color(0xFFFFF3E0)],
     ),
@@ -91,7 +91,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'forest_focus',
       name: '林间深呼吸',
       description: '适合长时间深度工作的自然绿色背景',
-      cost: 100,
+      cost: 0,
       icon: Icons.park_outlined,
       colors: [Color(0xFF2E7D32), Color(0xFFE8F5E9)],
     ),
@@ -99,7 +99,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'ocean_focus',
       name: '海岸静流',
       description: '适合复盘、写作和低压专注的蓝绿色背景',
-      cost: 100,
+      cost: 0,
       icon: Icons.waves_outlined,
       colors: [Color(0xFF00838F), Color(0xFFE0F7FA)],
     ),
@@ -107,7 +107,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'night_focus',
       name: '夜航模式',
       description: '适合夜间学习的低亮度深色背景',
-      cost: 120,
+      cost: 0,
       icon: Icons.dark_mode_outlined,
       colors: [Color(0xFF283593), Color(0xFF121826)],
     ),
@@ -125,7 +125,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'golden_frame',
       name: '金色勋章框',
       description: '适合成就达人展示的金色头像框',
-      cost: 90,
+      cost: 0,
       icon: Icons.workspace_premium_outlined,
       colors: [Color(0xFFFFB300), Color(0xFFFFF8E1)],
     ),
@@ -133,7 +133,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'forest_frame',
       name: '绿叶守护框',
       description: '适合习惯连续打卡的自然头像框',
-      cost: 100,
+      cost: 0,
       icon: Icons.eco_outlined,
       colors: [Color(0xFF2E7D32), Color(0xFFE8F5E9)],
     ),
@@ -141,7 +141,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'aurora_frame',
       name: '极光能量框',
       description: '适合高效专注周的流光头像框',
-      cost: 120,
+      cost: 0,
       icon: Icons.auto_awesome_outlined,
       colors: [Color(0xFF7E57C2), Color(0xFF26C6DA)],
     ),
@@ -159,7 +159,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'paper_card',
       name: '纸感计划卡',
       description: '适合日程和待办整理的柔和纸感',
-      cost: 90,
+      cost: 0,
       icon: Icons.sticky_note_2_outlined,
       colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
     ),
@@ -167,7 +167,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'mint_card',
       name: '薄荷清单卡',
       description: '适合习惯和专注记录的清爽卡片',
-      cost: 100,
+      cost: 0,
       icon: Icons.spa_outlined,
       colors: [Color(0xFFE0F2F1), Color(0xFFB2DFDB)],
     ),
@@ -175,7 +175,7 @@ class ThemeProvider extends ChangeNotifier {
       id: 'starlight_card',
       name: '星光玻璃卡',
       description: '适合夜间复盘的低亮度玻璃质感',
-      cost: 120,
+      cost: 0,
       icon: Icons.nightlight_round,
       colors: [Color(0xFF283593), Color(0xFF7E57C2)],
     ),
@@ -183,10 +183,18 @@ class ThemeProvider extends ChangeNotifier {
 
   AppBrand _brand = AppBrands.defaultBrand;
   int _switchCount = 0;
-  final Set<String> _unlockedBrandIds = {AppBrands.defaultBrand.id};
-  final Set<String> _unlockedFocusBackdropIds = {defaultFocusBackdropId};
-  final Set<String> _unlockedAvatarFrameIds = {defaultAvatarFrameId};
-  final Set<String> _unlockedCardSkinIds = {defaultCardSkinId};
+  final Set<String> _unlockedBrandIds = AppBrands.all
+      .map((item) => item.id)
+      .toSet();
+  final Set<String> _unlockedFocusBackdropIds = focusBackdropRewards
+      .map((item) => item.id)
+      .toSet();
+  final Set<String> _unlockedAvatarFrameIds = avatarFrameRewards
+      .map((item) => item.id)
+      .toSet();
+  final Set<String> _unlockedCardSkinIds = cardSkinRewards
+      .map((item) => item.id)
+      .toSet();
   String _activeFocusBackdropId = defaultFocusBackdropId;
   String _activeAvatarFrameId = defaultAvatarFrameId;
   String _activeCardSkinId = defaultCardSkinId;
@@ -195,6 +203,7 @@ class ThemeProvider extends ChangeNotifier {
   String _shopStateUpdatedAt = '';
   bool _serverConfirmedChangePending = false;
   int _storageGeneration = 0;
+  Future<bool> _appearanceChanges = Future<bool>.value(true);
 
   AppBrand get brand => _brand;
   List<AppBrand> get brands => AppBrands.all;
@@ -235,16 +244,16 @@ class ThemeProvider extends ChangeNotifier {
     _switchCount = 0;
     _unlockedBrandIds
       ..clear()
-      ..add(AppBrands.defaultBrand.id);
+      ..addAll(brands.map((item) => item.id));
     _unlockedFocusBackdropIds
       ..clear()
-      ..add(defaultFocusBackdropId);
+      ..addAll(focusBackdrops.map((item) => item.id));
     _unlockedAvatarFrameIds
       ..clear()
-      ..add(defaultAvatarFrameId);
+      ..addAll(avatarFrames.map((item) => item.id));
     _unlockedCardSkinIds
       ..clear()
-      ..add(defaultCardSkinId);
+      ..addAll(cardSkins.map((item) => item.id));
     _activeFocusBackdropId = defaultFocusBackdropId;
     _activeAvatarFrameId = defaultAvatarFrameId;
     _activeCardSkinId = defaultCardSkinId;
@@ -255,29 +264,25 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isBrandUnlocked(String id) =>
-      id == AppBrands.defaultBrand.id || _unlockedBrandIds.contains(id);
+  // Unlock fields remain in backups and sync payloads for older clients.
+  // Availability depends only on the current resource catalog.
+  bool isBrandUnlocked(String id) => brands.any((item) => item.id == id);
 
-  int brandCost(String id) {
-    if (id == AppBrands.defaultBrand.id) return 0;
-    final index = brands.indexWhere((brand) => brand.id == id);
-    return premiumBrandCost + (index < 0 ? 0 : index * 20);
-  }
+  int brandCost(String id) => 0;
 
   bool isFocusBackdropUnlocked(String id) =>
-      id == defaultFocusBackdropId || _unlockedFocusBackdropIds.contains(id);
+      focusBackdrops.any((item) => item.id == id);
 
-  int focusBackdropCost(String id) => focusBackdropById(id).cost;
+  int focusBackdropCost(String id) => 0;
 
   bool isAvatarFrameUnlocked(String id) =>
-      id == defaultAvatarFrameId || _unlockedAvatarFrameIds.contains(id);
+      avatarFrames.any((item) => item.id == id);
 
-  int avatarFrameCost(String id) => avatarFrameById(id).cost;
+  int avatarFrameCost(String id) => 0;
 
-  bool isCardSkinUnlocked(String id) =>
-      id == defaultCardSkinId || _unlockedCardSkinIds.contains(id);
+  bool isCardSkinUnlocked(String id) => cardSkins.any((item) => item.id == id);
 
-  int cardSkinCost(String id) => cardSkinById(id).cost;
+  int cardSkinCost(String id) => 0;
 
   FocusBackdropReward focusBackdropById(String id) {
     return focusBackdropRewards.firstWhere(
@@ -387,7 +392,7 @@ class ThemeProvider extends ChangeNotifier {
     }
     _unlockedBrandIds
       ..clear()
-      ..add(AppBrands.defaultBrand.id)
+      ..addAll(brands.map((item) => item.id))
       ..addAll(
         _stringListFromAny(shopState, const [
           'unlockedBrandIds',
@@ -402,7 +407,7 @@ class ThemeProvider extends ChangeNotifier {
     }
     _unlockedFocusBackdropIds
       ..clear()
-      ..add(defaultFocusBackdropId)
+      ..addAll(focusBackdrops.map((item) => item.id))
       ..addAll(
         _stringListFromAny(shopState, const [
           'unlockedFocusBackdropIds',
@@ -418,7 +423,7 @@ class ThemeProvider extends ChangeNotifier {
         : defaultFocusBackdropId;
     _unlockedAvatarFrameIds
       ..clear()
-      ..add(defaultAvatarFrameId)
+      ..addAll(avatarFrames.map((item) => item.id))
       ..addAll(
         _stringListFromAny(shopState, const [
           'unlockedAvatarFrameIds',
@@ -434,7 +439,7 @@ class ThemeProvider extends ChangeNotifier {
         : defaultAvatarFrameId;
     _unlockedCardSkinIds
       ..clear()
-      ..add(defaultCardSkinId)
+      ..addAll(cardSkins.map((item) => item.id))
       ..addAll(
         _stringListFromAny(shopState, const [
           'unlockedCardSkinIds',
@@ -478,7 +483,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> unlockBrand(String id) async {
-    if (isBrandUnlocked(id)) return;
+    if (!isBrandUnlocked(id) || _unlockedBrandIds.contains(id)) return;
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     _unlockedBrandIds.add(id);
@@ -498,7 +503,10 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> unlockFocusBackdrop(String id) async {
-    if (isFocusBackdropUnlocked(id)) return;
+    if (!isFocusBackdropUnlocked(id) ||
+        _unlockedFocusBackdropIds.contains(id)) {
+      return;
+    }
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     _unlockedFocusBackdropIds.add(id);
@@ -515,25 +523,13 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<bool> setFocusBackdrop(String id) async {
     if (!isFocusBackdropUnlocked(id)) return false;
-    final nextId = focusBackdropById(id).id;
-    if (_activeFocusBackdropId == nextId) return true;
-    final generation = _storageGeneration;
-    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    _activeFocusBackdropId = nextId;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return false;
-    }
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
+    return _persistAppearanceChange({'activeFocusBackdropId': id});
   }
 
   Future<void> unlockAvatarFrame(String id) async {
-    if (isAvatarFrameUnlocked(id)) return;
+    if (!isAvatarFrameUnlocked(id) || _unlockedAvatarFrameIds.contains(id)) {
+      return;
+    }
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     _unlockedAvatarFrameIds.add(id);
@@ -550,25 +546,11 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<bool> setAvatarFrame(String id) async {
     if (!isAvatarFrameUnlocked(id)) return false;
-    final nextId = avatarFrameById(id).id;
-    if (_activeAvatarFrameId == nextId) return true;
-    final generation = _storageGeneration;
-    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    _activeAvatarFrameId = nextId;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return false;
-    }
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
+    return _persistAppearanceChange({'activeAvatarFrameId': id});
   }
 
   Future<void> unlockCardSkin(String id) async {
-    if (isCardSkinUnlocked(id)) return;
+    if (!isCardSkinUnlocked(id) || _unlockedCardSkinIds.contains(id)) return;
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     _unlockedCardSkinIds.add(id);
@@ -585,92 +567,101 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<bool> setCardSkin(String id) async {
     if (!isCardSkinUnlocked(id)) return false;
-    final nextId = cardSkinById(id).id;
-    if (_activeCardSkinId == nextId) return true;
-    final generation = _storageGeneration;
-    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    _activeCardSkinId = nextId;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return false;
-    }
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
+    return _persistAppearanceChange({'activeCardSkinId': id});
   }
 
   Future<bool> setWidgetBackgroundBrand(String id) async {
-    if (id != widgetFollowThemeId && !isBrandUnlocked(id)) {
-      return false;
-    }
-    final nextId = _normalizeWidgetBackgroundId(id);
-    if (_activeWidgetBackgroundId == nextId) return true;
-    final generation = _storageGeneration;
-    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    _activeWidgetBackgroundId = nextId;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return false;
-    }
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
+    if (id != widgetFollowThemeId && !isBrandUnlocked(id)) return false;
+    return _persistAppearanceChange({'activeWidgetBackgroundId': id});
   }
 
   Future<bool> setWidgetCardSkin(String id) async {
-    if (id != widgetFollowCardSkinId && !isCardSkinUnlocked(id)) {
-      return false;
-    }
-    final nextId = _normalizeWidgetCardSkinId(id);
-    if (_activeWidgetCardSkinId == nextId) return true;
-    final generation = _storageGeneration;
-    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    _activeWidgetCardSkinId = nextId;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return false;
-    }
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
+    if (id != widgetFollowCardSkinId && !isCardSkinUnlocked(id)) return false;
+    return _persistAppearanceChange({'activeWidgetCardSkinId': id});
   }
 
   Future<bool> setBrand(String id) async {
     if (!isBrandUnlocked(id)) return false;
-    final prev = _brand.id;
-    _brand = AppBrands.byId(id);
-    if (prev == _brand.id) return true;
+    return _persistAppearanceChange({'activeBrand': id}, switchBrand: true);
+  }
+
+  Future<bool> _persistAppearanceChange(
+    Map<String, dynamic> changes, {
+    bool switchBrand = false,
+  }) {
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
-    final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
+    final pending = _appearanceChanges.then<bool>((_) {
+      if (generation != _storageGeneration ||
+          !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+            accountGeneration,
+          )) {
+        return false;
+      }
+      return _persistAppearanceChangeNow(changes, switchBrand: switchBrand);
+    });
+    _appearanceChanges = pending;
+    return pending;
+  }
+
+  Future<bool> _persistAppearanceChangeNow(
+    Map<String, dynamic> changes, {
+    required bool switchBrand,
+  }) async {
+    final generation = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (generation != _storageGeneration ||
+          !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+            accountGeneration,
+          )) {
+        return false;
+      }
+      final current = _shopStateJson();
+      if (changes.entries.every((entry) => current[entry.key] == entry.value)) {
+        return true;
+      }
+      final next = {
+        ..._shopStateJson(),
+        ...changes,
+        if (switchBrand) 'switchCount': _switchCount + 1,
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      };
+      if (switchBrand) {
+        if (!await prefs.setString(
+          _storageKey,
+          next['activeBrand'] as String,
         )) {
+          return false;
+        }
+        if (!await prefs.setInt(_switchCountKey, next['switchCount'] as int)) {
+          return false;
+        }
+      }
+      if (!await prefs.setString(_shopStateKey, jsonEncode(next))) return false;
+      if (generation != _storageGeneration ||
+          !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+            accountGeneration,
+          )) {
+        return false;
+      }
+      _applyShopStateMap(next, prefs: prefs, includeLegacyFallback: false);
+      if (switchBrand) {
+        DomainEventBus.instance.publish(
+          DomainEvent(
+            type: DomainEventType.themeSwitched,
+            objectId: _brand.id,
+            metadata: {'count': _switchCount},
+          ),
+        );
+      }
+      notifyListeners();
+      return true;
+    } catch (error) {
+      debugPrint('[theme-sync] appearance save failed: $error');
       return false;
     }
-    await prefs.setString(_storageKey, _brand.id);
-    _switchCount++;
-    await prefs.setInt(_switchCountKey, _switchCount);
-    DomainEventBus.instance.publish(
-      DomainEvent(
-        type: DomainEventType.themeSwitched,
-        objectId: _brand.id,
-        metadata: {'count': _switchCount},
-      ),
-    );
-    await _saveShopState(prefs);
-    notifyListeners();
-    return true;
   }
 
   bool _isIncomingShopStateOlder(Map<String, dynamic> incoming) {
@@ -745,14 +736,12 @@ class ThemeProvider extends ChangeNotifier {
 
   String _normalizeWidgetBackgroundId(String id) {
     if (id == widgetFollowThemeId) return widgetFollowThemeId;
-    final brand = AppBrands.byId(id);
-    return isBrandUnlocked(brand.id) ? brand.id : widgetFollowThemeId;
+    return isBrandUnlocked(id) ? id : widgetFollowThemeId;
   }
 
   String _normalizeWidgetCardSkinId(String id) {
     if (id == widgetFollowCardSkinId) return widgetFollowCardSkinId;
-    final skin = cardSkinById(id);
-    return isCardSkinUnlocked(skin.id) ? skin.id : widgetFollowCardSkinId;
+    return isCardSkinUnlocked(id) ? id : widgetFollowCardSkinId;
   }
 
   Future<void> _saveShopState(

@@ -51,7 +51,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.daily,
       current: context.todayCompletedTodos,
       target: 3,
-      rewardCoins: 12,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'daily_focus_start',
@@ -62,7 +62,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.daily,
       current: context.todayFocusMinutes,
       target: 25,
-      rewardCoins: 10,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'daily_habit_anchor',
@@ -73,7 +73,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.daily,
       current: context.todayHabitCheckIns,
       target: 2,
-      rewardCoins: 8,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'daily_reflection',
@@ -84,7 +84,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.daily,
       current: context.todayDiaryEntries,
       target: 1,
-      rewardCoins: 8,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'weekly_todo_sprint',
@@ -95,7 +95,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.weekly,
       current: context.weeklyCompletedTodos,
       target: 15,
-      rewardCoins: 35,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'weekly_focus_deep_work',
@@ -106,7 +106,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.weekly,
       current: context.weeklyFocusMinutes,
       target: 180,
-      rewardCoins: 40,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'weekly_habit_chain',
@@ -117,7 +117,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.weekly,
       current: context.weeklyHabitCheckIns,
       target: 10,
-      rewardCoins: 28,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'weekly_reflection',
@@ -128,7 +128,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.weekly,
       current: context.weeklyDiaryEntries,
       target: 3,
-      rewardCoins: 24,
+      rewardCoins: 0,
     ),
     ProductivityChallenge(
       id: 'weekly_active_days',
@@ -139,7 +139,7 @@ class ProductivityChallenges {
       period: ProductivityChallengePeriod.weekly,
       current: context.weeklyActiveDays,
       target: 5,
-      rewardCoins: 30,
+      rewardCoins: 0,
     ),
   ];
 
@@ -166,7 +166,7 @@ class ProductivityChallenges {
     return RewardGrant(
       id: 'challenge:${challenge.id}:$periodKey',
       title: '完成挑战：${challenge.title}',
-      coins: challenge.rewardCoins,
+      coins: 0,
       reason: '${challenge.periodLabel} · $periodKey',
     );
   }

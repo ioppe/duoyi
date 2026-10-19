@@ -104,7 +104,7 @@ void main() {
     expect(source, contains("title: '管理功能'"));
     expect(source, contains("title: '系统功能'"));
     expect(source, contains('class _AdminGroupSummaryCard'));
-    expect(source, contains("subtitle: '管理默认时光币、成员分组和管理员权限模板'"));
+    expect(source, contains("subtitle: '管理成员分组和管理员权限模板'"));
     expect(source, contains('AppCompactDropdown<String>'));
 
     for (final hiddenTerm in [
@@ -1000,7 +1000,7 @@ void main() {
   });
 
   testWidgets(
-    'Admin groups tab shows default coins and saves visible adjustments',
+    'Admin groups tab hides legacy currency and saves other fields without overwriting defaults',
     (tester) async {
       final requests = <String>[];
       Map<String, dynamic>? savedPayload;
@@ -1020,7 +1020,7 @@ void main() {
                   {
                     'id': 'group_default',
                     'name': '默认用户',
-                    'description': '新注册用户默认分组',
+                    'description': '新注册用户默认分组。注册赠送 100 时光币。',
                     'default_time_coins':
                         savedPayload?['default_time_coins'] ?? 100,
                     'is_active': savedPayload?['is_active'] ?? true,
@@ -1083,10 +1083,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('用户组管理'), findsOneWidget);
-      expect(find.textContaining('默认普通用户 100 时光币'), findsOneWidget);
-      expect(find.textContaining('默认组为 100'), findsOneWidget);
-      expect(find.textContaining('默认时光币'), findsOneWidget);
-      expect(find.textContaining('\n100'), findsOneWidget);
+      expect(find.textContaining('时光币'), findsNothing);
+      expect(find.text('新注册用户默认分组'), findsOneWidget);
       expect(find.textContaining('生图'), findsNothing);
       expect(find.textContaining('改图'), findsNothing);
       expect(find.textContaining('图片额度'), findsNothing);
@@ -1094,7 +1092,7 @@ void main() {
       final pagination = find.byKey(
         const ValueKey('admin_groups_pagination_bar'),
       );
-      final groupText = find.textContaining('默认时光币').first;
+      final groupText = find.text('新注册用户默认分组').first;
       expect(pagination, findsOneWidget);
       expect(
         tester.getRect(groupText).bottom,
@@ -1109,20 +1107,20 @@ void main() {
       expect(find.textContaining('默认改图历史保留'), findsNothing);
       expect(find.textContaining('图片额度模式'), findsNothing);
       final fields = find.byType(TextField);
-      expect(fields, findsNWidgets(3));
-      final coinsField = tester.widget<TextField>(fields.at(2));
-      expect(coinsField.controller?.text, '100');
-
-      await tester.enterText(fields.at(2), '135');
+      expect(fields, findsNWidgets(2));
+      expect(find.textContaining('时光币'), findsNothing);
+      await tester.enterText(fields.at(0), '默认成员');
       await tester.tap(find.widgetWithText(FilledButton, '保存'));
       await tester.pumpAndSettle();
 
       expect(requests, contains('GET /api/admin/groups?limit=20&offset=0'));
       expect(requests, contains('PATCH /api/admin/groups/group_default'));
-      expect(savedPayload?['default_time_coins'], 135);
+      expect(savedPayload?.containsKey('default_time_coins'), isFalse);
+      expect(savedPayload?['name'], '默认成员');
+      expect(savedPayload?['description'], '新注册用户默认分组。注册赠送 100 时光币。');
       expect(savedPayload?.containsKey('default_generate_quota'), isFalse);
       expect(savedPayload?.containsKey('default_edit_quota'), isFalse);
-      expect(find.textContaining('\n135'), findsOneWidget);
+      expect(find.textContaining('时光币'), findsNothing);
     },
   );
 

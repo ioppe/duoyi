@@ -2432,12 +2432,6 @@ abstract class AppLocalizations {
   /// **'头像已选择，点击保存后生效'**
   String get profileAvatarSelected;
 
-  /// No description provided for @profileCoins.
-  ///
-  /// In zh, this message translates to:
-  /// **'时光币'**
-  String get profileCoins;
-
   /// No description provided for @profileAccountId.
   ///
   /// In zh, this message translates to:
@@ -6194,6 +6188,132 @@ abstract class AppLocalizations {
   /// **'通知支持'**
   String get mineGroupNotifications;
 
+  /// No description provided for @mineMenuTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'功能与设置'**
+  String get mineMenuTitle;
+
+  /// No description provided for @mineMenuApps.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用与记录'**
+  String get mineMenuApps;
+
+  /// No description provided for @mineMenuAppsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标、专注、记录与实用工具'**
+  String get mineMenuAppsSubtitle;
+
+  /// No description provided for @mineMenuAppearance.
+  ///
+  /// In zh, this message translates to:
+  /// **'外观'**
+  String get mineMenuAppearance;
+
+  /// No description provided for @mineMenuAppearanceSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题、头像与卡片样式'**
+  String get mineMenuAppearanceSubtitle;
+
+  /// No description provided for @mineMenuSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置'**
+  String get mineMenuSettings;
+
+  /// No description provided for @mineMenuSettingsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'偏好、通知、安全与数据'**
+  String get mineMenuSettingsSubtitle;
+
+  /// No description provided for @mineMenuSupport.
+  ///
+  /// In zh, this message translates to:
+  /// **'帮助与关于'**
+  String get mineMenuSupport;
+
+  /// No description provided for @mineMenuSupportSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'公告、反馈、更新与版本信息'**
+  String get mineMenuSupportSubtitle;
+
+  /// No description provided for @mineGroupTools.
+  ///
+  /// In zh, this message translates to:
+  /// **'实用工具'**
+  String get mineGroupTools;
+
+  /// No description provided for @appearanceTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题与外观'**
+  String get appearanceTitle;
+
+  /// No description provided for @appearanceSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'所有样式均可直接使用'**
+  String get appearanceSubtitle;
+
+  /// No description provided for @appearanceApply.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用'**
+  String get appearanceApply;
+
+  /// No description provided for @appearanceApplied.
+  ///
+  /// In zh, this message translates to:
+  /// **'已使用'**
+  String get appearanceApplied;
+
+  /// No description provided for @appearanceFree.
+  ///
+  /// In zh, this message translates to:
+  /// **'自由选择'**
+  String get appearanceFree;
+
+  /// No description provided for @appearanceFocusSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择专注时的背景与装饰'**
+  String get appearanceFocusSubtitle;
+
+  /// No description provided for @appearanceAvatarSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择头像装饰'**
+  String get appearanceAvatarSubtitle;
+
+  /// No description provided for @appearanceCardSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择信息卡片样式'**
+  String get appearanceCardSubtitle;
+
+  /// No description provided for @appearanceAppliedMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'已应用所选样式'**
+  String get appearanceAppliedMessage;
+
+  /// No description provided for @achievementsSummarySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'记录进步与已解锁成就'**
+  String get achievementsSummarySubtitle;
+
+  /// No description provided for @achievementsChallengesSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成挑战，保持节奏'**
+  String get achievementsChallengesSubtitle;
+
   /// No description provided for @mineTilePomodoro.
   ///
   /// In zh, this message translates to:
@@ -6311,7 +6431,7 @@ abstract class AppLocalizations {
   /// No description provided for @mineLogoutConfirmContent.
   ///
   /// In zh, this message translates to:
-  /// **'退出后会清空本机账号数据（时光币、主题、习惯、待办等本地缓存），重新登录后再从当前账号同步。'**
+  /// **'退出后会清空本机账号数据（主题、习惯、待办等本地缓存），重新登录后再从当前账号同步。'**
   String get mineLogoutConfirmContent;
 
   /// No description provided for @mineLogoutDone.

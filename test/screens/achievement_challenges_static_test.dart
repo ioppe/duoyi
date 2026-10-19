@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('成就页展示每日和每周挑战并接入时光币奖励', () {
+  test('成就页展示每日和每周挑战进度且不自动发币', () {
     final challengeCore = File(
       'lib/core/productivity_challenges.dart',
     ).readAsStringSync();
@@ -49,14 +49,17 @@ void main() {
       contains("import '../core/productivity_challenges.dart';"),
     );
     expect(provider, contains('List<ProductivityChallenge> get challenges'));
-    expect(provider, contains('_awardCompletedChallenges(context)'));
-    expect(provider, contains('ProductivityChallenges.rewardGrant(challenge)'));
+    expect(provider, isNot(contains('_awardCompletedChallenges')));
+    expect(provider, isNot(contains('ProductivityChallenges.rewardGrant')));
+    expect(challengeCore, isNot(matches(RegExp(r'rewardCoins: [1-9]'))));
 
     expect(screen, contains("import '../core/productivity_challenges.dart';"));
     expect(screen, contains('每日/每周挑战'));
     expect(screen, contains('_ChallengeCard'));
     expect(screen, contains('challenge.periodLabel'));
-    expect(screen, contains('challenge.rewardCoins'));
+    expect(screen, isNot(contains('challenge.rewardCoins')));
+    expect(screen, contains('challenge.progress'));
+    expect(screen, contains('challenge.completed'));
 
     expect(main, contains('todayCompletedTodos: todayCompletedTodos'));
     expect(main, contains('weeklyCompletedTodos: weeklyCompletedTodos'));

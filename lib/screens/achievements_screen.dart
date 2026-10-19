@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/achievements.dart';
-import '../core/growth_levels.dart';
+import '../core/i18n.dart';
 import '../core/productivity_challenges.dart';
 import '../providers/achievement_provider.dart';
 import '../widgets/surface_components.dart';
@@ -43,22 +43,12 @@ class AchievementsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         children: [
-          _ProgressHeader(
-            unlocked: unlocked,
-            total: all.length,
-            coinBalance: provider.coinBalance,
-            lifetimeCoins: provider.lifetimeCoins,
-            growthLevel: provider.growthLevel,
-          ),
-          if (provider.rewardLedger.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _RewardLedgerCard(entries: provider.rewardLedger.take(3).toList()),
-          ],
+          _ProgressHeader(unlocked: unlocked, total: all.length),
           if (challenges.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const AppSectionHeader(
+            AppSectionHeader(
               title: '每日/每周挑战',
-              subtitle: '完成短期目标可获得时光币',
+              subtitle: I18n.tr('achievements.challenges.subtitle'),
               padding: EdgeInsets.fromLTRB(4, 0, 4, 8),
             ),
             for (final challenge in challenges) ...[
@@ -130,9 +120,6 @@ class AchievementsScreen extends StatelessWidget {
         child: _AchievementShareCard(
           unlockedCount: provider.unlockedCount,
           totalCount: provider.totalCount,
-          coinBalance: provider.coinBalance,
-          lifetimeCoins: provider.lifetimeCoins,
-          growthLevel: provider.growthLevel,
           achievements: unlockedAchievements.take(5).toList(),
         ),
       ),
@@ -146,12 +133,7 @@ class AchievementsScreen extends StatelessWidget {
     final sb = StringBuffer()
       ..writeln('# 多仪成就海报')
       ..writeln()
-      ..writeln('- 已解锁：${provider.unlockedCount} / ${provider.totalCount}')
-      ..writeln(
-        '- 成长等级：Lv.${provider.growthLevel.level} ${provider.growthLevel.title}',
-      )
-      ..writeln('- 当前时光币：${provider.coinBalance}')
-      ..writeln('- 累计时光币：${provider.lifetimeCoins}');
+      ..writeln('- 已解锁：${provider.unlockedCount} / ${provider.totalCount}');
     if (unlockedAchievements.isNotEmpty) {
       sb
         ..writeln()
@@ -257,24 +239,10 @@ class _ChallengeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Icon(
-                completed ? Icons.check_circle : Icons.toll_outlined,
-                color: completed ? color : cs.onSurfaceVariant,
-                size: 20,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '+${challenge.rewardCoins}',
-                style: TextStyle(
-                  color: completed ? color : cs.onSurfaceVariant,
-                  fontWeight: FontWeight.normal,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+          Icon(
+            completed ? Icons.check_circle : Icons.flag_outlined,
+            color: completed ? color : cs.onSurfaceVariant,
+            size: 20,
           ),
         ],
       ),
@@ -285,16 +253,7 @@ class _ChallengeCard extends StatelessWidget {
 class _ProgressHeader extends StatelessWidget {
   final int unlocked;
   final int total;
-  final int coinBalance;
-  final int lifetimeCoins;
-  final GrowthLevel growthLevel;
-  const _ProgressHeader({
-    required this.unlocked,
-    required this.total,
-    required this.coinBalance,
-    required this.lifetimeCoins,
-    required this.growthLevel,
-  });
+  const _ProgressHeader({required this.unlocked, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -345,6 +304,14 @@ class _ProgressHeader extends StatelessWidget {
                     fontWeight: FontWeight.normal,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  I18n.tr('achievements.summary.subtitle'),
+                  style: TextStyle(
+                    color: cs.onPrimary.withValues(alpha: 0.78),
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
@@ -358,189 +325,6 @@ class _ProgressHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          _LevelCoinPanel(
-            coinBalance: coinBalance,
-            lifetimeCoins: lifetimeCoins,
-            growthLevel: growthLevel,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LevelCoinPanel extends StatelessWidget {
-  final int coinBalance;
-  final int lifetimeCoins;
-  final GrowthLevel growthLevel;
-
-  const _LevelCoinPanel({
-    required this.coinBalance,
-    required this.lifetimeCoins,
-    required this.growthLevel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isMaxLevel = growthLevel.coinsForNextLevel <= 0;
-    return Container(
-      width: 118,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cs.onPrimary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.onPrimary.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            'Lv.${growthLevel.level}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: cs.onPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.normal,
-            ),
-          ),
-          Text(
-            growthLevel.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: cs.onPrimary.withValues(alpha: 0.76),
-              fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: growthLevel.progress,
-              minHeight: 5,
-              backgroundColor: cs.onPrimary.withValues(alpha: 0.22),
-              color: cs.onPrimary,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            isMaxLevel ? '最高等级' : '还差 ${growthLevel.coinsRemaining}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: cs.onPrimary.withValues(alpha: 0.68),
-              fontSize: 10,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '时光币 $coinBalance',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: cs.onPrimary.withValues(alpha: 0.84),
-              fontSize: 11,
-            ),
-          ),
-          Text(
-            '累计 $lifetimeCoins',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: cs.onPrimary.withValues(alpha: 0.64),
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RewardLedgerCard extends StatelessWidget {
-  final List<RewardLedgerEntry> entries;
-
-  const _RewardLedgerCard({required this.entries});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AppSurfaceCard(
-      padding: const EdgeInsets.all(14),
-      borderRadius: BorderRadius.circular(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.toll_outlined, color: cs.primary, size: 19),
-              const SizedBox(width: 8),
-              Text(
-                '最近奖励/兑换',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.normal),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          for (final entry in entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.add_circle_outline,
-                      color: cs.primary,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                        Text(
-                          entry.reason,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: cs.onSurface.withValues(alpha: 0.56),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    entry.coins >= 0 ? '+${entry.coins}' : '${entry.coins}',
-                    style: TextStyle(
-                      color: entry.coins >= 0 ? cs.primary : cs.error,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -644,17 +428,11 @@ class _AchievementShareDialogState extends State<_AchievementShareDialog> {
 class _AchievementShareCard extends StatelessWidget {
   final int unlockedCount;
   final int totalCount;
-  final int coinBalance;
-  final int lifetimeCoins;
-  final GrowthLevel growthLevel;
   final List<Achievement> achievements;
 
   const _AchievementShareCard({
     required this.unlockedCount,
     required this.totalCount,
-    required this.coinBalance,
-    required this.lifetimeCoins,
-    required this.growthLevel,
     required this.achievements,
   });
 
@@ -732,12 +510,6 @@ class _AchievementShareCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _AchievementShareMetric(label: '时光币', value: '$coinBalance'),
-              _AchievementShareMetric(label: '累计', value: '$lifetimeCoins'),
-              _AchievementShareMetric(
-                label: growthLevel.title,
-                value: 'Lv.${growthLevel.level}',
-              ),
               _AchievementShareMetric(
                 label: '完成度',
                 value: '${(progress * 100).round()}%',

@@ -57,6 +57,8 @@ void main() {
     expect(find.byType(Slider), findsNWidgets(4));
     expect(tester.takeException(), isNull);
 
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FloatingActionButton));

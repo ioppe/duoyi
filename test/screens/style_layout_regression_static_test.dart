@@ -722,7 +722,7 @@ void main() {
     expect(metadataIndex, greaterThan(nameTextIndex));
     final mineProfileHeader = mine.substring(nameTextStart, metadataIndex);
     final mainRegularSize = _requiredFontSize(mineProfileHeader);
-    expect(mainRegularSize, equals(15));
+    expect(mainRegularSize, equals(16));
 
     final controlText = surfaceComponents.substring(
       surfaceComponents.indexOf('TextStyle appSecondaryControlTextStyle'),
@@ -1168,9 +1168,29 @@ void main() {
 }
 
 double _requiredFontSize(String source) {
-  final match = RegExp(r'fontSize:\s*([0-9]+(?:\.[0-9]+)?)').firstMatch(source);
-  expect(match, isNotNull, reason: 'Expected a literal fontSize in:\n$source');
-  return double.parse(match!.group(1)!);
+  final literal = RegExp(
+    r'fontSize:\s*([0-9]+(?:\.[0-9]+)?)',
+  ).firstMatch(source);
+  if (literal != null) return double.parse(literal.group(1)!);
+  final token = RegExp(r'fontSize:\s*DesignTokens\.(\w+)').firstMatch(source);
+  expect(
+    token,
+    isNotNull,
+    reason: 'Expected a numeric fontSize or design token in:\n$source',
+  );
+  final tokens = File('lib/core/design_tokens.dart').readAsStringSync();
+  var name = token!.group(1)!;
+  for (var i = 0; i < 5; i++) {
+    final declaration = RegExp(
+      'static const double $name = ([a-zA-Z0-9_.]+);',
+    ).firstMatch(tokens);
+    expect(declaration, isNotNull, reason: 'Unknown font size token: $name');
+    final value = declaration!.group(1)!;
+    final number = double.tryParse(value);
+    if (number != null) return number;
+    name = value;
+  }
+  throw StateError('Unresolved font size token: $name');
 }
 
 Iterable<String> _calls(String source, String token) sync* {

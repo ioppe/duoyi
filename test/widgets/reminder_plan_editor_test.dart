@@ -171,7 +171,11 @@ void main() {
       expect(find.text('闹钟'), findsOneWidget);
       expect(find.text('关闭'), findsWidgets);
 
+      await tester.ensureVisible(find.text('弹出框'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('弹出框'));
+      await tester.ensureVisible(find.text('保存'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
@@ -181,7 +185,11 @@ void main() {
       await tester.tap(find.text('每日提醒 · 弹出框'));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.byIcon(Icons.notifications_off_outlined));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.notifications_off_outlined));
+      await tester.ensureVisible(find.text('保存'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
@@ -246,6 +254,8 @@ void main() {
       ],
     );
 
+    await tester.ensureVisible(find.text('保存'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
     expect(plan.rules.single.kind, ReminderKind.push);

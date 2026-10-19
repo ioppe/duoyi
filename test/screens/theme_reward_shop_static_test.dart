@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('主题页接入时光币奖励商店和主题解锁', () {
+  test('全部外观免费应用且保留同步备份兼容', () {
     final themeProvider = File(
       'lib/providers/theme_provider.dart',
     ).readAsStringSync();
@@ -52,30 +52,37 @@ void main() {
     expect(themeProvider, contains('activeWidgetCardSkinId'));
     expect(themeProvider, contains('setWidgetBackgroundBrand'));
     expect(themeProvider, contains('setWidgetCardSkin'));
-    expect(
-      themeScreen,
-      contains("import '../providers/achievement_provider.dart';"),
-    );
-    expect(themeScreen, contains("import '../providers/auth_provider.dart';"));
-    expect(themeScreen, contains('authProvider.applyThemeShopItem('));
-    expect(themeScreen, contains('themeProvider.applyShopStateFromServer'));
-    expect(themeScreen, contains('achievementProvider.applyRewardsSnapshot'));
-    expect(themeScreen, contains('achievementProvider.spendCoins('));
-    expect(themeScreen, contains('时光币'));
-    expect(themeScreen, contains('Icons.lock_outline'));
+    for (final hidden in [
+      '时光币',
+      'spendCoins',
+      'coinBalance',
+      '.cost',
+      'brandCost(',
+      'Icons.lock_outline',
+      '兑换',
+      '购买',
+      'isBrandUnlocked(',
+      'isCardSkinUnlocked(',
+    ]) {
+      expect(themeScreen, isNot(contains(hidden)), reason: hidden);
+    }
+    expect(themeScreen, contains("I18n.tr('appearance.title')"));
+    expect(themeScreen, contains("I18n.tr('appearance.free')"));
+    expect(themeScreen, contains('await applyLocal()'));
+    expect(themeScreen, contains('!ok'));
+    expect(themeScreen, isNot(contains('.applyThemeShopItem(')));
+    expect(themeScreen, contains('guestAppearanceMarkerKey'));
+    expect(themeScreen, contains('isCurrentAccountDataGeneration'));
     expect(themeScreen, contains('专注背景'));
-    expect(themeScreen, contains('兑换专注背景'));
     expect(themeScreen, contains('_focusBackdropPreview'));
     expect(themeScreen, contains('头像框'));
-    expect(themeScreen, contains('兑换头像框'));
     expect(themeScreen, contains('_avatarFramePreview'));
     expect(themeScreen, contains('卡片皮肤'));
-    expect(themeScreen, contains('兑换卡片皮肤'));
     expect(themeScreen, contains('_cardSkinPreview'));
     expect(themeScreen, contains('小组件主题'));
     expect(themeScreen, contains('_widgetThemeSection'));
-    expect(themeScreen, contains('themeProvider.setWidgetBackgroundBrand'));
-    expect(themeScreen, contains('themeProvider.setWidgetCardSkin'));
+    expect(themeScreen, contains('provider.setWidgetBackgroundBrand'));
+    expect(themeScreen, contains('provider.setWidgetCardSkin'));
     expect(achievementProvider, contains('Future<bool> spendCoins'));
     expect(achievementProvider, contains('Future<void> applyRewardsSnapshot'));
     expect(backup, contains("'theme_shop_state'"));

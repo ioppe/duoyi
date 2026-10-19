@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('成就系统提供时光币虚拟奖励闭环', () {
+  test('成就保留徽章和分享且不自动发币、不展示币或币派生等级', () {
     final provider = File(
       'lib/providers/achievement_provider.dart',
     ).readAsStringSync();
@@ -16,25 +16,24 @@ void main() {
     ).readAsStringSync();
     final main = File('lib/main.dart').readAsStringSync();
 
-    expect(provider, contains("import '../core/virtual_rewards.dart';"));
-    expect(provider, contains("static const _rewardStorageKey"));
-    expect(provider, contains('VirtualRewardRules.forEvent(event)'));
-    expect(provider, contains('VirtualRewardRules.forAchievement('));
+    expect(provider, contains('static const _rewardStorageKey'));
     expect(provider, contains('coinBalance'));
-    expect(provider, contains('GrowthLevel get growthLevel'));
-    expect(
-      provider,
-      contains('GrowthLevels.fromLifetimeCoins(_lifetimeCoins)'),
-    );
     expect(provider, contains('rewardLedger'));
-    expect(screen, contains('时光币'));
-    expect(screen, contains("import '../core/growth_levels.dart';"));
-    expect(screen, contains('growthLevel: provider.growthLevel'));
-    expect(screen, contains('class _LevelCoinPanel'));
-    expect(screen, contains(r"'Lv.${growthLevel.level}'"));
-    expect(screen, contains('growthLevel.coinsRemaining'));
-    expect(screen, contains('最近奖励'));
-    expect(screen, contains('_RewardLedgerCard'));
+    expect(provider, isNot(contains('VirtualRewardRules.forEvent')));
+    expect(provider, isNot(contains('VirtualRewardRules.forAchievement')));
+    expect(provider, isNot(contains('_coinBalance +=')));
+    expect(provider, contains('notifyAchievementUnlocked(achievement)'));
+    expect(screen, contains('snapshotFor(a.id)'));
+    for (final hidden in [
+      '时光币',
+      'coinBalance',
+      'lifetimeCoins',
+      'growthLevel',
+      '_RewardLedgerCard',
+      '_LevelCoinPanel',
+    ]) {
+      expect(screen, isNot(contains(hidden)), reason: hidden);
+    }
     expect(screen, contains("tooltip: '成就分享图'"));
     expect(screen, contains('_AchievementShareDialog'));
     expect(screen, contains('_AchievementShareCard'));
