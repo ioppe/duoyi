@@ -1,0 +1,15 @@
+{
+  "DUOYI_SERVER_URL": "https://todo.example.com",
+  "DUOYI_UPDATE_REPOSITORY": "your-org/duoyi",
+  "DUOYI_HTTP_TIMEOUT_SECONDS": 12,
+  "DUOYI_FILE_TIMEOUT_SECONDS": 30,
+  "DUOYI_AI_TIMEOUT_SECONDS": 75,
+  "DUOYI_UPDATE_TIMEOUT_SECONDS": 8,
+  "DUOYI_WEB_TARGET": "responsive",
+  "DUOYI_WEB_BASE_HREF": "/",
+  "DUOYI_BACKEND_SERVICE": "duoyi-backend",
+  "DUOYI_BACKEND_RUNNER": "systemd",
+  "DUOYI_LOCAL_BASE": "http://127.0.0.1:18015",
+  "DUOYI_WEB_ROOT": "/var/www/duoyi/current",
+  "DUOYI_WEB_BACKUP_ROOT": "/var/backups/duoyi/web"
+}

@@ -1,0 +1,158 @@
+# 配置设计与使用
+
+## 配置边界
+
+部署环境、应用运行设置和业务常量分别管理：
+
+| 类型 | 配置入口 | 生效时机 | 可以提交到仓库 |
+| --- | --- | --- | --- |
+| 公开部署参数 | `config/deployment.json`，或 `DUOYI_CONFIG_FILE` 指定的 JSON | 客户端重建；原生后端重启；Docker 镜像更新后重建容器 | 可以，禁止放密钥 |
+| 工具链版本 | `config/toolchain.json` | 本地安装和 CI 构建 | 可以 |
+| 后端私密与启动参数 | 进程环境；`backend/.env`，或 `DUOYI_ENV_FILE` 指定文件 | 原生后端重启；Compose 环境文件变更后重建容器 | 私密文件不提交，提交 `.env.example` |
+| 管理员运行设置 | 管理员后台 / SQLite `settings` | 按现有接口即时生效 | 不提交数据库 |
+| 用户偏好 | 现有 Provider 与云同步数据 | 保留现有行为 | 不提交用户数据 |
+| 安装端服务器连接 | 登录页；本机持久化服务器地址和绑定到该服务器的凭据 | 验证令牌后即时生效 | 不提交凭据 |
+| 协议、API 契约、产品标识与业务规则 | 对应代码模块 | 代码版本升级 | 保留在代码中 |
+
+```mermaid
+flowchart LR
+  Public[公开部署 JSON] --> Validate[校验与类型转换]
+  Env[显式环境变量] --> Validate
+  Validate --> Build[Flutter 构建时注入]
+  Validate --> Backend[后端启动配置]
+  Private[私有环境文件] --> Backend
+  Build --> Client[客户端配置对象]
+  Backend --> Seed[仅补齐缺失的数据库设置]
+  Admin[管理员后台] --> DB[数据库运行设置]
+  Seed --> DB
+```
+
+Python 公共配置模块 `backend/deployment_config.py` 没有数据库或应用启动副作用。Dart 的 `ClientDeploymentConfig` 负责客户端类型和校验，`AppConfig` 只读取构建时注入的参数。业务代码不再指定具体服务器域名或 Fork 更新仓库。
+
+## 公开部署参数
+
+本实例的 `config/deployment.json` 维护 `https://todo.skydrow.site` 和 `ioppe/duoyi`。其他实例可以复制 `config/deployment.example.json`，例如生成被 Git 忽略的 `config/staging.local.json`。
+
+| 参数 | 含义 |
+| --- | --- |
+| `DUOYI_SERVER_URL` | 安装端初始后端地址，可在登录页修改；Web 默认始终使用当前站点同域后端 |
+| `DUOYI_UPDATE_REPOSITORY` | APK 更新源 `owner/repository`；空字符串停用 GitHub 更新源 |
+| `DUOYI_HTTP_TIMEOUT_SECONDS` | 一般请求超时，默认 12 秒 |
+| `DUOYI_FILE_TIMEOUT_SECONDS` | 文件传输请求超时，默认 30 秒 |
+| `DUOYI_AI_TIMEOUT_SECONDS` | AI 代理请求超时，默认 75 秒 |
+| `DUOYI_UPDATE_TIMEOUT_SECONDS` | 更新检查超时，默认 8 秒 |
+| `DUOYI_WEB_TARGET` | `responsive`、`desktop` 或 `mobile` |
+| `DUOYI_WEB_BASE_HREF` | Web 部署路径，必须以 `/` 开始、结束 |
+| `DUOYI_BACKEND_SERVICE` | systemd 服务或 Docker 容器名 |
+| `DUOYI_BACKEND_RUNNER` | `systemd` 或 `docker`；只用于运维脚本 |
+| `DUOYI_LOCAL_BASE` | 运维脚本检查本机后端的地址 |
+| `DUOYI_WEB_ROOT` / `DUOYI_WEB_BACKUP_ROOT` | 网页部署和备份目录 |
+
+JSON 文件拒绝未知键、重复键、密钥字段、无效 URL、非法更新仓库名、越界超时和危险根目录。密钥即使出现在进程环境中，也不会进入生成的客户端配置文件。
+
+公开配置优先级为：**显式环境变量 > 指定的 JSON 文件 > 中立的 schema 默认值**。`DUOYI_CONFIG_FILE` 可以指定另一个文件；显式指定但文件不存在会报错。独立部署后端没有默认 JSON 文件时允许中立回退。
+
+显式空值与未设置不同，例如 `DUOYI_SERVER_URL=` 会覆盖 JSON 中的服务器地址。没有注入任何部署参数的客户端不会自动连接作者或当前实例的服务器；原生端仍可离线使用。
+
+## 安装端与 Web 登录
+
+Android、iOS、Windows、Linux 及后续 macOS 客户端共用运行时连接逻辑。登录页默认输入服务器地址和访问令牌，也保留账号密码/邮箱登录入口。地址必须包含 `http://` 或 `https://`，可输入端口和部署前缀；不允许夹带账号密码、查询参数或片段。末尾 `/api/` 会自动归一化。
+
+Web 无需填写服务器地址，登录页可选密码、邮箱验证码或访问令牌；令牌表单显示当前站点地址并禁止修改，所有方式默认请求当前 origin 的 `/api/*` 与 `/ws/*`。构建 profile 中的服务器值只作为安装端初始值，不会把 Web 的账号凭据发到另一个实例。独立托管的前端需在本 origin 反代 API 和 WebSocket。
+
+1. 在服务器网页版使用账号密码登录。
+2. 打开“我的 → 个人资料 → 访问令牌”，创建命名令牌，可选择无过期、30 天、90 天或一年。
+3. 复制仅显示一次的完整令牌，在安装端填写服务器地址和令牌后登录。
+4. 每台设备分别创建令牌。列表可查看最近使用时间、过期时间和当前设备，撤销立即失效；撤销当前令牌会退出本机登录。
+
+令牌持久化在后端 SQLite 中，服务重启后仍有效，数据库只存令牌摘要。密码重置、更改密码、禁用或删除账号会撤销相应令牌。普通密码登录会话仍沿用现有生命周期。
+
+客户端先验证新连接；验证失败保留当前连接。服务器和账号共同决定本地数据归属；成功切换前停止旧同步并清理旧账号缓存、凭据和同步基线，避免跨服务器上传。离线且尚未同步的内容应先备份，切换不是合并数据的操作。
+
+## 语言与应用时区
+
+界面语言默认跟随系统：系统语言为中文时显示简体中文，其他语言回退英文。用户可在“我的 → 个人设置 → 显示与行为 → 界面语言”或“扩展 → 语言”显式选择简体中文/English/跟随系统，选择持久化在本地（`duoyi_locale_v1`），切换后无需重启即刻生效；系统语言变化时，处于“跟随系统”状态的界面会同步更新。
+
+应用时区同样默认跟随系统，也可固定为指定 IANA 时区（如 `Asia/Tokyo`、`America/New_York`、`UTC`）。该设置只影响应用内的壁钟语义，不修改设备系统时区：
+
+- 跟随所选时区：今日页/日历的“今天”、日期分组、按天统计、习惯打卡周期、提醒触发时刻、黄历与日期格式化。
+- 保持真实瞬时：同步时间戳、记录 `updatedAt`、计时器已流逝时长、番茄钟会话起点等。
+- 只存年/月/日的浮动日期（如待办 `date`、纪念日）不因换时区而平移，仍按原年月日展示。
+
+切换时区会立即刷新今日页、日历与统计，并排队重放提醒调度，使提醒的实际触发时刻对应用户设定的新壁钟时间。设备系统时区在后台发生变化时，处于“跟随系统”状态的应用会在恢复前台时重新解析并重放提醒。
+
+## 本地命令
+
+在仓库根目录执行：
+
+```bash
+python3 scripts/project_config.py validate
+python3 scripts/project_config.py get DUOYI_SERVER_URL
+python3 scripts/flutter_with_config.py run
+python3 scripts/flutter_with_config.py build apk --debug
+python3 scripts/flutter_with_config.py build web --release
+```
+
+使用其他环境，或检查最终命令而不运行 Flutter：
+
+```bash
+python3 scripts/flutter_with_config.py --config config/staging.local.json build web --release
+python3 scripts/flutter_with_config.py --dry-run build apk --release
+```
+
+Web 默认同源；需要移动布局时可显式覆盖布局：
+
+```bash
+python3 scripts/flutter_with_config.py build web --release \
+  --dart-define=DUOYI_SERVER_URL= \
+  --dart-define=DUOYI_WEB_TARGET=mobile
+```
+
+入口生成 `build/config/client-defines.json`，只导出允许进入客户端的公开键，然后使用 Flutter 的 `--dart-define-from-file`。后续显式 `--dart-define` 优先，已有手动构建方式仍可使用。直接调用 Flutter 时，应自己传入配置；仅设置 shell 环境变量不会让 Dart 自动读取它们。
+
+本机可执行文件位置使用 `FLUTTER_BIN`、`PYTHON_BIN`、`ADB_BIN`、`ANDROID_SDK_ROOT` / `ANDROID_HOME` 等环境变量；未指定时从 SDK 路径或 PATH 查找，不绑定某位开发者的用户目录。
+
+## 后端配置与兼容性
+
+复制 `backend/.env.example` 为私有文件 `backend/.env`。新建管理员前，必须填入自己的 `ADMIN_BOOTSTRAP_PASSWORD`。环境文件只接受 `KEY=value`、成对的单/双引号、空值及独立注释行；不执行 shell、不插值、不支持 `export` 或行尾注释。
+
+后端优先级为：**进程环境 > 私有环境文件 > 公开 JSON 派生默认 > schema 默认**。历史 SMTP、邮件与 OpenClaw 变量别名仍可用，同一来源中的别名顺序保持兼容。高优先级来源中的旧别名仍高于低优先级来源中的新键名。
+
+- Web 默认同源；独立前端需要把 `/api/*`、`/ws/*` 代理到目标后端。CORS 允许列表仍供受支持的集成使用，不能替代代理。
+- `DUOYI_DB_PATH`、上传目录、备份目录、CORS、在线状态时长、轮询间隔等由 `BackendSettings` 类型化读取。
+- `CORS_ORIGINS` 未单独提供时，由公开后端地址派生；空值表示不开放跨域。相同域名和 Android 原生请求不依赖额外跨域许可。
+- 密码、API Key、SMTP 密码和 WebDAV 密码只能放在后端环境或受权限保护的管理员设置中，不能写入公共 JSON 或 Dart define。
+- AI、注册策略、邮件与备份的环境参数只补齐数据库中缺失的键；已有管理员配置不会因重启或修改默认值被覆盖。
+- 历史 `REGISTRATION_EMAIL_REQUIRED` 一次性迁移和显式设置语义保持不变。
+- bootstrap 同名账号已存在时不会重置密码；改变 bootstrap 用户名可能新增账号，因此应保持现有部署值。
+- **必须保留已有 `PASSWORD_HASH_SALT`。** 未设置时沿用旧算法兼容常量；已有实例若配置了自定义 salt，需要原样保留，改盐会使原密码无法校验。
+- 客户端版本优先从根目录 `pubspec.yaml` 读取；只有独立后端没有版本文件时，才回退到 `0.0.0/0`。API 契约版本仍由代码定义。
+
+配置校验错误只指出字段名和要求，不回显密码、Key 或原始配置内容。配置对象隐藏私密字段的字符串表示。
+
+## CI 与运维脚本
+
+CI 的 `configuration` job 先校验部署 profile 和 `config/toolchain.json`，后续测试、Android 和 Web job 共用这一份公开参数。仓库 Variables 可覆盖 `DUOYI_SERVER_URL`、`DUOYI_UPDATE_REPOSITORY`、`DUOYI_WEB_BASE_HREF`；手动运行的 `same_origin` 可显式选择空地址。
+
+自托管 Web 包按部署 profile 的 base href 构建。GitHub Pages 另外生成自己的 `build/web-pages`，默认路径来自当前仓库名，也可通过 `DUOYI_PAGES_BASE_HREF` 设置。根路径产物不会再被直接用于 Pages 项目子路径。
+
+正式签名 Secrets 保持不变，缺失时构建失败，不回退到调试签名。工具链版本统一由 `config/toolchain.json` 提供。
+
+仅检查部署目标，不重启或覆盖服务：
+
+```bash
+bash scripts/deploy_backend_prod.sh --check-config
+bash scripts/deploy_web_prod.sh --check-config
+```
+
+实际执行部署脚本会重启后端或替换网页，应在完成构建、备份和发布准备后调用。Docker 模式的 `restart` 只重启原容器，不构建镜像、不替换镜像，也不重新读取 Compose 的 `env_file`。发布新后端时，需要先构建镜像，再用 `docker compose up -d --force-recreate backend` 等现有发布步骤重建容器；配置模块、公开 profile 与版本元数据也必须随新版本一起打包。
+
+## 从旧配置迁移
+
+1. 把客户端原先写在 `AppConfig` 和 `main.dart` 中的域名、更新源迁入公开 JSON。
+2. 将现有服务器环境变量保留在部署工具或私有环境文件中，特别是数据库路径、bootstrap 身份和原密码 salt。
+3. 保留 SQLite 数据库；已有数据库设置优先于新的默认值，不需要重新初始化。
+4. 新后端需要携带全部运行时 Python 模块（包括令牌存储模块）、公开 profile 与版本元数据；客户端通过新入口重新构建。
+5. 在测试环境核对登录、同步和更新源后，再更新线上实例。
+
+本次配置重构本身不会自动修改已经部署的服务或数据库，也不会提交真实密钥到仓库。

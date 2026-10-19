@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Machine-local executable locations are environment values, never instance defaults.
+ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+ADB_BIN="${ADB_BIN:-${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/platform-tools/adb}}"
+ADB_BIN="${ADB_BIN:-adb}"
+EMULATOR_BIN="${EMULATOR_BIN:-${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/emulator/emulator}}"
+EMULATOR_BIN="${EMULATOR_BIN:-emulator}"
+AVDMANAGER_BIN="${AVDMANAGER_BIN:-${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager}}"
+AVDMANAGER_BIN="${AVDMANAGER_BIN:-avdmanager}"
+SDKMANAGER_BIN="${SDKMANAGER_BIN:-${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager}}"
+SDKMANAGER_BIN="${SDKMANAGER_BIN:-sdkmanager}"
+for DUOYI_TOOL_NAME in FLUTTER_BIN PYTHON_BIN ADB_BIN EMULATOR_BIN AVDMANAGER_BIN SDKMANAGER_BIN; do
+  DUOYI_TOOL_PATH="$(command -v "${!DUOYI_TOOL_NAME}" 2>/dev/null || true)"
+  if [ -n "$DUOYI_TOOL_PATH" ]; then printf -v "$DUOYI_TOOL_NAME" '%s' "$DUOYI_TOOL_PATH"; fi
+done
+unset DUOYI_TOOL_NAME DUOYI_TOOL_PATH
+export ANDROID_SDK_ROOT FLUTTER_BIN PYTHON_BIN ADB_BIN EMULATOR_BIN AVDMANAGER_BIN SDKMANAGER_BIN

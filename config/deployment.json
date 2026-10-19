@@ -1,0 +1,15 @@
+{
+  "DUOYI_SERVER_URL": "https://todo.skydrow.site",
+  "DUOYI_UPDATE_REPOSITORY": "ioppe/duoyi",
+  "DUOYI_HTTP_TIMEOUT_SECONDS": 12,
+  "DUOYI_FILE_TIMEOUT_SECONDS": 30,
+  "DUOYI_AI_TIMEOUT_SECONDS": 75,
+  "DUOYI_UPDATE_TIMEOUT_SECONDS": 8,
+  "DUOYI_WEB_TARGET": "desktop",
+  "DUOYI_WEB_BASE_HREF": "/",
+  "DUOYI_BACKEND_SERVICE": "duoyi-backend",
+  "DUOYI_BACKEND_RUNNER": "docker",
+  "DUOYI_LOCAL_BASE": "http://127.0.0.1:18015",
+  "DUOYI_WEB_ROOT": "/var/www/duoyi/current",
+  "DUOYI_WEB_BACKUP_ROOT": "/opt/duoyi/web-backups"
+}

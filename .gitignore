@@ -69,3 +69,10 @@ backend/uploads/
 # Local UI verification captures
 .playwright-mcp/
 .workbuddy/
+
+# Private instance configuration (public examples remain tracked)
+.env
+.env.*
+!.env.example
+config/*.local.json
+**/__pycache__/
