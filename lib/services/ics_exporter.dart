@@ -20,6 +20,7 @@ class IcsExporter {
       ..writeln('PRODID:-//Duoyi//ZH//CN')
       ..writeln('X-WR-CALNAME:$calendarName');
     for (final e in events) {
+      if (!e.type.isVisible) continue;
       sb
         ..writeln('BEGIN:VEVENT')
         ..writeln('UID:${e.id}@duoyi')

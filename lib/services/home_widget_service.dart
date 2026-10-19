@@ -23,7 +23,6 @@ class HomeWidgetService {
   static const String _androidNoteProviderName = 'DuoyiNoteWidgetProvider';
   static const String _androidAnniversaryProviderName =
       'DuoyiAnniversaryWidgetProvider';
-  static const String _androidDiaryProviderName = 'DuoyiDiaryWidgetProvider';
   static const String _iosTodoWidgetName = 'DuoyiTodoWidget';
   static const String _iosFocusWidgetName = 'DuoyiFocusWidget';
   static const String _iosHabitWidgetName = 'DuoyiHabitWidget';
@@ -33,7 +32,6 @@ class HomeWidgetService {
   static const String _iosCourseWidgetName = 'DuoyiCourseWidget';
   static const String _iosNoteWidgetName = 'DuoyiNoteWidget';
   static const String _iosAnniversaryWidgetName = 'DuoyiAnniversaryWidget';
-  static const String _iosDiaryWidgetName = 'DuoyiDiaryWidget';
   static const String _appGroupId = 'group.com.duoyi.duoyi';
 
   /// 账号清理（登出/切号）时写回小组件的兜底 payload。文案值经 I18n 取词：
@@ -84,7 +82,7 @@ class HomeWidgetService {
     'memorial_highlight_2_id': '',
     'memorial_highlight_3': '',
     'memorial_highlight_3_id': '',
-    'diary_highlight_1': I18n.tr('widget.diary_empty'),
+    'diary_highlight_1': '',
     'diary_highlight_1_id': '',
     'diary_highlight_2': '',
     'diary_highlight_2_id': '',
@@ -458,30 +456,12 @@ class HomeWidgetService {
           'memorial_highlight_3_id',
           memorialHighlightIds.length > 2 ? memorialHighlightIds[2] : '',
         ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_1',
-          diaryHighlights.isNotEmpty ? '· ${diaryHighlights[0]}' : '暂无日记',
-        ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_1_id',
-          diaryHighlightIds.isNotEmpty ? diaryHighlightIds[0] : '',
-        ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_2',
-          diaryHighlights.length > 1 ? '· ${diaryHighlights[1]}' : '',
-        ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_2_id',
-          diaryHighlightIds.length > 1 ? diaryHighlightIds[1] : '',
-        ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_3',
-          diaryHighlights.length > 2 ? '· ${diaryHighlights[2]}' : '',
-        ),
-        HomeWidget.saveWidgetData<String>(
-          'diary_highlight_3_id',
-          diaryHighlightIds.length > 2 ? diaryHighlightIds[2] : '',
-        ),
+        HomeWidget.saveWidgetData<String>('diary_highlight_1', ''),
+        HomeWidget.saveWidgetData<String>('diary_highlight_1_id', ''),
+        HomeWidget.saveWidgetData<String>('diary_highlight_2', ''),
+        HomeWidget.saveWidgetData<String>('diary_highlight_2_id', ''),
+        HomeWidget.saveWidgetData<String>('diary_highlight_3', ''),
+        HomeWidget.saveWidgetData<String>('diary_highlight_3_id', ''),
         HomeWidget.saveWidgetData<String>(
           'today_event_summary',
           todayEventSummary,
@@ -957,9 +937,5 @@ const List<_HomeWidgetUpdateTarget> _widgetUpdateTargets = [
   _HomeWidgetUpdateTarget(
     androidName: HomeWidgetService._androidAnniversaryProviderName,
     iOSName: HomeWidgetService._iosAnniversaryWidgetName,
-  ),
-  _HomeWidgetUpdateTarget(
-    androidName: HomeWidgetService._androidDiaryProviderName,
-    iOSName: HomeWidgetService._iosDiaryWidgetName,
   ),
 ];

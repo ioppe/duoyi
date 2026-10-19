@@ -64,7 +64,6 @@ void main() {
       'CalendarEventType.anniversary',
       'CalendarEventType.countdown',
       'CalendarEventType.course',
-      'CalendarEventType.diary',
       'CalendarEventType.habit',
       'CalendarEventType.pomodoro',
     ]) {
@@ -76,7 +75,6 @@ void main() {
     for (final type in [
       'CalendarEventType.countdown',
       'CalendarEventType.course',
-      'CalendarEventType.diary',
       'CalendarEventType.habit',
       'CalendarEventType.timeEntry',
     ]) {
@@ -86,7 +84,7 @@ void main() {
     }
   });
 
-  test('日历详情复用原模块编辑器回写纪念日、倒数日、课程、日记和习惯', () {
+  test('日历详情复用原模块编辑器并拒绝已退役类型', () {
     final sheet = File(
       'lib/widgets/calendar_event_sheet.dart',
     ).readAsStringSync();
@@ -105,9 +103,9 @@ void main() {
     expect(sheet, contains("import '../screens/countdown_screen.dart';"));
     expect(sheet, contains("import '../providers/countdown_provider.dart';"));
     expect(sheet, contains("import '../screens/course_schedule_screen.dart';"));
-    expect(sheet, contains("import '../screens/diary_screen.dart';"));
+    expect(sheet, isNot(contains("import '../screens/diary_screen.dart';")));
     expect(sheet, contains("import '../screens/habit_detail_screen.dart';"));
-    expect(sheet, contains("import '../providers/diary_provider.dart';"));
+    expect(sheet, isNot(contains('DiaryProvider')));
     expect(sheet, contains('Future<void> _editSourceEvent'));
     expect(
       sheet,
@@ -130,13 +128,16 @@ void main() {
       sheet,
       contains('showCourseEditor(navigationContext, course: item)'),
     );
-    expect(sheet, contains('showDiaryEditor(navigationContext, entry: item)'));
+    expect(sheet, isNot(contains('showDiaryEditor(')));
     expect(sheet, contains('showHabitEditor(navigationContext, item)'));
     expect(
       sheet,
       contains('showPomodoroSessionEditor(navigationContext, item)'),
     );
-    expect(sheet, contains('context.read<DiaryProvider>().delete(sourceId)'));
+    expect(
+      _caseBlock(sheet, 'CalendarEventType.diary'),
+      contains('return const <Widget>[]'),
+    );
     expect(
       sheet,
       contains('context.read<HabitProvider>().deleteHabit(sourceId)'),
@@ -157,10 +158,7 @@ void main() {
       contains('_CourseEditSheet(provider: provider, course: course)'),
     );
     expect(diary, contains('Future<void> showDiaryEditor'));
-    expect(
-      diary,
-      contains('DiaryEditScreen(entry: entry, initialDate: initialDate)'),
-    );
+    expect(diary, contains("I18n.tr('feature.unavailable')"));
     expect(habit, contains('Future<void> showHabitEditor'));
     expect(habit, contains('habitProvider.updateHabit(habit.id, updated)'));
     expect(habit, contains('onPressed: () => showHabitEditor(context, habit)'));

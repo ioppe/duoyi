@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>首页精简布局验收</title>
+<style>body{margin:0;padding:32px;font:16px/1.6 system-ui;background:#f2f4f6;color:#25313b}h1{font-size:24px;margin:0 0 8px}p{color:#60707b;margin:0 0 24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}figure{margin:0;padding:16px;background:white;border-radius:14px;box-shadow:0 3px 14px #17313b0d}figcaption{margin:0 0 12px}img{width:100%;height:auto;display:block;border:1px solid #e1e5e8;border-radius:8px}.wide{grid-column:1/-1}</style>
+<h1>首页精简布局</h1><p>本地隔离 Web 环境，390 × 844 手机视口及 1440 × 900 桌面视口。首页默认待办；目标独立切换；效率卡片移入“我的”；日历可从个性设置开启。</p>
+<div class="grid">
+<figure><figcaption>默认首页：待办位于顶部，日历关闭</figcaption><img src="today-mobile.png"></figure>
+<figure><figcaption>目标子页</figcaption><img src="goals-mobile.png"></figure>
+<figure><figcaption>“我的”：效率卡片在用户卡片下方</figcaption><img src="mine-mobile.png"></figure>
+<figure><figcaption>日历设置：默认关闭</figcaption><img src="calendar-setting-off.png"></figure>
+<figure><figcaption>日历设置：开启</figcaption><img src="calendar-setting-on.png"></figure>
+<figure><figcaption>开启日历后：任务仍位于首位，刷新后保留设置</figcaption><img src="today-calendar-enabled.png"></figure>
+<figure class="wide"><figcaption>桌面首页：使用相同的待办 / 目标双页结构</figcaption><img src="today-desktop-calendar.png"></figure>
+<figure class="wide"><figcaption>桌面“我的”：效率部件位于用户部件下方</figcaption><img src="mine-desktop.png"></figure>
+<figure class="wide"><figcaption>应用与记录：日记入口移除，随手记保留</figcaption><img src="apps-without-diary.png"></figure>
+</div></html>

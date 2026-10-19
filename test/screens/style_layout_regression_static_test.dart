@@ -949,7 +949,11 @@ void main() {
     expect(diary, contains('final routeBackground'));
     expect(diary, contains('backgroundColor: routeBackground'));
     expect(diary, contains('surfaceTintColor: Colors.transparent'));
-    expect(diary, contains('width: 0.45'));
+    expect(diary, contains("I18n.tr('feature.unavailable')"));
+    expect(diary, isNot(contains('TextField(')));
+    expect(diary, isNot(contains('TextFormField(')));
+    expect(diary, isNot(contains('DiaryProvider')));
+    expect(diary, isNot(contains('action.save')));
     expect(profile, isNot(contains('fontSize: 12')));
     expect(
       profile,

@@ -15,7 +15,6 @@ enum DuoyiWidgetKind {
   course,
   note,
   anniversary,
-  diary,
 }
 
 enum AndroidWidgetStyle {
@@ -332,7 +331,6 @@ extension DuoyiWidgetKindId on DuoyiWidgetKind {
       DuoyiWidgetKind.course => 'course',
       DuoyiWidgetKind.note => 'note',
       DuoyiWidgetKind.anniversary => 'anniversary',
-      DuoyiWidgetKind.diary => 'diary',
     };
   }
 }

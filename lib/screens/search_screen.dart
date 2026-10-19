@@ -7,7 +7,6 @@ import '../providers/anniversary_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/countdown_provider.dart';
 import '../providers/course_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/note_provider.dart';
@@ -20,7 +19,6 @@ import 'anniversary_screen.dart';
 import 'calendar_screen.dart';
 import 'countdown_screen.dart';
 import 'course_schedule_screen.dart';
-import 'diary_screen.dart';
 import 'goal_screen.dart';
 import 'habit_screen.dart';
 import 'note_screen.dart';
@@ -74,7 +72,6 @@ class _SearchScreenState extends State<SearchScreen> {
         todos: context.read<TodoProvider>().todos,
         habits: context.read<HabitProvider>().habits,
         notes: context.read<NoteProvider>().notes,
-        diaries: context.read<DiaryProvider>().entries,
         anniversaries: context.read<AnniversaryProvider>().items,
         countdowns: context.read<CountdownProvider>().items,
         goals: context.read<GoalProvider>().goals,
@@ -113,14 +110,6 @@ class _SearchScreenState extends State<SearchScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => const BrandRouteSurface(child: NoteScreen()),
-          ),
-        );
-        break;
-      case SearchKind.diary:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const BrandRouteSurface(child: DiaryScreen()),
           ),
         );
         break;

@@ -12,7 +12,6 @@ import '../models/note.dart';
 import '../models/quick_capture_template.dart';
 import '../models/todo.dart';
 import '../providers/habit_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/note_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../providers/quick_capture_template_provider.dart';
@@ -22,7 +21,6 @@ import '../services/local_notifications.dart';
 import '../providers/notification_service.dart';
 import '../services/reminder_scheduler.dart';
 import '../screens/ai_schedule_screen.dart';
-import '../screens/diary_screen.dart';
 import 'surface_components.dart';
 
 /// 展开式快速捕获 FAB：3 个子按钮 + 一个搜索入口。
@@ -276,10 +274,6 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
         final note = command.note;
         if (note == null) return const _AiCommandOutcome.skipped();
         context.read<NoteProvider>().addOrUpdateNote(note);
-      case AiCommandType.addDiary:
-        final diary = command.diary;
-        if (diary == null) return const _AiCommandOutcome.skipped();
-        await context.read<DiaryProvider>().addOrUpdate(diary);
       case AiCommandType.startFocus:
         final pomodoro = context.read<PomodoroProvider>();
         if (!pomodoro.state.isRunning) pomodoro.toggleTimer();
@@ -421,14 +415,6 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
         ),
       );
     }
-  }
-
-  void _quickDiary() {
-    _toggle();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DiaryEditScreen()),
-    );
   }
 
   Future<void> _showTemplateSheet() async {
@@ -833,12 +819,6 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
               color: Colors.purple,
               onTap: _quickAiTodo,
             ),
-          _mini(
-            icon: Icons.book_outlined,
-            label: I18n.tr('quick.menu.diary'),
-            color: const Color(0xFF26A69A),
-            onTap: _quickDiary,
-          ),
           _mini(
             icon: Icons.edit_note,
             label: I18n.tr('quick.menu.note'),

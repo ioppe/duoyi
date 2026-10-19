@@ -10,7 +10,7 @@ void main() {
     expect(command, contains('enum AiCommandType'));
     expect(command, contains('AiCommandType.addTodo'));
     expect(command, contains('AiCommandType.addNote'));
-    expect(command, contains('AiCommandType.addDiary'));
+    expect(command, isNot(contains('AiCommandType.addDiary')));
     expect(command, contains('AiCommandType.startFocus'));
     expect(command, contains('SmartTodoDraftBuilder.fromText'));
     expect(command, contains('class AiCommandBatch'));
@@ -28,7 +28,9 @@ void main() {
     expect(fab, contains('bool showSnackBar = true'));
     expect(fab, contains('context.read<TodoProvider>().addTodo'));
     expect(fab, contains('context.read<NoteProvider>().addOrUpdateNote'));
-    expect(fab, contains('context.read<DiaryProvider>().addOrUpdate'));
+    expect(fab, isNot(contains('DiaryProvider')));
+    expect(fab, isNot(contains('_quickDiary')));
+    expect(fab, isNot(contains('quick.menu.diary')));
     expect(fab, contains('context.read<PomodoroProvider>()'));
     expect(fab, contains("label: 'AI 指令'"));
   });

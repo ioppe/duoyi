@@ -1,8 +1,8 @@
-import '../models/diary_entry.dart';
+import 'i18n.dart';
 import '../models/note.dart';
 import 'smart_todo_draft.dart';
 
-enum AiCommandType { addTodo, addNote, addDiary, startFocus, unknown }
+enum AiCommandType { addTodo, addNote, startFocus, unknown }
 
 class AiCommandBatch {
   final String rawText;
@@ -15,7 +15,7 @@ class AiCommandBatch {
 
   String get preview {
     if (commands.isEmpty) {
-      return '请说“添加待办… / 记笔记… / 写日记… / 开始专注”';
+      return I18n.tr('ai.command.help');
     }
     if (commands.length == 1) return commands.single.preview;
     final lines = <String>['将执行 ${commands.length} 条指令：'];
@@ -32,7 +32,6 @@ class AiCommand {
   final String payload;
   final SmartTodoDraft? todoDraft;
   final NoteItem? note;
-  final DiaryEntry? diary;
 
   const AiCommand({
     required this.type,
@@ -40,7 +39,6 @@ class AiCommand {
     required this.payload,
     this.todoDraft,
     this.note,
-    this.diary,
   });
 
   bool get executable => type != AiCommandType.unknown;
@@ -48,7 +46,6 @@ class AiCommand {
   String get title => switch (type) {
     AiCommandType.addTodo => '创建待办',
     AiCommandType.addNote => '保存笔记',
-    AiCommandType.addDiary => '写入日记',
     AiCommandType.startFocus => '开始专注',
     AiCommandType.unknown => '无法识别',
   };
@@ -64,9 +61,8 @@ class AiCommand {
       return '创建待办「${todo.title}」，日期 $date$reminder';
     }
     if (type == AiCommandType.addNote) return '保存为随手记：$payload';
-    if (type == AiCommandType.addDiary) return '写入今天的日记：$payload';
     if (type == AiCommandType.startFocus) return '开始当前番茄钟专注计时';
-    return '请说“添加待办… / 记笔记… / 写日记… / 开始专注”';
+    return I18n.tr('ai.command.help');
   }
 }
 
@@ -130,20 +126,11 @@ class AiCommandParser {
       );
     }
 
-    final diaryPayload = _stripPrefix(normalized, const [
-      '写日记',
-      '记录日记',
-      '日记',
-      '今天日记',
-    ]);
-    if (diaryPayload != null) {
-      final at = now ?? DateTime.now();
-      return AiCommand(
-        type: AiCommandType.addDiary,
-        rawText: raw,
-        payload: diaryPayload,
-        diary: DiaryEntry(date: at, content: diaryPayload),
-      );
+    if (RegExp(
+      r'^(?:(?:写|记录|今天|新增|创建|添加)\s*)?日记|^(?:(?:write|create|add)\s+)?(?:diary|journal)\b',
+      caseSensitive: false,
+    ).hasMatch(normalized)) {
+      return AiCommand(type: AiCommandType.unknown, rawText: raw, payload: '');
     }
 
     final todoPayload =

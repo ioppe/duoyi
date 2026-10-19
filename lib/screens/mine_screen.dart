@@ -24,6 +24,7 @@ import '../widgets/cached_avatar_image.dart';
 import '../widgets/stats_overview_cards.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/sync_status_card.dart';
+import '../widgets/weekly_productivity_card.dart';
 import 'theme_picker_screen.dart';
 import 'login_screen.dart';
 import 'announcements_screen.dart';
@@ -34,7 +35,6 @@ import 'time_audit_screen.dart';
 import 'pomodoro_screen.dart';
 import 'countdown_screen.dart';
 import 'anniversary_screen.dart' as anniversary;
-import 'diary_screen.dart';
 import 'goal_screen.dart';
 import 'course_schedule_screen.dart';
 import 'almanac_screen.dart';
@@ -577,17 +577,6 @@ class MineScreen extends StatelessWidget {
               ),
             ),
             _Tile(
-              icon: Icons.book_outlined,
-              label: I18n.tr('diary.title'),
-              color: Colors.teal,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const BrandRouteSurface(child: DiaryScreen()),
-                ),
-              ),
-            ),
-            _Tile(
               icon: Icons.edit_note,
               label: I18n.tr('note.title'),
               color: Colors.amber.shade700,
@@ -958,6 +947,21 @@ class MineScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: DesignTokens.spaceXxl),
           children: [
             capped(mineHeader),
+            capped(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.spaceMd,
+                  0,
+                  DesignTokens.spaceMd,
+                  DesignTokens.spaceMd,
+                ),
+                child: WeeklyProductivityCard(
+                  key: const ValueKey('mine_weekly_productivity'),
+                  onTap: () =>
+                      _openBrandedRoute(context, const StatisticsScreen()),
+                ),
+              ),
+            ),
             capped(mineStats),
             const SizedBox(height: DesignTokens.spaceLg),
             capped(

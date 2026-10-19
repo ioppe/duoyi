@@ -690,8 +690,6 @@ private struct DuoyiWidgetView: View {
             return "记"
         case "DuoyiAnniversaryWidget":
             return "念"
-        case "DuoyiDiaryWidget":
-            return "日"
         default:
             return "多"
         }
@@ -824,18 +822,6 @@ private let anniversaryConfig = DuoyiWidgetConfig(
     quickActionLink: "duoyi://anniversary"
 )
 
-private let diaryConfig = DuoyiWidgetConfig(
-    kind: "DuoyiDiaryWidget",
-    title: "日记",
-    deepLink: "duoyi://diary",
-    accent: .teal,
-    primaryKey: "diary_highlight_1",
-    fallback: "暂无日记",
-    rowKeys: ["diary_highlight_2", "diary_highlight_3"],
-    quickActionTitle: "写日记",
-    quickActionLink: "duoyi://diary"
-)
-
 private struct DuoyiAnyWidget: Widget {
     let config: DuoyiWidgetConfig
 
@@ -893,6 +879,5 @@ struct DuoyiWidgetsBundle: WidgetBundle {
         DuoyiAnyWidget(config: courseConfig)
         DuoyiAnyWidget(config: noteConfig)
         DuoyiAnyWidget(config: anniversaryConfig)
-        DuoyiAnyWidget(config: diaryConfig)
     }
 }

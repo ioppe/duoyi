@@ -7,8 +7,7 @@ import 'package:duoyi/models/goal.dart';
 /// 推荐目标库单测（Task 3.2）。
 ///
 /// 覆盖 requirements.md §1 的 1.3 / 1.4：
-/// - `all().length >= 25`，且五大类 `{recommend, health, study, sport, emotion}`
-///   每类 `>= 5` 条；
+/// - 退役两条记录模板后保留 23 条；推荐与情感类各 4 条，其余各 5 条；
 /// - `byCategory(custom)` 为空（推荐库不使用 custom 类别）；
 /// - 条目 `id` 全局唯一；
 /// - `instantiate(r)` 生成的 `GoalItem.id` 是新 UUID，不等于 `r.id`、
@@ -23,12 +22,20 @@ void main() {
   });
 
   group('RecommendedGoalsLibrary.all / byCategory 数量与分类', () {
-    test('all() 至少包含 25 条推荐目标', () {
+    test('all() 保留 23 条有效推荐并移除退役模板', () {
       final items = RecommendedGoalsLibrary.all();
-      expect(items.length, greaterThanOrEqualTo(25));
+      expect(items, hasLength(23));
+      expect(
+        items.map((item) => item.id),
+        isNot(contains('rec.recommend.daily_journal')),
+      );
+      expect(
+        items.map((item) => item.id),
+        isNot(contains('rec.emotion.mood_diary')),
+      );
     });
 
-    test('五个主类别（recommend/health/study/sport/emotion）各至少 5 条', () {
+    test('五个主类别保留所有未退役模板', () {
       const mainCategories = <GoalCategory>[
         GoalCategory.recommend,
         GoalCategory.health,
@@ -39,11 +46,9 @@ void main() {
 
       for (final c in mainCategories) {
         final list = RecommendedGoalsLibrary.byCategory(c);
-        expect(
-          list.length,
-          greaterThanOrEqualTo(5),
-          reason: '类别 $c 至少应有 5 条推荐目标，实际 ${list.length}',
-        );
+        final expectedCount =
+            c == GoalCategory.recommend || c == GoalCategory.emotion ? 4 : 5;
+        expect(list, hasLength(expectedCount), reason: '类别 $c 的有效推荐数量');
         // 同时验证 byCategory 过滤结果都属于该类别。
         for (final r in list) {
           expect(r.category, c);

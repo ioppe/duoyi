@@ -445,33 +445,6 @@
                 android:name="miui.appwidget.previewImage"
                 android:resource="@drawable/widget_anniversary_preview" />
         </receiver>
-        <!-- 日记 小组件 -->
-        <receiver
-            android:name=".DuoyiDiaryWidgetProvider"
-            android:label="@string/widget_diary_label"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
-                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/duoyi_diary_widget_info" />
-            <meta-data
-                android:name="duoyi.appwidget.provider.compact"
-                android:resource="@xml/duoyi_diary_widget_info_compact" />
-            <meta-data
-                android:name="duoyi.appwidget.provider.standard"
-                android:resource="@xml/duoyi_diary_widget_info" />
-            <meta-data
-                android:name="duoyi.appwidget.provider.detailed"
-                android:resource="@xml/duoyi_diary_widget_info_detailed" />
-            <meta-data
-                android:name="miui.appwidget.previewImage"
-                android:resource="@drawable/widget_diary_preview" />
-        </receiver>
         <!-- 系统小组件列表公开三种尺寸；应用内添加仍按所选样式请求。 -->
         <receiver
             android:name=".DuoyiTodoCompactWidgetProvider"
@@ -724,34 +697,6 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/duoyi_anniversary_widget_info_detailed" />
-        </receiver>
-        <receiver
-            android:name=".DuoyiDiaryCompactWidgetProvider"
-            android:label="@string/widget_diary_label_compact"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
-                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/duoyi_diary_widget_info_compact" />
-        </receiver>
-        <receiver
-            android:name=".DuoyiDiaryDetailedWidgetProvider"
-            android:label="@string/widget_diary_label_detailed"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
-                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/duoyi_diary_widget_info_detailed" />
         </receiver>
         <activity
             android:name=".DuoyiWidgetConfigActivity"

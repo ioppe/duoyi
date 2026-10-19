@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/design_tokens.dart';
+import '../core/i18n.dart';
 import '../models/anniversary.dart';
 import '../providers/anniversary_provider.dart';
 import '../providers/course_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/note_provider.dart';
@@ -14,7 +14,6 @@ import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
 import 'anniversary_screen.dart';
 import 'course_schedule_screen.dart';
-import 'diary_screen.dart';
 import 'goal_edit_screen.dart';
 import 'goal_screen.dart';
 import 'habit_detail_screen.dart';
@@ -151,13 +150,7 @@ class TodayDetailRouter {
         return _brandRoute(NoteEditScreen(note: notes[idx]));
 
       case TodaySectionKind.diary:
-        if (id != null) {
-          final entries = context.read<DiaryProvider>().entries;
-          final idx = entries.indexWhere((entry) => entry.id == id);
-          if (idx < 0) return _emptyRoute(kind, '这篇日记不存在或已被删除');
-          return _brandRoute(DiaryEditScreen(entry: entries[idx]));
-        }
-        return _brandRoute(const DiaryScreen());
+        return _emptyRoute(kind, I18n.tr('feature.unavailable'));
     }
   }
 
@@ -192,7 +185,7 @@ class TodayDetailRouter {
       case TodaySectionKind.notes:
         return '随手记';
       case TodaySectionKind.diary:
-        return '日记';
+        return I18n.tr('feature.unavailable');
     }
   }
 }

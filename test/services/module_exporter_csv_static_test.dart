@@ -39,13 +39,13 @@ void main() {
       expect(screen, contains("习惯 · CSV"));
       expect(screen, contains("时间足迹 · CSV"));
       expect(screen, contains("笔记 · CSV"));
-      expect(screen, contains("日记 · CSV"));
+      expect(screen, isNot(contains('日记 ·')));
       expect(screen, contains("纪念日 · CSV"));
       expect(screen, contains("目标 · CSV"));
 
       expect(screen, contains('ModuleExporter.timeEntriesCsv(entries)'));
       expect(screen, contains('ModuleExporter.notesCsv(ns)'));
-      expect(screen, contains('ModuleExporter.diaryCsv(ds)'));
+      expect(screen, isNot(contains('ModuleExporter.diary')));
       expect(screen, contains('ModuleExporter.anniversariesCsv(list)'));
       expect(screen, contains('ModuleExporter.goalsCsv(list)'));
     },

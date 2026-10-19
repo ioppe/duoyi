@@ -9,6 +9,24 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get featureUnavailable => 'This feature is no longer available.';
+
+  @override
+  String get aiCommandHelp => 'Create a task, save a note, or start focus.';
+
+  @override
+  String get statisticsActivityDescription =>
+      'Daily activity across tasks, habits, focus, and time entries';
+
+  @override
+  String get challengeWeeklyActiveDaysDescription =>
+      'Use tasks, habits, or focus on 5 days this week.';
+
+  @override
+  String get backupWipeConfirm =>
+      'This deletes all local tasks, habits, notes, and other data. Your account will remain.';
+
+  @override
   String get settingsLanguageSystem => 'Follow system';
 
   @override
@@ -451,6 +469,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preferencesDateFormatTitle => 'Date format';
+
+  @override
+  String get preferencesHomeCalendarTitle => 'Home calendar';
+
+  @override
+  String get preferencesHomeCalendarSubtitle =>
+      'Show the calendar below today’s tasks. Off by default';
 
   @override
   String get preferencesTimezoneTitle => 'App time zone';
@@ -947,7 +972,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickTemplateHabitDone => 'Habit created from template';
 
   @override
-  String get searchHint => 'Search tasks, events, habits, notes, diaries...';
+  String get searchHint => 'Search tasks, events, habits, notes...';
 
   @override
   String get searchEmpty => 'Enter keywords to search everything';
@@ -1887,7 +1912,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportIncludeCalendarSubtitle =>
-      'Tasks, habits, courses, diary, and goals';
+      'Tasks, habits, courses, and goals';
 
   @override
   String get exportPushCaldav => 'Push to CalDAV';
@@ -2111,6 +2136,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get todayTodos => 'Today tasks';
+
+  @override
+  String get todayTabGoals => 'Goals';
 
   @override
   String get todayCompleted => 'Completed';

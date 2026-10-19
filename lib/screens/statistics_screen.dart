@@ -14,17 +14,16 @@ import 'package:share_plus/share_plus.dart';
 import '../core/app_clock.dart';
 import '../core/desktop_tokens.dart';
 import '../core/focus_tag_stats.dart';
+import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../core/project_efficiency.dart';
 import '../core/report_cross_analysis.dart';
 import '../core/report_engine.dart';
-import '../models/diary_entry.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
 import '../models/time_entry.dart';
 import '../models/todo.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -81,7 +80,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       (provider) => provider.persistedRevision,
     );
     final pomoProv = context.read<PomodoroProvider>();
-    final diaryProv = context.watch<DiaryProvider>();
     final timeAuditProv = context.watch<TimeAuditProvider>();
     final ai = context.watch<AiService>();
     final cs = Theme.of(context).colorScheme;
@@ -132,7 +130,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       habits: habitProv.habits,
       sessions: pomoProv.sessions,
       timeEntries: timeAuditProv.entries,
-      diaries: diaryProv.entries,
     );
     final rangeStart = AppClock.date(start.year, start.month, start.day);
     final rangeEnd = AppClock.date(end.year, end.month, end.day + 1);
@@ -187,9 +184,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       habitCompletions: habitCompletionDates.map(
         ReportCrossHabitCompletion.new,
       ),
-      diaryEntries: diaryProv.entries.map(
-        (entry) => ReportCrossDiaryEntry(entry.date),
-      ),
       timeEntries: auditEntries.map(
         (entry) => ReportCrossTimeEntry(
           startedAt: entry.startAt,
@@ -206,14 +200,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       timeEntries: auditEntries,
       todos: todoProv.todos,
     );
-
-    final diaryInRange = diaryProv.entries
-        .where(
-          (d) =>
-              !AppClock.dateOnly(d.date).isBefore(AppClock.dateOnly(start)) &&
-              !AppClock.dateOnly(d.date).isAfter(AppClock.dateOnly(end)),
-        )
-        .length;
 
     final habitDoneInRange = habitCompletionDates.length;
 
@@ -258,7 +244,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               completedTodos: completedTodos,
               focusMinutes: focusMinutes,
               habitDoneInRange: habitDoneInRange,
-              diaryInRange: diaryInRange,
               auditTotalMinutes: auditTotalMinutes,
               auditCategorySeconds: auditCategorySeconds,
               auditEntries: auditEntries,
@@ -274,7 +259,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               completedTodos: completedTodos,
               focusMinutes: focusMinutes,
               habitDoneInRange: habitDoneInRange,
-              diaryInRange: diaryInRange,
               auditTotalMinutes: auditTotalMinutes,
               auditCategorySeconds: auditCategorySeconds,
               auditEntries: auditEntries,
@@ -378,12 +362,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       value: '$habitDoneInRange 次',
                     ),
                     _Kpi(
-                      icon: Icons.book_outlined,
-                      color: const Color(0xFF26A69A),
-                      title: '日记',
-                      value: '$diaryInRange 篇',
-                    ),
-                    _Kpi(
                       icon: Icons.timelapse_outlined,
                       color: const Color(0xFF78909C),
                       title: '时间足迹',
@@ -414,7 +392,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 completedTodos: completedTodos,
                 focusMinutes: focusMinutes,
                 habitDoneInRange: habitDoneInRange,
-                diaryInRange: diaryInRange,
                 auditTotalMinutes: auditTotalMinutes,
                 auditCategorySeconds: auditCategorySeconds,
                 auditEntries: auditEntries,
@@ -436,11 +413,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             const SizedBox(height: 10),
             _buildHabitTodoCorrelationCard(
               correlation: crossAnalysis.habitTodo,
-              cs: cs,
-            ),
-            const SizedBox(height: 10),
-            _buildDiaryFocusCorrelationCard(
-              correlation: crossAnalysis.diaryFocus,
               cs: cs,
             ),
             const SizedBox(height: 10),
@@ -673,7 +645,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<Habit> habits,
     required List<PomodoroSession> sessions,
     required List<TimeEntry> timeEntries,
-    required List<DiaryEntry> diaries,
   }) {
     final raw = <String, int>{};
 
@@ -703,9 +674,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     for (final entry in timeEntries) {
       final minutes = entry.durationSeconds ~/ 60;
       add(AppClock.toLocal(entry.startAt), minutes >= 60 ? 2 : 1);
-    }
-    for (final diary in diaries) {
-      add(diary.date, 1);
     }
 
     return raw.map((key, value) => MapEntry(key, value.clamp(0, 5)));
@@ -1403,174 +1371,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               dotPainter: FlDotCirclePainter(
                 radius: 5,
                 color: cs.tertiary,
-                strokeWidth: 2,
-                strokeColor: cs.surface,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiaryFocusCorrelationCard({
-    required DiaryFocusCorrelation correlation,
-    required ColorScheme cs,
-  }) {
-    final activePoints = correlation.activePoints;
-    final r = correlation.pearson;
-    final rText = r == null ? '样本不足' : r.toStringAsFixed(2);
-    final insight = r == null
-        ? '需要至少两个有变化的周期点，才能判断记录日记与专注投入的关系。'
-        : r >= 0.45
-        ? '日记记录越稳定，专注分钟数通常也更高。'
-        : r <= -0.45
-        ? '日记记录和专注投入出现反向变化，适合检查复盘是否集中在低专注日。'
-        : '两者关系较弱，当前周期的专注投入可能更多受任务安排或外部日程影响。';
-
-    return AppSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  '日记 × 专注相关性',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
-                ),
-              ),
-              _CrossMetricBadge(label: 'r', value: rText, cs: cs),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '横轴为日记篇数，纵轴为专注分钟数',
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 190,
-            child: activePoints.isEmpty
-                ? const EmptyHint(icon: Icons.menu_book, message: '暂无日记专注交叉数据')
-                : _buildDiaryFocusScatter(correlation, cs),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            insight,
-            style: TextStyle(
-              fontSize: 11,
-              height: 1.45,
-              color: cs.onSurface.withValues(alpha: 0.64),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiaryFocusScatter(
-    DiaryFocusCorrelation correlation,
-    ColorScheme cs,
-  ) {
-    final activePoints = correlation.activePoints;
-    final maxX = (correlation.maxDiaryEntries * 1.2)
-        .clamp(3, 100000)
-        .toDouble();
-    final maxY = (correlation.maxFocusMinutes * 1.2)
-        .clamp(10, 100000)
-        .toDouble();
-
-    DiaryFocusPoint? pointFor(ScatterSpot spot) {
-      for (final point in activePoints) {
-        if (point.diaryEntries.toDouble() == spot.x &&
-            point.focusMinutes.toDouble() == spot.y) {
-          return point;
-        }
-      }
-      return null;
-    }
-
-    return ScatterChart(
-      ScatterChartData(
-        minX: 0,
-        maxX: maxX,
-        minY: 0,
-        maxY: maxY,
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: cs.outlineVariant.withValues(alpha: 0.45),
-            strokeWidth: 1,
-          ),
-          getDrawingVerticalLine: (_) => FlLine(
-            color: cs.outlineVariant.withValues(alpha: 0.3),
-            strokeWidth: 1,
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        scatterTouchData: ScatterTouchData(
-          touchSpotThreshold: 16,
-          touchTooltipData: ScatterTouchTooltipData(
-            getTooltipColor: (_) => cs.inverseSurface,
-            getTooltipItems: (spot) {
-              final point = pointFor(spot);
-              return ScatterTooltipItem(
-                point == null
-                    ? '${spot.x.toInt()} 篇 / ${spot.y.toInt()} 分'
-                    : '${point.label}\n${point.diaryEntries} 篇 / ${point.focusMinutes} 分',
-                textStyle: TextStyle(color: cs.onInverseSurface, fontSize: 11),
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 34,
-              getTitlesWidget: (value, _) => Text(
-                value.toInt().toString(),
-                style: TextStyle(
-                  fontSize: 9,
-                  color: cs.onSurface.withValues(alpha: 0.56),
-                ),
-              ),
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 24,
-              getTitlesWidget: (value, _) => Padding(
-                padding: const EdgeInsets.only(top: 5),
-                child: Text(
-                  value.toInt().toString(),
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: cs.onSurface.withValues(alpha: 0.56),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-        ),
-        scatterSpots: [
-          for (final point in activePoints)
-            ScatterSpot(
-              point.diaryEntries.toDouble(),
-              point.focusMinutes.toDouble(),
-              dotPainter: FlDotCirclePainter(
-                radius: 5,
-                color: const Color(0xFF8E7CC3),
                 strokeWidth: 2,
                 strokeColor: cs.surface,
               ),
@@ -2452,7 +2252,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<TodoItem> completedTodos,
     required int focusMinutes,
     required int habitDoneInRange,
-    required int diaryInRange,
     required int auditTotalMinutes,
     required Map<TimeEntryCategory, int> auditCategorySeconds,
     required List<TimeEntry> auditEntries,
@@ -2463,7 +2262,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       completedTodos: completedTodos,
       focusMinutes: focusMinutes,
       habitDoneInRange: habitDoneInRange,
-      diaryInRange: diaryInRange,
       auditTotalMinutes: auditTotalMinutes,
       auditCategorySeconds: auditCategorySeconds,
       auditEntries: auditEntries,
@@ -2485,7 +2283,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<TodoItem> completedTodos,
     required int focusMinutes,
     required int habitDoneInRange,
-    required int diaryInRange,
     required int auditTotalMinutes,
     required Map<TimeEntryCategory, int> auditCategorySeconds,
     required List<TimeEntry> auditEntries,
@@ -2496,7 +2293,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       completedTodos: completedTodos,
       focusMinutes: focusMinutes,
       habitDoneInRange: habitDoneInRange,
-      diaryInRange: diaryInRange,
       auditTotalMinutes: auditTotalMinutes,
       auditCategorySeconds: auditCategorySeconds,
       auditEntries: auditEntries,
@@ -2513,7 +2309,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           completedTodos: completedTodos.length,
           focusMinutes: focusMinutes,
           habitDoneInRange: habitDoneInRange,
-          diaryInRange: diaryInRange,
           auditTotalMinutes: auditTotalMinutes,
           topCategories: topCategories.take(4).toList(),
         ),
@@ -2574,7 +2369,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<TodoItem> completedTodos,
     required int focusMinutes,
     required int habitDoneInRange,
-    required int diaryInRange,
     required int auditTotalMinutes,
     required Map<TimeEntryCategory, int> auditCategorySeconds,
     required List<TimeEntry> auditEntries,
@@ -2593,7 +2387,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ..writeln('- 待办完成：${completedTodos.length} 项')
       ..writeln('- 深度专注：$focusMinutes 分钟')
       ..writeln('- 习惯打卡：$habitDoneInRange 次')
-      ..writeln('- 日记：$diaryInRange 篇')
       ..writeln('- 时间足迹：$auditTotalMinutes 分钟')
       ..writeln();
 
@@ -3619,7 +3412,6 @@ class _ReportShareCard extends StatelessWidget {
   final int completedTodos;
   final int focusMinutes;
   final int habitDoneInRange;
-  final int diaryInRange;
   final int auditTotalMinutes;
   final List<MapEntry<TimeEntryCategory, int>> topCategories;
 
@@ -3628,7 +3420,6 @@ class _ReportShareCard extends StatelessWidget {
     required this.completedTodos,
     required this.focusMinutes,
     required this.habitDoneInRange,
-    required this.diaryInRange,
     required this.auditTotalMinutes,
     required this.topCategories,
   });
@@ -3674,7 +3465,6 @@ class _ReportShareCard extends StatelessWidget {
               _ShareMetric(label: '待办', value: '$completedTodos 项'),
               _ShareMetric(label: '专注', value: '$focusMinutes 分'),
               _ShareMetric(label: '习惯', value: '$habitDoneInRange 次'),
-              _ShareMetric(label: '日记', value: '$diaryInRange 篇'),
               _ShareMetric(label: '足迹', value: '$auditTotalMinutes 分'),
             ],
           ),
@@ -4427,7 +4217,7 @@ class _ActivityHeatmapCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '待办、习惯、专注、时间足迹和日记的每日活跃度',
+                      I18n.tr('statistics.activity.description'),
                       style: TextStyle(
                         fontSize: 11,
                         color: cs.onSurface.withValues(alpha: 0.58),

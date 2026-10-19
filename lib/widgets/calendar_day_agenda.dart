@@ -7,7 +7,6 @@ import '../providers/calendar_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/anniversary_provider.dart';
 import '../providers/course_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../core/completion_visibility_policy.dart';
@@ -15,10 +14,8 @@ import '../core/todo_templates.dart';
 import '../models/calendar_event.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
-import '../models/diary_entry.dart';
 import '../models/todo.dart';
 import '../core/lunar_calendar.dart';
-import '../screens/diary_screen.dart';
 import 'calendar_event_sheet.dart';
 
 class CalendarDayAgenda extends StatelessWidget {
@@ -49,7 +46,6 @@ class CalendarDayAgenda extends StatelessWidget {
     final s = context.watch<ThemeProvider>().brand.strings;
     final anniversaries = context.watch<AnniversaryProvider>();
     final courses = context.watch<CourseProvider>();
-    final diary = context.watch<DiaryProvider>();
     final events = calendarProvider.getEventsForDate(
       date,
       activeTypes: activeTypes,
@@ -84,14 +80,9 @@ class CalendarDayAgenda extends StatelessWidget {
     // 课表
     final todayCourses = courses.coursesOfDate(date);
 
-    final todayDiary = diary.entryForDate(date);
-
     final children = [
       // 农历 / 节日 / 节气头
       _dayHeader(context, lunar, term, solarFes, lunarFes),
-
-      // 日记按钮
-      _DiaryQuickEntry(date: date, entry: todayDiary),
 
       if (hitAnniversaries.isNotEmpty) ...[
         const SizedBox(height: 8),
@@ -958,66 +949,6 @@ int _minutesFromDayStart(DateTime value) => value.hour * 60 + value.minute;
 
 DateTime _dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
-
-class _DiaryQuickEntry extends StatelessWidget {
-  final DateTime date;
-  final DiaryEntry? entry;
-  const _DiaryQuickEntry({required this.date, required this.entry});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final hasEntry = entry != null;
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DiaryEditScreen(entry: entry, initialDate: date),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: hasEntry
-              ? cs.primary.withValues(alpha: 0.08)
-              : Colors.grey.shade50,
-          border: Border.all(
-            color: hasEntry
-                ? cs.primary.withValues(alpha: 0.2)
-                : Colors.grey.shade200,
-            width: 0.45,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              hasEntry ? Icons.book : Icons.edit_note,
-              size: 18,
-              color: hasEntry ? cs.primary : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                hasEntry ? entry!.title : '写下这一天的日记',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: hasEntry ? cs.primary : Colors.grey.shade600,
-                  fontWeight: hasEntry ? FontWeight.normal : FontWeight.normal,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (hasEntry && entry!.mood != null)
-              Text(entry!.mood!.emoji, style: const TextStyle(fontSize: 16)),
-            Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _AnniversaryTile extends StatelessWidget {
   final String title;

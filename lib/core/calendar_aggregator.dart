@@ -39,7 +39,6 @@ class CalendarAggregator {
       ..._anniversaryEvents(anniversaries ?? const <Anniversary>[]),
       ..._countdownEvents(countdowns ?? const <CountdownItem>[]),
       ..._courseEvents(courses ?? const <CourseItem>[], courseSettings),
-      ..._diaryEvents(diaries ?? const <DiaryEntry>[]),
       ..._goalEvents(goals ?? const <GoalItem>[]),
     ];
     events.sort(_compareEvents);
@@ -339,21 +338,6 @@ class CalendarAggregator {
       }
     }
     return events;
-  }
-
-  static List<CalendarEvent> _diaryEvents(List<DiaryEntry> diaries) {
-    return [
-      for (final d in diaries)
-        CalendarEvent(
-          id: 'diary_${d.id}',
-          title: d.title,
-          subtitle: d.mood?.label,
-          date: d.date,
-          type: CalendarEventType.diary,
-          color: const Color(0xFF26A69A),
-          sourceId: d.id,
-        ),
-    ];
   }
 
   static List<CalendarEvent> _goalEvents(List<GoalItem> goals) {

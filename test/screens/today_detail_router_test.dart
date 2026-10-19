@@ -1,6 +1,6 @@
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/providers/anniversary_provider.dart';
 import 'package:duoyi/providers/course_provider.dart';
-import 'package:duoyi/providers/diary_provider.dart';
 import 'package:duoyi/providers/goal_provider.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/note_provider.dart';
@@ -31,7 +31,6 @@ void main() {
           ChangeNotifierProvider(create: (_) => GoalProvider()),
           ChangeNotifierProvider(create: (_) => HabitProvider()),
           ChangeNotifierProvider(create: (_) => NoteProvider()),
-          ChangeNotifierProvider(create: (_) => DiaryProvider()),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -67,19 +66,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BrandRouteSurface), findsOneWidget);
-      expect(find.text(entry.value), findsOneWidget);
+      expect(
+        find.text(entry.value),
+        entry.key == TodaySectionKind.diary ? findsNWidgets(2) : findsOneWidget,
+      );
       expect(find.widgetWithText(FilledButton, '返回'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
 }
 
-const _missingDetailCases = <TodaySectionKind, String>{
+final _missingDetailCases = <TodaySectionKind, String>{
   TodaySectionKind.todos: '这个待办不存在或已被删除',
   TodaySectionKind.courses: '这节课程不存在或已被删除',
   TodaySectionKind.anniversaries: '这个纪念日不存在或已被删除',
   TodaySectionKind.goals: '这个目标不存在或已被删除',
   TodaySectionKind.habits: '这个习惯不存在或已被删除',
   TodaySectionKind.notes: '这条随手记不存在或已被删除',
-  TodaySectionKind.diary: '这篇日记不存在或已被删除',
+  TodaySectionKind.diary: I18n.tr('feature.unavailable'),
 };

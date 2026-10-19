@@ -19,6 +19,9 @@ enum CalendarEventType {
 }
 
 extension CalendarEventTypeX on CalendarEventType {
+  /// Retired values remain parseable for backups and synchronization.
+  bool get isVisible => this != CalendarEventType.diary;
+
   String get label => switch (this) {
     CalendarEventType.event => I18n.tr('calendar_event.event'),
     CalendarEventType.todo => I18n.tr('calendar_event.todo'),
@@ -26,7 +29,7 @@ extension CalendarEventTypeX on CalendarEventType {
     CalendarEventType.pomodoro => I18n.tr('calendar_event.pomodoro'),
     CalendarEventType.anniversary => I18n.tr('calendar_event.anniversary'),
     CalendarEventType.course => I18n.tr('calendar_event.course'),
-    CalendarEventType.diary => I18n.tr('calendar_event.diary'),
+    CalendarEventType.diary => I18n.tr('feature.unavailable'),
     CalendarEventType.countdown => I18n.tr('calendar_event.countdown'),
     CalendarEventType.goal => I18n.tr('calendar_event.goal'),
     CalendarEventType.timeEntry => I18n.tr('calendar_event.time_entry'),
@@ -75,7 +78,8 @@ class CalendarEvent {
   String get dateKey =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  bool get canOpen => sourceId != null && sourceId!.isNotEmpty;
+  bool get canOpen =>
+      type.isVisible && sourceId != null && sourceId!.isNotEmpty;
 
   String? get projectKey {
     if (projectId != null && projectId!.isNotEmpty) return projectId;

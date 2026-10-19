@@ -98,6 +98,36 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @featureUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'此功能已不可用'**
+  String get featureUnavailable;
+
+  /// No description provided for @aiCommandHelp.
+  ///
+  /// In zh, this message translates to:
+  /// **'请说“添加待办… / 记笔记… / 开始专注”'**
+  String get aiCommandHelp;
+
+  /// No description provided for @statisticsActivityDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'待办、习惯、专注和时间足迹的每日活跃度'**
+  String get statisticsActivityDescription;
+
+  /// No description provided for @challengeWeeklyActiveDaysDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周 5 天有待办、习惯或专注记录'**
+  String get challengeWeeklyActiveDaysDescription;
+
+  /// No description provided for @backupWipeConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'将删除本机所有待办、习惯、笔记等数据，登录账号不会删除。'**
+  String get backupWipeConfirm;
+
   /// No description provided for @settingsLanguageSystem.
   ///
   /// In zh, this message translates to:
@@ -949,6 +979,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'日期格式'**
   String get preferencesDateFormatTitle;
+
+  /// No description provided for @preferencesHomeCalendarTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页日历'**
+  String get preferencesHomeCalendarTitle;
+
+  /// No description provided for @preferencesHomeCalendarSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在今日待办下方显示日历，默认关闭'**
+  String get preferencesHomeCalendarSubtitle;
 
   /// No description provided for @preferencesTimezoneTitle.
   ///
@@ -1835,7 +1877,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchHint.
   ///
   /// In zh, this message translates to:
-  /// **'搜索待办 · 日程 · 习惯 · 笔记 · 日记 …'**
+  /// **'搜索待办 · 日程 · 习惯 · 笔记 …'**
   String get searchHint;
 
   /// No description provided for @searchEmpty.
@@ -3641,7 +3683,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportIncludeCalendarSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'待办、习惯、课程、日记和目标'**
+  /// **'待办、习惯、课程和目标'**
   String get exportIncludeCalendarSubtitle;
 
   /// No description provided for @exportPushCaldav.
@@ -4075,6 +4117,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'今日待办'**
   String get todayTodos;
+
+  /// No description provided for @todayTabGoals.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标'**
+  String get todayTabGoals;
 
   /// No description provided for @todayCompleted.
   ///

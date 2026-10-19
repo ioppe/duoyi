@@ -66,6 +66,7 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> addLocalEvent(CalendarEvent event) async {
+    if (!event.type.isVisible) return;
     _localEvents.add(_asLocalEvent(event));
     await _saveLocalEvents();
   }
@@ -77,6 +78,7 @@ class CalendarProvider extends ChangeNotifier {
     var skippedDuplicates = 0;
     final seen = _localEvents.map(_importDuplicateKey).toSet();
     for (final event in events) {
+      if (!event.type.isVisible) continue;
       if (event.title.trim().isEmpty) continue;
       final key = _importDuplicateKey(event);
       if (seen.contains(key)) {
@@ -97,6 +99,7 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> updateLocalEvent(CalendarEvent event) async {
+    if (!event.type.isVisible) return;
     final index = _localEvents.indexWhere((e) => e.id == event.id);
     if (index == -1) return;
     _localEvents[index] = _asLocalEvent(event);
@@ -143,7 +146,9 @@ class CalendarProvider extends ChangeNotifier {
   /// 设置外部订阅事件（来自 ICS 订阅）。会触发下次 rebuild 时合并。
   // ignore: use_setters_to_change_properties
   void setExternalEvents(List<CalendarEvent> events) {
-    final next = List<CalendarEvent>.unmodifiable(events);
+    final next = List<CalendarEvent>.unmodifiable(
+      events.where((event) => event.type.isVisible),
+    );
     if (_eventsEqual(_externalEvents, next)) return;
     _externalEvents = next;
     _lastRebuildSignature = null;
@@ -174,7 +179,6 @@ class CalendarProvider extends ChangeNotifier {
       anniversaries: anniversaries,
       courses: courses,
       courseSettings: courseSettings,
-      diaries: diaries,
       countdowns: countdowns,
       goals: goals,
       timeEntries: timeEntries,
@@ -190,7 +194,6 @@ class CalendarProvider extends ChangeNotifier {
       anniversaries: anniversaries,
       courses: courses,
       courseSettings: courseSettings,
-      diaries: diaries,
       countdowns: countdowns,
       goals: goals,
       timeEntries: timeEntries,
@@ -220,7 +223,6 @@ class CalendarProvider extends ChangeNotifier {
     List<Anniversary>? anniversaries,
     List<CourseItem>? courses,
     ScheduleSettings? courseSettings,
-    List<DiaryEntry>? diaries,
     List<CountdownItem>? countdowns,
     List<GoalItem>? goals,
     List<TimeEntry>? timeEntries,
@@ -238,7 +240,6 @@ class CalendarProvider extends ChangeNotifier {
       _hashPomodoroSessions(pomodoroSessions),
       _hashAnniversaries(anniversaries),
       _hashCourses(courses, courseSettings),
-      _hashDiaries(diaries),
       _hashCountdowns(countdowns),
       _hashGoals(goals),
       _hashTimeEntries(timeEntries),
@@ -361,20 +362,6 @@ class CalendarProvider extends ChangeNotifier {
         ),
       ),
     ]);
-  }
-
-  int _hashDiaries(List<DiaryEntry>? diaries) {
-    if (diaries == null) return 0;
-    return Object.hashAll(
-      diaries.map(
-        (d) => Object.hash(
-          d.id,
-          d.title,
-          d.date.millisecondsSinceEpoch,
-          d.updatedAt.millisecondsSinceEpoch,
-        ),
-      ),
-    );
   }
 
   int _hashCountdowns(List<CountdownItem>? countdowns) {
@@ -502,6 +489,7 @@ class CalendarProvider extends ChangeNotifier {
   }) {
     final key = _dateKey(date);
     return _events.where((e) {
+      if (!e.type.isVisible) return false;
       if (!_eventOccursOnDate(e, key)) return false;
       if (activeTypes != null && !activeTypes.contains(e.type)) return false;
       if (!_matchesProject(e, projectKey)) return false;
@@ -513,6 +501,7 @@ class CalendarProvider extends ChangeNotifier {
   Set<DateTime> get datesWithEvents {
     final dates = <DateTime>{};
     for (final e in _events) {
+      if (!e.type.isVisible) continue;
       dates.addAll(_eventDates(e));
     }
     return dates;
@@ -521,6 +510,7 @@ class CalendarProvider extends ChangeNotifier {
   Map<String, List<CalendarEventType>> get dateEventTypes {
     final map = <String, Set<CalendarEventType>>{};
     for (final e in _events) {
+      if (!e.type.isVisible) continue;
       for (final key in _eventDateKeys(e)) {
         map.putIfAbsent(key, () => {}).add(e.type);
       }
@@ -539,6 +529,7 @@ class CalendarProvider extends ChangeNotifier {
     }
     final map = <String, Set<CalendarEventType>>{};
     for (final e in _events) {
+      if (!e.type.isVisible) continue;
       if (activeTypes != null && !activeTypes.contains(e.type)) continue;
       if (!_matchesProject(e, projectKey)) continue;
       if (!_matchesWorkspace(e, workspaceId)) continue;
@@ -556,6 +547,7 @@ class CalendarProvider extends ChangeNotifier {
   }) {
     final map = <String, int>{};
     for (final e in _events) {
+      if (!e.type.isVisible) continue;
       if (activeTypes != null && !activeTypes.contains(e.type)) continue;
       if (!_matchesProject(e, projectKey)) continue;
       if (!_matchesWorkspace(e, workspaceId)) continue;

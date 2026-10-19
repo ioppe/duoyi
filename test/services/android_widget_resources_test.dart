@@ -228,28 +228,6 @@ void main() {
         ],
         compact: false,
       ),
-      _WidgetResource(
-        title: '日记',
-        providerXml: 'duoyi_diary_widget_info.xml',
-        layoutXml: 'duoyi_diary_widget.xml',
-        previewPng: 'widget_diary_preview.png',
-        receiver: 'DuoyiDiaryWidgetProvider',
-        previewDrawable: 'widget_diary_preview',
-        layoutName: 'duoyi_diary_widget',
-        ids: [
-          '@+id/widget_diary_bottom_nav',
-          '@+id/widget_diary_title',
-          '@+id/widget_diary_subtitle',
-          '@+id/widget_diary_nav_todo',
-          '@+id/widget_diary_nav_habit',
-          '@+id/widget_diary_nav_calendar',
-          '@+id/widget_diary_nav_focus',
-          '@+id/widget_diary_1',
-          '@+id/widget_diary_2',
-          '@+id/widget_diary_3',
-        ],
-        compact: false,
-      ),
     ];
 
     for (final widget in widgets) {
@@ -2315,7 +2293,7 @@ void main() {
       }
     });
 
-    test('10 个标准 provider 统一继承、清理实例样式且三样式映射一致', () {
+    test('9 个标准 provider 统一继承、清理实例样式且三样式映射一致', () {
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
       ).readAsStringSync();
@@ -2323,7 +2301,7 @@ void main() {
         'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetVariantProviders.kt',
       ).readAsStringSync();
 
-      expect(widgets, hasLength(10));
+      expect(widgets, hasLength(9));
       for (final widget in widgets) {
         final baseName = widget.providerXml.replaceFirst('.xml', '');
         final source = File(
@@ -2375,7 +2353,7 @@ void main() {
       }
     });
 
-    test('小组件 Android iOS 和 Flutter 清单保持 10 类 exact set 对齐', () {
+    test('小组件 Android iOS 和 Flutter 清单保持 9 类 exact set 对齐', () {
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
       ).readAsStringSync();
@@ -2417,7 +2395,8 @@ void main() {
         ).allMatches(manifest).map((match) => match.group(1)!),
       );
       expect(manifestProviders, expectedManifestProviders);
-      expect(manifestProviders, hasLength(31));
+      expect(manifestProviders, hasLength(28));
+      expect(manifest, isNot(contains('DuoyiDiary')));
 
       final variantProviders = _sorted(
         RegExp(
@@ -2469,13 +2448,13 @@ void main() {
         RegExp(
           r'androidName: HomeWidgetService\._android\w+ProviderName',
         ).allMatches(updateTargets),
-        hasLength(10),
+        hasLength(9),
       );
       expect(
         RegExp(
           r'iOSName: HomeWidgetService\._ios\w+WidgetName',
         ).allMatches(updateTargets),
-        hasLength(10),
+        hasLength(9),
       );
 
       final iosKinds = _sorted(
@@ -2486,7 +2465,7 @@ void main() {
       expect(iosKinds, expectedIosKinds);
       expect(
         RegExp(r'DuoyiAnyWidget\(config: \w+Config\)').allMatches(iosWidgets),
-        hasLength(10),
+        hasLength(9),
       );
     });
 
@@ -2662,7 +2641,7 @@ void main() {
       }
     });
 
-    test('应用内小组件页展示 10 个可见独立预览并接入底部导航', () {
+    test('应用内小组件页展示 9 个可见独立预览并接入底部导航', () {
       final main = File('lib/main.dart').readAsStringSync();
       final deepLinkService = File(
         'lib/services/deep_link_service.dart',
@@ -2701,10 +2680,7 @@ void main() {
         contains("'duoyi://course/\${Uri.encodeComponent(course.id)}'"),
       );
       expect(main, contains("'duoyi://note/\${Uri.encodeComponent(note.id)}'"));
-      expect(
-        main,
-        contains("'duoyi://diary/\${Uri.encodeComponent(entry.id)}'"),
-      );
+      expect(service, isNot(contains('_androidDiaryProviderName')));
       expect(
         main,
         contains(
@@ -2715,10 +2691,7 @@ void main() {
         main,
         contains('TodayDetailRouter.open(ctx, TodaySectionKind.notes, id: id)'),
       );
-      expect(
-        main,
-        contains('TodayDetailRouter.open(ctx, TodaySectionKind.diary, id: id)'),
-      );
+      expect(widgetScreen, isNot(contains('WidgetPreviewKind.diary')));
       expect(
         main,
         isNot(contains("todayEventSummary: top3.isEmpty ? '今日没有日程'")),
@@ -2745,7 +2718,6 @@ void main() {
         '课程表预览',
         '随手记预览',
         '纪念日预览',
-        '日记预览',
       ]) {
         expect(widgetScreen, contains(title));
       }
@@ -2776,7 +2748,7 @@ void main() {
         'lib/screens/today_detail_router.dart',
       ).readAsStringSync();
 
-      for (final host in ['goal', 'course', 'anniversary', 'note', 'diary']) {
+      for (final host in ['goal', 'course', 'anniversary', 'note']) {
         final branch = _widgetUriBranch(main, host);
         expect(
           branch,
@@ -3017,12 +2989,13 @@ void main() {
         'course',
         'note',
         'anniversary',
-        'diary',
       ]) {
         expect(manager, contains('DuoyiWidgetKind.$kind'));
         expect(manager, contains("'$kind'"));
         expect(variants, contains('"$kind"'));
       }
+      expect(manager, isNot(contains('DuoyiWidgetKind.diary')));
+      expect(variants, isNot(contains('"diary"')));
       expect(manager, isNot(contains('DuoyiWidgetKind.overview')));
       expect(manager, isNot(contains("'overview'")));
       expect(mainActivity, isNot(contains('"overview"')));

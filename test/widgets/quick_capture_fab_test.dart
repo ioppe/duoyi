@@ -29,6 +29,36 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
+  testWidgets('quick capture keeps notes without any retired creation action', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AiService>(
+        create: (_) => _FakeAiService(),
+        child: const MaterialApp(
+          home: Scaffold(floatingActionButton: QuickCaptureFab()),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(
+      find.widgetWithIcon(FloatingActionButton, Icons.book_outlined),
+      findsNothing,
+    );
+    expect(find.text('写日记'), findsNothing);
+    expect(
+      find.widgetWithIcon(FloatingActionButton, Icons.edit_note),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.widgetWithIcon(FloatingActionButton, Icons.edit_note),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('快捷模板占半屏至三分之二屏，点击上方遮罩关闭', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -46,10 +76,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final card = tester.getRect(
-      find.descendant(
-        of: find.byType(AppModalSheet),
-        matching: find.byType(Material),
-      ).first,
+      find
+          .descendant(
+            of: find.byType(AppModalSheet),
+            matching: find.byType(Material),
+          )
+          .first,
     );
     expect(card.height, inInclusiveRange(844 / 2, 844 * 2 / 3));
     await tester.tapAt(Offset(card.center.dx, card.top - 20));

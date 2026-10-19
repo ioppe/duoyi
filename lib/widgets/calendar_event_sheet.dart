@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_clock.dart';
+import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../core/iterable_extensions.dart';
 import '../models/calendar_event.dart';
@@ -10,7 +11,6 @@ import '../providers/anniversary_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/course_provider.dart';
 import '../providers/countdown_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -19,7 +19,6 @@ import '../providers/todo_provider.dart';
 import '../screens/anniversary_screen.dart';
 import '../screens/countdown_screen.dart';
 import '../screens/course_schedule_screen.dart';
-import '../screens/diary_screen.dart';
 import '../screens/habit_detail_screen.dart';
 import '../screens/pomodoro_screen.dart';
 import '../screens/time_audit_screen.dart';
@@ -43,6 +42,9 @@ Future<void> showLocalCalendarEventEditor(
   CalendarEvent? event,
   String? workspaceId,
 }) async {
+  if (event != null && !event.type.isVisible) {
+    return showCalendarEventSheet(context, event);
+  }
   final provider = context.read<CalendarProvider>();
   event = event?.inAppTimeZone();
   final titleCtrl = TextEditingController(text: event?.title ?? '');
@@ -243,6 +245,12 @@ class CalendarEventSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!this.event.type.isVisible) {
+      return AppModalSheet(
+        title: I18n.tr('feature.unavailable'),
+        child: Text(I18n.tr('feature.unavailable')),
+      );
+    }
     AppClock.watch(context);
     final event = this.event.inAppTimeZone();
     final cs = Theme.of(context).colorScheme;
@@ -570,28 +578,7 @@ class CalendarEventSheet extends StatelessWidget {
           ),
         ];
       case CalendarEventType.diary:
-        return [
-          _actionButton(
-            context,
-            icon: Icons.edit_outlined,
-            label: '编辑',
-            onPressed: () => _editSourceEvent(context),
-          ),
-          _actionButton(
-            context,
-            icon: Icons.open_in_new,
-            label: '跳转详情',
-            onPressed: event.canOpen ? () => _openDetail(context) : null,
-            tonal: true,
-          ),
-          _actionButton(
-            context,
-            icon: Icons.delete_outline,
-            label: '删除',
-            onPressed: () => _delete(context),
-            tonal: true,
-          ),
-        ];
+        return const <Widget>[];
       case CalendarEventType.timeEntry:
         if (event.sourceId == null) return const <Widget>[];
         return [
@@ -741,11 +728,7 @@ class CalendarEventSheet extends StatelessWidget {
           id: sourceId,
         );
       case CalendarEventType.diary:
-        await TodayDetailRouter.open(
-          navigationContext,
-          TodaySectionKind.diary,
-          id: sourceId,
-        );
+        return;
       case CalendarEventType.countdown:
         if (!navigator.mounted) return;
         await navigator.push(
@@ -978,16 +961,6 @@ class CalendarEventSheet extends StatelessWidget {
         navigator.pop();
         if (!navigationContext.mounted) return;
         await showCourseEditor(navigationContext, course: item);
-      case CalendarEventType.diary:
-        final item = context
-            .read<DiaryProvider>()
-            .entries
-            .where((d) => d.id == sourceId)
-            .firstOrNull;
-        if (item == null) return;
-        navigator.pop();
-        if (!navigationContext.mounted) return;
-        await showDiaryEditor(navigationContext, entry: item);
       case CalendarEventType.habit:
         final item = context
             .read<HabitProvider>()
@@ -1035,7 +1008,7 @@ class CalendarEventSheet extends StatelessWidget {
       case CalendarEventType.course:
         await context.read<CourseProvider>().delete(sourceId);
       case CalendarEventType.diary:
-        await context.read<DiaryProvider>().delete(sourceId);
+        return;
       case CalendarEventType.timeEntry:
         await context.read<TimeAuditProvider>().delete(sourceId);
       case CalendarEventType.pomodoro:

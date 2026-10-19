@@ -96,7 +96,8 @@ void main() {
       contains('HabitHeatmap(heatmapData: heatmapData, weeks: weeks)'),
     );
     expect(source, contains('年度活动热力图'));
-    expect(source, contains('待办、习惯、专注、时间足迹和日记的每日活跃度'));
+    expect(source, contains("I18n.tr('statistics.activity.description')"));
+    expect(source, isNot(contains('DiaryProvider')));
     expect(source, contains('颜色越深代表当天完成、记录或专注越多。'));
     expect(source, contains('static const int weeks = 52'));
   });
@@ -113,14 +114,13 @@ void main() {
     expect(source, contains('_buildFocusTodoScatter'));
     expect(source, contains('_buildHabitTodoCorrelationCard'));
     expect(source, contains('_buildHabitTodoScatter'));
-    expect(source, contains('_buildDiaryFocusCorrelationCard'));
-    expect(source, contains('_buildDiaryFocusScatter'));
+    expect(source, isNot(contains('_buildDiaryFocus')));
     expect(source, contains('_buildTimeCategoryShareTrendCard'));
     expect(source, contains('_buildTimeCategoryShareChart'));
     expect(source, contains('_buildTimeOutputEfficiencyCard'));
     expect(source, contains('_buildTimeOutputEfficiencyChart'));
-    expect(source, contains('ReportCrossDiaryEntry'));
-    expect(source, contains('crossAnalysis.diaryFocus'));
+    expect(source, isNot(contains('ReportCrossDiaryEntry')));
+    expect(source, isNot(contains('crossAnalysis.diaryFocus')));
     expect(source, contains('crossAnalysis.timeOutputEfficiency'));
     expect(source, contains('ScatterChart'));
     expect(source, contains('ScatterSpot'));
@@ -129,8 +129,7 @@ void main() {
     expect(source, contains('横轴为专注分钟数，纵轴为待办完成数'));
     expect(source, contains('习惯 × 待办相关性'));
     expect(source, contains('横轴为习惯达标次数，纵轴为待办完成数'));
-    expect(source, contains('日记 × 专注相关性'));
-    expect(source, contains('横轴为日记篇数，纵轴为专注分钟数'));
+    expect(source, isNot(contains('日记')));
     expect(source, contains('时间分类占比趋势'));
     expect(source, contains('按当前周期展示各类时间投入结构变化'));
     expect(source, contains('时间投入 × 待办产出效率'));

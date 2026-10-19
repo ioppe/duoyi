@@ -149,8 +149,10 @@ void main() {
     });
   });
 
-  group('DiaryScreen 虚拟化', () {
-    testWidgets('列表懒构建：视口外卡片不构建，滚动后按需构建', (tester) async {
+  group('DiaryScreen retired compatibility route', () {
+    testWidgets('historical records remain cached without building any cards', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final provider = DiaryProvider();
       const total = 60;
@@ -173,10 +175,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 摘要头卡 + 最新一条卡片可见。
-      expect(find.text(I18n.tr('diary.summary.title')), findsOneWidget);
-      expect(find.byKey(const ValueKey('diary_card_entry-0')), findsOneWidget);
-      // 视口外的最后一条未构建 → 证明是懒构建而非全量构建。
+      expect(find.text(I18n.tr('feature.unavailable')), findsWidgets);
+      expect(find.text(I18n.tr('diary.summary.title')), findsNothing);
+      expect(find.byKey(const ValueKey('diary_card_entry-0')), findsNothing);
       expect(
         find.byKey(const ValueKey('diary_card_entry-${total - 1}')),
         findsNothing,
@@ -192,17 +193,12 @@ void main() {
           )
           .evaluate()
           .length;
-      expect(builtCards, lessThan(total), reason: '不应一次性构建全部卡片');
-
-      // 滚动到底部后，最后一条按需构建。
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('diary_card_entry-${total - 1}')),
-        500,
-      );
-      expect(
-        find.byKey(const ValueKey('diary_card_entry-${total - 1}')),
-        findsOneWidget,
-      );
+      expect(builtCards, 0);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(provider.entries, hasLength(total));
+      await tester.pumpWidget(const SizedBox.shrink());
+      provider.dispose();
     });
   });
 }

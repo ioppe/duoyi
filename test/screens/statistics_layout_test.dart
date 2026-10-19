@@ -1,4 +1,3 @@
-import 'package:duoyi/providers/diary_provider.dart';
 import 'package:duoyi/providers/goal_provider.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
@@ -32,6 +31,10 @@ void main() {
 
       await tester.pumpWidget(_wrapStatistics());
       await tester.pump();
+      expect(find.text('日记'), findsNothing);
+      expect(find.text('待办完成'), findsOneWidget);
+      expect(find.text('深度专注'), findsOneWidget);
+      expect(find.text('习惯打卡'), findsOneWidget);
 
       final grid = tester.widget<GridView>(
         find.byKey(const ValueKey('statistics_kpi_grid')),
@@ -109,7 +112,6 @@ Widget _wrapStatistics() {
       ChangeNotifierProvider(create: (_) => GoalProvider()),
       ChangeNotifierProvider(create: (_) => HabitProvider()),
       ChangeNotifierProvider(create: (_) => PomodoroProvider()),
-      ChangeNotifierProvider(create: (_) => DiaryProvider()),
       ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
       ChangeNotifierProvider(create: (_) => AiService()),
     ],

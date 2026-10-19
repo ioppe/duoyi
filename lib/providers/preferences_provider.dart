@@ -154,6 +154,7 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kDefaultTab = 'pref_default_tab';
   static const _kHapticFeedback = 'pref_haptic_feedback';
   static const _kShowLunar = 'pref_show_lunar';
+  static const _kShowHomeCalendar = 'pref_show_home_calendar';
   static const _kShowCompletedTodos = 'pref_show_completed_todos';
   static const _kDefaultPomodoroMinutes = 'pref_default_pomodoro_minutes';
   static const _kQuickCaptureFab = 'pref_quick_capture_fab';
@@ -211,6 +212,8 @@ class PreferencesProvider extends ChangeNotifier {
   int _defaultTab = 0; // 0=Today
   bool _haptic = true;
   bool _showLunar = true;
+  // 本机首页布局偏好，与账号业务数据独立。
+  bool _showHomeCalendar = false;
   bool _showCompletedTodos = false;
   int _defaultPomodoroMinutes = 25;
   bool _quickCaptureFab = true;
@@ -259,6 +262,7 @@ class PreferencesProvider extends ChangeNotifier {
   int get defaultTab => _defaultTab;
   bool get haptic => _haptic;
   bool get showLunar => _showLunar;
+  bool get showHomeCalendar => _showHomeCalendar;
   bool get showCompletedTodos => _showCompletedTodos;
   int get defaultPomodoroMinutes => _defaultPomodoroMinutes;
   bool get quickCaptureFab => _quickCaptureFab;
@@ -400,6 +404,7 @@ class PreferencesProvider extends ChangeNotifier {
     _defaultTab = 0;
     _haptic = true;
     _showLunar = true;
+    _showHomeCalendar = false;
     _showCompletedTodos = false;
     _defaultPomodoroMinutes = 25;
     _quickCaptureFab = true;
@@ -471,6 +476,7 @@ class PreferencesProvider extends ChangeNotifier {
     );
     _haptic = p.getBool(_kHapticFeedback) ?? true;
     _showLunar = p.getBool(_kShowLunar) ?? true;
+    _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
     _defaultPomodoroMinutes = p.getInt(_kDefaultPomodoroMinutes) ?? 25;
     _quickCaptureFab = p.getBool(_kQuickCaptureFab) ?? true;
@@ -988,6 +994,13 @@ class PreferencesProvider extends ChangeNotifier {
     final p = await SharedPreferences.getInstance();
     await p.setBool(_kShowLunar, value);
     _notifyPreferenceKeys(const [_kShowLunar]);
+  }
+
+  Future<void> setShowHomeCalendar(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setBool(_kShowHomeCalendar, value)) return;
+    _showHomeCalendar = value;
+    notifyListeners();
   }
 
   Future<void> setShowCompletedTodos(bool value) async {

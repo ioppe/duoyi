@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'achievements.dart';
+import 'i18n.dart';
 import 'virtual_rewards.dart';
 
 enum ProductivityChallengePeriod { daily, weekly }
@@ -76,17 +77,6 @@ class ProductivityChallenges {
       rewardCoins: 0,
     ),
     ProductivityChallenge(
-      id: 'daily_reflection',
-      title: '今日复盘',
-      description: '写下 1 篇日记，把今天的经验沉淀下来',
-      icon: Icons.edit_note,
-      color: const Color(0xFF5D4037),
-      period: ProductivityChallengePeriod.daily,
-      current: context.todayDiaryEntries,
-      target: 1,
-      rewardCoins: 0,
-    ),
-    ProductivityChallenge(
       id: 'weekly_todo_sprint',
       title: '周清单冲刺',
       description: '本周完成 15 个待办，清掉关键事项',
@@ -120,20 +110,9 @@ class ProductivityChallenges {
       rewardCoins: 0,
     ),
     ProductivityChallenge(
-      id: 'weekly_reflection',
-      title: '三次复盘',
-      description: '本周写下 3 篇日记，持续校准方向',
-      icon: Icons.menu_book_outlined,
-      color: const Color(0xFF6D4C41),
-      period: ProductivityChallengePeriod.weekly,
-      current: context.weeklyDiaryEntries,
-      target: 3,
-      rewardCoins: 0,
-    ),
-    ProductivityChallenge(
       id: 'weekly_active_days',
       title: '五日在线',
-      description: '本周 5 天有待办、习惯、专注或日记记录',
+      description: I18n.tr('challenge.weekly_active_days.description'),
       icon: Icons.calendar_month_outlined,
       color: const Color(0xFFEF6C00),
       period: ProductivityChallengePeriod.weekly,

@@ -11,7 +11,7 @@ void main() {
     expect(source, contains('enum AiCommandType'));
     expect(source, contains('addTodo'));
     expect(source, contains('addNote'));
-    expect(source, contains('addDiary'));
+    expect(source, isNot(contains('addDiary')));
     expect(source, contains('startFocus'));
     expect(source, contains('unknown'));
 
@@ -23,7 +23,7 @@ void main() {
     expect(source, contains('创建待办'));
     expect(source, contains('提醒我'));
     expect(source, contains('记笔记'));
-    expect(source, contains('写日记'));
+    expect(source, isNot(contains('DiaryEntry(')));
     expect(source, contains(r'^(开始|启动|进入).*(专注|番茄)'));
   });
 
@@ -32,13 +32,13 @@ void main() {
 
     expect(source, contains('SmartTodoDraftBuilder.fromText(todoPayload'));
     expect(source, contains('NoteItem('));
-    expect(source, contains('DiaryEntry(date: at'));
+    expect(source, isNot(contains('DiaryEntry(')));
 
     expect(source, contains('创建待办'));
     expect(source, contains('保存为随手记'));
-    expect(source, contains('写入今天的日记'));
+    expect(source, isNot(contains('写入今天的日记')));
     expect(source, contains('开始当前番茄钟专注计时'));
-    expect(source, contains('请说“添加待办'));
+    expect(source, contains("I18n.tr('ai.command.help')"));
   });
 
   test(
@@ -65,4 +65,24 @@ void main() {
       expect(batch.preview, contains('将执行 3 条指令'));
     },
   );
+
+  test('retired commands never create records or fall through to todos', () {
+    for (final input in [
+      '写日记 今天很开心',
+      '今天日记',
+      '记录日记 回顾',
+      'diary hello',
+      'write journal hello',
+    ]) {
+      final command = AiCommandParser.parse(input);
+      expect(command.type, AiCommandType.unknown, reason: input);
+      expect(command.executable, isFalse);
+      expect(command.note, isNull);
+      expect(command.todoDraft, isNull);
+    }
+    expect(AiCommandParser.parseBatch('记笔记 保留随手记；写日记 旧动作').executable, isFalse);
+    final note = AiCommandParser.parse('记笔记 项目想法');
+    expect(note.type, AiCommandType.addNote);
+    expect(note.note?.content, '项目想法');
+  });
 }

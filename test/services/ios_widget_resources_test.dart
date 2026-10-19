@@ -36,10 +36,9 @@ void main() {
       'DuoyiCourseWidget',
       'DuoyiNoteWidget',
       'DuoyiAnniversaryWidget',
-      'DuoyiDiaryWidget',
     ];
 
-    test('declares 10 visible independent WidgetKit kinds', () {
+    test('declares 9 visible independent WidgetKit kinds', () {
       final declaredKinds = RegExp(
         r'kind: "([^"]+)"',
       ).allMatches(swift).map((match) => match.group(1)!).toSet();
@@ -51,6 +50,7 @@ void main() {
       expect(declaredKinds, hasLength(widgetKinds.length));
       expect(bundledConfigs, containsAll(widgetKinds.map(_configName)));
       expect(bundledConfigs, hasLength(widgetKinds.length));
+      expect(swift, isNot(contains('DuoyiDiaryWidget')));
 
       for (final kind in widgetKinds) {
         final configBlock = _swiftConfigBlock(swift, _configName(kind));
@@ -170,9 +170,6 @@ void main() {
         'memorial_highlight_1',
         'memorial_highlight_2',
         'memorial_highlight_3',
-        'diary_highlight_1',
-        'diary_highlight_2',
-        'diary_highlight_3',
         'widget_display_mode',
         'brand_app_title',
         'nav_todo',
@@ -225,11 +222,6 @@ void main() {
           'memorial_highlight_1',
           'memorial_highlight_2',
           'memorial_highlight_3',
-        ],
-        'diaryConfig': [
-          'diary_highlight_1',
-          'diary_highlight_2',
-          'diary_highlight_3',
         ],
       };
       for (final configEntry in configKeys.entries) {
@@ -384,7 +376,6 @@ void main() {
           'DuoyiCourseWidget': 'duoyi://course',
           'DuoyiNoteWidget': 'duoyi://note',
           'DuoyiAnniversaryWidget': 'duoyi://anniversary',
-          'DuoyiDiaryWidget': 'duoyi://diary',
         };
         const quickLinksByKind = {
           'DuoyiTodoWidget': 'duoyi://action/quick_todo',
@@ -396,7 +387,6 @@ void main() {
           'DuoyiCourseWidget': 'duoyi://course',
           'DuoyiNoteWidget': 'duoyi://note',
           'DuoyiAnniversaryWidget': 'duoyi://anniversary',
-          'DuoyiDiaryWidget': 'duoyi://diary',
         };
         const handlingByKind = {
           'DuoyiTodoWidget': [
@@ -442,10 +432,6 @@ void main() {
           'DuoyiAnniversaryWidget': [
             "uri.host == 'anniversary'",
             'TodayDetailRouter.open(ctx, TodaySectionKind.anniversaries, id: id)',
-          ],
-          'DuoyiDiaryWidget': [
-            "uri.host == 'diary'",
-            'TodayDetailRouter.open(ctx, TodaySectionKind.diary, id: id)',
           ],
         };
 
@@ -524,10 +510,7 @@ void main() {
           main,
           contains("'duoyi://note/\${Uri.encodeComponent(note.id)}'"),
         );
-        expect(
-          main,
-          contains("'duoyi://diary/\${Uri.encodeComponent(entry.id)}'"),
-        );
+        expect(service, isNot(contains('_iosDiaryWidgetName')));
         expect(main, contains('todayEventSummary ='));
         expect(
           main,

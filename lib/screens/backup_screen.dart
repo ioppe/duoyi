@@ -1088,7 +1088,7 @@ class _BackupScreenState extends State<BackupScreen> {
       context: context,
       builder: (ctx) => AppDialog(
         title: const Text('清空全部数据?'),
-        content: const Text('将删除本机所有待办/习惯/笔记/日记等，登录账号不会删除。'),
+        content: Text(I18n.tr('backup.wipe.confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -1460,17 +1460,6 @@ class _BackupScreenState extends State<BackupScreen> {
                         '笔记 Markdown',
                         ModuleExporter.notesMarkdown(ns),
                       );
-                    }),
-                    _chip('日记 · Markdown', () {
-                      final ds = context.read<DiaryProvider>().entries;
-                      _showExport(
-                        '日记 Markdown',
-                        ModuleExporter.diaryMarkdown(ds),
-                      );
-                    }),
-                    _chip('日记 · CSV', () {
-                      final ds = context.read<DiaryProvider>().entries;
-                      _showExport('日记 CSV', ModuleExporter.diaryCsv(ds));
                     }),
                     _chip('纪念日 · CSV', () {
                       final list = context.read<AnniversaryProvider>().items;

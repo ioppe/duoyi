@@ -33,6 +33,9 @@ import 'package:duoyi/screens/mine_screen.dart';
 import 'package:duoyi/screens/more_apps_screen.dart';
 import 'package:duoyi/screens/profile_screen.dart';
 import 'package:duoyi/screens/today_screen.dart';
+import 'package:duoyi/screens/preferences_screen.dart';
+import 'package:duoyi/screens/statistics_screen.dart';
+import 'package:duoyi/widgets/weekly_productivity_card.dart';
 import 'package:duoyi/screens/calendar_screen.dart';
 import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/services/app_update_service.dart';
@@ -53,6 +56,7 @@ Widget _wrap(
   AuthProvider? authProvider,
   TodoProvider? todoProvider,
   GoalProvider? goalProvider,
+  PreferencesProvider? preferencesProvider,
   ThemeData? theme,
   double textScale = 1,
 }) {
@@ -78,7 +82,12 @@ Widget _wrap(
         ChangeNotifierProvider<GoalProvider>.value(value: goalProvider),
       ChangeNotifierProvider(create: (_) => CourseProvider()),
       ChangeNotifierProvider(create: (_) => AppLockProvider()),
-      ChangeNotifierProvider(create: (_) => PreferencesProvider()),
+      if (preferencesProvider == null)
+        ChangeNotifierProvider(create: (_) => PreferencesProvider())
+      else
+        ChangeNotifierProvider<PreferencesProvider>.value(
+          value: preferencesProvider,
+        ),
       ChangeNotifierProvider(create: (_) => AchievementProvider()),
       ChangeNotifierProvider(create: (_) => ShareProvider()),
       ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
@@ -159,6 +168,7 @@ void main() {
         ]) {
           final entry = find.byKey(ValueKey(key));
           await tester.ensureVisible(entry);
+          await tester.pumpAndSettle();
           await tester.tap(entry);
           await tester.pumpAndSettle();
           expect(find.text('日程日期'), findsNothing);
@@ -171,6 +181,117 @@ void main() {
     }
   });
 
+  testWidgets('首页默认显示待办且任务卡片位于顶部，目标可以往返切换', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final todos = TodoProvider();
+    final goals = GoalProvider();
+    await todos.addTodo(TodoItem(title: '进入首页立即看到的任务'));
+    for (var i = 1; i <= 3; i++) {
+      await goals.add(GoalItem(title: '进行中的目标 $i', autoProgress: false));
+    }
+    await tester.pumpWidget(
+      _wrap(const TodayScreen(), todoProvider: todos, goalProvider: goals),
+    );
+    await tester.pumpAndSettle();
+    final tabs = tester.element(find.byKey(const ValueKey('today_home_tabs')));
+    expect(DefaultTabController.of(tabs).index, 0);
+    final list = find.byKey(const ValueKey('today_screen_list'));
+    final sectionTitle = find.descendant(
+      of: list,
+      matching: find.text(I18n.tr('today.todos')),
+    );
+    expect(
+      tester.getTopLeft(sectionTitle).dy - tester.getTopLeft(list).dy,
+      lessThan(DesignTokens.space4xl),
+    );
+    expect(find.text('进入首页立即看到的任务').hitTestable(), findsOneWidget);
+    expect(find.byType(WeeklyProductivityCard), findsNothing);
+    expect(find.textContaining('万年历'), findsNothing);
+    expect(find.text('日记'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
+    await tester.pumpAndSettle();
+    expect(DefaultTabController.of(tabs).index, 1);
+    for (var i = 1; i <= 3; i++) {
+      expect(find.text('进行中的目标 $i'), findsOneWidget);
+    }
+    expect(find.text('进入首页立即看到的任务'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('today_todos_tab')));
+    await tester.pumpAndSettle();
+    expect(find.text('进入首页立即看到的任务').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('首页日历默认不显示，设置开关可以开启并在待办后显示', (tester) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final preferences = PreferencesProvider();
+    expect(preferences.showHomeCalendar, isFalse);
+    await tester.pumpWidget(
+      _wrap(
+        const PersonalizationSettingsScreen(),
+        preferencesProvider: preferences,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final setting = find.byKey(
+      const ValueKey('preferences_home_calendar_switch'),
+    );
+    await tester.ensureVisible(setting);
+    await tester.pumpAndSettle();
+    final toggle = find.descendant(of: setting, matching: find.byType(Switch));
+    expect(tester.widget<Switch>(toggle).value, isFalse);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(preferences.showHomeCalendar, isTrue);
+    await tester.pumpWidget(
+      _wrap(const TodayScreen(), preferencesProvider: preferences),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining(I18n.tr('today.almanac.title')), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text(I18n.tr('today.todos.empty'))).dy,
+      lessThan(
+        tester
+            .getTopLeft(find.textContaining(I18n.tr('today.almanac.title')))
+            .dy,
+      ),
+    );
+    await preferences.setShowHomeCalendar(false);
+    await tester.pumpAndSettle();
+    expect(find.textContaining(I18n.tr('today.almanac.title')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('本周效率位于我的用户部件下方并可进入统计报表', (tester) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(const MineScreen(), theme: AppBrands.defaultBrand.theme),
+    );
+    await tester.pumpAndSettle();
+    final header = find.byKey(const ValueKey('mine_header_stable_box'));
+    final efficiency = find.byKey(const ValueKey('mine_weekly_productivity'));
+    final stats = find.byKey(const ValueKey('mine_stats_stable_grid'));
+    expect(find.text(I18n.tr('today.productivity.weekly')), findsOneWidget);
+    expect(
+      tester.getBottomLeft(header).dy,
+      lessThanOrEqualTo(tester.getTopLeft(efficiency).dy),
+    );
+    expect(
+      tester.getBottomLeft(efficiency).dy,
+      lessThanOrEqualTo(tester.getTopLeft(stats).dy),
+    );
+    await tester.tap(efficiency);
+    await tester.pumpAndSettle();
+    expect(find.byType(StatisticsScreen), findsOneWidget);
+    expect(find.text('日记'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Today keeps todo section visible when there is no task', (
     tester,
   ) async {
@@ -181,7 +302,7 @@ void main() {
     await tester.pumpWidget(_wrap(const TodayScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsOneWidget);
+    expect(find.text('今日待办'), findsNWidgets(2));
     expect(find.text('今天暂无待办，点击查看或添加任务'), findsOneWidget);
   });
 
@@ -193,19 +314,20 @@ void main() {
       _wrap(const TodayScreen(), theme: AppBrands.defaultBrand.theme),
     );
     await tester.pumpAndSettle();
-    final title = find.text(I18n.tr('goal.new')).last;
-    final subtitle = find.text(I18n.tr('today.goal.create.subtitle'));
+    final todo = find.text(I18n.tr('today.todos.empty'));
+    final todoLeft = tester.getTopLeft(todo).dx;
     TextStyle textStyle(Finder finder) => DefaultTextStyle.of(
       tester.element(finder),
     ).style.merge(tester.widget<Text>(finder).style);
+    expect(textStyle(todo).fontSize, DesignTokens.fontSizeBody);
+    await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
+    await tester.pumpAndSettle();
+    final title = find.text(I18n.tr('goal.new')).last;
+    final subtitle = find.text(I18n.tr('today.goal.create.subtitle'));
     expect(textStyle(title).fontSize, DesignTokens.fontSizeBody);
     expect(textStyle(subtitle).fontSize, DesignTokens.fontSizeSecondary);
-    final todo = find.text(I18n.tr('today.todos.empty'));
-    expect(textStyle(todo).fontSize, DesignTokens.fontSizeBody);
-    expect(
-      tester.getTopLeft(title).dx,
-      closeTo(tester.getTopLeft(todo).dx, 0.5),
-    );
+    expect(find.text(I18n.tr('today.todos.empty')), findsNothing);
+    expect(tester.getTopLeft(title).dx, closeTo(todoLeft, 0.5));
     expect(
       tester.widget<Icon>(find.byIcon(Icons.flag_circle_outlined)).size,
       DesignTokens.controlIconSize,
@@ -220,6 +342,8 @@ void main() {
     await tester.pumpWidget(
       _wrap(const TodayScreen(), theme: AppBrands.defaultBrand.theme),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
     await tester.pumpAndSettle();
     final title = find.text(I18n.tr('goal.title'));
     expect(
@@ -263,14 +387,12 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
+          await tester.pumpAndSettle();
           final target = find.text(
             populated ? longTitle : I18n.tr('today.goal.create.subtitle'),
           );
-          await tester.scrollUntilVisible(
-            target,
-            300,
-            scrollable: find.byType(Scrollable).first,
-          );
+          await tester.ensureVisible(target);
           final title = find
               .text(populated ? longTitle : I18n.tr('goal.new'))
               .last;
@@ -294,6 +416,8 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(_wrap(const TodayScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
     await tester.pumpAndSettle();
     for (final header in [true, false]) {
       final entry = header
@@ -353,7 +477,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsOneWidget);
+    expect(find.text('今日待办'), findsNWidgets(2));
     expect(find.text('无截止任务'), findsOneWidget);
     expect(find.text('无截止日期'), findsOneWidget);
     expect(find.text('今天截止任务'), findsOneWidget);
@@ -396,18 +520,13 @@ void main() {
 
         final list = find.byKey(const ValueKey('today_screen_list'));
         final appBar = find.byType(AppBar);
-        final isDesktopLayout = width >= 1100;
         final scrollable = tester.state<ScrollableState>(
-          find.byType(Scrollable).first,
+          find.descendant(of: list, matching: find.byType(Scrollable)).first,
         );
         expect(list, findsOneWidget);
-        if (isDesktopLayout) {
-          expect(appBar, findsNothing);
-          expect(find.text('今日'), findsWidgets);
-        } else {
-          expect(appBar, findsOneWidget);
-        }
-        expect(find.text('今日待办'), findsOneWidget);
+        expect(appBar, findsOneWidget);
+        expect(find.byKey(const ValueKey('today_home_tabs')), findsOneWidget);
+        expect(find.text('今日待办'), findsNWidgets(2));
         expect(find.text('今日待办长标题需要省略但不能遮挡完成按钮和右侧内容'), findsWidgets);
         expect(find.text('无截止日期'), findsWidgets);
         expect(tester.takeException(), isNull);
@@ -415,16 +534,12 @@ void main() {
         if (scrollable.position.maxScrollExtent > 0) {
           scrollable.position.jumpTo(0);
           await _pumpTodayLayoutFrame(tester);
-          final appBarTop = isDesktopLayout
-              ? null
-              : tester.getTopLeft(appBar).dy;
+          final appBarTop = tester.getTopLeft(appBar).dy;
           final beforePixels = scrollable.position.pixels;
           await tester.drag(list, const Offset(0, -280));
           await _pumpTodayLayoutFrame(tester);
 
-          if (!isDesktopLayout) {
-            expect(tester.getTopLeft(appBar).dy, closeTo(appBarTop!, 0.1));
-          }
+          expect(tester.getTopLeft(appBar).dy, closeTo(appBarTop, 0.1));
           expect(scrollable.position.pixels, greaterThan(beforePixels));
         }
         expect(tester.takeException(), isNull);
@@ -514,7 +629,7 @@ void main() {
     expect(find.text('待办'), findsWidgets);
     expect(find.text('习惯'), findsWidgets);
     expect(find.text('专注'), findsWidgets);
-    expect(find.text('日记'), findsWidgets);
+    expect(find.text('日记'), findsNothing);
     expect(find.text('今日代表'), findsNothing);
 
     await tester.pumpWidget(_wrap(const MineScreen()));
@@ -747,6 +862,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => HabitProvider()),
           ChangeNotifierProvider(create: (_) => PomodoroProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => PreferencesProvider()),
           ChangeNotifierProvider(create: (_) => DiaryProvider()),
           ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
           ChangeNotifierProvider(create: (_) => AnniversaryProvider()),
@@ -854,6 +970,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => HabitProvider()),
           ChangeNotifierProvider(create: (_) => PomodoroProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => PreferencesProvider()),
           ChangeNotifierProvider(create: (_) => DiaryProvider()),
           ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
           ChangeNotifierProvider(create: (_) => AnniversaryProvider()),
@@ -946,7 +1063,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsOneWidget);
+    expect(find.text('今日待办'), findsNWidgets(2));
     expect(find.text('明天未逾期待办'), findsOneWidget);
 
     final stored = todoProvider.todos.single;
@@ -963,7 +1080,7 @@ void main() {
       ),
       today.add(const Duration(days: 1)),
     );
-    expect(find.text('今日待办'), findsOneWidget);
+    expect(find.text('今日待办'), findsNWidgets(2));
     expect(
       find.byKey(const ValueKey('today_todo_template_icon_工作')),
       findsWidgets,
@@ -1031,7 +1148,12 @@ void main() {
     await tester.scrollUntilVisible(
       reminderToggle,
       360,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('today_screen_list')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     expect(reminderToggle, findsOneWidget);
@@ -1042,7 +1164,12 @@ void main() {
     await tester.scrollUntilVisible(
       suggestionsHeader,
       240,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('today_screen_list')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.tap(suggestionsHeader);

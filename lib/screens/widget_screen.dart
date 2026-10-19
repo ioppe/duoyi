@@ -321,24 +321,6 @@ class _WidgetScreenState extends State<WidgetScreen>
                     canOpenWidgetSettings: _canOpenWidgetSettings,
                     onPinSupportChanged: _setPinSupport,
                   ),
-                  const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.book_outlined,
-                    title: '日记',
-                    subtitle: '展示最近三篇日记，点击进入日记',
-                    color: Colors.teal,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.diary(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.diary,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
                   const SizedBox(height: 12),
                   AppInfoBanner(
                     icon: Icons.touch_app_outlined,
@@ -923,10 +905,6 @@ class WidgetPreviewCard extends StatelessWidget {
     super.key,
     this.displayMode = WidgetDisplayMode.standard,
   }) : kind = WidgetPreviewKind.anniversary;
-  const WidgetPreviewCard.diary({
-    super.key,
-    this.displayMode = WidgetDisplayMode.standard,
-  }) : kind = WidgetPreviewKind.diary;
 
   @override
   Widget build(BuildContext context) {
@@ -950,7 +928,6 @@ class WidgetPreviewCard extends StatelessWidget {
       WidgetPreviewKind.course => Colors.orange,
       WidgetPreviewKind.note => Colors.purple,
       WidgetPreviewKind.anniversary => Colors.pink,
-      WidgetPreviewKind.diary => Colors.teal,
     };
     final title = switch (kind) {
       WidgetPreviewKind.todo => '今日待办预览',
@@ -962,7 +939,6 @@ class WidgetPreviewCard extends StatelessWidget {
       WidgetPreviewKind.course => '课程表预览',
       WidgetPreviewKind.note => '随手记预览',
       WidgetPreviewKind.anniversary => '纪念日预览',
-      WidgetPreviewKind.diary => '日记预览',
     };
     final skin = cardSkin;
     final widgetBrand = themeProvider?.activeWidgetBackgroundBrand;
@@ -1106,8 +1082,6 @@ class WidgetPreviewCard extends StatelessWidget {
                                       Icons.edit_note_outlined,
                                     WidgetPreviewKind.anniversary =>
                                       Icons.event_available_outlined,
-                                    WidgetPreviewKind.diary =>
-                                      Icons.book_outlined,
                                   },
                                   size: 18,
                                   color: accent,
@@ -1156,8 +1130,6 @@ class WidgetPreviewCard extends StatelessWidget {
                                     const _WidgetPreviewNoteBody(),
                                   WidgetPreviewKind.anniversary =>
                                     const _WidgetPreviewAnniversaryBody(),
-                                  WidgetPreviewKind.diary =>
-                                    const _WidgetPreviewDiaryBody(),
                                 },
                               ),
                             ),
@@ -1174,7 +1146,6 @@ class WidgetPreviewCard extends StatelessWidget {
                                   WidgetPreviewKind.course => 2,
                                   WidgetPreviewKind.note => 2,
                                   WidgetPreviewKind.anniversary => 2,
-                                  WidgetPreviewKind.diary => 2,
                                 },
                                 accent: accent,
                               ),
@@ -1204,7 +1175,6 @@ enum WidgetPreviewKind {
   course,
   note,
   anniversary,
-  diary,
 }
 
 class _WidgetPreviewDensity extends StatelessWidget {
@@ -1698,21 +1668,6 @@ class _WidgetPreviewAnniversaryBody extends StatelessWidget {
           icon: Icons.event_available_outlined,
           text: '旅行纪念 · 还有 32 天',
         ),
-      ],
-    );
-  }
-}
-
-class _WidgetPreviewDiaryBody extends StatelessWidget {
-  const _WidgetPreviewDiaryBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _WidgetPreviewLineList(
-      lines: [
-        _WidgetPreviewLine(icon: Icons.book_outlined, text: '5/18 今天完成了专注复盘'),
-        _WidgetPreviewLine(icon: Icons.book_outlined, text: '5/17 记录一次散步'),
-        _WidgetPreviewLine(icon: Icons.book_outlined, text: '5/16 睡前整理心情'),
       ],
     );
   }

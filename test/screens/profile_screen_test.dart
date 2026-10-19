@@ -509,6 +509,7 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).last,
       );
+      await tester.pumpAndSettle();
       await tester.tap(find.text(I18n.tr('mine.menu.support')));
       await tester.pumpAndSettle();
 

@@ -14,7 +14,6 @@ import '../providers/theme_provider.dart';
 import '../providers/anniversary_provider.dart';
 import '../providers/course_provider.dart';
 import '../providers/countdown_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/share_provider.dart';
 import '../providers/time_audit_provider.dart';
@@ -22,7 +21,6 @@ import '../models/calendar_event.dart';
 import '../models/anniversary.dart';
 import '../models/countdown.dart';
 import '../models/course_schedule.dart';
-import '../models/diary_entry.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
@@ -113,7 +111,6 @@ class _CalendarScreenState extends State<CalendarScreen>
     required AnniversaryProvider anniversaryProvider,
     required CountdownProvider countdownProvider,
     required CourseProvider courseProvider,
-    required DiaryProvider diaryProvider,
     required GoalProvider goalProvider,
     required TimeAuditProvider timeAuditProvider,
     required ColorScheme colorScheme,
@@ -127,7 +124,6 @@ class _CalendarScreenState extends State<CalendarScreen>
       anniversaryProvider: anniversaryProvider,
       countdownProvider: countdownProvider,
       courseProvider: courseProvider,
-      diaryProvider: diaryProvider,
       goalProvider: goalProvider,
       timeAuditProvider: timeAuditProvider,
       colorScheme: colorScheme,
@@ -145,7 +141,6 @@ class _CalendarScreenState extends State<CalendarScreen>
       final anniversaryProvider = context.read<AnniversaryProvider>();
       final countdownProvider = context.read<CountdownProvider>();
       final courseProvider = context.read<CourseProvider>();
-      final diaryProvider = context.read<DiaryProvider>();
       final goalProvider = context.read<GoalProvider>();
       final timeAuditProvider = context.read<TimeAuditProvider>();
       _lastCalendarInputSignature = _calendarInputSignature(
@@ -156,7 +151,6 @@ class _CalendarScreenState extends State<CalendarScreen>
         anniversaryProvider: anniversaryProvider,
         countdownProvider: countdownProvider,
         courseProvider: courseProvider,
-        diaryProvider: diaryProvider,
         goalProvider: goalProvider,
         timeAuditProvider: timeAuditProvider,
         colorScheme: cs,
@@ -169,7 +163,6 @@ class _CalendarScreenState extends State<CalendarScreen>
         anniversaries: anniversaryProvider.items,
         courses: courseProvider.courses,
         courseSettings: courseProvider.settings,
-        diaries: diaryProvider.entries,
         countdowns: countdownProvider.items,
         goals: goalProvider.goals,
         timeEntries: timeAuditProvider.entries,
@@ -185,7 +178,6 @@ class _CalendarScreenState extends State<CalendarScreen>
     required AnniversaryProvider anniversaryProvider,
     required CountdownProvider countdownProvider,
     required CourseProvider courseProvider,
-    required DiaryProvider diaryProvider,
     required GoalProvider goalProvider,
     required TimeAuditProvider timeAuditProvider,
     required ColorScheme colorScheme,
@@ -207,7 +199,6 @@ class _CalendarScreenState extends State<CalendarScreen>
       _anniversarySignature(anniversaryProvider.items),
       _countdownSignature(countdownProvider.items),
       _courseSignature(courseProvider.courses, courseProvider.settings),
-      _diarySignature(diaryProvider.entries),
       _goalSignature(goalProvider.goals),
       _timeEntrySignature(timeAuditProvider.entries),
     ]);
@@ -308,12 +299,6 @@ class _CalendarScreenState extends State<CalendarScreen>
         Object.hashAll(item.weeks),
         item.updatedAt.millisecondsSinceEpoch,
       ),
-  ]);
-
-  Object _diarySignature(List<DiaryEntry> entries) => Object.hashAll([
-    entries.length,
-    for (final item in entries)
-      Object.hash(item.id, item.dateKey, item.updatedAt.millisecondsSinceEpoch),
   ]);
 
   Object _goalSignature(List<GoalItem> goals) => Object.hashAll([
@@ -643,7 +628,9 @@ class _CalendarScreenState extends State<CalendarScreen>
                   },
                 ),
             ],
-            for (final type in CalendarEventType.values)
+            for (final type in CalendarEventType.values.where(
+              (type) => type.isVisible,
+            ))
               _calendarFilterChip(
                 label: Text(type.label),
                 selected: _activeTypes?.contains(type) ?? false,
@@ -706,7 +693,6 @@ class _CalendarScreenState extends State<CalendarScreen>
     final anniversaryProvider = context.watch<AnniversaryProvider>();
     final countdownProvider = context.watch<CountdownProvider>();
     final courseProvider = context.watch<CourseProvider>();
-    final diaryProvider = context.watch<DiaryProvider>();
     final goalProvider = context.watch<GoalProvider>();
     final shareProvider = context.watch<ShareProvider>();
     final timeAuditProvider = context.watch<TimeAuditProvider>();
@@ -721,7 +707,6 @@ class _CalendarScreenState extends State<CalendarScreen>
       anniversaryProvider: anniversaryProvider,
       countdownProvider: countdownProvider,
       courseProvider: courseProvider,
-      diaryProvider: diaryProvider,
       goalProvider: goalProvider,
       timeAuditProvider: timeAuditProvider,
       colorScheme: cs,
@@ -735,7 +720,6 @@ class _CalendarScreenState extends State<CalendarScreen>
       anniversaryProvider: anniversaryProvider,
       countdownProvider: countdownProvider,
       courseProvider: courseProvider,
-      diaryProvider: diaryProvider,
       goalProvider: goalProvider,
       timeAuditProvider: timeAuditProvider,
       colorScheme: cs,
@@ -752,7 +736,6 @@ class _CalendarScreenState extends State<CalendarScreen>
         countdowns: countdownProvider.items,
         courses: courseProvider.courses,
         courseSettings: courseProvider.settings,
-        diaries: diaryProvider.entries,
         goals: goalProvider.goals,
         timeEntries: timeAuditProvider.entries,
       );

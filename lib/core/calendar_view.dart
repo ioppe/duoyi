@@ -25,7 +25,7 @@ CalendarProvider buildCalendarView({
   required List<CountdownItem> countdowns,
   required List<CourseItem> courses,
   required ScheduleSettings courseSettings,
-  required List<DiaryEntry> diaries,
+  List<DiaryEntry> diaries = const [], // Legacy input; excluded from the view.
   required List<GoalItem> goals,
   required List<TimeEntry> timeEntries,
 }) {
@@ -43,7 +43,6 @@ CalendarProvider buildCalendarView({
     countdowns: countdowns,
     courses: courses,
     courseSettings: courseSettings,
-    diaries: diaries,
     goals: goals,
     timeEntries: timeEntries,
   );

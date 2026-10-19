@@ -9,6 +9,21 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get featureUnavailable => '此功能已不可用';
+
+  @override
+  String get aiCommandHelp => '请说“添加待办… / 记笔记… / 开始专注”';
+
+  @override
+  String get statisticsActivityDescription => '待办、习惯、专注和时间足迹的每日活跃度';
+
+  @override
+  String get challengeWeeklyActiveDaysDescription => '本周 5 天有待办、习惯或专注记录';
+
+  @override
+  String get backupWipeConfirm => '将删除本机所有待办、习惯、笔记等数据，登录账号不会删除。';
+
+  @override
   String get settingsLanguageSystem => '跟随系统';
 
   @override
@@ -433,6 +448,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get preferencesDateFormatTitle => '日期格式';
+
+  @override
+  String get preferencesHomeCalendarTitle => '首页日历';
+
+  @override
+  String get preferencesHomeCalendarSubtitle => '在今日待办下方显示日历，默认关闭';
 
   @override
   String get preferencesTimezoneTitle => '应用时区';
@@ -890,7 +911,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get quickTemplateHabitDone => '已按模板创建习惯';
 
   @override
-  String get searchHint => '搜索待办 · 日程 · 习惯 · 笔记 · 日记 …';
+  String get searchHint => '搜索待办 · 日程 · 习惯 · 笔记 …';
 
   @override
   String get searchEmpty => '输入关键字，搜索全部内容';
@@ -1794,7 +1815,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportIncludeCalendar => '包含日程总表';
 
   @override
-  String get exportIncludeCalendarSubtitle => '待办、习惯、课程、日记和目标';
+  String get exportIncludeCalendarSubtitle => '待办、习惯、课程和目标';
 
   @override
   String get exportPushCaldav => '写回 CalDAV';
@@ -2011,6 +2032,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todayTodos => '今日待办';
+
+  @override
+  String get todayTabGoals => '目标';
 
   @override
   String get todayCompleted => '已完成';

@@ -196,36 +196,6 @@ class Achievements {
       target: 6000,
     ),
 
-    // —— 日记 ——
-    Achievement(
-      id: 'diary_first',
-      title: '第一页',
-      description: '写下第一篇日记',
-      icon: Icons.edit_note,
-      color: Color(0xFF26A69A),
-      unlocked: _diary1,
-    ),
-    Achievement(
-      id: 'diary_streak_7',
-      title: '七天不断',
-      description: '连续写日记 7 天',
-      icon: Icons.book,
-      color: Color(0xFF00897B),
-      unlocked: _diaryStreak7,
-      current: _curDiaryStreak,
-      target: 7,
-    ),
-    Achievement(
-      id: 'diary_30',
-      title: '月度记者',
-      description: '累计 30 篇日记',
-      icon: Icons.menu_book,
-      color: Color(0xFF00695C),
-      unlocked: _diary30,
-      current: _curDiary,
-      target: 30,
-    ),
-
     // —— 目标 ——
     Achievement(
       id: 'goal_first',
@@ -296,12 +266,6 @@ bool _focus10h(AchievementContext c) => c.focusMinutes >= 600;
 bool _focus100h(AchievementContext c) => c.focusMinutes >= 6000;
 int _curFocus(AchievementContext c) => c.focusMinutes;
 
-bool _diary1(AchievementContext c) => c.diaryCount >= 1;
-bool _diaryStreak7(AchievementContext c) => c.diaryStreak >= 7;
-bool _diary30(AchievementContext c) => c.diaryCount >= 30;
-int _curDiary(AchievementContext c) => c.diaryCount;
-int _curDiaryStreak(AchievementContext c) => c.diaryStreak;
-
 bool _goalFirst(AchievementContext c) => c.goalsTotal >= 1;
 bool _goalAchieved(AchievementContext c) => c.goalsAchieved >= 1;
 bool _goal5(AchievementContext c) => c.goalsAchieved >= 5;
@@ -312,7 +276,6 @@ bool _polymath(AchievementContext c) {
   if (c.totalTodos > 0) mods++;
   if (c.habitCount > 0) mods++;
   if (c.focusSessions > 0) mods++;
-  if (c.diaryCount > 0) mods++;
   if (c.goalsTotal > 0) mods++;
   if (c.anniversaries > 0) mods++;
   if (c.courses > 0) mods++;

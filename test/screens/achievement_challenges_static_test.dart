@@ -24,11 +24,12 @@ void main() {
     expect(challengeCore, contains('daily_todo_clear'));
     expect(challengeCore, contains('daily_focus_start'));
     expect(challengeCore, contains('daily_habit_anchor'));
-    expect(challengeCore, contains('daily_reflection'));
+    expect(challengeCore, isNot(contains('daily_reflection')));
     expect(challengeCore, contains('weekly_todo_sprint'));
     expect(challengeCore, contains('weekly_focus_deep_work'));
     expect(challengeCore, contains('weekly_habit_chain'));
-    expect(challengeCore, contains('weekly_reflection'));
+    expect(challengeCore, isNot(contains('weekly_reflection')));
+    expect(achievementContext, isNot(contains("id: 'diary_")));
     expect(challengeCore, contains('weekly_active_days'));
     expect(challengeCore, contains('RewardGrant rewardGrant('));
     expect(

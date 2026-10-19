@@ -12,31 +12,27 @@ import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../core/lunar_calendar.dart';
 import '../core/quotes.dart';
-import '../core/report_engine.dart';
 import '../core/smart_schedule_advisor.dart';
 import '../core/todo_templates.dart';
 import '../models/course_schedule.dart' show CourseItem, ScheduleSettings;
 import '../models/todo.dart';
 import '../providers/anniversary_provider.dart';
 import '../providers/course_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
+import '../providers/preferences_provider.dart';
 import '../providers/pomodoro_provider.dart';
 import '../providers/share_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/user_provider.dart';
 import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/todo_completion_flow.dart';
-import 'diary_screen.dart';
 import 'habit_screen.dart';
 import 'almanac_screen.dart';
 import 'goal_edit_screen.dart';
 import 'pomodoro_screen.dart';
-import 'statistics_screen.dart';
 import 'today_detail_router.dart';
 import 'todo_screen.dart';
 
@@ -56,7 +52,7 @@ List<TodoItem> _visibleTodayOverviewTodos(
   }).toList();
 }
 
-/// 今日概览：登录后展示的聚合首屏。
+/// 首页：默认先看今日待办，通过顶部标签切换到目标。
 class TodayScreen extends StatelessWidget {
   const TodayScreen({super.key});
 
@@ -81,7 +77,6 @@ class TodayScreen extends StatelessWidget {
                   AppClock.today(),
         )
         .length;
-    final diaryP = context.watch<DiaryProvider>();
     final anniP = context.watch<AnniversaryProvider>();
     final courseP = context.watch<CourseProvider>();
     final goalP = context.watch<GoalProvider>();
@@ -136,7 +131,7 @@ class TodayScreen extends StatelessWidget {
         .take(3)
         .toList();
 
-    final activeGoals = goalP.activeGoals.take(2).toList();
+    final activeGoals = goalP.activeGoals;
     final suggestions = SmartScheduleAdvisor.suggestToday(
       todoP.todos.where(
         (todo) => !CompletionVisibilityPolicy.shouldShowInToday(todo, now),
@@ -164,9 +159,6 @@ class TodayScreen extends StatelessWidget {
       festival: festival,
       onTap: () => _go(context, AlmanacScreen(initialDate: now)),
     );
-    final productivityCard = _TodayProductivitySection(
-      onTap: () => _go(context, const StatisticsScreen()),
-    );
 
     Widget metricsGrid({required bool desktop}) {
       return LayoutBuilder(
@@ -174,7 +166,7 @@ class TodayScreen extends StatelessWidget {
           final theme = Theme.of(context);
           final cs = theme.colorScheme;
           final useTwoColumns = constraints.maxWidth < (desktop ? 640 : 520);
-          final crossAxisCount = useTwoColumns ? 2 : 4;
+          final crossAxisCount = useTwoColumns ? 2 : 3;
           final aspectRatio = desktop
               ? (useTwoColumns ? 2.75 : 2.85)
               : (useTwoColumns ? 2.55 : 3.65);
@@ -297,21 +289,6 @@ class TodayScreen extends StatelessWidget {
                   context,
                   const PomodoroScreen(useShellBackground: true),
                 ),
-                titleStyle: titleStyle,
-                valueStyle: valueStyle,
-                unitStyle: unitStyle,
-                padding: padding,
-                iconBoxSize: iconBoxSize,
-                iconSize: iconSize,
-              ),
-              AppMetricCard(
-                title: I18n.tr('today.diary'),
-                value: diaryP.entryForDate(now) == null
-                    ? I18n.tr('today.diary.unwritten')
-                    : I18n.tr('today.diary.written'),
-                icon: Icons.book_outlined,
-                color: const Color(0xFF26A69A),
-                onTap: () => _go(context, const DiaryScreen()),
                 titleStyle: titleStyle,
                 valueStyle: valueStyle,
                 unitStyle: unitStyle,
@@ -552,64 +529,90 @@ class TodayScreen extends StatelessWidget {
       );
     }
 
-    final isDesktopLayout = MediaQuery.sizeOf(context).width >= 1100;
+    final showHomeCalendar = context.select<PreferencesProvider, bool>(
+      (preferences) => preferences.showHomeCalendar,
+    );
     final reminder = reminderSection();
     final courses = coursesSection();
     final anniversaries = anniversariesSection();
-    final goals = goalsSection();
-    if (isDesktopLayout) {
-      return _TodayDesktopDashboard(
-        greeting: greeting,
-        dateText:
-            '${I18nDateFormat.monthDayWithWeekday(now)} · ${lunar.chineseText}',
-        almanacCard: almanacCard,
-        productivityCard: productivityCard,
-        metricsGrid: metricsGrid(desktop: true),
-        todosSection: todosSection(maxItems: 8),
-        reminderSection: reminder,
-        quoteCard: _QuoteCard(),
-        goalsSection: goals,
-        coursesSection: courses,
-        anniversariesSection: anniversaries,
+    final isDesktopLayout = MediaQuery.sizeOf(context).width >= 1100;
+
+    Widget homePage({required String id, required List<Widget> children}) {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: DesignTokens.formContentMaxWidth,
+          ),
+          child: ListView(
+            key: ValueKey(id),
+            restorationId: id,
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.spaceMd,
+              0,
+              DesignTokens.spaceMd,
+              DesignTokens.space5xl + DesignTokens.spaceXxl,
+            ),
+            children: children,
+          ),
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(greeting),
+    final tabHeight = math.max(
+      DesignTokens.controlMinHeight,
+      MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeBody) * 1.4 +
+          DesignTokens.spaceLg,
+    );
+    return DefaultTabController(
+      length: 2,
+      initialIndex: 0,
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-      ),
-      body: ListView(
-        key: const ValueKey('today_screen_list'),
-        restorationId: 'today_screen_list',
-        padding: const EdgeInsets.fromLTRB(
-          DesignTokens.spaceMd,
-          0,
-          DesignTokens.spaceMd,
-          DesignTokens.space5xl + DesignTokens.spaceXxl,
+        appBar: AppBar(
+          title: Text(greeting),
+          backgroundColor: Colors.transparent,
+          bottom: TabBar(
+            key: const ValueKey('today_home_tabs'),
+            labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: DesignTokens.fontSizeBody,
+              fontWeight: DesignTokens.fontWeightRegular,
+            ),
+            tabs: [
+              Tab(
+                key: const ValueKey('today_todos_tab'),
+                height: tabHeight,
+                text: I18n.tr('today.todos'),
+              ),
+              Tab(
+                key: const ValueKey('today_goals_tab'),
+                height: tabHeight,
+                text: I18n.tr('today.tab.goals'),
+              ),
+            ],
+          ),
         ),
-        children: [
-          almanacCard,
-          const SizedBox(height: 12),
-
-          productivityCard,
-
-          const SizedBox(height: 12),
-
-          _QuoteCard(),
-
-          const SizedBox(height: 10),
-          metricsGrid(desktop: false),
-
-          const SizedBox(height: 14),
-
-          todosSection(),
-          ?reminder,
-          ?courses,
-          ?anniversaries,
-          goals,
-        ],
+        body: TabBarView(
+          children: [
+            homePage(
+              id: 'today_screen_list',
+              children: [
+                todosSection(maxItems: isDesktopLayout ? 8 : 6),
+                ?reminder,
+                ?courses,
+                ?anniversaries,
+                if (showHomeCalendar) ...[
+                  almanacCard,
+                  const SizedBox(height: DesignTokens.spaceMd),
+                ],
+                metricsGrid(desktop: isDesktopLayout),
+                const SizedBox(height: DesignTokens.spaceMd),
+                _QuoteCard(),
+              ],
+            ),
+            homePage(id: 'today_goals_list', children: [goalsSection()]),
+          ],
+        ),
       ),
     );
   }
@@ -670,540 +673,6 @@ class TodayScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => BrandRouteSurface(child: screen)),
-    );
-  }
-}
-
-/// 桌面端左侧边栏 - 日历、一言、快捷入口
-class _TodayDesktopLeftSidebar extends StatelessWidget {
-  final DateTime now;
-  final Widget quoteCard;
-
-  const _TodayDesktopLeftSidebar({required this.now, required this.quoteCard});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 精简月历
-        _CompactMonthCalendar(currentDate: now),
-        const SizedBox(height: DesktopTokens.cardSpacing),
-
-        // 今日一言
-        quoteCard,
-        const SizedBox(height: DesktopTokens.cardSpacing),
-
-        // 快捷入口
-        _QuickAccessPanel(),
-      ],
-    );
-  }
-}
-
-/// 精简月历 - 当月日历，高亮今日
-class _CompactMonthCalendar extends StatelessWidget {
-  final DateTime currentDate;
-
-  const _CompactMonthCalendar({required this.currentDate});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final now = currentDate;
-
-    // 当月第一天和最后一天
-    final firstDay = DateTime(now.year, now.month, 1);
-    final lastDay = DateTime(now.year, now.month + 1, 0);
-
-    // 第一天是星期几（0=周日）
-    final firstWeekday = firstDay.weekday % 7;
-
-    // 构建日历网格
-    final days = <Widget>[];
-
-    // 星期标题
-    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-    for (final weekday in weekdays) {
-      days.add(
-        Center(
-          child: Text(
-            weekday,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-              fontSize: 11,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // 填充前面的空格
-    for (int i = 0; i < firstWeekday; i++) {
-      days.add(const SizedBox.shrink());
-    }
-
-    // 填充日期
-    for (int day = 1; day <= lastDay.day; day++) {
-      final isToday = day == now.day;
-      final date = DateTime(now.year, now.month, day);
-      final isWeekend =
-          date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-
-      days.add(
-        Container(
-          alignment: Alignment.center,
-          decoration: isToday
-              ? BoxDecoration(color: cs.primary, shape: BoxShape.circle)
-              : null,
-          child: Text(
-            '$day',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 13,
-              color: isToday
-                  ? cs.onPrimary
-                  : isWeekend
-                  ? cs.onSurfaceVariant.withValues(alpha: 0.5)
-                  : cs.onSurface.withValues(alpha: 0.8),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(DesktopTokens.cardPadding),
-      decoration: BoxDecoration(
-        color: cs.surface.withValues(
-          alpha: DesktopTokens.opacityCardBackground,
-        ),
-        borderRadius: BorderRadius.circular(DesktopTokens.cardRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(
-            alpha: DesktopTokens.opacityBorder,
-          ),
-          width: DesktopTokens.cardBorderWidth,
-        ),
-      ),
-      child: Column(
-        children: [
-          // 月份标题
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              '${now.year}年${now.month}月',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontSize: DesktopTokens.fontSizeCardSubtitle,
-                color: cs.onSurface.withValues(
-                  alpha: DesktopTokens.opacityTextPrimary,
-                ),
-              ),
-            ),
-          ),
-
-          // 日历网格
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 7,
-            childAspectRatio: 1,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 4,
-            children: days,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 快捷入口面板
-class _QuickAccessPanel extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final quickActions = [
-      _QuickAction(
-        icon: Icons.repeat,
-        label: '习惯打卡',
-        color: cs.tertiary,
-        onTap: () => Navigator.pushNamed(context, '/habit'),
-      ),
-      _QuickAction(
-        icon: Icons.timer_outlined,
-        label: '番茄专注',
-        color: Colors.redAccent,
-        onTap: () => Navigator.pushNamed(context, '/pomodoro'),
-      ),
-      _QuickAction(
-        icon: Icons.edit_note_outlined,
-        label: '快速笔记',
-        color: cs.secondary,
-        onTap: () => Navigator.pushNamed(context, '/notes'),
-      ),
-      _QuickAction(
-        icon: Icons.calendar_today_outlined,
-        label: '日程安排',
-        color: cs.primary,
-        onTap: () => Navigator.pushNamed(context, '/calendar'),
-      ),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(DesktopTokens.cardPadding),
-      decoration: BoxDecoration(
-        color: cs.surface.withValues(
-          alpha: DesktopTokens.opacityCardBackground,
-        ),
-        borderRadius: BorderRadius.circular(DesktopTokens.cardRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(
-            alpha: DesktopTokens.opacityBorder,
-          ),
-          width: DesktopTokens.cardBorderWidth,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '快捷入口',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontSize: DesktopTokens.fontSizeCardSubtitle,
-              color: cs.onSurface.withValues(
-                alpha: DesktopTokens.opacityTextPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 1.4,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            children: quickActions,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 0.5),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: DesktopTokens.iconSizeMedium, color: color),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontSize: DesktopTokens.fontSizeCaptionSmall,
-                color: cs.onSurface.withValues(alpha: 0.75),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TodayDesktopDashboard extends StatelessWidget {
-  final String greeting;
-  final String dateText;
-  final Widget almanacCard;
-  final Widget productivityCard;
-  final Widget metricsGrid;
-  final Widget todosSection;
-  final Widget? reminderSection;
-  final Widget quoteCard;
-  final Widget goalsSection;
-  final Widget? coursesSection;
-  final Widget? anniversariesSection;
-
-  const _TodayDesktopDashboard({
-    required this.greeting,
-    required this.dateText,
-    required this.almanacCard,
-    required this.productivityCard,
-    required this.metricsGrid,
-    required this.todosSection,
-    required this.reminderSection,
-    required this.quoteCard,
-    required this.goalsSection,
-    required this.coursesSection,
-    required this.anniversariesSection,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    AppClock.watch(context);
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final now = AppClock.now(); // 用于左侧边栏日历
-
-    final rightSidebarChildren = <Widget>[
-      goalsSection,
-      ?coursesSection,
-      ?anniversariesSection,
-    ];
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        bottom: false,
-        child: Scrollbar(
-          child: SingleChildScrollView(
-            key: const ValueKey('today_screen_list'),
-            primary: true,
-            padding: EdgeInsets.fromLTRB(
-              DesktopTokens.pageHorizontalPadding,
-              DesktopTokens.pageTopPadding,
-              DesktopTokens.pageHorizontalPadding,
-              DesktopTokens.pageBottomPadding,
-            ),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: DesktopTokens.maxContentWidth,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TodayDesktopHeader(greeting: greeting, dateText: dateText),
-                    const SizedBox(height: DesktopTokens.cardSpacing),
-
-                    // 响应式三栏/两栏布局
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final showLeftSidebar =
-                            DesktopTokens.isThreeColumnLayout(
-                              constraints.maxWidth,
-                            );
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 左侧边栏（仅在宽度 >= 1400px 时显示）
-                            if (showLeftSidebar) ...[
-                              SizedBox(
-                                width: DesktopTokens.leftSidebarWidth,
-                                child: _TodayDesktopLeftSidebar(
-                                  now: now,
-                                  quoteCard: quoteCard,
-                                ),
-                              ),
-                              const SizedBox(
-                                width: DesktopTokens.columnSpacing,
-                              ),
-                            ],
-
-                            // 主内容区
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      if (constraints.maxWidth < 720) {
-                                        return Column(
-                                          children: [
-                                            almanacCard,
-                                            const SizedBox(
-                                              height: DesktopTokens
-                                                  .cardSpacingMedium,
-                                            ),
-                                            productivityCard,
-                                          ],
-                                        );
-                                      }
-                                      return Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(child: almanacCard),
-                                          const SizedBox(
-                                            width:
-                                                DesktopTokens.cardSpacingMedium,
-                                          ),
-                                          SizedBox(
-                                            width: 340,
-                                            child: productivityCard,
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(
-                                    height: DesktopTokens.cardSpacingMedium,
-                                  ),
-                                  metricsGrid,
-                                  const SizedBox(
-                                    height: DesktopTokens.cardSpacing,
-                                  ),
-
-                                  // 当左侧边栏隐藏时，今日一言显示在主内容区
-                                  if (!showLeftSidebar) ...[
-                                    quoteCard,
-                                    const SizedBox(
-                                      height: DesktopTokens.cardSpacing,
-                                    ),
-                                  ],
-
-                                  todosSection,
-                                  ?reminderSection,
-                                ],
-                              ),
-                            ),
-
-                            // 右侧边栏
-                            const SizedBox(width: DesktopTokens.columnSpacing),
-                            SizedBox(
-                              width: DesktopTokens.rightSidebarWidth,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: rightSidebarChildren,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 4),
-                    Divider(
-                      height: 1,
-                      color: cs.outlineVariant.withValues(alpha: 0.20),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TodayDesktopHeader extends StatelessWidget {
-  final String greeting;
-  final String dateText;
-
-  const _TodayDesktopHeader({required this.greeting, required this.dateText});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesktopTokens.cardPadding,
-        vertical: 16,
-      ),
-      decoration: BoxDecoration(
-        color: cs.surface.withValues(
-          alpha: DesktopTokens.opacityCardBackground,
-        ),
-        borderRadius: BorderRadius.circular(DesktopTokens.cardRadius),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(
-            alpha: DesktopTokens.opacityBorder,
-          ),
-          width: DesktopTokens.cardBorderWidth,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greeting,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: DesktopTokens.fontSizePageTitle,
-                    height: 1.15,
-                    color: cs.onSurface.withValues(
-                      alpha: DesktopTokens.opacityTextPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  dateText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: DesktopTokens.fontSizePageSubtitle,
-                    color: cs.onSurfaceVariant.withValues(
-                      alpha: DesktopTokens.opacityTextSecondary,
-                    ),
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-              border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.3),
-                width: 0.5,
-              ),
-            ),
-            child: Text(
-              I18n.tr('nav.today'),
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontSize: DesktopTokens.fontSizeBody,
-                color: cs.onSurfaceVariant.withValues(
-                  alpha: DesktopTokens.opacityTextSecondary,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1672,274 +1141,6 @@ class _TodayYijiPreview extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TodayProductivitySection extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _TodayProductivitySection({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    AppClock.watch(context);
-    final todoP = context.watch<TodoProvider>();
-    final habitP = context.watch<HabitProvider>();
-    context.select<PomodoroProvider, int>(
-      (provider) => provider.persistedRevision,
-    );
-    final pomoP = context.read<PomodoroProvider>();
-    final timeEntries = context.watch<TimeAuditProvider>().entries;
-
-    final now = AppClock.now();
-    final todayKey = DateTime(now.year, now.month, now.day);
-    final weekStart = todayKey.subtract(Duration(days: todayKey.weekday - 1));
-    final weekEnd = todayKey;
-    final previousWeekStart = weekStart.subtract(const Duration(days: 7));
-    final previousWeekEnd = weekEnd.subtract(const Duration(days: 7));
-    final weeklyReport = ReportEngine.buildReport(
-      start: weekStart,
-      end: weekEnd,
-      todos: todoP.todos,
-      habits: habitP.habits,
-      sessions: pomoP.sessions,
-      timeEntries: timeEntries,
-    );
-    final previousWeeklyReport = ReportEngine.buildReport(
-      start: previousWeekStart,
-      end: previousWeekEnd,
-      todos: todoP.todos,
-      habits: habitP.habits,
-      sessions: pomoP.sessions,
-      timeEntries: timeEntries,
-    );
-    return _TodayProductivityCard(
-      comparison: ReportEngine.compare(
-        current: weeklyReport,
-        previous: previousWeeklyReport,
-      ),
-      onTap: onTap,
-    );
-  }
-}
-
-class _TodayProductivityCard extends StatelessWidget {
-  final ReportComparison comparison;
-  final VoidCallback onTap;
-
-  const _TodayProductivityCard({required this.comparison, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final scoreDelta = comparison.productivityScore.difference.round();
-    final trendColor = _trendColor(cs, comparison.productivityScore.direction);
-    return AppSurfaceCard(
-      onTap: onTap,
-      margin: const EdgeInsets.only(bottom: 2),
-      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-      borderRadius: BorderRadius.circular(DesignTokens.radiusCard),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color.alphaBlend(
-            cs.primary.withValues(alpha: isDark ? 0.075 : 0.035),
-            cs.surface,
-          ),
-          Color.alphaBlend(
-            trendColor.withValues(alpha: isDark ? 0.070 : 0.030),
-            cs.surface,
-          ),
-        ],
-      ),
-      border: Border.all(
-        color: cs.outlineVariant.withValues(alpha: isDark ? 0.16 : 0.20),
-        width: 0.55,
-      ),
-      elevation: 1.5,
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color.alphaBlend(
-                cs.primary.withValues(alpha: isDark ? 0.18 : 0.11),
-                cs.surface,
-              ),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.28)),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.primary.withValues(alpha: isDark ? 0.16 : 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  comparison.current.productivityScore.toString(),
-                  style: TextStyle(
-                    fontSize: 22,
-                    height: 1,
-                    color: cs.primary,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  I18n.tr('today.productivity.score'),
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: cs.onSurface.withValues(alpha: 0.58),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        I18n.tr('today.productivity.weekly'),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      _trendIcon(comparison.productivityScore.direction),
-                      color: trendColor,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      scoreDelta == 0
-                          ? I18n.tr('today.productivity.flat')
-                          : '${scoreDelta > 0 ? '+' : ''}$scoreDelta ${I18n.tr('today.unit.point')}',
-                      style: TextStyle(fontSize: 12, color: trendColor),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  I18n.tr('today.productivity.subtitle'),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: cs.onSurface.withValues(alpha: 0.58),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _TodayProductivityPill(
-                      label: I18n.tr('today.productivity.completion_rate'),
-                      value:
-                          '${(comparison.current.todoCompletionRate * 100).round()}%',
-                    ),
-                    _TodayProductivityPill(
-                      label: I18n.tr('nav.focus'),
-                      value:
-                          '${comparison.current.focusMinutes}${I18n.tr('unit.min')}',
-                    ),
-                    _TodayProductivityPill(
-                      label: I18n.tr('nav.habit'),
-                      value:
-                          '${comparison.current.habitCheckIns}${I18n.tr('today.unit.times')}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right,
-            size: 18,
-            color: cs.onSurface.withValues(alpha: 0.38),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _trendColor(ColorScheme cs, ReportTrendDirection direction) =>
-      switch (direction) {
-        ReportTrendDirection.up => const Color(0xFF2E7D32),
-        ReportTrendDirection.down => const Color(0xFFC62828),
-        ReportTrendDirection.flat => cs.onSurface.withValues(alpha: 0.62),
-      };
-
-  IconData _trendIcon(ReportTrendDirection direction) => switch (direction) {
-    ReportTrendDirection.up => Icons.trending_up,
-    ReportTrendDirection.down => Icons.trending_down,
-    ReportTrendDirection.flat => Icons.trending_flat,
-  };
-}
-
-class _TodayProductivityPill extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _TodayProductivityPill({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.18),
-          width: 0.45,
-        ),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 150),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: cs.onSurface.withValues(alpha: 0.56),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              value,
-              maxLines: 1,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -16,7 +16,6 @@ enum SearchKind {
   todo,
   habit,
   note,
-  diary,
   anniversary,
   countdown,
   goal,
@@ -46,7 +45,6 @@ class SearchHit {
     SearchKind.todo => Icons.check_circle_outline,
     SearchKind.habit => Icons.repeat,
     SearchKind.note => Icons.edit_note,
-    SearchKind.diary => Icons.book_outlined,
     SearchKind.anniversary => Icons.celebration_outlined,
     SearchKind.countdown => Icons.hourglass_bottom,
     SearchKind.goal => iconOverride ?? Icons.flag_circle_outlined,
@@ -59,7 +57,6 @@ class SearchHit {
     SearchKind.todo => I18n.tr('search.kind.todo'),
     SearchKind.habit => I18n.tr('search.kind.habit'),
     SearchKind.note => I18n.tr('search.kind.note'),
-    SearchKind.diary => I18n.tr('search.kind.diary'),
     SearchKind.anniversary => I18n.tr('search.kind.anniversary'),
     SearchKind.countdown => I18n.tr('search.kind.countdown'),
     SearchKind.goal => I18n.tr('search.kind.goal'),
@@ -76,7 +73,7 @@ class GlobalSearch {
     required List<TodoItem> todos,
     required List<Habit> habits,
     required List<NoteItem> notes,
-    required List<DiaryEntry> diaries,
+    List<DiaryEntry> diaries = const [], // Legacy callers; never indexed.
     required List<Anniversary> anniversaries,
     required List<CountdownItem> countdowns,
     required List<GoalItem> goals,
@@ -132,21 +129,6 @@ class GlobalSearch {
               subtitle: n.preview,
               sourceId: n.id,
               when: n.updatedAt,
-            ),
-          ),
-    );
-
-    hits.addAll(
-      diaries
-          .where((d) => hit(d.content) || d.tags.any(hit))
-          .take(maxPerKind)
-          .map(
-            (d) => SearchHit(
-              kind: SearchKind.diary,
-              title: d.title,
-              subtitle: d.preview,
-              sourceId: d.id,
-              when: d.date,
             ),
           ),
     );

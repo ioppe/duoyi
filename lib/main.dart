@@ -84,7 +84,6 @@ import 'screens/lock_screen.dart';
 import 'screens/note_screen.dart';
 import 'screens/anniversary_screen.dart';
 import 'screens/course_schedule_screen.dart';
-import 'screens/diary_screen.dart';
 import 'screens/goal_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/time_audit_screen.dart';
@@ -456,7 +455,6 @@ void main() async {
         anniversaryProvider,
         courseProvider,
         noteProvider,
-        diaryProvider,
         themeProvider,
       );
     });
@@ -1034,15 +1032,6 @@ void main() async {
             .fold<int>(0, (sum, session) => sum + session.durationSeconds) ~/
         60;
 
-    final todayDiaryEntries = diaryProvider.entries
-        .where((entry) => isSameDay(entry.date, today))
-        .length;
-    final weeklyDiaryEntries = diaryProvider.entries.where((entry) {
-      final inWeek = isInRange(entry.date, weekStart, weekEnd);
-      if (inWeek) activeDays.add(dateKey(entry.date));
-      return inWeek;
-    }).length;
-
     await achievementProvider.updateContext(
       AchievementContext(
         totalTodos: todoProvider.todos.length,
@@ -1051,8 +1040,8 @@ void main() async {
         habitCount: habitProvider.habits.length,
         focusMinutes: pomodoroProvider.totalFocusMinutes,
         focusSessions: pomodoroProvider.sessions.length,
-        diaryStreak: diaryProvider.currentStreak,
-        diaryCount: diaryProvider.entries.length,
+        diaryStreak: 0,
+        diaryCount: 0,
         goalsTotal: goalProvider.goals.length,
         goalsAchieved: goalProvider.goals
             .where((g) => g.status == GoalStatus.achieved)
@@ -1064,11 +1053,9 @@ void main() async {
         todayCompletedTodos: todayCompletedTodos,
         todayHabitCheckIns: todayHabitCheckIns,
         todayFocusMinutes: todayFocusMinutes,
-        todayDiaryEntries: todayDiaryEntries,
         weeklyCompletedTodos: weeklyCompletedTodos,
         weeklyHabitCheckIns: weeklyHabitCheckIns,
         weeklyFocusMinutes: weeklyFocusMinutes,
-        weeklyDiaryEntries: weeklyDiaryEntries,
         weeklyActiveDays: activeDays.length,
       ),
       silentUnlockFeedback: silentUnlockFeedback,
@@ -1129,7 +1116,6 @@ void main() async {
   }
 
   pomodoroProvider.addListener(refreshAchievementsOnPomodoroSummaryChange);
-  diaryProvider.addListener(refreshAchievements);
   goalProvider.addListener(refreshAchievements);
   anniversaryProvider.addListener(refreshAchievements);
   courseProvider.addListener(refreshAchievements);
@@ -1654,7 +1640,6 @@ void main() async {
     anniversaryProvider,
     courseProvider,
     noteProvider,
-    diaryProvider,
     themeProvider,
   );
 
@@ -1772,7 +1757,6 @@ void main() async {
   countdownProvider.addListener(onDataChange);
   courseProvider.addListener(onDataChange);
   noteProvider.addListener(onDataChange);
-  diaryProvider.addListener(onDataChange);
 
   try {
     HomeWidgetService.widgetClickedStream.listen((uri) {
@@ -1979,7 +1963,6 @@ Future<bool> _pushHomeWidget(
   AnniversaryProvider a,
   CourseProvider c,
   NoteProvider n,
-  DiaryProvider d,
   ThemeProvider tp,
 ) async {
   final now = AppClock.now();
@@ -2062,13 +2045,6 @@ Future<bool> _pushHomeWidget(
   final noteHighlightIds = noteItems
       .map((note) => 'duoyi://note/${Uri.encodeComponent(note.id)}')
       .toList();
-  final diaryItems = d.entries.take(3).toList();
-  final diaryHighlights = diaryItems.map((entry) {
-    return '${entry.date.month}/${entry.date.day} ${entry.title}';
-  }).toList();
-  final diaryHighlightIds = diaryItems
-      .map((entry) => 'duoyi://diary/${Uri.encodeComponent(entry.id)}')
-      .toList();
   final calendarEvents = _homeWidgetEventsForToday(
     cal,
     today,
@@ -2077,7 +2053,6 @@ Future<bool> _pushHomeWidget(
     p,
     a,
     c,
-    d,
     countdowns,
     g,
     timeAudit,
@@ -2131,8 +2106,6 @@ Future<bool> _pushHomeWidget(
     noteHighlightIds: noteHighlightIds,
     memorialHighlights: memorialHighlights,
     memorialHighlightIds: memorialHighlightIds,
-    diaryHighlights: diaryHighlights,
-    diaryHighlightIds: diaryHighlightIds,
     scheduleHighlights: scheduleHighlights,
     scheduleHighlightIds: scheduleHighlightIds,
     todayEventSummary: todayEventSummary,
@@ -2170,7 +2143,6 @@ List<CalendarEvent> _homeWidgetEventsForToday(
   PomodoroProvider pomodoros,
   AnniversaryProvider anniversaries,
   CourseProvider courses,
-  DiaryProvider diaries,
   CountdownProvider countdowns,
   GoalProvider goals,
   TimeAuditProvider timeAudit,
@@ -2184,7 +2156,6 @@ List<CalendarEvent> _homeWidgetEventsForToday(
     anniversaries: anniversaries.items,
     courses: courses.courses,
     courseSettings: courses.settings,
-    diaries: diaries.entries,
     countdowns: countdowns.items,
     goals: goals.goals,
     timeEntries: timeAudit.entries,
@@ -2222,7 +2193,7 @@ String _homeWidgetEventDeepLink(CalendarEvent event) {
     CalendarEventType.habit => 'duoyi://habit/$id',
     CalendarEventType.anniversary => 'duoyi://anniversary/$id',
     CalendarEventType.course => 'duoyi://course/$id',
-    CalendarEventType.diary => 'duoyi://diary/$id',
+    CalendarEventType.diary => '',
     CalendarEventType.goal => 'duoyi://goal/$id',
     CalendarEventType.countdown => 'duoyi://countdown/$id',
     CalendarEventType.event => 'duoyi://calendar',
@@ -2996,15 +2967,6 @@ void _handleWidgetUri(
       // ignore: discarded_futures
       TodayDetailRouter.open(ctx, TodaySectionKind.notes, id: id);
     }
-  } else if (uri.host == 'diary' && ctx != null) {
-    final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    if (id == null || id.isEmpty) {
-      _pushHiddenWidgetFallbackRoute(ctx, const DiaryScreen());
-      return;
-    }
-    state.navigateTo(0, allowHidden: true);
-    // ignore: discarded_futures
-    TodayDetailRouter.open(ctx, TodaySectionKind.diary, id: id);
   } else if (uri.host == 'time-entry' && ctx != null) {
     final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
     state.navigateTo(6, allowHidden: true);

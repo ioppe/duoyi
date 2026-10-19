@@ -42,6 +42,11 @@ extension AppLocaleX on AppLocale {
 
 const Map<String, String> _zh = <String, String>{
   // 通用动作
+  'feature.unavailable': '此功能已不可用',
+  'ai.command.help': '请说“添加待办… / 记笔记… / 开始专注”',
+  'statistics.activity.description': '待办、习惯、专注和时间足迹的每日活跃度',
+  'challenge.weekly_active_days.description': '本周 5 天有待办、习惯或专注记录',
+  'backup.wipe.confirm': '将删除本机所有待办、习惯、笔记等数据，登录账号不会删除。',
   'action.confirm': '确定',
   'action.cancel': '取消',
   'action.save': '保存',
@@ -149,6 +154,8 @@ const Map<String, String> _zh = <String, String>{
   'preferences.first_day.current_monday': '当前为周一',
   'preferences.first_day.current_sunday': '当前为周日',
   'preferences.date_format.title': '日期格式',
+  'preferences.home_calendar.title': '首页日历',
+  'preferences.home_calendar.subtitle': '在今日待办下方显示日历，默认关闭',
   'preferences.timezone.title': '应用时区',
   'preferences.timezone.follow_system': '跟随系统',
   'preferences.lunar.title': '显示农历',
@@ -306,7 +313,7 @@ const Map<String, String> _zh = <String, String>{
   'quick.template.todo_done': '已按模板创建待办',
   'quick.template.habit_done': '已按模板创建习惯',
   // 全局搜索
-  'search.hint': '搜索待办 · 日程 · 习惯 · 笔记 · 日记 …',
+  'search.hint': '搜索待办 · 日程 · 习惯 · 笔记 …',
   'search.empty': '输入关键字，搜索全部内容',
   'search.no_results.prefix': '没找到 ',
   'search.no_results.suffix': ' 相关结果',
@@ -660,7 +667,7 @@ const Map<String, String> _zh = <String, String>{
   'export.include_anniversaries': '包含纪念日与生日',
   'export.include_anniversaries.subtitle': 'YEARLY 循环事件',
   'export.include_calendar': '包含日程总表',
-  'export.include_calendar.subtitle': '待办、习惯、课程、日记和目标',
+  'export.include_calendar.subtitle': '待办、习惯、课程和目标',
   'export.push_caldav': '写回 CalDAV',
   'export.generate_ics': '生成 .ics',
   'export.content.title': '导出内容',
@@ -737,6 +744,7 @@ const Map<String, String> _zh = <String, String>{
   'today.added_prefix': '已加入今日：',
   'today.add_to_today': '加入今日',
   'today.todos': '今日待办',
+  'today.tab.goals': '目标',
   'today.completed': '已完成',
   'today.courses': '今日课程',
   'today.course.period_prefix': '第',
@@ -1207,6 +1215,14 @@ const Map<String, String> _zh = <String, String>{
 };
 
 const Map<String, String> _en = <String, String>{
+  'feature.unavailable': 'This feature is no longer available.',
+  'ai.command.help': 'Create a task, save a note, or start focus.',
+  'statistics.activity.description':
+      'Daily activity across tasks, habits, focus, and time entries',
+  'challenge.weekly_active_days.description':
+      'Use tasks, habits, or focus on 5 days this week.',
+  'backup.wipe.confirm':
+      'This deletes all local tasks, habits, notes, and other data. Your account will remain.',
   'action.confirm': 'OK',
   'action.cancel': 'Cancel',
   'action.save': 'Save',
@@ -1316,6 +1332,9 @@ const Map<String, String> _en = <String, String>{
   'preferences.first_day.current_monday': 'Currently Monday',
   'preferences.first_day.current_sunday': 'Currently Sunday',
   'preferences.date_format.title': 'Date format',
+  'preferences.home_calendar.title': 'Home calendar',
+  'preferences.home_calendar.subtitle':
+      'Show the calendar below today’s tasks. Off by default',
   'preferences.timezone.title': 'App time zone',
   'preferences.timezone.follow_system': 'Follow system',
   'preferences.lunar.title': 'Show lunar calendar',
@@ -1504,7 +1523,7 @@ const Map<String, String> _en = <String, String>{
   'quick.template.apply_hint': 'Enter this item',
   'quick.template.todo_done': 'Task created from template',
   'quick.template.habit_done': 'Habit created from template',
-  'search.hint': 'Search tasks, events, habits, notes, diaries...',
+  'search.hint': 'Search tasks, events, habits, notes...',
   'search.empty': 'Enter keywords to search everything',
   'search.no_results.prefix': 'No results for ',
   'search.no_results.suffix': '',
@@ -1879,8 +1898,7 @@ const Map<String, String> _en = <String, String>{
   'export.include_anniversaries': 'Include anniversaries and birthdays',
   'export.include_anniversaries.subtitle': 'YEARLY recurring events',
   'export.include_calendar': 'Include full schedule',
-  'export.include_calendar.subtitle':
-      'Tasks, habits, courses, diary, and goals',
+  'export.include_calendar.subtitle': 'Tasks, habits, courses, and goals',
   'export.push_caldav': 'Push to CalDAV',
   'export.generate_ics': 'Generate .ics',
   'export.content.title': 'Export content',
@@ -1958,6 +1976,7 @@ const Map<String, String> _en = <String, String>{
   'today.added_prefix': 'Added to today: ',
   'today.add_to_today': 'Add to today',
   'today.todos': 'Today tasks',
+  'today.tab.goals': 'Goals',
   'today.completed': 'Completed',
   'today.courses': 'Today classes',
   'today.course.period_prefix': 'Periods ',

@@ -45,8 +45,8 @@ void main() {
       expect(adminScreen, contains('AI 代理或上游模型不可用'));
       expect(adminScreen, contains('AI 功能未启用'));
 
-      expect(diaryScreen, contains('context.read<AiService>()'));
-      expect(diaryScreen, contains('ai.deepDiaryReview(entries: entries)'));
+      expect(diaryScreen, isNot(contains('context.read<AiService>()')));
+      expect(diaryScreen, isNot(contains('ai.deepDiaryReview(')));
       expect(mineScreen, contains('ai.weeklyReview('));
       expect(
         aiScheduleScreen,

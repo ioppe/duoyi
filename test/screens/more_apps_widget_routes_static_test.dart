@@ -95,11 +95,6 @@ void main() {
         keyPrefix: 'memorial_highlight_',
         fallback: 'duoyi://anniversary',
       ),
-      'diary': _ProviderRouteCheck(
-        fileName: 'DuoyiDiaryWidgetProvider.kt',
-        keyPrefix: 'diary_highlight_',
-        fallback: 'duoyi://diary',
-      ),
     };
 
     for (final tab in ['todo', 'habit', 'calendar', 'focus', 'widget']) {
@@ -143,8 +138,8 @@ void main() {
       contains('_pushHiddenWidgetFallbackRoute(ctx, const NoteScreen())'),
     );
     expect(
-      main,
-      contains('_pushHiddenWidgetFallbackRoute(ctx, const DiaryScreen())'),
+      File('lib/screens/today_detail_router.dart').readAsStringSync(),
+      isNot(contains('DiaryEditScreen')),
     );
 
     expect(

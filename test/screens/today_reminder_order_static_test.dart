@@ -75,27 +75,24 @@ void main() {
     final reminderValueIndex = today.indexOf(
       'final reminder = reminderSection();',
     );
-    final desktopReminderIndex = today.indexOf('reminderSection: reminder,');
-    final mobileReminderIndex = today.indexOf('?reminder,');
+    final pageStart = today.indexOf("id: 'today_screen_list'");
+    final pageEnd = today.indexOf("id: 'today_goals_list'", pageStart);
     final todoIndex = today.indexOf('Widget todosSection({int maxItems = 6})');
     final goalIndex = today.indexOf('Widget goalsSection()');
-    final desktopTodoIndex = today.indexOf(
-      'todosSection: todosSection(maxItems: 8),',
-    );
-    final mobileTodoIndex = today.indexOf('todosSection(),');
     expect(reminderFactoryIndex, greaterThanOrEqualTo(0));
-    expect(reminderValueIndex, greaterThanOrEqualTo(0));
-    expect(desktopReminderIndex, greaterThanOrEqualTo(0));
-    expect(mobileReminderIndex, greaterThanOrEqualTo(0));
-    expect(todoIndex, greaterThanOrEqualTo(0));
-    expect(goalIndex, greaterThanOrEqualTo(0));
-    expect(desktopTodoIndex, greaterThanOrEqualTo(0));
-    expect(mobileTodoIndex, greaterThanOrEqualTo(0));
     expect(reminderValueIndex, greaterThan(reminderFactoryIndex));
+    expect(todoIndex, greaterThanOrEqualTo(0));
     expect(reminderFactoryIndex, greaterThan(todoIndex));
     expect(goalIndex, greaterThan(reminderFactoryIndex));
-    expect(desktopReminderIndex, greaterThan(desktopTodoIndex));
-    expect(mobileReminderIndex, greaterThan(mobileTodoIndex));
+    expect(pageStart, greaterThanOrEqualTo(0));
+    expect(pageEnd, greaterThan(pageStart));
+    final page = today.substring(pageStart, pageEnd);
+    final taskPosition = page.indexOf('todosSection(maxItems:');
+    final reminderPosition = page.indexOf('?reminder,');
+    expect(taskPosition, greaterThanOrEqualTo(0));
+    expect(reminderPosition, greaterThan(taskPosition));
+    expect(today, contains('TabBarView('));
+    expect(today, contains('initialIndex: 0'));
 
     final sectionStart = today.indexOf('class _TodayReminderSection');
     final sectionEnd = today.indexOf('class _ReminderGroupBlock');

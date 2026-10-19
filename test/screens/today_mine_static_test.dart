@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('今日和我的视觉结构', () {
-    test('四个指标卡使用紧凑统一样式', () {
+    test('今日三个指标卡与我的概览继续使用紧凑统一样式', () {
       final today = File('lib/screens/today_screen.dart').readAsStringSync();
       final todo = File('lib/screens/todo_screen.dart').readAsStringSync();
       final mine = File('lib/screens/mine_screen.dart').readAsStringSync();
@@ -56,19 +56,35 @@ void main() {
       expect(today, isNot(contains("'今日课程 · \${todayCourses.length} 节'")));
     });
 
-    test('今日页展示本周效率评分摘要', () {
+    test('本周效率迁移到我的用户卡片下方，今日建议保留调度语义', () {
       final today = File('lib/screens/today_screen.dart').readAsStringSync();
-
-      expect(today, contains("import '../core/report_engine.dart';"));
-      expect(today, contains("import '../core/todo_templates.dart';"));
+      final mine = File('lib/screens/mine_screen.dart').readAsStringSync();
+      final weekly = File(
+        'lib/widgets/weekly_productivity_card.dart',
+      ).readAsStringSync();
+      expect(today, isNot(contains('_TodayProductivity')));
+      expect(today, isNot(contains("I18n.tr('today.productivity.weekly')")));
+      final header = mine.indexOf('capped(mineHeader)');
+      final efficiency = mine.indexOf('child: WeeklyProductivityCard(');
+      final stats = mine.indexOf('capped(mineStats)');
+      expect(header, greaterThanOrEqualTo(0));
+      expect(efficiency, greaterThan(header));
+      expect(stats, greaterThan(efficiency));
       expect(
-        today,
-        contains("import '../providers/time_audit_provider.dart';"),
+        mine,
+        contains('_openBrandedRoute(context, const StatisticsScreen())'),
       );
-      expect(today, contains("import 'statistics_screen.dart';"));
-      expect(today, contains('context.watch<TimeAuditProvider>()'));
-      expect(today, contains('ReportEngine.buildReport'));
-      expect(today, contains('ReportEngine.compare'));
+      expect(weekly, contains('ReportEngine.buildReport'));
+      expect(weekly, contains('ReportEngine.compare'));
+      expect(weekly, contains('final now = AppClock.now()'));
+      expect(weekly, contains('DateTime.utc('));
+      expect(weekly, isNot(contains('AppClock.date(')));
+      expect(weekly, contains('provider.persistedRevision'));
+      expect(weekly, contains('context.watch<TimeAuditProvider?>()'));
+      for (final key in ['weekly', 'subtitle', 'score']) {
+        expect(weekly, contains("I18n.tr('today.productivity.$key')"));
+      }
+      expect(today, contains("import '../core/todo_templates.dart';"));
       expect(today, contains('SmartScheduleAdvisor.suggestToday'));
       expect(today, contains('CompletionVisibilityPolicy.shouldShowInToday'));
       expect(today, contains('limit: 5'));
@@ -76,13 +92,8 @@ void main() {
       expect(today, contains('return !todo.dueAt!.isBefore(now);'));
       expect(today, contains('scheduleTodoForToday('));
       expect(today, isNot(contains('waitForReminderSync: false')));
-      expect(today, contains('_TodayProductivityCard'));
-      expect(today, contains('_TodayProductivityPill'));
       expect(today, contains("I18n.tr('today.add_to_today')"));
       expect(today, contains("I18n.tr('today.suggestions')"));
-      expect(today, contains("I18n.tr('today.productivity.weekly')"));
-      expect(today, contains("I18n.tr('today.productivity.subtitle')"));
-      expect(today, contains("I18n.tr('today.productivity.score')"));
       expect(today, isNot(contains("const Text('加入今日')")));
     });
 
@@ -307,7 +318,6 @@ void main() {
         "label: I18n.tr('today.almanac.title')",
         "label: I18n.tr('time_audit.title')",
         "label: I18n.tr('mine.tile.statistics')",
-        "label: I18n.tr('diary.title')",
         "label: I18n.tr('note.title')",
         "label: I18n.tr('mine.tile.achievements')",
         "label: I18n.tr('preferences.title')",
@@ -369,6 +379,8 @@ void main() {
       ]) {
         expect(mine, contains("ValueKey('$key')"));
       }
+      expect(mine, isNot(contains("I18n.tr('diary.title')")));
+      expect(mine, isNot(contains('DiaryScreen')));
       expect(mine, contains('MineScreen._secondary'));
       expect(mine, contains('class _MineMenuScreen'));
       expect(

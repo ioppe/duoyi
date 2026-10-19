@@ -511,12 +511,6 @@ object DuoyiWidgetProviderRegistry {
             DuoyiAnniversaryCompactWidgetProvider::class.java,
             DuoyiAnniversaryDetailedWidgetProvider::class.java,
         ),
-        WidgetFamily(
-            "diary",
-            DuoyiDiaryWidgetProvider::class.java,
-            DuoyiDiaryCompactWidgetProvider::class.java,
-            DuoyiDiaryDetailedWidgetProvider::class.java,
-        ),
     )
 
     private val legacyProviderClasses = listOf<Class<out AppWidgetProvider>>(

@@ -16,6 +16,20 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
+  test('full backup round trip preserves historical records unchanged', () async {
+    const records = <String>[
+      '{"id":"legacy","date":"2026-05-01T00:00:00.000","content":"historical","mood":1,"tags":["keep"],"imagePaths":["private-image"]}',
+    ];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('duoyi_diary', records);
+    final raw = await BackupService.exportAll();
+    final backup = jsonDecode(raw) as Map<String, dynamic>;
+    expect(backup['data']['duoyi_diary']['value'], records);
+    await prefs.remove('duoyi_diary');
+    await BackupService.importAll(raw);
+    expect(prefs.getStringList('duoyi_diary'), records);
+  });
+
   test('exports local calendar events in full backups', () async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('duoyi_local_calendar_events_v1', <String>[
@@ -151,17 +165,25 @@ void main() {
     },
   );
 
-  test('merge import overwrites preference lists instead of unioning them', () async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('pref_daily_reminder_repeat_days', <String>[
-      '1',
-      '3',
-      '5',
-    ]);
-    await prefs.setStringList('pref_bottom_nav_visible', <String>['0', '1', '6']);
-    await prefs.setStringList('todos', <String>['{"id":"todo-1","title":"stay"}']);
+  test(
+    'merge import overwrites preference lists instead of unioning them',
+    () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('pref_daily_reminder_repeat_days', <String>[
+        '1',
+        '3',
+        '5',
+      ]);
+      await prefs.setStringList('pref_bottom_nav_visible', <String>[
+        '0',
+        '1',
+        '6',
+      ]);
+      await prefs.setStringList('todos', <String>[
+        '{"id":"todo-1","title":"stay"}',
+      ]);
 
-    const incoming = '''
+      const incoming = '''
 {
   "app": "duoyi",
   "schema": 1,
@@ -173,26 +195,27 @@ void main() {
 }
 ''';
 
-    await BackupService.importAll(incoming, merge: true);
+      await BackupService.importAll(incoming, merge: true);
 
-    // 偏好 stringList 整体覆盖（与云同步 LWW 口径一致），不做并集——
-    // 否则他机备份的重复星期/隐藏导航项会只增不减地渗入本机设置。
-    expect(prefs.getStringList('pref_daily_reminder_repeat_days'), <String>[
-      '2',
-      '4',
-    ]);
-    expect(prefs.getStringList('pref_bottom_nav_visible'), <String>[
-      '0',
-      '2',
-      '3',
-      '6',
-    ]);
-    // 业务数据列表仍按 id 去重并集。
-    expect(prefs.getStringList('todos'), <String>[
-      '{"id":"todo-1","title":"stay"}',
-      '{"id":"todo-2","title":"add"}',
-    ]);
-  });
+      // 偏好 stringList 整体覆盖（与云同步 LWW 口径一致），不做并集——
+      // 否则他机备份的重复星期/隐藏导航项会只增不减地渗入本机设置。
+      expect(prefs.getStringList('pref_daily_reminder_repeat_days'), <String>[
+        '2',
+        '4',
+      ]);
+      expect(prefs.getStringList('pref_bottom_nav_visible'), <String>[
+        '0',
+        '2',
+        '3',
+        '6',
+      ]);
+      // 业务数据列表仍按 id 去重并集。
+      expect(prefs.getStringList('todos'), <String>[
+        '{"id":"todo-1","title":"stay"}',
+        '{"id":"todo-2","title":"add"}',
+      ]);
+    },
+  );
 
   test('exports location reminders and quick capture templates', () async {
     final prefs = await SharedPreferences.getInstance();

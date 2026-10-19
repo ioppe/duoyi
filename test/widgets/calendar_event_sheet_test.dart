@@ -1,3 +1,4 @@
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/models/calendar_event.dart';
 import 'package:duoyi/models/countdown.dart';
 import 'package:duoyi/models/time_entry.dart';
@@ -12,6 +13,36 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('legacy event sheet hides private data and all source actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CalendarEventSheet(
+            event: CalendarEvent(
+              id: 'legacy',
+              title: 'private content',
+              subtitle: 'private mood',
+              date: DateTime(2026, 5, 18),
+              type: CalendarEventType.diary,
+              color: Colors.teal,
+              sourceId: 'legacy',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(I18n.tr('feature.unavailable')), findsWidgets);
+    expect(find.text('private content'), findsNothing);
+    expect(find.text('private mood'), findsNothing);
+    for (final action in ['编辑', '删除', '跳转详情', '改期']) {
+      expect(find.text(action), findsNothing);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('time entry event exposes quick duration adjustment', (
     tester,
   ) async {

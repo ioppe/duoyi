@@ -14,6 +14,38 @@ void main() {
     LocalTimezoneResolver.debugNativeSystemTimeZoneReader = null;
   });
 
+  test('首页日历默认关闭，开关可持久化并重载', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = PreferencesProvider();
+    expect(preferences.showHomeCalendar, isFalse);
+    await preferences.loadFromStorage();
+    expect(preferences.showHomeCalendar, isFalse);
+    var notifications = 0;
+    preferences.addListener(() => notifications++);
+    await preferences.setShowHomeCalendar(true);
+    expect(preferences.showHomeCalendar, isTrue);
+    expect(notifications, 1);
+    final reloaded = PreferencesProvider();
+    await reloaded.loadFromStorage();
+    expect(reloaded.showHomeCalendar, isTrue);
+    await reloaded.setShowHomeCalendar(false);
+    final disabled = PreferencesProvider();
+    await disabled.loadFromStorage();
+    expect(disabled.showHomeCalendar, isFalse);
+    preferences.dispose();
+    reloaded.dispose();
+    disabled.dispose();
+  });
+
+  test('清除账号本地状态时首页日历恢复默认关闭', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = PreferencesProvider();
+    await preferences.setShowHomeCalendar(true);
+    preferences.resetLocalState();
+    expect(preferences.showHomeCalendar, isFalse);
+    preferences.dispose();
+  });
+
   test('旧版底部导航偏好升级后保留我的并限制 5 个', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'pref_default_tab': 5,

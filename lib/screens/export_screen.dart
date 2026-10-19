@@ -7,7 +7,6 @@ import '../providers/anniversary_provider.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/countdown_provider.dart';
 import '../providers/course_provider.dart';
-import '../providers/diary_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -43,7 +42,6 @@ class _ExportScreenState extends State<ExportScreen> {
       anniversaries: ann.items,
       courses: context.read<CourseProvider>().courses,
       courseSettings: context.read<CourseProvider>().settings,
-      diaries: context.read<DiaryProvider>().entries,
       countdowns: context.read<CountdownProvider>().items,
       goals: context.read<GoalProvider>().goals,
     );

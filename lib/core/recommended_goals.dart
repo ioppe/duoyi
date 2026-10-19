@@ -101,10 +101,6 @@ const Map<String, _RecommendedGoalText> _enText = {
     'Morning meditation',
     'Start the day with 10 minutes of breathing and awareness.',
   ),
-  'rec.recommend.daily_journal': _RecommendedGoalText(
-    'Daily journal',
-    'Capture the day and your mood in a few short lines.',
-  ),
   'rec.recommend.daily_review': _RecommendedGoalText(
     'Daily review',
     'Spend 5 minutes before bed reviewing today and planning tomorrow.',
@@ -176,10 +172,6 @@ const Map<String, _RecommendedGoalText> _enText = {
   'rec.emotion.family_call': _RecommendedGoalText(
     'Call family',
     'Call at least once a week, even briefly, just to stay connected.',
-  ),
-  'rec.emotion.mood_diary': _RecommendedGoalText(
-    'Mood diary',
-    'Record the day’s emotional changes with colors or keywords.',
   ),
   'rec.emotion.breathing_10min': _RecommendedGoalText(
     'Breathing relax 10 min',
@@ -275,26 +267,6 @@ class RecommendedGoalsLibrary {
         minute: 0,
       ),
       timeTargetSeconds: 600,
-    ),
-    RecommendedGoal(
-      id: 'rec.recommend.daily_journal',
-      category: GoalCategory.recommend,
-      title: '每天写日记',
-      description: '用几句话记录今天发生的事与心情。',
-      icon: 'edit_note',
-      colorValue: 0xFF795548,
-      recurrence: RecurrenceRule(
-        frequency: RecurrenceFrequency.daily,
-        interval: 1,
-      ),
-      scheduling: GoalScheduling.fixed(),
-      skipHolidays: false,
-      reminder: ReminderConfig(
-        enabled: true,
-        kind: ReminderKind.push,
-        hour: 21,
-        minute: 30,
-      ),
     ),
     RecommendedGoal(
       id: 'rec.recommend.daily_review',
@@ -727,26 +699,6 @@ class RecommendedGoalsLibrary {
         enabled: true,
         kind: ReminderKind.push,
         hour: 20,
-        minute: 0,
-      ),
-    ),
-    RecommendedGoal(
-      id: 'rec.emotion.mood_diary',
-      category: GoalCategory.emotion,
-      title: '写情绪日记',
-      description: '把一天的情绪起伏用颜色或关键词记录下来。',
-      icon: 'mood',
-      colorValue: 0xFFAB47BC,
-      recurrence: RecurrenceRule(
-        frequency: RecurrenceFrequency.daily,
-        interval: 1,
-      ),
-      scheduling: GoalScheduling.fixed(),
-      skipHolidays: false,
-      reminder: ReminderConfig(
-        enabled: true,
-        kind: ReminderKind.push,
-        hour: 21,
         minute: 0,
       ),
     ),

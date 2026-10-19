@@ -263,6 +263,15 @@ class _PersonalizationSettingsScreenState
                 subtitle: I18n.tr('preferences.section.date.subtitle'),
                 children: [
                   const LanguageSettingsTile(),
+                  AppSwitchTile(
+                    key: const ValueKey('preferences_home_calendar_switch'),
+                    icon: Icons.calendar_today_outlined,
+                    color: cs.primary,
+                    value: p.showHomeCalendar,
+                    title: I18n.tr('preferences.home_calendar.title'),
+                    subtitle: I18n.tr('preferences.home_calendar.subtitle'),
+                    onChanged: p.setShowHomeCalendar,
+                  ),
                   AppSettingsTile(
                     icon: Icons.calendar_view_week_outlined,
                     color: cs.primary,

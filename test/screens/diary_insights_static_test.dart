@@ -3,34 +3,22 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('日记页展示 AI 日记洞察', () {
-    final source = File('lib/screens/diary_screen.dart').readAsStringSync();
-
-    expect(source, contains("import '../core/diary_insights.dart';"));
-    expect(source, contains('DiaryInsightEngine.buildInsights(entries)'));
-    expect(source, contains('_DiaryInsightCard'));
-    expect(source, contains("I18n.tr('diary.ai.insights')"));
-    expect(source, contains('DiaryInsightKind.emotionTrend'));
-    expect(source, contains('DiaryInsightKind.attention'));
-  });
-
-  test('日记页接入 AI 深度复盘入口', () {
+  test('retired UI cannot open insights or AI review', () {
     final screen = File('lib/screens/diary_screen.dart').readAsStringSync();
-    final service = File('lib/services/ai_service.dart').readAsStringSync();
-
-    expect(screen, contains("import '../services/ai_service.dart';"));
-    expect(screen, contains("I18n.tr('diary.ai.deep_review.tooltip')"));
-    expect(screen, contains('_runDeepDiaryReview(context, entries)'));
-    expect(screen, contains('context.read<AiService>()'));
-    expect(screen, contains('ai.deepDiaryReview(entries: entries)'));
-    expect(screen, contains('var dialogOpen = false'));
-    expect(screen, contains("I18n.tr('diary.ai.deep_review.title')"));
-    expect(screen, contains("I18n.tr('diary.ai.review_failed_prefix')"));
-
-    expect(service, contains("import '../core/diary_deep_review.dart';"));
-    expect(service, contains('Future<String> deepDiaryReview('));
-    expect(service, contains('DiaryDeepReviewBuilder.build('));
-    expect(service, contains('maxTokens: 900'));
-    expect(service, contains('日记深度复盘：'));
+    expect(screen, isNot(contains('DiaryInsightEngine')));
+    expect(screen, isNot(contains('AiService')));
+    expect(screen, isNot(contains('deepDiaryReview')));
+    expect(screen, isNot(contains('MoodHeatmap')));
   });
+
+  test(
+    'historical review helpers remain compatible without UI entry points',
+    () {
+      final service = File('lib/services/ai_service.dart').readAsStringSync();
+      expect(service, contains("import '../core/diary_deep_review.dart';"));
+      expect(service, contains('Future<String> deepDiaryReview('));
+      expect(service, contains('DiaryDeepReviewBuilder.build('));
+      expect(service, contains('maxTokens: 900'));
+    },
+  );
 }
