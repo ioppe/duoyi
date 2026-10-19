@@ -398,14 +398,19 @@ class _TodoScreenState extends State<TodoScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  TextField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(
-                      hintText: '准备做什么？例如：明天下午3点开会',
+                  // 新建任务的主输入框是弹窗里唯一的长文本入口，沿用账号表单的
+                  // 标准高度（formFieldMinHeight），而不是外层紧凑控件档的
+                  // isDense + 10/8 内边距，避免在底部弹窗里显得过小。
+                  AppFormFieldTheme(
+                    child: TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(
+                        hintText: '准备做什么？例如：明天下午3点开会',
+                      ),
+                      autofocus: true,
+                      onChanged: (v) =>
+                          setSt(() => parsed = SmartDateParser.parse(v)),
                     ),
-                    autofocus: true,
-                    onChanged: (v) =>
-                        setSt(() => parsed = SmartDateParser.parse(v)),
                   ),
                   if (parsed.isSuccess) ...[
                     const SizedBox(height: 8),
