@@ -738,328 +738,405 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
             ),
           ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(DesignTokens.spaceLg),
-          children: [
-            TextField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(labelText: '任务名称'),
-              style: const TextStyle(
-                fontSize: DesignTokens.fontSizeLg,
-                fontWeight: FontWeight.normal,
+        body: SafeArea(
+          top: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: DesignTokens.formContentMaxWidth,
               ),
-              onChanged: (_) => _markEditing(),
-            ),
-            const SizedBox(height: DesignTokens.spaceMd),
-            _TodoMarkdownDescriptionEditor(
-              controller: _notesCtrl,
-              preview: _notesPreview,
-              enabled: canEdit,
-              onPreviewChanged: (value) =>
-                  setState(() => _notesPreview = value),
-              onChanged: (_) => _markEditing(),
-              onHeading: () => _insertNotePrefix('## '),
-              onBold: () => _wrapNoteSelection('**'),
-              onItalic: () => _wrapNoteSelection('*'),
-              onQuote: () => _insertNotePrefix('> '),
-              onBullet: () => _insertNotePrefix('- '),
-              onChecklist: () => _insertNotePrefix('- [ ] '),
-              onCode: () => _wrapNoteSelection('`'),
-              onLink: _insertNoteLink,
-            ),
+              child: _TodoDetailTheme(
+                child: ListView(
+                  key: const ValueKey('todo-detail-form'),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.all(DesignTokens.spaceLg),
+                  children: [
+                    TextField(
+                      controller: _titleCtrl,
+                      enabled: canEdit,
+                      decoration: const InputDecoration(labelText: '任务名称'),
+                      style: const TextStyle(
+                        fontSize: DesignTokens.fontSizeMd,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      onChanged: (_) => _markEditing(),
+                    ),
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    _TodoMarkdownDescriptionEditor(
+                      controller: _notesCtrl,
+                      preview: _notesPreview,
+                      enabled: canEdit,
+                      onPreviewChanged: (value) =>
+                          setState(() => _notesPreview = value),
+                      onChanged: (_) => _markEditing(),
+                      onHeading: () => _insertNotePrefix('## '),
+                      onBold: () => _wrapNoteSelection('**'),
+                      onItalic: () => _wrapNoteSelection('*'),
+                      onQuote: () => _insertNotePrefix('> '),
+                      onBullet: () => _insertNotePrefix('- '),
+                      onChecklist: () => _insertNotePrefix('- [ ] '),
+                      onCode: () => _wrapNoteSelection('`'),
+                      onLink: _insertNoteLink,
+                    ),
 
-            const SizedBox(height: DesignTokens.spaceLg),
-            _TodoAttachmentPanel(
-              attachments: _todo.attachments,
-              enabled: canEdit,
-              onPickFile: _addAttachment,
-              onAddManual: _showManualAttachmentDialog,
-              onRemove: _removeAttachment,
-            ),
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    _TodoAttachmentPanel(
+                      attachments: _todo.attachments,
+                      enabled: canEdit,
+                      onPickFile: _addAttachment,
+                      onAddManual: _showManualAttachmentDialog,
+                      onRemove: _removeAttachment,
+                    ),
 
-            // ---- 四象限 --------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceLg),
-            AppDropdownField<EisenhowerQuadrant>(
-              initialValue: _todo.quadrant,
-              labelText: '四象限',
-              items: const [
-                DropdownMenuItem(
-                  value: EisenhowerQuadrant.urgentImportant,
-                  child: Text('Q1 重要且紧急'),
-                ),
-                DropdownMenuItem(
-                  value: EisenhowerQuadrant.notUrgentImportant,
-                  child: Text('Q2 重要不紧急'),
-                ),
-                DropdownMenuItem(
-                  value: EisenhowerQuadrant.urgentNotImportant,
-                  child: Text('Q3 紧急不重要'),
-                ),
-                DropdownMenuItem(
-                  value: EisenhowerQuadrant.notUrgentNotImportant,
-                  child: Text('Q4 不重要不紧急'),
-                ),
-              ],
-              onChanged: (v) {
-                setState(() => _todo = _todo.copyWith(quadrant: v!));
-                _markEditing();
-              },
-            ),
+                    // ---- 四象限 --------------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppDropdownField<EisenhowerQuadrant>(
+                            initialValue: _todo.quadrant,
+                            labelText: '四象限',
+                            items: const [
+                              DropdownMenuItem(
+                                value: EisenhowerQuadrant.urgentImportant,
+                                child: Text(
+                                  'Q1 重要且紧急',
+                                  style: TextStyle(
+                                    fontSize: DesignTokens.fontSizeBody,
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: EisenhowerQuadrant.notUrgentImportant,
+                                child: Text(
+                                  'Q2 重要不紧急',
+                                  style: TextStyle(
+                                    fontSize: DesignTokens.fontSizeBody,
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: EisenhowerQuadrant.urgentNotImportant,
+                                child: Text(
+                                  'Q3 紧急不重要',
+                                  style: TextStyle(
+                                    fontSize: DesignTokens.fontSizeBody,
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: EisenhowerQuadrant.notUrgentNotImportant,
+                                child: Text(
+                                  'Q4 不重要不紧急',
+                                  style: TextStyle(
+                                    fontSize: DesignTokens.fontSizeBody,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: (v) {
+                              setState(
+                                () => _todo = _todo.copyWith(quadrant: v!),
+                              );
+                              _markEditing();
+                            },
+                          ),
 
-            // ---- 优先级 --------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceLg),
-            _SectionLabel(text: '优先级'),
-            const SizedBox(height: DesignTokens.spaceXs),
-            _PriorityChipRow(
-              selected: _todo.priority,
-              onSelected: _pickPriority,
-            ),
+                          // ---- 优先级 --------------------------------------------------
+                          const SizedBox(height: DesignTokens.spaceLg),
+                          _SectionLabel(text: '优先级'),
+                          const SizedBox(height: DesignTokens.spaceSm),
+                          _PriorityChipRow(
+                            selected: _todo.priority,
+                            onSelected: _pickPriority,
+                          ),
+                        ],
+                      ),
+                    ),
 
-            // ---- 截止日 + 重复 --------------------------------------------
-            const SizedBox(height: DesignTokens.spaceLg),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event_outlined),
-              title: const Text('截止日期'),
-              subtitle: Text(
-                _todo.localDueDate == null
-                    ? '未设置'
-                    : _formatYmd(_todo.localDueDate!),
-              ),
-              trailing: _todo.dueDate == null
-                  ? const Icon(Icons.chevron_right)
-                  : IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        setState(() => _todo = _todo.copyWith(dueDate: null));
-                        _markEditing();
+                    // ---- 截止日 + 重复 --------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.event_outlined),
+                            title: const Text('截止日期'),
+                            subtitle: Text(
+                              _todo.localDueDate == null
+                                  ? '未设置'
+                                  : _formatYmd(_todo.localDueDate!),
+                            ),
+                            trailing: _todo.dueDate == null
+                                ? const Icon(Icons.chevron_right)
+                                : IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () {
+                                      setState(
+                                        () => _todo = _todo.copyWith(
+                                          dueDate: null,
+                                        ),
+                                      );
+                                      _markEditing();
+                                    },
+                                  ),
+                            onTap: _pickDueDate,
+                          ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.repeat),
+                            title: const Text('重复'),
+                            subtitle: Text(_todo.recurrence.label),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _pickRecurrence,
+                          ),
+
+                          // ---- 共享负责人 ----------------------------------------------
+                          const SizedBox(height: DesignTokens.spaceSm),
+                          _AssignmentEditor(
+                            workspace: workspace,
+                            assigneeId: _todo.assigneeId,
+                            enabled: canEdit,
+                            onChanged: (value) {
+                              setState(
+                                () => _todo = _todo.copyWith(assigneeId: value),
+                              );
+                              _markEditing();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (workspace != null && shareProvider != null) ...[
+                      const SizedBox(height: DesignTokens.spaceLg),
+                      _TaskCommentsPanel(
+                        workspace: workspace,
+                        todoId: _todo.id,
+                        comments: shareProvider.commentsForTarget(
+                          workspace.id,
+                          _todo.id,
+                        ),
+                      ),
+                    ],
+
+                    // ---- 提醒 ----------------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceSm),
+                    ReminderPlanEditor(
+                      plan: _todo.reminderPlan,
+                      onChanged: _applyReminderPlan,
+                      title: '提醒',
+                      allowAlarm: true,
+                      allowRelativeToDue: true,
+                      allowWeekly: true,
+                      hasAnchorDate: _todo.dueDate != null,
+                      defaultKind: ReminderKind.push,
+                    ),
+                    const SizedBox(height: DesignTokens.spaceSm),
+                    Builder(
+                      builder: (context) {
+                        final notif = context.watch<NotificationService?>();
+                        if (notif == null) return const SizedBox.shrink();
+                        final kind =
+                            _todo.reminderPlan.primaryRule?.kind ??
+                            _todo.reminder.kind;
+                        return ReminderHealthHint(
+                          reminderKind: kind,
+                          onOpenSystemSettings: () =>
+                              _openSystemSettings(context),
+                          onRequestNotificationPermission: () async {
+                            await context
+                                .read<NotificationService>()
+                                .requestPermission();
+                          },
+                          onRequestExactAlarmPermission: () async {
+                            await AlarmService.instance
+                                .requestExactAlarmPermission();
+                          },
+                          onRequestFullScreenIntentPermission: () async {
+                            await AlarmService.instance
+                                .requestFullScreenIntentPermission();
+                          },
+                        );
                       },
                     ),
-              onTap: _pickDueDate,
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.repeat),
-              title: const Text('重复'),
-              subtitle: Text(_todo.recurrence.label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _pickRecurrence,
-            ),
+                    if (locationReminderProvider != null) ...[
+                      const SizedBox(height: DesignTokens.spaceSm),
+                      _TodoLocationReminderCard(
+                        reminders: linkedLocationReminders,
+                        enabled: canEdit,
+                        onAdd: canEdit
+                            ? () => _addLinkedLocationReminder(
+                                context,
+                                locationReminderProvider,
+                              )
+                            : null,
+                        onRemove: canEdit
+                            ? (id) => locationReminderProvider.remove(id)
+                            : null,
+                      ),
+                    ],
 
-            // ---- 共享负责人 ----------------------------------------------
-            const SizedBox(height: DesignTokens.spaceSm),
-            _AssignmentEditor(
-              workspace: workspace,
-              assigneeId: _todo.assigneeId,
-              enabled: canEdit,
-              onChanged: (value) {
-                setState(() => _todo = _todo.copyWith(assigneeId: value));
-                _markEditing();
-              },
-            ),
-            if (workspace != null && shareProvider != null) ...[
-              const SizedBox(height: DesignTokens.spaceLg),
-              _TaskCommentsPanel(
-                workspace: workspace,
-                todoId: _todo.id,
-                comments: shareProvider.commentsForTarget(
-                  workspace.id,
-                  _todo.id,
-                ),
-              ),
-            ],
-
-            // ---- 提醒 ----------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceSm),
-            ReminderPlanEditor(
-              plan: _todo.reminderPlan,
-              onChanged: _applyReminderPlan,
-              title: '提醒',
-              allowAlarm: true,
-              allowRelativeToDue: true,
-              allowWeekly: true,
-              hasAnchorDate: _todo.dueDate != null,
-              defaultKind: ReminderKind.push,
-            ),
-            const SizedBox(height: DesignTokens.spaceSm),
-            Builder(
-              builder: (context) {
-                final notif = context.watch<NotificationService?>();
-                if (notif == null) return const SizedBox.shrink();
-                final kind =
-                    _todo.reminderPlan.primaryRule?.kind ?? _todo.reminder.kind;
-                return ReminderHealthHint(
-                  reminderKind: kind,
-                  onOpenSystemSettings: () => _openSystemSettings(context),
-                  onRequestNotificationPermission: () async {
-                    await context
-                        .read<NotificationService>()
-                        .requestPermission();
-                  },
-                  onRequestExactAlarmPermission: () async {
-                    await AlarmService.instance.requestExactAlarmPermission();
-                  },
-                  onRequestFullScreenIntentPermission: () async {
-                    await AlarmService.instance
-                        .requestFullScreenIntentPermission();
-                  },
-                );
-              },
-            ),
-            if (locationReminderProvider != null) ...[
-              const SizedBox(height: DesignTokens.spaceSm),
-              _TodoLocationReminderCard(
-                reminders: linkedLocationReminders,
-                enabled: canEdit,
-                onAdd: canEdit
-                    ? () => _addLinkedLocationReminder(
-                        context,
-                        locationReminderProvider,
-                      )
-                    : null,
-                onRemove: canEdit
-                    ? (id) => locationReminderProvider.remove(id)
-                    : null,
-              ),
-            ],
-
-            // ---- 目标时长 ------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceLg),
-            _TimeTargetEditor(
-              controller: _timeTargetCtrl,
-              minutes: _todo.timeTargetSeconds == null
-                  ? null
-                  : (_todo.timeTargetSeconds! ~/ 60),
-              onPreset: _applyTimeTargetMinutes,
-              onChanged: (s) => _applyTimeTargetMinutes(int.tryParse(s.trim())),
-              onClear: () => _applyTimeTargetMinutes(null),
-            ),
-
-            // ---- 标签 ----------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceLg),
-            _SectionLabel(text: '标签'),
-            const SizedBox(height: DesignTokens.spaceXs),
-            _TagsEditor(
-              tags: _todo.tags,
-              controller: _tagCtrl,
-              onAdd: _addTag,
-              onRemove: _removeTag,
-            ),
-
-            // ---- 子任务 --------------------------------------------------
-            const SizedBox(height: DesignTokens.spaceXxl),
-            Row(
-              children: [
-                const Text(
-                  '子任务',
-                  style: TextStyle(
-                    fontWeight: FontWeight.normal,
-                    fontSize: DesignTokens.fontSizeMd,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '${_todo.subtasks.where((s) => s.isCompleted).length}/${_todo.subtasks.length}',
-                  style: TextStyle(
-                    color: cs.primary,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.spaceSm),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _subtaskCtrl,
-                    enabled: canEdit && !_subtaskAdding,
-                    decoration: const InputDecoration(
-                      labelText: '新增子任务',
-                      isDense: true,
+                    // ---- 目标时长 ------------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    _TimeTargetEditor(
+                      controller: _timeTargetCtrl,
+                      minutes: _todo.timeTargetSeconds == null
+                          ? null
+                          : (_todo.timeTargetSeconds! ~/ 60),
+                      onPreset: _applyTimeTargetMinutes,
+                      onChanged: (s) =>
+                          _applyTimeTargetMinutes(int.tryParse(s.trim())),
+                      onClear: () => _applyTimeTargetMinutes(null),
                     ),
-                    onSubmitted: (_) {
-                      _addSubtask();
-                    },
-                  ),
-                ),
-                IconButton(
-                  onPressed: canEdit && !_subtaskAdding ? _addSubtask : null,
-                  icon: _subtaskAdding
-                      ? SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: cs.primary,
+
+                    // ---- 标签 ----------------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _SectionLabel(text: '标签'),
+                          const SizedBox(height: DesignTokens.spaceSm),
+                          _TagsEditor(
+                            tags: _todo.tags,
+                            controller: _tagCtrl,
+                            onAdd: _addTag,
+                            onRemove: _removeTag,
                           ),
-                        )
-                      : Icon(Icons.add_circle, color: cs.primary),
-                ),
-              ],
-            ),
-            ReorderableListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              // ignore: deprecated_member_use
-              onReorder: (oldI, newI) {
-                if (!canEdit) return;
-                if (newI > oldI) newI -= 1;
-                final ids = _todo.subtasks.map((e) => e.id).toList();
-                final id = ids.removeAt(oldI);
-                ids.insert(newI, id);
-                context.read<TodoProvider>().reorderSubtasks(
-                  widget.todoId,
-                  ids,
-                );
-              },
-              children: [
-                for (final s in _todo.subtasks)
-                  Builder(
-                    builder: (context) {
-                      final busy = _busySubtaskIds.contains(s.id);
-                      return ListTile(
-                        key: ValueKey(s.id),
-                        dense: true,
-                        leading: Checkbox(
-                          value: s.isCompleted,
-                          onChanged: canEdit && !busy
-                              ? (_) {
-                                  _toggleSubtask(s.id);
-                                }
-                              : null,
-                        ),
-                        title: Text(
-                          s.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: DesignTokens.fontSizeBase,
-                            decoration: s.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
+                        ],
+                      ),
+                    ),
+
+                    // ---- 子任务 --------------------------------------------------
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    AppSurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const _SectionLabel(text: '子任务'),
+                              const Spacer(),
+                              Text(
+                                '${_todo.subtasks.where((s) => s.isCompleted).length}/${_todo.subtasks.length}',
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
+                                  fontSize: DesignTokens.fontSizeSecondary,
+                                  fontWeight: DesignTokens.fontWeightRegular,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        trailing: IconButton(
-                          icon: busy
-                              ? const SizedBox.square(
-                                  dimension: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                          const SizedBox(height: DesignTokens.spaceSm),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _subtaskCtrl,
+                                  enabled: canEdit && !_subtaskAdding,
+                                  decoration: const InputDecoration(
+                                    labelText: '新增子任务',
+                                    isDense: false,
                                   ),
-                                )
-                              : const Icon(Icons.close, size: 16),
-                          onPressed: canEdit && !busy
-                              ? () {
-                                  _deleteSubtask(s.id);
-                                }
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-              ],
+                                  onSubmitted: (_) {
+                                    _addSubtask();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: DesignTokens.spaceSm),
+                              IconButton(
+                                onPressed: canEdit && !_subtaskAdding
+                                    ? _addSubtask
+                                    : null,
+                                icon: _subtaskAdding
+                                    ? SizedBox.square(
+                                        dimension: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: cs.primary,
+                                        ),
+                                      )
+                                    : Icon(Icons.add_circle, color: cs.primary),
+                              ),
+                            ],
+                          ),
+                          ReorderableListView(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            // ignore: deprecated_member_use
+                            onReorder: (oldI, newI) {
+                              if (!canEdit) return;
+                              if (newI > oldI) newI -= 1;
+                              final ids = _todo.subtasks
+                                  .map((e) => e.id)
+                                  .toList();
+                              final id = ids.removeAt(oldI);
+                              ids.insert(newI, id);
+                              context.read<TodoProvider>().reorderSubtasks(
+                                widget.todoId,
+                                ids,
+                              );
+                            },
+                            children: [
+                              for (final s in _todo.subtasks)
+                                Builder(
+                                  key: ValueKey(s.id),
+                                  builder: (context) {
+                                    final busy = _busySubtaskIds.contains(s.id);
+                                    return ListTile(
+                                      dense: true,
+                                      leading: Checkbox(
+                                        value: s.isCompleted,
+                                        onChanged: canEdit && !busy
+                                            ? (_) {
+                                                _toggleSubtask(s.id);
+                                              }
+                                            : null,
+                                      ),
+                                      title: Text(
+                                        s.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: DesignTokens.fontSizeBase,
+                                          decoration: s.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                        ),
+                                      ),
+                                      trailing: IconButton(
+                                        icon: busy
+                                            ? const SizedBox.square(
+                                                dimension: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : const Icon(Icons.close, size: 16),
+                                        onPressed: canEdit && !busy
+                                            ? () {
+                                                _deleteSubtask(s.id);
+                                              }
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1389,6 +1466,105 @@ Future<void> _openSystemSettings(BuildContext context) async {
 // 下面是 TodoDetailScreen 拆出来的私有子组件。
 // ---------------------------------------------------------------------------
 
+/// 复用全局表单的边框与圆角，详情正文保持 14px，辅助文字 12px。
+/// 只调整本页的控件密度，字体家族、卡片皮肤及配色仍随当前主题。
+class _TodoDetailTheme extends StatelessWidget {
+  final Widget child;
+
+  const _TodoDetailTheme({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppFormFieldTheme(
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          final cs = theme.colorScheme;
+          final body = (theme.textTheme.bodyMedium ?? const TextStyle())
+              .copyWith(
+                fontSize: DesignTokens.fontSizeBody,
+                fontWeight: DesignTokens.fontWeightRegular,
+                height: 1.5,
+                color: cs.onSurface,
+              );
+          final secondary = body.copyWith(
+            fontSize: DesignTokens.fontSizeSecondary,
+            color: cs.onSurfaceVariant,
+          );
+          OutlineInputBorder border(Color color, {double width = 0.55}) =>
+              OutlineInputBorder(
+                borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+                borderSide: BorderSide(color: color, width: width),
+              );
+          return Theme(
+            data: theme.copyWith(
+              textTheme: theme.textTheme.copyWith(
+                bodyLarge: body,
+                bodyMedium: body,
+                bodySmall: secondary,
+                titleMedium: body,
+                titleSmall: body,
+                labelLarge: secondary,
+                labelMedium: secondary,
+              ),
+              inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+                filled: false,
+                border: border(cs.outlineVariant.withValues(alpha: 0.30)),
+                enabledBorder: border(
+                  cs.outlineVariant.withValues(alpha: 0.30),
+                ),
+                focusedBorder: border(
+                  cs.primary.withValues(alpha: 0.70),
+                  width: 1,
+                ),
+                disabledBorder: border(
+                  cs.outlineVariant.withValues(alpha: 0.16),
+                ),
+                contentPadding: const EdgeInsets.all(DesignTokens.spaceLg),
+                labelStyle: body.copyWith(color: cs.onSurfaceVariant),
+                floatingLabelStyle: body.copyWith(
+                  fontSize: DesignTokens.fontSizeSecondary / 0.75,
+                  color: cs.onSurfaceVariant,
+                ),
+                hintStyle: body.copyWith(color: cs.onSurfaceVariant),
+                helperStyle: secondary,
+              ),
+              listTileTheme: theme.listTileTheme.copyWith(
+                dense: false,
+                contentPadding: EdgeInsets.zero,
+                minLeadingWidth: DesignTokens.controlIconSize,
+                horizontalTitleGap: DesignTokens.spaceMd,
+                minVerticalPadding: DesignTokens.spaceMd,
+                titleTextStyle: body,
+                subtitleTextStyle: secondary,
+                iconColor: cs.onSurfaceVariant,
+              ),
+              iconButtonTheme: IconButtonThemeData(
+                style: IconButton.styleFrom(
+                  iconSize: DesignTokens.controlIconSize,
+                  foregroundColor: cs.onSurfaceVariant,
+                  minimumSize: const Size.square(DesignTokens.controlMinHeight),
+                  padding: const EdgeInsets.all(DesignTokens.spaceSm),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              chipTheme: theme.chipTheme.copyWith(
+                labelStyle: secondary.copyWith(color: cs.onSurface),
+                secondaryLabelStyle: secondary.copyWith(color: cs.onSurface),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spaceSm,
+                  vertical: DesignTokens.spaceXs,
+                ),
+              ),
+            ),
+            child: DefaultTextStyle.merge(style: body, child: child),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel({required this.text});
@@ -1397,9 +1573,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: DesignTokens.fontSizeSm,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontSize: DesignTokens.fontSizeBody,
+        color: Theme.of(context).colorScheme.onSurface,
         fontWeight: DesignTokens.fontWeightRegular,
       ),
     );
@@ -1423,7 +1599,7 @@ class _TodoLocationReminderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return AppSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1528,15 +1704,16 @@ class _TodoMarkdownDescriptionEditor extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return AppSurfaceCard(
       padding: EdgeInsets.zero,
-      border: Border.all(
-        color: cs.outlineVariant.withValues(alpha: 0.16),
-        width: 0.45,
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 8, 6),
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.spaceLg,
+              DesignTokens.spaceSm,
+              DesignTokens.spaceSm,
+              DesignTokens.spaceSm,
+            ),
             child: Row(
               children: [
                 const Expanded(child: _SectionLabel(text: '任务描述')),
@@ -1572,15 +1749,28 @@ class _TodoMarkdownDescriptionEditor extends StatelessWidget {
                   )
                 : Padding(
                     key: const ValueKey('todo-description-editor'),
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    padding: const EdgeInsets.all(DesignTokens.spaceLg),
                     child: TextField(
                       controller: controller,
                       enabled: enabled,
                       minLines: 4,
                       maxLines: 8,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: DesignTokens.fontSizeBody,
+                        color: cs.onSurface,
+                        height: 1.5,
+                      ),
                       decoration: const InputDecoration(
                         hintText: '支持 Markdown 描述',
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
                       ),
                       onChanged: onChanged,
                     ),
@@ -1619,17 +1809,24 @@ class _TodoMarkdownToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      width: double.infinity,
+      height: DesignTokens.controlMinHeight,
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.36),
         border: Border(
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.48)),
-          bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.48)),
+          top: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.24),
+            width: 0.5,
+          ),
+          bottom: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.24),
+            width: 0.5,
+          ),
         ),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spaceSm),
         child: Row(
           children: [
             _TodoMarkdownToolButton(
@@ -1703,9 +1900,13 @@ class _TodoMarkdownToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(icon),
+      icon: Icon(icon, size: DesignTokens.controlIconSize),
       tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints.tightFor(
+        width: DesignTokens.controlMinHeight,
+        height: DesignTokens.controlMinHeight,
+      ),
+      visualDensity: VisualDensity.standard,
       onPressed: enabled ? onPressed : null,
     );
   }
@@ -1725,11 +1926,13 @@ class _TodoMarkdownPreview extends StatelessWidget {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 132),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
       child: blocks.isEmpty
           ? Text(
               '暂无描述',
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1754,9 +1957,12 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (block.type == NoteBlockType.heading) {
-      final style = block.level <= 1
-          ? Theme.of(context).textTheme.titleLarge
-          : Theme.of(context).textTheme.titleMedium;
+      final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontSize: block.level <= 1
+            ? DesignTokens.fontSizeMd
+            : DesignTokens.fontSizeBody,
+        color: colorScheme.onSurface,
+      );
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: _TodoInlineMarkdownText(
@@ -1779,7 +1985,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         child: _TodoInlineMarkdownText(
           text: block.text,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: DesignTokens.fontSizeBody,
             height: 1.45,
             color: colorScheme.onSurfaceVariant,
           ),
@@ -1796,7 +2002,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
               block.checked ? Icons.check_box : Icons.check_box_outline_blank,
               size: 18,
               color: block.checked
-                  ? Colors.green
+                  ? colorScheme.primary
                   : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
@@ -1836,7 +2042,11 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         ),
         child: Text(
           block.text,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontFamily: 'monospace',
+            fontSize: DesignTokens.fontSizeBody,
+            color: colorScheme.onSurface,
+          ),
         ),
       );
     }
@@ -1861,11 +2071,20 @@ class _TodoInlineMarkdownText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = style ?? const TextStyle(fontSize: 15, height: 1.5);
-    return Text.rich(TextSpan(style: base, children: _parseInline(text, base)));
+    final cs = Theme.of(context).colorScheme;
+    final base = (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
+        .copyWith(
+          fontSize: DesignTokens.fontSizeBody,
+          height: 1.5,
+          color: cs.onSurface,
+        )
+        .merge(style);
+    return Text.rich(
+      TextSpan(style: base, children: _parseInline(text, base, cs)),
+    );
   }
 
-  List<InlineSpan> _parseInline(String source, TextStyle base) {
+  List<InlineSpan> _parseInline(String source, TextStyle base, ColorScheme cs) {
     final spans = <InlineSpan>[];
     var i = 0;
     while (i < source.length) {
@@ -1909,7 +2128,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
               text: source.substring(i + 1, end),
               style: base.copyWith(
                 fontFamily: 'monospace',
-                backgroundColor: Colors.black.withValues(alpha: 0.06),
+                backgroundColor: cs.surfaceContainerHighest,
               ),
             ),
           );
@@ -1925,7 +2144,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, closeLabel),
               style: base.copyWith(
-                color: Colors.blue,
+                color: cs.primary,
                 decoration: TextDecoration.underline,
               ),
             ),
@@ -1995,12 +2214,19 @@ class _AssignmentEditor extends StatelessWidget {
         prefixIcon: const Icon(Icons.assignment_ind_outlined),
       ),
       items: [
-        const DropdownMenuItem<String>(value: '', child: Text('未指派')),
+        const DropdownMenuItem<String>(
+          value: '',
+          child: Text(
+            '未指派',
+            style: TextStyle(fontSize: DesignTokens.fontSizeBody),
+          ),
+        ),
         for (final member in members)
           DropdownMenuItem<String>(
             value: member.userId,
             child: Text(
               member.username.isEmpty ? member.userId : member.username,
+              style: const TextStyle(fontSize: DesignTokens.fontSizeBody),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -2040,11 +2266,7 @@ class _TaskCommentsPanelState extends State<_TaskCommentsPanel> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(12),
-      border: Border.all(
-        color: cs.outlineVariant.withValues(alpha: 0.16),
-        width: 0.45,
-      ),
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2052,7 +2274,7 @@ class _TaskCommentsPanelState extends State<_TaskCommentsPanel> {
             children: [
               Icon(Icons.forum_outlined, size: 18, color: cs.primary),
               const SizedBox(width: 8),
-              const Expanded(child: Text('任务评论')),
+              const Expanded(child: _SectionLabel(text: '任务评论')),
               Text(
                 '${widget.comments.length}',
                 style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
@@ -2192,47 +2414,50 @@ class _TimeTargetEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionLabel(text: '目标时长'),
-        const SizedBox(height: DesignTokens.spaceXs),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  isDense: true,
-                  hintText: '分钟（0 或空 = 清除）',
-                  suffixText: '分钟',
+    return AppSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SectionLabel(text: '目标时长'),
+          const SizedBox(height: DesignTokens.spaceSm),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    isDense: false,
+                    hintText: '分钟（0 或空 = 清除）',
+                    suffixText: '分钟',
+                  ),
+                  onChanged: onChanged,
                 ),
-                onChanged: onChanged,
               ),
-            ),
-            IconButton(
-              tooltip: '清除',
-              onPressed: onClear,
-              icon: const Icon(Icons.clear),
-            ),
-          ],
-        ),
-        const SizedBox(height: DesignTokens.spaceXs),
-        Wrap(
-          spacing: DesignTokens.spaceXs,
-          runSpacing: DesignTokens.spaceXs,
-          children: [
-            for (final m in _presets)
-              ChoiceChip(
-                label: Text('$m 分钟'),
-                selected: minutes == m,
-                onSelected: (_) => onPreset(m),
+              const SizedBox(width: DesignTokens.spaceSm),
+              IconButton(
+                tooltip: '清除',
+                onPressed: onClear,
+                icon: const Icon(Icons.clear),
               ),
-          ],
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          Wrap(
+            spacing: DesignTokens.spaceXs,
+            runSpacing: DesignTokens.spaceXs,
+            children: [
+              for (final m in _presets)
+                ChoiceChip(
+                  label: Text('$m 分钟'),
+                  selected: minutes == m,
+                  onSelected: (_) => onPreset(m),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2258,20 +2483,19 @@ class _TodoAttachmentPanel extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final images = attachments.where((attachment) => attachment.isImage);
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(DesignTokens.spaceMd),
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.attach_file, size: 18),
-              const SizedBox(width: 6),
-              const Expanded(
-                child: Text(
-                  '附件',
-                  style: TextStyle(fontWeight: FontWeight.normal),
-                ),
+              Icon(
+                Icons.attach_file,
+                size: DesignTokens.controlIconSize,
+                color: cs.onSurfaceVariant,
               ),
+              const SizedBox(width: DesignTokens.spaceSm),
+              const Expanded(child: _SectionLabel(text: '附件')),
               IconButton(
                 tooltip: '选择文件',
                 onPressed: enabled ? onPickFile : null,
@@ -2421,26 +2645,34 @@ class _TagsEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: DesignTokens.spaceXs,
-      runSpacing: DesignTokens.spaceXs,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ...tags.map(
-          (t) => ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 180),
-            child: Chip(
-              label: Text('#$t', maxLines: 1, overflow: TextOverflow.ellipsis),
-              onDeleted: () => onRemove(t),
-            ),
+        if (tags.isNotEmpty) ...[
+          Wrap(
+            spacing: DesignTokens.spaceXs,
+            runSpacing: DesignTokens.spaceXs,
+            children: [
+              for (final t in tags)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  child: Chip(
+                    label: Text(
+                      '#$t',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onDeleted: () => onRemove(t),
+                  ),
+                ),
+            ],
           ),
-        ),
-        SizedBox(
-          width: 140,
-          child: TextField(
-            controller: controller,
-            decoration: const InputDecoration(isDense: true, hintText: '+ 新标签'),
-            onSubmitted: onAdd,
-          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+        ],
+        TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: '+ 新标签'),
+          onSubmitted: onAdd,
         ),
       ],
     );

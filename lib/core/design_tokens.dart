@@ -24,6 +24,9 @@ class DesignTokens {
 
   // ----- Account form fields -----
   static const double formFieldMinHeight = 56;
+  static const double formContentMaxWidth = 840;
+  static const double controlMinHeight = 44;
+  static const double controlIconSize = 20;
 
   // ----- Modal bottom sheets -----
   // 键盘弹出时，以键盘上方可用高度为基准。
