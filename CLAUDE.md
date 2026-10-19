@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **State Management**: Provider pattern
 - **Platforms**: Android, Linux desktop, Web (iOS scaffolding exists but is not a CI target)
 
-**On this machine** `flutter` is not on PATH. Use `/home/ubuntu/flutter/bin/flutter`; repo scripts default to this via the `FLUTTER_BIN` env var. Android SDK lives at `/home/ubuntu/android-sdk`.
+Toolchain versions live in `config/toolchain.json`. Use `FLUTTER_BIN`, `PYTHON_BIN`, `ANDROID_SDK_ROOT` / `ANDROID_HOME`, or PATH for local executable locations; scripts must not assume an author's machine paths.
 
 ## Development Commands
 
@@ -29,7 +29,7 @@ flutter test
 # Run a single test file
 flutter test test/screens/countdown_screen_test.dart
 
-# Build Android APK (release) with custom server URL (compile-time constant)
+# Build an APK with an initial server URL (editable on the installed login page)
 flutter build apk --release --dart-define=DUOYI_SERVER_URL=https://your-server.com
 ```
 
@@ -51,7 +51,7 @@ python -m unittest test_workspaces.WorkspaceApiTest.test_admin_current_managemen
 
 Despite its name, `backend/test_workspaces.py` (~150 tests in `WorkspaceApiTest`) is the **entire backend test suite**: route contracts, auth, admin, sync, feedback, coins — not just workspaces.
 
-**Backend environment variables** (first-run bootstrap only; managed via admin panel afterwards): `ADMIN_BOOTSTRAP_USER` / `ADMIN_BOOTSTRAP_PASSWORD` (default admin/admin123), `INVITE_CODE_REQUIRED`, `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL`, `CORS_ORIGINS`, `DUOYI_DB_PATH`. Many more exist for email/SMTP, OpenList/WebDAV backup, and server backup — grep `os.getenv` in `backend/main.py`.
+**Backend configuration**: process environment > ignored `backend/.env` (`DUOYI_ENV_FILE`) > public `config/deployment.json` (`DUOYI_CONFIG_FILE`) > schema defaults. Fresh bootstrap accounts require an explicit password. Database runtime settings only receive missing initial values; preserve existing data and PASSWORD_HASH_SALT. See `docs/configuration.md` and `backend/.env.example`.
 
 ### Full Regression Gate
 
@@ -94,7 +94,7 @@ lib/
 ├── core/              # Theme system, design tokens, business logic (no Flutter UI deps for most)
 │   ├── app_brand.dart         # 8 theme definitions (defaultBrand, re0, genshin, starRail, wuthering, zzz, yanyun, botw)
 │   ├── brand_strings.dart     # Theme-specific UI text (e.g., "待办" → "咒文" in RE0 theme)
-│   ├── app_config.dart        # Compile-time server URL (defaultServerUrl + --dart-define override)
+│   ├── app_config.dart        # Validated, immutable public build configuration; values injected from config/deployment.json
 │   ├── app_version.dart       # App version constants (keep in sync with pubspec.yaml)
 │   ├── design_tokens.dart     # Spacing/typography tokens (enforced by static guard tests)
 │   └── ...                    # achievements, report_engine, recurrence, insights, validation, etc.
@@ -142,7 +142,7 @@ Theme switching is managed by `AppBrand` (`lib/core/app_brand.dart`) and `BrandS
 
 ### CI/CD (GitHub Actions)
 
-Workflow file: `.github/workflows/build-apk.yml` (pins `FLUTTER_VERSION: 3.44.1`)
+Workflow `.github/workflows/build-apk.yml` validates a shared profile first and reads toolchain versions from `config/toolchain.json`.
 
 | Trigger | Job | Output |
 |---------|-----|--------|
@@ -158,7 +158,7 @@ Workflow file: `.github/workflows/build-apk.yml` (pins `FLUTTER_VERSION: 3.44.1`
 
 ### Optional Repository Variables
 
-- `DUOYI_SERVER_URL`: Backend URL injected at build time (falls back to `lib/core/app_config.dart`)
+- Public deployment values are maintained in `config/deployment.json`; repository variables can override backend URL, update repository, and Web base href. The manual `same_origin` input explicitly selects an empty backend URL.
 
 ### Creating a Release
 
@@ -176,12 +176,13 @@ Download pages in `deploy/duoyi.html` and `deploy/duoyi-test-cases.html` are upd
 
 ## Server URL Configuration
 
-**Important**: Server URL is a compile-time constant, not runtime configurable.
+Installed clients persist a runtime server URL and authenticate with an access token; password/email login remains available. Web defaults to same-origin `/api/*` and `/ws/*`, regardless of the profile's installed-client URL.
 
-- Default defined in `lib/core/app_config.dart` as `defaultServerUrl` (currently `http://6688667.xyz`)
-- Override via `--dart-define=DUOYI_SERVER_URL=<url>` during build
-- GitHub Actions uses the `DUOYI_SERVER_URL` repository variable (or manual input)
-- For same-domain deployment: pass an empty value to use relative paths (`/api/`, `/ws/`)
+- Deployment values live in `config/deployment.json`; `DUOYI_SERVER_URL` supplies the installed client's initial URL.
+- Use `python3 scripts/flutter_with_config.py ...` to validate and inject public build defaults.
+- `AuthProvider` owns the active URL and Bearer credential. Use its client/getters for API, AI, sync, sharing, WebSockets and backend update policy.
+- Stored credentials and account data are bound to server + account. Verify token login before replacing a connection and run account cleanup before applying a different server/account.
+- Create/revoke named, optionally expiring tokens in Profile → Access tokens. Full secrets are returned only once; the backend stores hashes. Never include them in profiles or Dart defines.
 
 ## Key Features
 
@@ -209,18 +210,17 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 
 ### Production Backend
 
-- Runs as systemd service `duoyi-backend` on `127.0.0.1:18015`
-- Proxied via OpenResty/nginx from the public domain (`http://6688667.xyz`)
-- Deploy script: `./scripts/deploy_backend_prod.sh` — restarts the service, then validates `/api/config` locally and publicly and probes auth-protected routes (expects 401, proving routes are registered)
-- **Backend code changes do not take effect until the service is restarted** — GitHub Releases only ship client artifacts
-- SQLite database: `backend/duoyi.db`; periodic backups in `backend/backups/`
+- Runner, service/container name, public URL and local health URL come from the deployment profile.
+- `scripts/deploy_backend_prod.sh --check-config` only validates targets. A normal invocation restarts the selected Docker/systemd runner and verifies API contracts.
+- Docker deployments must rebuild the image with all backend modules and version metadata, then recreate the container to apply image or Compose env_file changes. A restart alone preserves the original image/environment; GitHub client Releases do not deploy backend code.
+- Preserve the configured SQLite/data directories and password salt across upgrades; no database reset is needed.
 
 ### Web Client
 
-Build with empty `DUOYI_SERVER_URL` for same-domain deployment:
+Use the shared build entrypoint for same-origin deployment:
 
 ```bash
-flutter build web --release --dart-define=DUOYI_SERVER_URL=
+python3 scripts/flutter_with_config.py build web --release --dart-define=DUOYI_SERVER_URL=
 ```
 
 Nginx config example:
@@ -236,6 +236,14 @@ location / { try_files $uri $uri/ /index.html; }
 - Template ARB is **Chinese** (`lib/l10n/app_zh.arb`); supported locales: zh (primary), en
 - Generated files: `lib/l10n/generated/`
 - Custom wrapper: `lib/core/i18n.dart` with `I18n.tr()` helper; several static guard tests enforce i18n usage in screens
+- Language defaults to the system locale; a persisted explicit choice (`system` / `zh` / `en`) lives in `LocaleProvider` and applies immediately (`lib/widgets/language_settings_tile.dart`; also "扩展 → 语言")
+
+## Time Model
+
+- `AppClock` (`lib/core/app_clock.dart`) is the single source for user-visible wall-clock time: `now()`, `date()`, `dateOnly()`, `today()`, `watch()`, `notifyDayChanged()`. "Today", day grouping, per-day stats, habit periods, almanac and date formatting must use it.
+- The application time zone comes from `LocalTimezoneResolver` (`lib/core/local_timezone_resolver.dart`): system zone by default, user-overridable IANA zone persisted by `PreferencesProvider` (`setAppTimeZone` / `refreshResolvedTimeZone`). Reminders are replayed on zone change and on resume.
+- Keep real instants for cloud-sync timestamps, `updatedAt`, IDs and elapsed timers. Floating date-only values (todo `date`, anniversaries) keep their stored year/month/day and never shift across zones.
+- Full rules and verification checklist: `docs/configuration.md` → 语言与应用时区.
 
 ## Platform-Specific Features
 

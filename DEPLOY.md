@@ -1,8 +1,10 @@
 # 多仪 部署与发布
 
+部署参数统一维护于 `config/deployment.json`；私密启动参数来自环境或 `backend/.env`。完整配置优先级、兼容与迁移说明见 [docs/configuration.md](docs/configuration.md)。
+
 ## 总体架构
 
-- **APK / Web 客户端**：编译时把服务器地址写死，运行期不可修改；
+- **安装客户端**：登录页可配置服务器地址并通过访问令牌连接；**Web**：默认使用当前站点后端；
 - **后端 (FastAPI)**：单一 SQLite，自持全部数据；
 - **管理员**：登录后进入"管理员后台"远程配置 AI / 云端备份 / 公告 / 用户；
 - **普通用户**：注册登录后直接用，看不到任何技术细节。
@@ -10,8 +12,8 @@
 ```
 ┌─────────────────────┐         ┌────────────────────┐
 │  APK / Web 客户端   │         │  FastAPI (SQLite)  │
-│  DUOYI_SERVER_URL   │────────▶│  /api/auth         │
-│   已锁死，不可改    │         │  /api/sync         │
+│  安装端: 地址+令牌  │────────▶│  /api/auth         │
+│  Web: 当前站点后端  │         │  /api/sync         │
 │                     │         │  /api/ai/chat (代理)│
 └─────────────────────┘         │  /api/admin/*      │
          ▲                      └────────────────────┘
@@ -39,29 +41,25 @@
 cd backend
 pip install -r requirements.txt
 
-# 环境变量(首次启动生效；后续通过管理员后台随时改)
-#   ADMIN_BOOTSTRAP_USER=admin
-#   ADMIN_BOOTSTRAP_PASSWORD=admin123
-#   INVITE_CODE_REQUIRED=false
-#   AI_BASE_URL=https://api.openai.com
-#   AI_API_KEY=sk-…
-#   AI_MODEL=gpt-4o-mini
-#   CORS_ORIGINS=https://duoyi.example.com
+cp .env.example .env
+# 编辑私有 .env：新建管理员需 ADMIN_BOOTSTRAP_PASSWORD。
+# 公开后端地址、更新仓库和部署路径来自 config/deployment.json。
+# AI/注册/邮件等环境值只补齐缺失的数据库设置，管理员已保存的值继续生效。
 
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-首次启动会自动创建 `fingertip_time.db` 与一个 admin 账号。
+首次启动创建 `duoyi.db`；已有旧库会按兼容规则继续使用。同名 bootstrap 管理员存在时不会重置密码，升级必须保留原密码 salt。
 
 ### 生产后端发布
 
-GitHub Release 只发布 APK / Web 产物，不会自动替换服务器内存里的 FastAPI 进程。生产环境只保留一个多仪后端服务：
+GitHub Release 发布客户端产物；后端代码、配置模块与镜像需按部署流程更新。运行器、容器/服务名和健康检查地址由公开 profile 提供。先检查目标：
 
 ```bash
-systemctl status duoyi-backend
+bash scripts/deploy_backend_prod.sh --check-config
 ```
 
-该服务固定监听 `127.0.0.1:18015`，OpenResty 将 `6688667.xyz` 的 `/api/` 和 `/ws/` 转发到这个端口。后端代码更新后必须重启该服务，否则进程会继续运行旧代码：
+确认已更新后端文件；Docker 发布需构建镜像并重建容器，保留现有数据目录和私密环境配置，再执行重启验证：
 
 ```bash
 ./scripts/deploy_backend_prod.sh
@@ -69,7 +67,7 @@ systemctl status duoyi-backend
 
 脚本会执行并验证：
 
-- 重启 `duoyi-backend`;
+- 重启配置指定的 Docker 容器或 systemd 服务；
 - 本机 `/api/config` 可访问；
 - 公网 `/api/config` 可访问；
 - `/api/theme-shop/apply` 路由已加载，未登录时应返回 401 而不是 404；
@@ -94,29 +92,27 @@ API Key / 其他敏感字段都只驻留后端 SQLite，读出时返回掩码 (`
 
 ## 2. APK 客户端
 
-**服务器地址必须在编译时决定**：
+**构建值仅作为安装端初始服务器地址，可在登录页修改**：
 
 ```bash
-# 推荐：--dart-define 覆盖 (不改源码)
-flutter build apk --release \
-  --dart-define=DUOYI_SERVER_URL=https://duoyi.example.com
+# 读取经过校验的公开部署配置
+python3 scripts/flutter_with_config.py build apk --release
 
-# 或者：直接修改 lib/core/app_config.dart 里的 defaultServerUrl
+# 或明确覆盖某个公开值
+python3 scripts/flutter_with_config.py build apk --release --dart-define=DUOYI_SERVER_URL=https://duoyi.example.com
 ```
 
-构建产物里这个地址已被常量替换，普通用户无法修改。
+安装后可填写自己的服务器地址和访问令牌。令牌在网页版“我的 → 个人资料 → 访问令牌”创建并单独撤销，完整令牌只显示一次。账号密码与邮箱登录入口继续可用。
 
 ## 3. Web 客户端
 
-### 独立域名部署
+### 默认使用当前站点后端
 
 ```bash
-flutter build web --release \
-  --base-href=/duoyi/ \
-  --dart-define=DUOYI_SERVER_URL=https://duoyi-api.example.com
+python3 scripts/flutter_with_config.py build web --release --base-href=/duoyi/
 ```
 
-把 `build/web/` 放到任何静态 host；注意后端 `CORS_ORIGINS` 要带上前端域。
+Web 的 `/api/*`、`/ws/*` 默认请求当前站点，`DUOYI_SERVER_URL` 不会将 Web 凭据重定向到其他实例。静态文件与后端分开托管时，在前端域名设置 API 和 WebSocket 反向代理。
 
 ### 同域反代部署 (推荐)
 
@@ -159,12 +155,11 @@ server {
 
 ## 4. 普通用户视角
 
-登录 → 用。完。
+Web 用户直接登录账号；安装版用户填写服务器地址与访问令牌，或使用账号密码入口。
 
-他们在 APP 里**看不到**任何：
-- 服务器地址
-- AI Key / Base URL / 模型
-- 云同步地址 / Token
+AI Key、代理模型密钥和数据库配置仍由管理员在后端管理。用户可在“个人资料 → 访问令牌”查看自己的设备连接、最近使用时间与有效期。
+
+界面语言与应用时区默认跟随系统。用户可在“我的 → 个性设置 → 日期与日历 → 界面语言”固定语言，或在同处的“应用时区”固定 IANA 时区；两者都会立即生效并保存在本机，不需要重启。所选时区只改变应用内的壁钟语义（今日、日历、按天统计、习惯周期、提醒时刻、日期格式），同步时间戳与计时已流逝时长仍按真实瞬时处理。详见 [docs/configuration.md](docs/configuration.md#语言与应用时区)。
 
 他们可以使用：
 - 所有功能模块 (待办/习惯/日历/专注/笔记/日记/纪念日/目标/课程表/黄历/倒数日)

@@ -20,7 +20,7 @@ python -m unittest test_workspaces -v
 scripts/alignment_regression_gate.sh
 ```
 
-**Gotcha:** `flutter` is not on PATH on this machine, and `scripts/*.sh` default `FLUTTER_BIN` to `/home/ubuntu/flutter/bin/flutter` (a Linux path from another machine). Set `FLUTTER_BIN` (and `PYTHON_BIN`) explicitly when running them.
+**Toolchains:** versions are pinned in `config/toolchain.json`. Executable locations use `FLUTTER_BIN`, `PYTHON_BIN`, Android SDK environment variables, or PATH; scripts do not assume a developer-specific installation directory.
 
 ## Hard rules (enforced by static guard tests)
 
@@ -28,8 +28,9 @@ scripts/alignment_regression_gate.sh
 
 - **Version bump touches two files**: `pubspec.yaml` (`version: 1.1.41+140007`) AND `lib/core/app_version.dart` (`name`/`build`) — change together or update checks disagree.
 - **Backend routes are contract-pinned**: `backend/test_workspaces.py` asserts client-facing routes do not 404. Adding/renaming a route the client calls → add/update the matching contract test; keep `API_CONTRACT_VERSION` / `API_CONTRACT_FEATURES` in `backend/main.py` current.
-- **Server URL is compile-time**: default in `lib/core/app_config.dart`; override with `--dart-define=DUOYI_SERVER_URL=<url>` (empty value = same-domain relative `/api/`, `/ws/` — used for web builds).
+- **Deployment config**: public defaults live in `config/deployment.json`; inject with `python3 scripts/flutter_with_config.py ...`. Installed login supports a persisted runtime URL + access token; `DUOYI_SERVER_URL` supplies only its initial URL. Web defaults to same-origin. Use `AuthProvider.client`/`baseUrl`; credentials and local data are bound to server + account. Private backend values come from environment or ignored `backend/.env`; see `docs/configuration.md`.
 - **i18n**: Chinese ARB template (`lib/l10n/app_zh.arb`, zh primary / en); use `I18n.tr()` from `lib/core/i18n.dart`.
+- **Time & locale**: user-visible dates/"today"/day stats/habit periods/reminders use the *application* wall clock — `AppClock` (`lib/core/app_clock.dart`) and `LocalTimezoneResolver` (`lib/core/local_timezone_resolver.dart`), default = system zone, user-overridable IANA zone. Keep sync timestamps, `updatedAt`, IDs, elapsed timers on real instants (`DateTime.now()`/UTC) and never shift floating date-only values. Language defaults to the system locale with a persisted explicit override (`LocaleProvider`, `language_settings_tile.dart`). See `docs/configuration.md`.
 
 ## Layout
 
@@ -47,7 +48,7 @@ Cloud sync (`lib/providers/cloud_sync_provider.dart` + `/api/sync/*`): timestamp
 ## Docs & deployment hygiene
 
 - Root-level `*_REPORT.md` / `*_SUMMARY.md` / `*_ANALYSIS.md` files are historical working-session notes — not current guidance, and don't add new ones to the root.
-- Prod backend runs as systemd `duoyi-backend`; **backend code changes take effect only after restart** via `./scripts/deploy_backend_prod.sh`. Client releases ship via GitHub Releases: bump both version files, push a `v*` tag.
+- Backend service/container name and runner are configured in the deployment profile. For Docker code/image or Compose env_file changes, build the image and recreate the container; restart alone preserves the old image/environment. `scripts/deploy_backend_prod.sh` restarts and verifies the configured runner; `--check-config` only inspects values. Client releases ship through the configured Fork; bump both version files before a release tag.
 - Sign-off repo secrets (`DUOYI_KEYSTORE_*`) are required for release builds — no debug-signing fallback.
 
 ## Screenshots & evidence

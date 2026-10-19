@@ -4,6 +4,10 @@
 
 > Flutter 客户端 + 自托管 FastAPI 后端，开源、可自部署。
 
+配置入口、优先级和迁移说明见 [docs/configuration.md](docs/configuration.md)；当前自托管实例的构建命令见 [docs/self-hosting-skydrow.md](docs/self-hosting-skydrow.md)。
+
+安装端（Android、iOS、Windows、Linux 及后续 macOS）在登录页填写服务器地址和访问令牌；Web 默认连接当前站点后端。可先在网页版账号的“我的 → 个人资料 → 访问令牌”创建令牌，支持按设备命名、查看最近使用时间、设置有效期和单独撤销。安装端也保留账号密码登录入口。
+
 ## 功能特性
 
 ### 核心模块
@@ -26,7 +30,7 @@
 - **多端云同步**：Python FastAPI 后端，按时间戳合并
 
 ### AI 助手
-- 兼容 OpenAI `chat/completions` 协议，可对接任意网关（默认指向 boxying-image-gateway）
+- 兼容 OpenAI `chat/completions` 协议；网关、模型和 Key 由后端环境初始值及管理员后台设置提供
 - AI 任务拆解：新建待办时一键将一句话变成结构化子任务
 - AI 每周回顾：基于本周完成数据生成总结与建议
 
@@ -34,6 +38,12 @@
 - 注册/登录/JWT，邀请码可选（环境变量 `INVITE_CODE_REQUIRED` 默认关闭）
 - 公告系统、反馈与许愿（用户提交，管理员回复）
 - 应用内自动检查 GitHub Release 更新
+
+### 语言与时区
+- 界面语言默认跟随系统（中文系统显示简体中文，其他回退英文），也可在“我的 → 个性设置 → 日期与日历 → 界面语言”或“扩展 → 语言”显式固定，切换即时生效
+- 应用时区同一位置可设为“跟随系统”或固定 IANA 时区；“今天”、日期分组、按天统计、习惯周期、提醒触发时刻与日期格式化按选定时区计算
+- 同步时间戳、记录 `updatedAt`、计时器已流逝时长等仍是真实瞬时；只存年/月/日的浮动日期不会因换时区而平移
+- 详见 [docs/configuration.md](docs/configuration.md#语言与应用时区)
 
 ## 项目结构
 
@@ -56,17 +66,20 @@ assets/backgrounds/        # 7 张主题背景图
 
 ### 客户端
 ```bash
-flutter pub get
-flutter run -d linux            # Linux 桌面
-flutter build apk --release     # Android (需安装 Android SDK)
+python3 scripts/project_config.py validate
+python3 scripts/flutter_with_config.py pub get
+python3 scripts/flutter_with_config.py run
+python3 scripts/flutter_with_config.py build apk --release  # 需配置自己的签名
 ```
 
 ### 后端
 ```bash
 cd backend
 pip install -r requirements.txt
+cp .env.example .env
+# 在私有 .env 中设置 ADMIN_BOOTSTRAP_PASSWORD；保留已有实例的密码 salt
 uvicorn main:app --host 0.0.0.0 --port 8000
-# 默认管理员：admin / admin123 (env: ADMIN_BOOTSTRAP_USER / ADMIN_BOOTSTRAP_PASSWORD)
+# 管理员用户名默认 admin；新建账号必须显式提供密码，不重置已有账号
 # 启用邀请码：export INVITE_CODE_REQUIRED=true
 ```
 
@@ -74,7 +87,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ### GitHub Actions
 
-`.github/workflows/build-apk.yml` 定义了 4 个作业：
+`.github/workflows/build-apk.yml` 先校验公开配置和工具链，再执行测试、构建与发布：
 
 | 触发 | 作业 | 产物 |
 |---|---|---|
@@ -97,8 +110,9 @@ base64 -w0 duoyi-release.jks | pbcopy   # 或 | xclip -selection clipboard
 ```
 
 #### 可选的仓库 Variables
-- `DUOYI_SERVER_URL` — 构建期注入的后端地址，不设置时回退到 `lib/core/app_config.dart` 的 `defaultServerUrl`。
-- 手动触发时在 `workflow_dispatch` 表单里填 `server_url` 可临时覆盖。
+- `DUOYI_SERVER_URL`、`DUOYI_UPDATE_REPOSITORY`、`DUOYI_WEB_BASE_HREF` 可覆盖 `config/deployment.json` 中的值。
+- 手动触发可选择其他 `config_file`，或用 `same_origin` 显式选择空后端地址。
+- 工具链版本由 `config/toolchain.json` 管理。
 
 #### 发版
 
