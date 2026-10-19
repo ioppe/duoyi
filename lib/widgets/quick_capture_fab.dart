@@ -5,6 +5,8 @@ import '../core/ai_command.dart';
 import '../core/i18n_date_format.dart';
 import '../core/i18n.dart';
 import '../core/smart_date_parser.dart';
+import '../core/design_tokens.dart';
+import '../core/home_page_style.dart';
 import '../core/smart_todo_draft.dart';
 import '../models/goal.dart'
     show ReminderKind, ReminderPlan, ReminderRule, ReminderRuleType;
@@ -25,7 +27,10 @@ import 'surface_components.dart';
 
 /// 展开式快速捕获 FAB：3 个子按钮 + 一个搜索入口。
 class QuickCaptureFab extends StatefulWidget {
-  const QuickCaptureFab({super.key});
+  final String? label;
+  final VoidCallback? onCreate;
+
+  const QuickCaptureFab({super.key, this.label, this.onCreate});
 
   @override
   State<QuickCaptureFab> createState() => _QuickCaptureFabState();
@@ -67,7 +72,7 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
   }
 
   Future<void> _quickTodo() async {
-    _toggle();
+    _closeIfOpen();
     final ctrl = TextEditingController();
     SmartDateParseResult parsed = SmartDateParseResult.empty;
     final ok = await showDialog<bool>(
@@ -832,16 +837,57 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
             onTap: _quickTodo,
           ),
         ],
-        GestureDetector(
-          onLongPress: _showTemplateSheet,
-          child: FloatingActionButton(
-            heroTag: 'quick_capture',
-            onPressed: _toggle,
-            child: AnimatedRotation(
-              turns: _open ? 0.125 : 0,
-              duration: const Duration(milliseconds: 220),
-              child: const Icon(Icons.add),
-            ),
+        Tooltip(
+          message: widget.label == null ? '' : I18n.tr('today.capture.tooltip'),
+          triggerMode: TooltipTriggerMode.manual,
+          child: GestureDetector(
+            onLongPress: widget.label == null ? _showTemplateSheet : _toggle,
+            child: widget.label == null
+                ? FloatingActionButton(
+                    heroTag: 'quick_capture',
+                    onPressed: _toggle,
+                    child: AnimatedRotation(
+                      turns: _open ? 0.125 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: const Icon(Icons.add),
+                    ),
+                  )
+                : SizedBox(
+                    height: DesignTokens.controlMinHeight,
+                    child: FloatingActionButton.extended(
+                      key: const ValueKey('home_create_button'),
+                      heroTag: 'quick_capture',
+                      elevation: 0,
+                      backgroundColor: HomePageStyle.of(context).accent,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).floatingActionButtonTheme.foregroundColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusCard,
+                        ),
+                      ),
+                      extendedPadding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.spaceLg,
+                      ),
+                      extendedIconLabelSpacing: DesignTokens.spaceSm,
+                      extendedTextStyle: HomePageStyle.of(context).typography(
+                        Theme.of(context),
+                        size: DesignTokens.fontSizeSm,
+                        color: Theme.of(
+                          context,
+                        ).floatingActionButtonTheme.foregroundColor,
+                      ),
+                      onPressed: _open
+                          ? _toggle
+                          : widget.onCreate ?? _quickTodo,
+                      icon: Icon(
+                        _open ? Icons.close : Icons.add,
+                        size: DesignTokens.controlIconSize,
+                      ),
+                      label: Text(widget.label!),
+                    ),
+                  ),
           ),
         ),
       ],

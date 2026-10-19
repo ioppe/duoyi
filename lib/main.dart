@@ -10,6 +10,7 @@ import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
 import 'core/design_tokens.dart';
+import 'core/home_page_style.dart';
 import 'core/desktop_tokens.dart';
 import 'core/i18n.dart';
 import 'core/iterable_extensions.dart';
@@ -90,7 +91,6 @@ import 'screens/time_audit_screen.dart';
 import 'screens/today_detail_router.dart';
 import 'widgets/brand_background.dart';
 import 'widgets/force_update_gate.dart';
-import 'widgets/quick_capture_fab.dart';
 import 'widgets/todo_completion_flow.dart';
 import 'widgets/surface_components.dart';
 
@@ -4216,16 +4216,57 @@ class MainShellState extends State<MainShell> {
     // 半透明底色由 navigationBarTheme 档位控制，模糊在此包 BackdropFilter，
     // 其余 7 套主题（navBarBlurSigma=0）保持原样，不引入模糊开销。
     final navBarBlurSigma = appSurfaceStyleOf(context)?.navBarBlurSigma ?? 0;
-    final navBar = NavigationBar(
-      selectedIndex: selectedNavIndex < 0 ? 0 : selectedNavIndex,
-      onDestinationSelected: (i) => setState(() {
-        _currentIndex = safeVisibleTabs[i];
-        _builtTabs.add(_currentIndex);
-        _allowHiddenCurrentIndex = false;
-        _hasExplicitNavigation = true;
-      }),
-      destinations: destinations,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+    final theme = Theme.of(context);
+    final home = HomePageStyle.of(context);
+    final referenceHome = safeIndex == 0 && home.usesReferencePalette;
+    final homeNavigationTheme = theme.navigationBarTheme.copyWith(
+      height: 64,
+      backgroundColor: theme.colorScheme.surface,
+      indicatorColor: home.accent.withValues(alpha: 0.08),
+      indicatorShape: const RoundedRectangleBorder(
+        borderRadius: DesignTokens.borderRadiusSm,
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => home.typography(
+          theme,
+          size: DesignTokens.homeCounterSize,
+          color: states.contains(WidgetState.selected)
+              ? home.accent
+              : home.muted,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          size: DesignTokens.controlIconSize,
+          color: states.contains(WidgetState.selected)
+              ? home.accent
+              : home.muted,
+        ),
+      ),
+    );
+    final navBar = NavigationBarTheme(
+      data: referenceHome ? homeNavigationTheme : theme.navigationBarTheme,
+      child: NavigationBar(
+        selectedIndex: selectedNavIndex < 0 ? 0 : selectedNavIndex,
+        onDestinationSelected: (i) => setState(() {
+          _currentIndex = safeVisibleTabs[i];
+          _builtTabs.add(_currentIndex);
+          _allowHiddenCurrentIndex = false;
+          _hasExplicitNavigation = true;
+        }),
+        destinations: referenceHome
+            ? destinations
+                  .map(
+                    (item) => NavigationDestination(
+                      icon: item.icon,
+                      selectedIcon: item.icon,
+                      label: item.label,
+                    ),
+                  )
+                  .toList()
+            : destinations,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      ),
     );
     // 液态玻璃需要真实内容垫在导航条下：Scaffold 默认（extendBody=false）
     // 的 body 不延伸到 bottomNavigationBar 之下，BackdropFilter 无内容可
@@ -4249,7 +4290,7 @@ class MainShellState extends State<MainShell> {
     // NavigationBar 结构为 Material > SafeArea > SizedBox(height)，
     // 总高 = navigationBarTheme.height + 系统底部 inset。
     final navBarTotalHeight =
-        (NavigationBarTheme.of(context).height ?? 80.0) +
+        (referenceHome ? 64 : NavigationBarTheme.of(context).height ?? 80.0) +
         rootMediaQuery.padding.bottom;
     final tabStack = IndexedStack(
       index: safeIndex,
@@ -4282,9 +4323,6 @@ class MainShellState extends State<MainShell> {
               ),
             )
           : BrandBackground(child: tabStack),
-      floatingActionButton: safeIndex == 0 && prefs.quickCaptureFab
-          ? const QuickCaptureFab()
-          : null,
       bottomNavigationBar: showingHiddenTab
           ? _HiddenTabReturnBar(
               onClose: () => setState(() {
@@ -4352,22 +4390,6 @@ class MainShellState extends State<MainShell> {
     // Center 两侧留白；FAB 右距据此贴住内容列右缘。
     final windowWidth = MediaQuery.widthOf(context);
     final railExtended = windowWidth >= DesktopTokens.railExtendedBreakpoint;
-    final railWidth = railExtended
-        ? DesktopTokens.railExtendedWidth
-        : DesktopTokens.railCompactWidth;
-    final contentSpare =
-        windowWidth -
-        railWidth -
-        DesignTokens.spaceMd * 2 -
-        DesktopTokens.maxContentWidth;
-    // Scaffold endFloat 已自带 16px 右缘边距（kFloatingActionButtonMargin），
-    // FAB 右缘距窗右 = 16 + fabRightInset。宽屏下内容列距窗右 contentSpare/2，
-    // 贴缘即 fabRightInset = contentSpare/2 - 16；留白不足（≤16）时归零，
-    // 右距与移动壳一致（恰为 endFloat 的 16px）。
-    final double contentRightGap = contentSpare > 0 ? contentSpare / 2 : 0.0;
-    final double fabRightInset = contentRightGap > 16
-        ? contentRightGap - 16
-        : 0.0;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -4439,20 +4461,15 @@ class MainShellState extends State<MainShell> {
           ],
         ),
       ),
-      floatingActionButton: safeIndex == 0 && prefs.quickCaptureFab
-          ? Padding(
-              // 宽屏下快速捕获 FAB 贴限宽内容列右缘，不再悬在窗口右侧留白
-              // 里；留白不足时退回与移动壳一致的 16px 右距。
-              padding: EdgeInsets.only(right: fabRightInset),
-              child: const QuickCaptureFab(),
-            )
-          : null,
     );
   }
 
   Widget _buildTab(int tab, List<int> safeVisibleTabs) {
     return switch (tab) {
-      0 => TodayScreen(key: todayKey),
+      0 => TodayScreen(
+        key: todayKey,
+        showCaptureFab: context.read<PreferencesProvider>().quickCaptureFab,
+      ),
       1 => TodoScreen(key: todoKey),
       2 => HabitScreen(key: habitKey),
       3 => CalendarScreen(key: calendarKey),

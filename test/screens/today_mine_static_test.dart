@@ -49,9 +49,9 @@ void main() {
       expect(today, contains("I18n.tr('today.completed')"));
       expect(today, contains("I18n.tr('today.courses')"));
       expect(today, contains("\${I18n.tr('today.unit.course_section')}"));
-      expect(today, contains('final headerStyle = theme.textTheme.bodySmall'));
-      expect(today, contains('fontSize: DesignTokens.fontSizeSecondary'));
-      expect(today, contains('indicator: UnderlineTabIndicator('));
+      expect(today, contains('final headerStyle = home.typography('));
+      expect(today, contains('size: DesignTokens.homeCaptionSize'));
+      expect(today, contains('indicator: HomeTabIndicator('));
       expect(today, contains('indicatorSize: TabBarIndicatorSize.label'));
       expect(today, contains('tabAlignment: TabAlignment.start'));
       expect(today, contains("I18n.tr('today.all_todos')"));

@@ -2038,12 +2038,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String todayTodosSummary(int count) {
-    return '待完成 $count 项';
+    return '$count 项待完成';
   }
 
   @override
   String todayGoalsSummary(int count) {
-    return '进行中 $count 项';
+    return '$count 个进行中的目标';
   }
 
   @override
@@ -2051,6 +2051,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todayAllGoals => '全部目标';
+
+  @override
+  String get todayNewTodo => '新建待办';
+
+  @override
+  String get todayNewGoal => '新建目标';
+
+  @override
+  String get todayCaptureTooltip => '点击新建，长按更多快捷操作';
+
+  @override
+  String get todayTaskActions => '任务操作';
 
   @override
   String get todayCompleted => '已完成';

@@ -6,6 +6,7 @@ import '../core/app_clock.dart';
 import '../models/pomodoro.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/design_tokens.dart';
+import '../core/home_page_style.dart';
 import '../core/goal_icons.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -29,6 +30,7 @@ import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/todo_completion_flow.dart';
 import 'habit_screen.dart';
+import '../widgets/quick_capture_fab.dart';
 import 'almanac_screen.dart';
 import 'goal_edit_screen.dart';
 import 'pomodoro_screen.dart';
@@ -53,29 +55,38 @@ List<TodoItem> _visibleTodayOverviewTodos(
 
 /// 首页：默认先看今日待办，通过顶部标签切换到目标。
 class TodayScreen extends StatelessWidget {
-  const TodayScreen({super.key});
+  final bool showCaptureFab;
+
+  const TodayScreen({super.key, this.showCaptureFab = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ScaffoldMessenger(child: Builder(builder: _buildHome));
+
+  Widget _buildHome(BuildContext context) {
     AppClock.watch(context);
     final themeProvider = context.watch<ThemeProvider>();
     final s = themeProvider.brand.strings;
+    final theme = Theme.of(context);
+    final home = HomePageStyle.of(context);
 
     final todoP = context.watch<TodoProvider>();
     final habitP = context.watch<HabitProvider>();
     context.select<PomodoroProvider, int>(
       (provider) => provider.persistedRevision,
     );
-    final todayFocusCount = context
-        .read<PomodoroProvider>()
-        .sessions
-        .where(
-          (session) =>
-              session.type == PomodoroType.focus &&
-              AppClock.dateOnly(AppClock.toLocal(session.endTime)) ==
-                  AppClock.today(),
-        )
-        .length;
+    final todayFocusMinutes =
+        context
+            .read<PomodoroProvider>()
+            .sessions
+            .where(
+              (session) =>
+                  session.type == PomodoroType.focus &&
+                  AppClock.dateOnly(AppClock.toLocal(session.endTime)) ==
+                      AppClock.today(),
+            )
+            .fold<int>(0, (sum, session) => sum + session.durationSeconds) ~/
+        60;
     final anniP = context.watch<AnniversaryProvider>();
     final courseP = context.watch<CourseProvider>();
     final goalP = context.watch<GoalProvider>();
@@ -158,35 +169,41 @@ class TodayScreen extends StatelessWidget {
       onTap: () => _go(context, AlmanacScreen(initialDate: now)),
     );
 
-    final metrics = Wrap(
-      key: const ValueKey('today_metrics_summary'),
-      spacing: DesignTokens.spaceXxl,
-      runSpacing: DesignTokens.spaceXs,
-      alignment: WrapAlignment.spaceBetween,
-      children: [
-        _TodayMetricLink(
-          label: s.navTodo,
-          value: '$todayTodosCount',
-          unit: I18n.tr('today.unit.item'),
-          icon: Icons.check_circle_outline,
-          onTap: () => _go(context, const TodoScreen()),
-        ),
-        _TodayMetricLink(
-          label: s.navHabit,
-          value: '${(todayHabitProgress * 100).round()}',
-          unit: '%',
-          icon: Icons.repeat,
-          onTap: () => _go(context, const HabitScreen()),
-        ),
-        _TodayMetricLink(
-          label: s.navFocus,
-          value: '$todayFocusCount',
-          unit: I18n.tr('today.unit.times'),
-          icon: Icons.timer_outlined,
-          onTap: () =>
-              _go(context, const PomodoroScreen(useShellBackground: true)),
-        ),
-      ],
+    final metrics = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceMd,
+        vertical: DesignTokens.spaceSm,
+      ),
+      child: Wrap(
+        key: const ValueKey('today_metrics_summary'),
+        spacing: DesignTokens.spaceXxl,
+        runSpacing: DesignTokens.spaceXs,
+        alignment: WrapAlignment.spaceBetween,
+        children: [
+          _TodayMetricLink(
+            label: s.navTodo,
+            value: '$todayTodosCount',
+            unit: I18n.tr('today.unit.item'),
+            icon: Icons.check_circle_outline,
+            onTap: () => _go(context, const TodoScreen()),
+          ),
+          _TodayMetricLink(
+            label: s.navHabit,
+            value: '${(todayHabitProgress * 100).round()}',
+            unit: '%',
+            icon: Icons.repeat,
+            onTap: () => _go(context, const HabitScreen()),
+          ),
+          _TodayMetricLink(
+            label: s.navFocus,
+            value: '$todayFocusMinutes',
+            unit: I18n.tr('unit.min'),
+            icon: Icons.timer_outlined,
+            onTap: () =>
+                _go(context, const PomodoroScreen(useShellBackground: true)),
+          ),
+        ],
+      ),
     );
 
     Widget todosSection({int maxItems = 6}) {
@@ -335,7 +352,6 @@ class TodayScreen extends StatelessWidget {
 
     Widget goalsSection() {
       final theme = Theme.of(context);
-      final cs = theme.colorScheme;
       return _section(
         I18n.tr(
           'today.goals.summary',
@@ -373,7 +389,8 @@ class TodayScreen extends StatelessWidget {
                           vertical: DesignTokens.spaceMd,
                         ),
                         minLeadingWidth: DesignTokens.controlMinHeight,
-                        horizontalTitleGap: DesignTokens.spaceSm,
+                        horizontalTitleGap:
+                            DesignTokens.spaceSm - DesignTokens.spaceXxs,
                         leading: SizedBox.square(
                           dimension: DesignTokens.controlMinHeight,
                           child: Icon(
@@ -386,11 +403,9 @@ class TodayScreen extends StatelessWidget {
                           g.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontSize: DesignTokens.fontSizeBody,
-                            color: cs.onSurface,
-                            fontWeight: DesignTokens.fontWeightRegular,
-                            height: 1.4,
+                          style: home.typography(
+                            theme,
+                            size: DesignTokens.homeTaskTitleSize,
                           ),
                         ),
                         subtitle: Padding(
@@ -417,9 +432,10 @@ class TodayScreen extends StatelessWidget {
                               const SizedBox(width: DesignTokens.spaceMd),
                               Text(
                                 '${(p * 100).toStringAsFixed(0)}%',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  fontSize: DesignTokens.fontSizeSecondary,
-                                  color: cs.onSurfaceVariant,
+                                style: home.typography(
+                                  theme,
+                                  size: DesignTokens.homeCaptionSize,
+                                  color: home.muted,
                                 ),
                               ),
                             ],
@@ -452,15 +468,15 @@ class TodayScreen extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: DesignTokens.formContentMaxWidth,
+            maxWidth: DesignTokens.homeContentMaxWidth,
           ),
           child: ListView(
             key: ValueKey(id),
             restorationId: id,
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.spaceXxl,
-              DesignTokens.spaceSm,
-              DesignTokens.spaceXxl,
+              DesignTokens.spaceMd,
+              DesignTokens.spaceXs,
+              DesignTokens.spaceMd,
               DesignTokens.space5xl + DesignTokens.spaceXxl,
             ),
             children: children,
@@ -469,10 +485,42 @@ class TodayScreen extends StatelessWidget {
       );
     }
 
+    final scaler = MediaQuery.textScalerOf(context);
     final tabHeight = math.max(
       DesignTokens.controlMinHeight,
-      MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeBody) * 1.4 +
-          DesignTokens.spaceLg,
+      scaler.scale(DesignTokens.fontSizeBody) * 1.5 + DesignTokens.spaceMd,
+    );
+    final toolbarHeight =
+        DesignTokens.homeTopInset +
+        scaler.scale(DesignTokens.homeHeadingSize) * 1.5 +
+        DesignTokens.spaceXs +
+        scaler.scale(DesignTokens.homeCaptionSize) * 1.5;
+    Widget homeTab({
+      required Key key,
+      required String text,
+      required int count,
+    }) => Tab(
+      key: key,
+      height: tabHeight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Text(text),
+          const SizedBox(width: DesignTokens.spaceSm - DesignTokens.spaceXxs),
+          Opacity(
+            opacity: 0.7,
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: DesignTokens.homeCounterSize,
+                fontWeight: DesignTokens.fontWeightRegular,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
     return DefaultTabController(
       length: 2,
@@ -482,48 +530,43 @@ class TodayScreen extends StatelessWidget {
         appBar: AppBar(
           centerTitle: false,
           titleSpacing: 0,
-          toolbarHeight: math.max(
-            kToolbarHeight,
-            MediaQuery.textScalerOf(
-                      context,
-                    ).scale(DesignTokens.fontSizePageTitle) *
-                    1.3 +
-                MediaQuery.textScalerOf(
-                      context,
-                    ).scale(DesignTokens.fontSizeSecondary) *
-                    1.4 +
-                DesignTokens.spaceXxl,
-          ),
+          toolbarHeight: toolbarHeight,
           title: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: DesignTokens.formContentMaxWidth,
+                maxWidth: DesignTokens.homeContentMaxWidth,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.spaceXxl,
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.spaceXxl,
+                  DesignTokens.homeTopInset,
+                  DesignTokens.spaceXxl,
+                  0,
                 ),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         greeting,
+                        key: const ValueKey('home_greeting'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontSize: DesignTokens.fontSizePageTitle,
-                              fontWeight: DesignTokens.fontWeightRegular,
-                            ),
+                        style: home.typography(
+                          theme,
+                          size: DesignTokens.homeHeadingSize,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.spaceXs),
                       Text(
-                        I18nDateFormat.monthDayWithWeekday(now),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: DesignTokens.fontSizeSecondary,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        I18nDateFormat.homeHeader(now),
+                        key: const ValueKey('home_date'),
+                        style: home.typography(
+                          theme,
+                          size: DesignTokens.homeCaptionSize,
+                          color: home.muted,
                         ),
                       ),
                     ],
@@ -536,58 +579,56 @@ class TodayScreen extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           scrolledUnderElevation: 0,
           bottom: PreferredSize(
-            preferredSize: Size.fromHeight(tabHeight + DesignTokens.spaceSm),
+            preferredSize: Size.fromHeight(
+              tabHeight + DesignTokens.spaceMd + 1,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  maxWidth: DesignTokens.formContentMaxWidth,
+                  maxWidth: DesignTokens.homeContentMaxWidth,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.spaceMd,
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.spaceMd,
+                    DesignTokens.spaceMd + 1,
+                    DesignTokens.spaceMd,
+                    0,
                   ),
                   child: TabBar(
                     key: const ValueKey('today_home_tabs'),
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
                     dividerColor: Colors.transparent,
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
+                    labelColor: home.accent,
+                    unselectedLabelColor: home.muted,
+                    overlayColor: const WidgetStatePropertyAll(
+                      Colors.transparent,
+                    ),
                     labelPadding: const EdgeInsets.symmetric(
                       horizontal: DesignTokens.spaceMd,
                     ),
                     indicatorSize: TabBarIndicatorSize.label,
-                    indicator: UnderlineTabIndicator(
-                      borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: DesignTokens.spaceXxs,
-                      ),
-                      insets: const EdgeInsets.only(
-                        bottom: DesignTokens.spaceXs,
-                      ),
+                    indicator: HomeTabIndicator(color: home.accent),
+                    labelStyle: home.typography(
+                      theme,
+                      size: DesignTokens.fontSizeBody,
+                      color: home.accent,
                     ),
-                    labelStyle: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(
-                          fontSize: DesignTokens.fontSizeBody,
-                          fontWeight: DesignTokens.fontWeightRegular,
-                        ),
-                    unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(
-                          fontSize: DesignTokens.fontSizeBody,
-                          fontWeight: DesignTokens.fontWeightRegular,
-                        ),
+                    unselectedLabelStyle: home.typography(
+                      theme,
+                      size: DesignTokens.fontSizeBody,
+                      color: home.muted,
+                    ),
                     tabs: [
-                      Tab(
+                      homeTab(
                         key: const ValueKey('today_todos_tab'),
-                        height: tabHeight,
                         text: I18n.tr('today.todos'),
+                        count: todayTodosCount,
                       ),
-                      Tab(
+                      homeTab(
                         key: const ValueKey('today_goals_tab'),
-                        height: tabHeight,
                         text: I18n.tr('today.tab.goals'),
+                        count: activeGoals.length,
                       ),
                     ],
                   ),
@@ -610,13 +651,42 @@ class TodayScreen extends StatelessWidget {
                   const SizedBox(height: DesignTokens.spaceMd),
                 ],
                 metrics,
-                const SizedBox(height: DesignTokens.spaceSm),
+                const SizedBox.shrink(),
                 _QuoteCard(),
               ],
             ),
             homePage(id: 'today_goals_list', children: [goalsSection()]),
           ],
         ),
+        floatingActionButtonLocation: const HomeFabLocation(),
+        floatingActionButton: showCaptureFab
+            ? Builder(
+                builder: (context) {
+                  final controller = DefaultTabController.of(context);
+                  return AnimatedBuilder(
+                    animation: controller,
+                    builder: (context, _) => QuickCaptureFab(
+                      key: ValueKey(controller.index),
+                      label: controller.index == 0
+                          ? (home.usesReferencePalette
+                                ? I18n.tr('today.new_todo')
+                                : s.todoCreateTitle)
+                          : I18n.tr('today.new_goal'),
+                      onCreate: controller.index == 0
+                          ? null
+                          : () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const BrandRouteSurface(
+                                  child: GoalEditScreen(),
+                                ),
+                              ),
+                            ),
+                    ),
+                  );
+                },
+              )
+            : null,
       ),
     );
   }
@@ -630,82 +700,85 @@ class TodayScreen extends StatelessWidget {
     Key? headerKey,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.spaceLg),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
             builder: (context) {
               final theme = Theme.of(context);
-              final cs = theme.colorScheme;
-              final headerStyle = theme.textTheme.bodySmall?.copyWith(
-                fontSize: DesignTokens.fontSizeSecondary,
-                height: 1.4,
-                fontWeight: DesignTokens.fontWeightRegular,
-                color: cs.onSurfaceVariant,
+              final home = HomePageStyle.of(context);
+              final headerStyle = home.typography(
+                theme,
+                size: DesignTokens.homeCaptionSize,
+                color: home.muted,
               );
-              return LayoutBuilder(
-                builder: (context, constraints) => Row(
-                  key: headerKey,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title, style: headerStyle),
-                          if (subtitle != null) ...[
-                            const SizedBox(height: DesignTokens.spaceXxs),
-                            Text(subtitle, style: headerStyle),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if (onMore != null) ...[
-                      const SizedBox(width: DesignTokens.spaceSm),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * 0.48,
-                        ),
-                        child: TextButton(
-                          onPressed: onMore,
-                          style: TextButton.styleFrom(
-                            foregroundColor: cs.onSurfaceVariant,
-                            textStyle: headerStyle,
-                            minimumSize: const Size(
-                              0,
-                              DesignTokens.controlMinHeight,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.spaceXs,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  actionLabel ?? I18n.tr('today.view'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: DesignTokens.spaceXs),
-                              const Icon(
-                                Icons.chevron_right,
-                                size: DesignTokens.fontSizeMd,
-                              ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spaceMd,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    key: headerKey,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: headerStyle),
+                            if (subtitle != null) ...[
+                              const SizedBox(height: DesignTokens.spaceXxs),
+                              Text(subtitle, style: headerStyle),
                             ],
-                          ),
+                          ],
                         ),
                       ),
+                      if (onMore != null) ...[
+                        const SizedBox(width: DesignTokens.spaceSm),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: constraints.maxWidth * 0.48,
+                          ),
+                          child: TextButton(
+                            onPressed: onMore,
+                            style: TextButton.styleFrom(
+                              foregroundColor: home.muted,
+                              textStyle: headerStyle,
+                              minimumSize: const Size(
+                                0,
+                                DesignTokens.controlMinHeight,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: DesignTokens.spaceXs,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    actionLabel ?? I18n.tr('today.view'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: DesignTokens.spaceXs),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  size: DesignTokens.fontSizeMd,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               );
             },
           ),
-          const SizedBox(height: DesignTokens.spaceSm),
           child,
         ],
       ),
@@ -724,10 +797,13 @@ class _TodayListDivider extends StatelessWidget {
   const _TodayListDivider();
 
   @override
-  Widget build(BuildContext context) => Divider(
-    height: 1,
-    thickness: 0.5,
-    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spaceMd),
+    child: Divider(
+      height: 1,
+      thickness: 0.5,
+      color: HomePageStyle.of(context).divider,
+    ),
   );
 }
 
@@ -749,10 +825,11 @@ class _TodayMetricLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final style = theme.textTheme.bodySmall?.copyWith(
-      fontSize: DesignTokens.fontSizeSecondary,
-      color: cs.onSurfaceVariant,
+    final home = HomePageStyle.of(context);
+    final style = home.typography(
+      theme,
+      size: DesignTokens.homeCaptionSize,
+      color: home.muted,
     );
     return Semantics(
       button: true,
@@ -768,17 +845,13 @@ class _TodayMetricLink extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: DesignTokens.fontSizeMd,
-                  color: cs.onSurfaceVariant,
-                ),
+                Icon(icon, size: DesignTokens.fontSizeBody, color: home.muted),
                 const SizedBox(width: DesignTokens.spaceXs),
                 Text(label, style: style),
                 const SizedBox(width: DesignTokens.spaceXs),
                 Text(
-                  '$value$unit',
-                  style: style?.copyWith(color: cs.onSurface),
+                  unit == '%' ? '$value$unit' : '$value $unit',
+                  style: style.copyWith(color: home.text),
                 ),
               ],
             ),
@@ -1321,12 +1394,9 @@ class _TodaySectionEmptyState extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontSize: DesignTokens.fontSizeBody,
-                        color: cs.onSurface,
-                        fontWeight: DesignTokens.fontWeightRegular,
-                        height: 1.4,
-                      ),
+                      style: HomePageStyle.of(
+                        context,
+                      ).typography(theme, size: DesignTokens.fontSizeBody),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: DesignTokens.spaceXs),
@@ -1334,10 +1404,10 @@ class _TodaySectionEmptyState extends StatelessWidget {
                         subtitle!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: DesignTokens.fontSizeSecondary,
-                          color: cs.onSurfaceVariant,
-                          height: 1.4,
+                        style: HomePageStyle.of(context).typography(
+                          theme,
+                          size: DesignTokens.homeCaptionSize,
+                          color: HomePageStyle.of(context).muted,
                         ),
                       ),
                     ],
@@ -1354,8 +1424,9 @@ class _TodaySectionEmptyState extends StatelessWidget {
 
 class _TodoTodaySubtitle extends StatelessWidget {
   final TodoItem todo;
+  final bool textOnly;
 
-  const _TodoTodaySubtitle({required this.todo});
+  const _TodoTodaySubtitle({required this.todo, this.textOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1370,7 +1441,9 @@ class _TodoTodaySubtitle extends StatelessWidget {
     }
     final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 2),
+      padding: EdgeInsets.only(
+        top: textOnly ? DesignTokens.spaceXs + 1 : DesignTokens.spaceXxs,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1380,7 +1453,16 @@ class _TodoTodaySubtitle extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               if (todo.listGroupName != null)
-                _TodoListTemplateLabel(todo: todo),
+                _TodoListTemplateLabel(todo: todo, textOnly: textOnly),
+              if (textOnly && todo.listGroupName != null && hasNoDueDate)
+                Text(
+                  '·',
+                  style: HomePageStyle.of(context).typography(
+                    Theme.of(context),
+                    size: DesignTokens.homeCaptionSize,
+                    color: HomePageStyle.of(context).muted,
+                  ),
+                ),
               if (hasNoDueDate) const _TodayNoDueDateLabel(),
               if (visual != TodoVisualState.normal)
                 _TodayTodoStatusPill(visual: visual),
@@ -1419,10 +1501,14 @@ class _TodayNoDueDateLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final home = HomePageStyle.of(context);
     return Text(
       I18n.tr('today.no_due_date'),
-      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+      style: home.typography(
+        Theme.of(context),
+        size: DesignTokens.homeCaptionSize,
+        color: home.muted,
+      ),
     );
   }
 }
@@ -1535,8 +1621,9 @@ Color _todoQuadrantColor(EisenhowerQuadrant quadrant) {
 
 class _TodoListTemplateLabel extends StatelessWidget {
   final TodoItem todo;
+  final bool textOnly;
 
-  const _TodoListTemplateLabel({required this.todo});
+  const _TodoListTemplateLabel({required this.todo, this.textOnly = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1545,6 +1632,20 @@ class _TodoListTemplateLabel extends StatelessWidget {
     final template = _todoListTemplateFor(label);
     final cs = Theme.of(context).colorScheme;
     final color = template?.color ?? cs.onSurfaceVariant;
+    if (textOnly) {
+      final home = HomePageStyle.of(context);
+      return Text(
+        label,
+        key: ValueKey('today_todo_list_icon_${template?.name ?? 'custom'}'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: home.typography(
+          Theme.of(context),
+          size: DesignTokens.homeCaptionSize,
+          color: home.category,
+        ),
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1603,12 +1704,14 @@ class _TodayTodoLeading extends StatelessWidget {
   final bool isCompleted;
   final Color? completedCheckColor;
   final ValueChanged<bool?>? onChanged;
+  final bool neutral;
 
   const _TodayTodoLeading({
     required this.statusColor,
     required this.isCompleted,
     required this.completedCheckColor,
     required this.onChanged,
+    this.neutral = false,
   });
 
   @override
@@ -1622,6 +1725,7 @@ class _TodayTodoLeading extends StatelessWidget {
           isCompleted: isCompleted,
           completedCheckColor: completedCheckColor,
           onChanged: onChanged,
+          neutral: neutral,
         ),
       ),
     );
@@ -1669,7 +1773,9 @@ class _TodayTodoTitleLine extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: effectiveColor,
-              fontSize: DesignTokens.fontSizeBody,
+              fontSize: showTemplateIcon
+                  ? DesignTokens.fontSizeBody
+                  : DesignTokens.homeTaskTitleSize,
               decoration: completed ? TextDecoration.lineThrough : null,
               fontWeight: FontWeight.normal,
             ),
@@ -1689,12 +1795,14 @@ class _TodayTodoStatusToggle extends StatelessWidget {
   final bool isCompleted;
   final Color? completedCheckColor;
   final ValueChanged<bool?>? onChanged;
+  final bool neutral;
 
   const _TodayTodoStatusToggle({
     required this.color,
     required this.isCompleted,
     required this.completedCheckColor,
     required this.onChanged,
+    this.neutral = false,
   });
 
   @override
@@ -1703,6 +1811,8 @@ class _TodayTodoStatusToggle extends StatelessWidget {
     final accent = color ?? cs.primary;
     final background = isCompleted
         ? accent
+        : neutral
+        ? Colors.transparent
         : Color.alphaBlend(accent.withValues(alpha: 0.08), cs.surface);
     final foreground = completedCheckColor ?? cs.onPrimary;
     final enabled = onChanged != null;
@@ -1721,15 +1831,21 @@ class _TodayTodoStatusToggle extends StatelessWidget {
             height: _TodayTodoLeading.touchTargetSize,
             child: Center(
               child: Container(
-                width: _TodayTodoLeading.statusButtonSize,
-                height: _TodayTodoLeading.statusButtonSize,
+                width: neutral
+                    ? DesignTokens.homeStatusSize
+                    : _TodayTodoLeading.statusButtonSize,
+                height: neutral
+                    ? DesignTokens.homeStatusSize
+                    : _TodayTodoLeading.statusButtonSize,
                 decoration: ShapeDecoration(
                   color: background,
                   shape: CircleBorder(
                     side: BorderSide(
-                      color: accent.withValues(
-                        alpha: isCompleted ? 0.24 : 0.34,
-                      ),
+                      color: neutral && !isCompleted
+                          ? HomePageStyle.of(
+                              context,
+                            ).muted.withValues(alpha: 0.38)
+                          : accent.withValues(alpha: isCompleted ? 0.24 : 0.34),
                       width: 0.9,
                     ),
                   ),
@@ -1939,6 +2055,88 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
         onTap: _swipeOpen ? _closeSwipe : widget.onOpen,
       ),
     );
+    if (widget.flat) {
+      final home = HomePageStyle.of(context);
+      tile = Material(
+        color: _swipeActive
+            ? Theme.of(context).scaffoldBackgroundColor
+            : Colors.transparent,
+        child: InkWell(
+          key: ValueKey('today_todo_${todo.id}'),
+          onTap: _swipeOpen ? _closeSwipe : widget.onOpen,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: DesignTokens.spaceLg,
+              bottom: DesignTokens.spaceXl,
+            ),
+            child: Row(
+              children: [
+                _TodayTodoLeading(
+                  neutral: true,
+                  statusColor: visual == TodoVisualState.normal
+                      ? home.accent
+                      : statusColor,
+                  isCompleted: isCompleted,
+                  completedCheckColor: cs.onPrimary,
+                  onChanged: canEdit
+                      ? (_) => widget.onToggle()
+                      : (_) => _showReadOnlyMessage('完成任务'),
+                ),
+                const SizedBox(width: DesignTokens.spaceXxs),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.title ?? todo.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: home.typography(
+                          Theme.of(context),
+                          size: DesignTokens.homeTaskTitleSize,
+                          color: effectiveTitleColor ?? home.text,
+                        ),
+                      ),
+                      widget.subtitle ??
+                          _TodoTodaySubtitle(todo: todo, textOnly: true),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  key: ValueKey('today_task_menu_${todo.id}'),
+                  tooltip: I18n.tr('today.task.actions'),
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.more_horiz,
+                    size: DesignTokens.fontSizeLg,
+                    color: home.subtle,
+                  ),
+                  onSelected: (action) async {
+                    if (action == 'open') {
+                      widget.onOpen();
+                    } else if (canEdit) {
+                      await _confirmDelete(context);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'open',
+                      child: Text(I18n.tr('today.view')),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      enabled: canEdit,
+                      child: Text(I18n.tr('action.delete')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     if (!widget.flat &&
         (effectiveTileBackground != null || effectiveTileBorderColor != null)) {
       tile = Container(
@@ -2855,7 +3053,7 @@ class _QuoteCardState extends State<_QuoteCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = Theme.of(context).colorScheme;
+    final home = HomePageStyle.of(context);
     return Semantics(
       button: true,
       child: InkWell(
@@ -2863,7 +3061,12 @@ class _QuoteCardState extends State<_QuoteCard> {
         borderRadius: DesignTokens.borderRadiusSm,
         onTap: () => setState(() => _text = DailyQuotes.random()),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: DesignTokens.spaceMd),
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.spaceMd,
+            DesignTokens.spaceLg,
+            DesignTokens.spaceMd,
+            DesignTokens.spaceMd,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -2871,18 +3074,12 @@ class _QuoteCardState extends State<_QuoteCard> {
                   _text,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: DesignTokens.fontSizeSecondary,
-                    height: 1.5,
-                    color: cs.onSurfaceVariant,
+                  style: home.typography(
+                    theme,
+                    size: DesignTokens.homeCaptionSize,
+                    color: home.subtle,
                   ),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.spaceSm),
-              Icon(
-                Icons.refresh,
-                size: DesignTokens.fontSizeMd,
-                color: cs.onSurfaceVariant,
               ),
             ],
           ),

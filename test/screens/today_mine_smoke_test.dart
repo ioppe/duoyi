@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:duoyi/models/todo.dart';
 import 'package:duoyi/models/goal.dart';
 import 'package:duoyi/core/design_tokens.dart';
+import 'package:duoyi/core/home_page_style.dart';
 import 'package:duoyi/screens/goal_edit_screen.dart';
 import 'package:duoyi/widgets/surface_components.dart';
 import 'package:duoyi/providers/achievement_provider.dart';
@@ -180,6 +181,96 @@ void main() {
       }
     }
   });
+  testWidgets('外层应用壳下的首页提示条避让创建按钮', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(
+        const Scaffold(
+          body: TodayScreen(showCaptureFab: true),
+          bottomNavigationBar: SizedBox(height: 64),
+        ),
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '验收任务');
+    await tester.tap(find.widgetWithText(FilledButton, I18n.tr('action.add')));
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+      tester.getBottomLeft(find.byType(SnackBar)).dy,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.byKey(const ValueKey('home_create_button'))).dy,
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('实际首页落实预览字阶、灰度、数量和创建按钮', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final todos = TodoProvider();
+    final goals = GoalProvider();
+    await todos.addTodo(TodoItem(title: '工作', listGroupName: '工作'));
+    for (final title in ['读完6本书', '完成个人项目']) {
+      await goals.add(GoalItem(title: title, autoProgress: false));
+    }
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(showCaptureFab: true),
+        todoProvider: todos,
+        goalProvider: goals,
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final greeting = find.byKey(const ValueKey('home_greeting'));
+    final date = find.byKey(const ValueKey('home_date'));
+    expect(tester.widget<Text>(greeting).style?.fontSize, 19);
+    expect(tester.getTopLeft(greeting).dy, closeTo(28, 2));
+    expect(tester.widget<Text>(date).style?.fontSize, 11);
+    expect(tester.widget<Text>(date).style?.color, DesignTokens.homeMuted);
+    expect(tester.widget<Text>(find.text('工作').first).style?.fontSize, 15);
+    for (final pair in [('today_todos_tab', '1'), ('today_goals_tab', '2')]) {
+      expect(
+        find.descendant(
+          of: find.byKey(ValueKey(pair.$1)),
+          matching: find.text(pair.$2),
+        ),
+        findsOneWidget,
+      );
+    }
+    expect(find.text('0 分'), findsOneWidget);
+    final quote = find.descendant(
+      of: find.byKey(const ValueKey('today_quiet_quote')),
+      matching: find.byType(Text),
+    );
+    expect(tester.widget<Text>(quote).style?.color, DesignTokens.homeSubtle);
+    expect(find.byIcon(Icons.refresh), findsNothing);
+    expect(find.text('新建待办'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, I18n.tr('action.cancel')));
+    await tester.pumpAndSettle();
+    await tester.longPress(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(find.text(I18n.tr('quick.menu.note')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
+    await tester.pumpAndSettle();
+    expect(find.text('新建目标'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalEditScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('首页各主题统一文字页签与扁平列表，窄屏放大字体保持对齐', (tester) async {
     addTearDown(tester.view.reset);
@@ -210,10 +301,10 @@ void main() {
         final tabs = tester.widget<TabBar>(
           find.byKey(const ValueKey('today_home_tabs')),
         );
-        expect(tabs.indicator, isA<UnderlineTabIndicator>());
+        expect(tabs.indicator, isA<HomeTabIndicator>());
         expect(tabs.isScrollable, isTrue);
         expect(tabs.tabAlignment, TabAlignment.start);
-        expect(tabs.labelColor, brand.theme.colorScheme.primary);
+        expect(tabs.labelColor, HomePageStyle.fromTheme(brand.theme).accent);
         expect(find.text(I18n.tr('today.todos')), findsOneWidget);
         expect(
           find.byKey(const ValueKey('today_todo_template_icon_工作')),
@@ -232,7 +323,7 @@ void main() {
         final taskLeft = tester.getTopLeft(find.text('统一样式任务')).dx;
         expect(
           tester.widget<Text>(find.text('统一样式任务')).style?.fontSize,
-          DesignTokens.fontSizeBody,
+          DesignTokens.homeTaskTitleSize,
         );
         await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
         await tester.pumpAndSettle();
@@ -423,7 +514,7 @@ void main() {
     final title = find.text(I18n.tr('goal.new')).last;
     final subtitle = find.text(I18n.tr('today.goal.create.subtitle'));
     expect(textStyle(title).fontSize, DesignTokens.fontSizeBody);
-    expect(textStyle(subtitle).fontSize, DesignTokens.fontSizeSecondary);
+    expect(textStyle(subtitle).fontSize, DesignTokens.homeCaptionSize);
     expect(find.text(I18n.tr('today.todos.empty')), findsNothing);
     expect(tester.getTopLeft(title).dx, closeTo(todoLeft, 0.5));
     expect(
@@ -498,7 +589,7 @@ void main() {
           if (populated) {
             final text = tester.widget<Text>(title);
             expect(text.maxLines, 2);
-            expect(text.style?.fontSize, DesignTokens.fontSizeBody);
+            expect(text.style?.fontSize, DesignTokens.homeTaskTitleSize);
             expect(find.text('42%'), findsOneWidget);
           }
           expect(tester.takeException(), isNull);

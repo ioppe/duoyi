@@ -28,6 +28,22 @@ class DesignTokens {
   static const double controlMinHeight = 44;
   static const double controlIconSize = 20;
 
+  // ----- Home preview specification -----
+  static const double homeContentMaxWidth = 720;
+  static const double homeTopInset = 28;
+  static const double homeHeadingSize = 19;
+  static const double homeTaskTitleSize = 15;
+  static const double homeCaptionSize = 11;
+  static const double homeCounterSize = 10;
+  static const double homeTabIndicatorWidth = 22;
+  static const double homeStatusSize = 21;
+  static const Color homeText = Color(0xFF242C38);
+  static const Color homeMuted = Color(0xFF78808B);
+  static const Color homeSubtle = Color(0xFF959BA3);
+  static const Color homeAccent = Color(0xFFB84F54);
+  static const Color homeDivider = Color(0xFFE5E8ED);
+  static const Color homeCategory = Color(0xFF668AA5);
+
   // ----- Modal bottom sheets -----
   // 键盘弹出时，以键盘上方可用高度为基准。
   static const double modalSheetMinHeightFactor = 1 / 2;

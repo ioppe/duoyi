@@ -52,6 +52,25 @@ class I18nDateFormat {
     };
   }
 
+  static String homeHeader(DateTime value) {
+    const zhWeekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+    const enWeekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final weekday = value.weekday - DateTime.monday;
+    return switch (I18n.current) {
+      AppLocale.zh => '${value.month} 月 ${value.day} 日，${zhWeekdays[weekday]}',
+      AppLocale.en =>
+        '${_enMonth(value.month)} ${value.day}, ${enWeekdays[weekday]}',
+    };
+  }
+
   static String shortDateTime(DateTime value) {
     return switch (I18n.current) {
       AppLocale.en => '${monthDay(value)} ${time(value)}',

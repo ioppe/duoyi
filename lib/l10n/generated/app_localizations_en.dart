@@ -2157,6 +2157,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayAllGoals => 'All goals';
 
   @override
+  String get todayNewTodo => 'New task';
+
+  @override
+  String get todayNewGoal => 'New goal';
+
+  @override
+  String get todayCaptureTooltip =>
+      'Create an item. Long press for more quick actions';
+
+  @override
+  String get todayTaskActions => 'Task actions';
+
+  @override
   String get todayCompleted => 'Completed';
 
   @override

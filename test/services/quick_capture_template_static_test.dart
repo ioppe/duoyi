@@ -53,7 +53,14 @@ void main() {
     expect(fab, contains('template.toTodo(input)'));
     expect(fab, contains('template.toHabit(input)'));
     expect(fab, contains('GestureDetector'));
-    expect(fab, contains('onLongPress: _showTemplateSheet'));
+    expect(
+      fab,
+      contains(
+        'onLongPress: widget.label == null ? _showTemplateSheet : _toggle',
+      ),
+    );
+    expect(fab, contains('onTap: _showTemplateSheet'));
+    expect(fab, contains('triggerMode: TooltipTriggerMode.manual'));
 
     for (final key in const [
       'quick.menu.template',
