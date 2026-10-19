@@ -181,6 +181,107 @@ void main() {
     }
   });
 
+  testWidgets('首页各主题统一文字页签与扁平列表，窄屏放大字体保持对齐', (tester) async {
+    addTearDown(tester.view.reset);
+    for (final brand in AppBrands.all) {
+      for (final width in [320.0, 1440.0]) {
+        SharedPreferences.setMockInitialValues({});
+        final todos = TodoProvider();
+        final goals = GoalProvider();
+        await todos.addTodo(TodoItem(title: '统一样式任务', listGroupName: '工作'));
+        final goal = GoalItem(
+          title: '统一样式目标',
+          autoProgress: false,
+          progress: 0.42,
+        );
+        await goals.add(goal);
+        tester.view.physicalSize = Size(width, 1000);
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          _wrap(
+            const TodayScreen(),
+            todoProvider: todos,
+            goalProvider: goals,
+            theme: brand.theme,
+            textScale: 1.5,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final tabs = tester.widget<TabBar>(
+          find.byKey(const ValueKey('today_home_tabs')),
+        );
+        expect(tabs.indicator, isA<UnderlineTabIndicator>());
+        expect(tabs.isScrollable, isTrue);
+        expect(tabs.tabAlignment, TabAlignment.start);
+        expect(tabs.labelColor, brand.theme.colorScheme.primary);
+        expect(find.text(I18n.tr('today.todos')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('today_todo_template_icon_工作')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('today_todo_list_icon_工作')),
+          findsOneWidget,
+        );
+        expect(find.byType(AppMetricCard), findsNothing);
+        final list = find.byKey(const ValueKey('today_screen_list'));
+        expect(
+          find.descendant(of: list, matching: find.byType(AppSurfaceCard)),
+          findsNothing,
+        );
+        final taskLeft = tester.getTopLeft(find.text('统一样式任务')).dx;
+        expect(
+          tester.widget<Text>(find.text('统一样式任务')).style?.fontSize,
+          DesignTokens.fontSizeBody,
+        );
+        await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
+        await tester.pumpAndSettle();
+        final goalList = find.byKey(const ValueKey('today_goals_list'));
+        expect(
+          find.descendant(of: goalList, matching: find.byType(AppSurfaceCard)),
+          findsNothing,
+        );
+        expect(
+          tester.getTopLeft(find.text('统一样式目标')).dx,
+          closeTo(taskLeft, 0.5),
+        );
+        expect(find.text('42%'), findsOneWidget);
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '${brand.style} width=$width',
+        );
+        await tester.pumpWidget(const SizedBox());
+        todos.dispose();
+        goals.dispose();
+      }
+    }
+  });
+
+  testWidgets('紧凑统计保持任务习惯和专注跳转', (tester) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_wrap(const TodayScreen()));
+    await tester.pumpAndSettle();
+    final summary = find.byKey(const ValueKey('today_metrics_summary'));
+    for (final label in [
+      I18n.tr('nav.todo'),
+      I18n.tr('nav.habit'),
+      I18n.tr('nav.focus'),
+    ]) {
+      final entry = find.descendant(of: summary, matching: find.text(label));
+      await tester.ensureVisible(entry);
+      await tester.pumpAndSettle();
+      await tester.tap(entry);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('today_metrics_summary')), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('首页默认显示待办且任务卡片位于顶部，目标可以往返切换', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -198,10 +299,7 @@ void main() {
     final tabs = tester.element(find.byKey(const ValueKey('today_home_tabs')));
     expect(DefaultTabController.of(tabs).index, 0);
     final list = find.byKey(const ValueKey('today_screen_list'));
-    final sectionTitle = find.descendant(
-      of: list,
-      matching: find.text(I18n.tr('today.todos')),
-    );
+    final sectionTitle = find.byKey(const ValueKey('today_todos_header'));
     expect(
       tester.getTopLeft(sectionTitle).dy - tester.getTopLeft(list).dy,
       lessThan(DesignTokens.space4xl),
@@ -302,7 +400,7 @@ void main() {
     await tester.pumpWidget(_wrap(const TodayScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsNWidgets(2));
+    expect(find.text('今日待办'), findsOneWidget);
     expect(find.text('今天暂无待办，点击查看或添加任务'), findsOneWidget);
   });
 
@@ -345,11 +443,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('today_goals_tab')));
     await tester.pumpAndSettle();
-    final title = find.text(I18n.tr('goal.title'));
-    expect(
-      find.ancestor(of: title, matching: find.byType(AppSectionHeader)),
-      findsOneWidget,
-    );
+    final header = find.byKey(const ValueKey('today_goals_header'));
+    final title = find
+        .descendant(of: header, matching: find.byType(Text))
+        .first;
+    expect(header, findsOneWidget);
     final action = find.widgetWithText(TextButton, I18n.tr('goal.new'));
     expect(
       tester.getCenter(title).dy,
@@ -477,7 +575,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsNWidgets(2));
+    expect(find.text('今日待办'), findsOneWidget);
     expect(find.text('无截止任务'), findsOneWidget);
     expect(find.text('无截止日期'), findsOneWidget);
     expect(find.text('今天截止任务'), findsOneWidget);
@@ -526,7 +624,7 @@ void main() {
         expect(list, findsOneWidget);
         expect(appBar, findsOneWidget);
         expect(find.byKey(const ValueKey('today_home_tabs')), findsOneWidget);
-        expect(find.text('今日待办'), findsNWidgets(2));
+        expect(find.text('今日待办'), findsOneWidget);
         expect(find.text('今日待办长标题需要省略但不能遮挡完成按钮和右侧内容'), findsWidgets);
         expect(find.text('无截止日期'), findsWidgets);
         expect(tester.takeException(), isNull);
@@ -556,9 +654,9 @@ void main() {
       'lib/widgets/surface_components.dart',
     ).readAsStringSync();
 
-    expect(today, contains('constraints.maxWidth < (desktop ? 640 : 520)'));
-    expect(today, contains('? (useTwoColumns ? 2.75 : 2.85)'));
-    expect(today, contains(': (useTwoColumns ? 2.55 : 3.65)'));
+    expect(today, contains("ValueKey('today_metrics_summary')"));
+    expect(today, contains('WrapAlignment.spaceBetween'));
+    expect(today, isNot(contains('AppMetricCard(')));
     expect(mine, contains('class _MineStatsGrid extends StatelessWidget'));
     expect(mine, contains("ValueKey('mine_stats_stable_grid')"));
     expect(mine, contains('height: baseHeight + fontGrowth * 2'));
@@ -1063,7 +1161,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('今日待办'), findsNWidgets(2));
+    expect(find.text('今日待办'), findsOneWidget);
     expect(find.text('明天未逾期待办'), findsOneWidget);
 
     final stored = todoProvider.todos.single;
@@ -1080,10 +1178,10 @@ void main() {
       ),
       today.add(const Duration(days: 1)),
     );
-    expect(find.text('今日待办'), findsNWidgets(2));
+    expect(find.text('今日待办'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('today_todo_template_icon_工作')),
-      findsWidgets,
+      find.byKey(const ValueKey('today_todo_list_icon_工作')),
+      findsOneWidget,
     );
     expect(find.text(I18n.tr('today.add_to_today')), findsNothing);
   });

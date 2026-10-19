@@ -4124,6 +4124,30 @@ abstract class AppLocalizations {
   /// **'目标'**
   String get todayTabGoals;
 
+  /// No description provided for @todayTodosSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'待完成 {count} 项'**
+  String todayTodosSummary(int count);
+
+  /// No description provided for @todayGoalsSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'进行中 {count} 项'**
+  String todayGoalsSummary(int count);
+
+  /// No description provided for @todayAllTodos.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部待办'**
+  String get todayAllTodos;
+
+  /// No description provided for @todayAllGoals.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部目标'**
+  String get todayAllGoals;
+
   /// No description provided for @todayCompleted.
   ///
   /// In zh, this message translates to:

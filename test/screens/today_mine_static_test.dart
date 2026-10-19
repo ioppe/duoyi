@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('今日和我的视觉结构', () {
-    test('今日三个指标卡与我的概览继续使用紧凑统一样式', () {
+    test('今日使用轻量摘要，我的概览保留独立卡片样式', () {
       final today = File('lib/screens/today_screen.dart').readAsStringSync();
       final todo = File('lib/screens/todo_screen.dart').readAsStringSync();
       final mine = File('lib/screens/mine_screen.dart').readAsStringSync();
@@ -12,9 +12,11 @@ void main() {
         'lib/widgets/surface_components.dart',
       ).readAsStringSync();
 
-      expect(today, contains('constraints.maxWidth < (desktop ? 640 : 520)'));
-      expect(today, contains('? (useTwoColumns ? 2.75 : 2.85)'));
-      expect(today, contains(': (useTwoColumns ? 2.55 : 3.65)'));
+      expect(today, contains("ValueKey('today_metrics_summary')"));
+      expect(today, contains('class _TodayMetricLink'));
+      expect(today, contains('WrapAlignment.spaceBetween'));
+      expect(today, isNot(contains('AppMetricCard(')));
+      expect(today, isNot(contains('GridView.count(')));
       expect(mine, contains('class _MineStatsGrid extends StatelessWidget'));
       expect(mine, contains("ValueKey('mine_stats_stable_grid')"));
       expect(mine, contains('height: baseHeight + fontGrowth * 2'));
@@ -43,15 +45,17 @@ void main() {
       final today = File('lib/screens/today_screen.dart').readAsStringSync();
 
       expect(today, contains("I18n.tr('today.todos')"));
-      expect(
-        today,
-        contains("\$todayTodosCount \${I18n.tr('today.unit.item')}"),
-      );
+      expect(today, contains("'today.todos.summary'"));
       expect(today, contains("I18n.tr('today.completed')"));
       expect(today, contains("I18n.tr('today.courses')"));
       expect(today, contains("\${I18n.tr('today.unit.course_section')}"));
-      expect(today, contains('titleStyle: theme.textTheme.bodyMedium'));
-      expect(today, contains('fontSize: 14'));
+      expect(today, contains('final headerStyle = theme.textTheme.bodySmall'));
+      expect(today, contains('fontSize: DesignTokens.fontSizeSecondary'));
+      expect(today, contains('indicator: UnderlineTabIndicator('));
+      expect(today, contains('indicatorSize: TabBarIndicatorSize.label'));
+      expect(today, contains('tabAlignment: TabAlignment.start'));
+      expect(today, contains("I18n.tr('today.all_todos')"));
+      expect(today, contains("I18n.tr('today.all_goals')"));
       expect(today, isNot(contains("'今日待办 · \$todayTodosCount 项")));
       expect(today, isNot(contains("'今日课程 · \${todayCourses.length} 节'")));
     });
@@ -115,7 +119,8 @@ void main() {
       expect(today, contains("ValueKey('today_todo_swipe_delete_button')"));
       expect(today, contains("title: const Text('删除任务？')"));
       expect(today, contains("await context.read<TodoProvider>().deleteTodo"));
-      expect(today, contains('return _TodayTodoSwipeTile('));
+      expect(today, contains('flat: true'));
+      expect(today, contains('showTemplateIcon: !widget.flat'));
       expect(today, contains('onToggleTodo(todo)'));
       expect(today, contains('onOpenTodo(t.id)'));
       expect(today, contains('CompletionVisibilityPolicy.visualState(todo)'));

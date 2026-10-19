@@ -2037,6 +2037,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todayTabGoals => '目标';
 
   @override
+  String todayTodosSummary(int count) {
+    return '待完成 $count 项';
+  }
+
+  @override
+  String todayGoalsSummary(int count) {
+    return '进行中 $count 项';
+  }
+
+  @override
+  String get todayAllTodos => '全部待办';
+
+  @override
+  String get todayAllGoals => '全部目标';
+
+  @override
   String get todayCompleted => '已完成';
 
   @override

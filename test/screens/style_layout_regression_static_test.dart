@@ -320,8 +320,8 @@ void main() {
 
     final today = File('lib/screens/today_screen.dart').readAsStringSync();
     final todayTodo = today.substring(
-      today.indexOf('title: s.navTodo'),
-      today.indexOf('title: s.navHabit'),
+      today.indexOf('label: s.navTodo'),
+      today.indexOf('label: s.navHabit'),
     );
     expect(todayTodo, contains('icon: Icons.check_circle_outline'));
 

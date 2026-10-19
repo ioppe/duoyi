@@ -2141,6 +2141,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayTabGoals => 'Goals';
 
   @override
+  String todayTodosSummary(int count) {
+    return '$count remaining';
+  }
+
+  @override
+  String todayGoalsSummary(int count) {
+    return '$count in progress';
+  }
+
+  @override
+  String get todayAllTodos => 'All tasks';
+
+  @override
+  String get todayAllGoals => 'All goals';
+
+  @override
   String get todayCompleted => 'Completed';
 
   @override
