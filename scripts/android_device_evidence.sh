@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ADB_BIN="${ADB_BIN:-/home/ubuntu/android-sdk/platform-tools/adb}"
+source "$ROOT_DIR/scripts/tool_paths.sh"
 PACKAGE_NAME="${PACKAGE_NAME:-com.duoyi.duoyi}"
 APK_PATH="${APK_PATH:-$ROOT_DIR/build/app/outputs/flutter-apk/app-debug.apk}"
 EVIDENCE_DIR="${EVIDENCE_DIR:-$ROOT_DIR/build/device-regression/android}"

@@ -2,12 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FLUTTER_BIN="${FLUTTER_BIN:-/home/ubuntu/flutter/bin/flutter}"
-ADB_BIN="${ADB_BIN:-/home/ubuntu/android-sdk/platform-tools/adb}"
-ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-/home/ubuntu/android-sdk}"
-EMULATOR_BIN="$ANDROID_SDK_ROOT/emulator/emulator"
-AVDMANAGER_BIN="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager"
-SDKMANAGER_BIN="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+source "$ROOT_DIR/scripts/tool_paths.sh"
 ANDROID_EVIDENCE_SCRIPT="$ROOT_DIR/scripts/android_device_evidence.sh"
 IOS_EVIDENCE_SCRIPT="$ROOT_DIR/scripts/ios_device_evidence.sh"
 VALIDATE_EVIDENCE_SCRIPT="$ROOT_DIR/scripts/validate_device_evidence.sh"

@@ -9,31 +9,78 @@ on:
   workflow_dispatch:
     inputs:
       server_url:
-        description: '覆盖 DUOYI_SERVER_URL (留空走仓库变量/默认值)'
+        description: '覆盖后端地址；留空使用部署配置'
         required: false
         default: ''
       build_web:
         description: '是否同时构建 web 产物'
         required: false
         default: 'false'
+      config_file:
+        description: '公开部署配置文件'
+        type: string
+        default: 'config/deployment.json'
+      same_origin:
+        description: '显式使用空后端地址（Web 同源模式）'
+        type: boolean
+        default: false
 
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  FLUTTER_VERSION: '3.44.1'
-  JAVA_VERSION: '17'
-
 jobs:
+  configuration:
+    runs-on: ubuntu-latest
+    outputs:
+      profile: ${{ steps.config.outputs.profile }}
+      flutter_version: ${{ steps.config.outputs.flutter_version }}
+      java_version: ${{ steps.config.outputs.java_version }}
+      python_version: ${{ steps.config.outputs.python_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public deployment and toolchain configuration
+        id: config
+        env:
+          PROFILE_FILE: ${{ github.event.inputs.config_file || 'config/deployment.json' }}
+          SERVER_URL_OVERRIDE: ${{ github.event.inputs.server_url || vars.DUOYI_SERVER_URL || '' }}
+          UPDATE_REPOSITORY_OVERRIDE: ${{ vars.DUOYI_UPDATE_REPOSITORY || '' }}
+          WEB_BASE_HREF_OVERRIDE: ${{ vars.DUOYI_WEB_BASE_HREF || '' }}
+          SAME_ORIGIN: ${{ github.event.inputs.same_origin || 'false' }}
+        run: |
+          if [ -n "$SERVER_URL_OVERRIDE" ]; then export DUOYI_SERVER_URL="$SERVER_URL_OVERRIDE"; fi
+          if [ "$SAME_ORIGIN" = 'true' ]; then export DUOYI_SERVER_URL=''; fi
+          if [ -n "$UPDATE_REPOSITORY_OVERRIDE" ]; then export DUOYI_UPDATE_REPOSITORY="$UPDATE_REPOSITORY_OVERRIDE"; fi
+          if [ -n "$WEB_BASE_HREF_OVERRIDE" ]; then export DUOYI_WEB_BASE_HREF="$WEB_BASE_HREF_OVERRIDE"; fi
+          python3 scripts/project_config.py --config "$PROFILE_FILE" workflow --output "$GITHUB_OUTPUT"
+
   # ─────────────────────────────────────────────
   # 1. Analyze & test
   # ─────────────────────────────────────────────
   analyze:
+    needs: configuration
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      FLUTTER_VERSION: ${{ needs.configuration.outputs.flutter_version }}
+      JAVA_VERSION: ${{ needs.configuration.outputs.java_version }}
+      DUOYI_BUILD_PROFILE: ${{ needs.configuration.outputs.profile }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.configuration.outputs.python_version }}
+      - name: Install validated public build profile
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          profile = Path(os.environ['RUNNER_TEMP']) / 'duoyi-deployment.json'
+          profile.write_text(json.dumps(json.loads(os.environ['DUOYI_BUILD_PROFILE'])))
+          with open(os.environ['GITHUB_ENV'], 'a') as handle:
+              handle.write(f'DUOYI_CONFIG_FILE={profile}\n')
+          PY
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -70,13 +117,16 @@ jobs:
       - name: Run tests (if any)
         run: |
           if [ -d test ] && [ -n "$(ls -A test 2>/dev/null)" ]; then
-            flutter test --no-pub
+            python3 scripts/flutter_with_config.py test --no-pub
           else
             echo "No tests found, skipping."
           fi
 
       - name: Run backend tests
         run: |
+          export DUOYI_DB_PATH="$RUNNER_TEMP/duoyi-test-bootstrap.db"
+          export DUOYI_ENV_FILE=''
+          export APP_UPDATE_REPOSITORY=''
           python -m pip install --upgrade pip
           python -m pip install -r backend/requirements.txt
           python -m unittest discover -s backend
@@ -85,14 +135,30 @@ jobs:
   # 2. Android APK / AAB
   # ─────────────────────────────────────────────
   android:
-    needs: analyze
+    needs: [analyze, configuration]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      DUOYI_SERVER_URL: ${{ github.event.inputs.server_url || vars.DUOYI_SERVER_URL || '' }}
+      FLUTTER_VERSION: ${{ needs.configuration.outputs.flutter_version }}
+      JAVA_VERSION: ${{ needs.configuration.outputs.java_version }}
+      DUOYI_BUILD_PROFILE: ${{ needs.configuration.outputs.profile }}
       HAS_KEYSTORE: ${{ secrets.DUOYI_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.configuration.outputs.python_version }}
+      - name: Install validated public build profile
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          profile = Path(os.environ['RUNNER_TEMP']) / 'duoyi-deployment.json'
+          profile.write_text(json.dumps(json.loads(os.environ['DUOYI_BUILD_PROFILE'])))
+          with open(os.environ['GITHUB_ENV'], 'a') as handle:
+              handle.write(f'DUOYI_CONFIG_FILE={profile}\n')
+          PY
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -157,30 +223,14 @@ jobs:
           exit 1
 
       - name: Build APK (release, split per ABI)
-        run: |
-          DART_DEFINES=""
-          if [ -n "$DUOYI_SERVER_URL" ]; then
-            DART_DEFINES="--dart-define=DUOYI_SERVER_URL=$DUOYI_SERVER_URL"
-            echo "Using DUOYI_SERVER_URL=$DUOYI_SERVER_URL"
-          fi
-          flutter build apk --release --split-per-abi $DART_DEFINES
+        run: python3 scripts/flutter_with_config.py build apk --release --split-per-abi
 
       - name: Build universal APK (release)
-        run: |
-          DART_DEFINES=""
-          if [ -n "$DUOYI_SERVER_URL" ]; then
-            DART_DEFINES="--dart-define=DUOYI_SERVER_URL=$DUOYI_SERVER_URL"
-          fi
-          flutter build apk --release $DART_DEFINES
+        run: python3 scripts/flutter_with_config.py build apk --release
 
       - name: Build App Bundle (release, tag only)
         if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          DART_DEFINES=""
-          if [ -n "$DUOYI_SERVER_URL" ]; then
-            DART_DEFINES="--dart-define=DUOYI_SERVER_URL=$DUOYI_SERVER_URL"
-          fi
-          flutter build appbundle --release $DART_DEFINES
+        run: python3 scripts/flutter_with_config.py build appbundle --release
 
       - name: Stage artifacts
         id: stage
@@ -232,7 +282,7 @@ jobs:
   # 3. Web (optional)
   # ─────────────────────────────────────────────
   web:
-    needs: analyze
+    needs: [analyze, configuration]
     if: >
       github.ref == 'refs/heads/main'
       || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_web == 'true')
@@ -240,10 +290,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      DUOYI_SERVER_URL: ${{ github.event.inputs.server_url || vars.DUOYI_SERVER_URL || '' }}
-      DUOYI_WEB_BASE_HREF: ${{ vars.DUOYI_WEB_BASE_HREF || '/duoyi/' }}
+      FLUTTER_VERSION: ${{ needs.configuration.outputs.flutter_version }}
+      DUOYI_BUILD_PROFILE: ${{ needs.configuration.outputs.profile }}
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.configuration.outputs.python_version }}
+      - name: Install validated public build profile
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          profile = Path(os.environ['RUNNER_TEMP']) / 'duoyi-deployment.json'
+          profile.write_text(json.dumps(json.loads(os.environ['DUOYI_BUILD_PROFILE'])))
+          with open(os.environ['GITHUB_ENV'], 'a') as handle:
+              handle.write(f'DUOYI_CONFIG_FILE={profile}\n')
+          PY
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -267,14 +331,10 @@ jobs:
 
       - name: Build web (release)
         run: |
-          BUILD_ARGS=(--release --base-href "$DUOYI_WEB_BASE_HREF")
-          if [ -n "$DUOYI_SERVER_URL" ]; then
-            BUILD_ARGS+=(--dart-define=DUOYI_SERVER_URL="$DUOYI_SERVER_URL")
-          fi
           rm -rf build/web build/web-desktop build/web-mobile
-          flutter build web "${BUILD_ARGS[@]}" --dart-define=DUOYI_WEB_TARGET=desktop
+          python3 scripts/flutter_with_config.py build web --release --dart-define=DUOYI_WEB_TARGET=desktop
           mv build/web build/web-desktop
-          flutter build web "${BUILD_ARGS[@]}" --dart-define=DUOYI_WEB_TARGET=mobile
+          python3 scripts/flutter_with_config.py build web --release --dart-define=DUOYI_WEB_TARGET=mobile
           mv build/web build/web-mobile
 
       - name: Package web
@@ -296,11 +356,20 @@ jobs:
           path: web-artifacts/*
           retention-days: 30
 
+      - name: Build GitHub Pages with its own base path
+        if: github.ref == 'refs/heads/main'
+        env:
+          PAGES_BASE_HREF: ${{ vars.DUOYI_PAGES_BASE_HREF || '' }}
+        run: |
+          PAGES_PATH="${PAGES_BASE_HREF:-/${GITHUB_REPOSITORY#*/}/}"
+          python3 scripts/flutter_with_config.py build web --release --base-href="$PAGES_PATH" --dart-define=DUOYI_WEB_TARGET=desktop
+          mv build/web build/web-pages
+
       - name: Upload GitHub Pages artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: build/web-desktop
+          path: build/web-pages
 
   # ─────────────────────────────────────────────
   # 4. GitHub Pages (main branch only)

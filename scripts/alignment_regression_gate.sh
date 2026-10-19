@@ -2,8 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FLUTTER_BIN="${FLUTTER_BIN:-/home/ubuntu/flutter/bin/flutter}"
-PYTHON_BIN="${PYTHON_BIN:-python3}"
+source "$ROOT_DIR/scripts/tool_paths.sh"
 REPORT_DIR="${REPORT_DIR:-$ROOT_DIR/build/alignment-regression/latest}"
 SUMMARY_TSV="$REPORT_DIR/summary.tsv"
 SUMMARY_MD="$REPORT_DIR/summary.md"

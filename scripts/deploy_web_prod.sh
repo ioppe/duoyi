@@ -3,14 +3,9 @@ set -euo pipefail
 
 # Duoyi Web Production Deployment Script
 #
-# 环境变量配置：
-#   WEB_ROOT       - Web 部署根目录 (默认: /opt/1panel/apps/openresty/openresty/root/duoyi)
-#   BACKUP_ROOT    - 备份存储目录 (默认: /home/ubuntu/duoyi_web_backups)
-#   FLUTTER_BIN    - Flutter 可执行文件路径 (默认: /opt/migrate/flutter/bin/flutter)
-#
-# 使用示例：
-#   ./scripts/deploy_web_prod.sh
-#   WEB_ROOT=/var/www/duoyi ./scripts/deploy_web_prod.sh
+# 公开部署参数来自 config/deployment.json 或 DUOYI_CONFIG_FILE。
+# 显式环境变量优先；工具路径使用 FLUTTER_BIN/PYTHON_BIN 或 PATH。
+# 仅检查参数：./scripts/deploy_web_prod.sh --check-config
 #
 # 功能：
 #   1. 检查版本号一致性
@@ -23,10 +18,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILD_WEB_DIR="$PROJECT_ROOT/build/web"
-WEB_ROOT="${WEB_ROOT:-/opt/1panel/apps/openresty/openresty/root/duoyi}"
-BACKUP_ROOT="${BACKUP_ROOT:-/home/ubuntu/duoyi_web_backups}"
-FLUTTER_BIN="${FLUTTER_BIN:-/opt/migrate/flutter/bin/flutter}"
-BASE_HREF="/duoyi/"
+source "$SCRIPT_DIR/deployment_common.sh"
+require_deployment_value WEB_ROOT
+require_deployment_value BACKUP_ROOT
+if [ "${1:-}" = '--check-config' ]; then
+    printf 'Web root: %s\nBackup root: %s\nBase href: %s\n' "$WEB_ROOT" "$BACKUP_ROOT" "$BASE_HREF"
+    exit 0
+fi
 
 verify_web_build() {
     local dir="$1"
@@ -144,7 +142,7 @@ echo ""
 # 2. 构建 Web
 echo "🔨 Building web (release)..."
 rm -rf "$BUILD_WEB_DIR"
-$FLUTTER_BIN build web --release --base-href=/duoyi/ --dart-define=DUOYI_SERVER_URL= --dart-define=DUOYI_WEB_TARGET=desktop
+FLUTTER_BIN="$FLUTTER_BIN" "$PYTHON_BIN" "$PROJECT_ROOT/scripts/flutter_with_config.py" build web --release --base-href="$BASE_HREF"
 verify_web_build "$BUILD_WEB_DIR" "fresh build output"
 echo ""
 
@@ -176,7 +174,7 @@ echo "=================================================="
 echo ""
 echo "Deployed: v$VERSION_NAME (build $VERSION_CODE)"
 echo "Location: $WEB_ROOT"
-echo "Access: http://6688667.xyz/duoyi/"
+echo "Access: ${DUOYI_PUBLIC_BASE%/}${BASE_HREF}"
 echo ""
 echo "Note: Users may need to hard refresh (Ctrl+Shift+R) to see the new version."
 echo ""

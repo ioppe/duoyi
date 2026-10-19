@@ -2,9 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FLUTTER_BIN="${FLUTTER_BIN:-/home/ubuntu/flutter/bin/flutter}"
-ADB_BIN="${ADB_BIN:-/home/ubuntu/android-sdk/platform-tools/adb}"
-ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-/home/ubuntu/android-sdk}"
+source "$ROOT_DIR/scripts/tool_paths.sh"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/build/device-readiness/latest}"
 OUTPUT_PARENT="$(dirname "$OUTPUT_DIR")"
 mkdir -p "$OUTPUT_PARENT"
@@ -18,9 +16,6 @@ SDKMANAGER_LIST="$TEMP_OUTPUT_DIR/sdkmanager_list.txt"
 AVD_LIST="$TEMP_OUTPUT_DIR/avd_list.txt"
 HOST_UNAME="$TEMP_OUTPUT_DIR/host_uname.txt"
 
-EMULATOR_BIN="$ANDROID_SDK_ROOT/emulator/emulator"
-AVDMANAGER_BIN="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/avdmanager"
-SDKMANAGER_BIN="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 HOST_ARCH="$(uname -m)"
 HOST_OS="$(uname -s)"
 KVM_DEVICE="${KVM_DEVICE:-/dev/kvm}"

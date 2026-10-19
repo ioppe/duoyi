@@ -69,7 +69,14 @@ printf 'List of devices attached\n\n'
       expect(status['adb_device'], 'missing');
       expect(status['android_emulator_binary'], 'missing');
       expect(status['android_emulator_launchability'], 'missing');
-      expect(status['ios_host'], 'missing');
+      final iosHostReady =
+          Platform.isMacOS &&
+          Process.runSync('bash', [
+                '-c',
+                'command -v xcrun >/dev/null && command -v xcodebuild >/dev/null',
+              ]).exitCode ==
+              0;
+      expect(status['ios_host'], iosHostReady ? 'ready' : 'missing');
       expect(File('${outputDir.path}/host_uname.txt').existsSync(), isTrue);
 
       final validation = await _runValidator(outputDir);

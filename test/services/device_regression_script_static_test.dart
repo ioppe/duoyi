@@ -366,8 +366,12 @@ void main() {
       expect(script.existsSync(), isTrue);
       final source = script.readAsStringSync();
 
-      expect(source, contains('/home/ubuntu/flutter/bin/flutter'));
-      expect(source, contains('/home/ubuntu/android-sdk/platform-tools/adb'));
+      expect(source, contains('source "\$ROOT_DIR/scripts/tool_paths.sh"'));
+      final tools = File('scripts/tool_paths.sh').readAsStringSync();
+      expect(tools, contains('FLUTTER_BIN:-flutter'));
+      expect(tools, contains('ADB_BIN:-adb'));
+      expect(tools, contains('ANDROID_HOME'));
+      expect(tools, isNot(contains('/home/ubuntu/')));
       expect(source, contains('ANDROID_SDK_ROOT'));
       expect(source, contains('== Emulator prerequisites =='));
       expect(source, contains('== Device readiness report =='));
