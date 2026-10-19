@@ -25,6 +25,11 @@ class DesignTokens {
   // ----- Account form fields -----
   static const double formFieldMinHeight = 56;
 
+  // ----- Modal bottom sheets -----
+  // 键盘弹出时，以键盘上方可用高度为基准。
+  static const double modalSheetMinHeightFactor = 1 / 2;
+  static const double modalSheetMaxHeightFactor = 2 / 3;
+
   // ----- Default palette -----
   static const Color defaultPageBackground = Color(0xFFF6F7F9);
   static const Color defaultSurface = Color(0xFFFFFFFF);

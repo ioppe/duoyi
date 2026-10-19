@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:duoyi/models/anniversary.dart';
 import 'package:duoyi/providers/anniversary_provider.dart';
 import 'package:duoyi/screens/anniversary_screen.dart';
+import 'package:duoyi/widgets/surface_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,50 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
+  testWidgets('纪念日编辑器与键盘共用半屏至三分之二屏限制', (tester) async {
+    _setSurfaceSize(tester, const Size(390, 844));
+    addTearDown(tester.view.reset);
+    final provider = AnniversaryProvider();
+    await provider.loadFromStorage();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showAnniversaryEditor(
+                  context,
+                  fixedType: AnniversaryType.birthday,
+                ),
+                child: const Text('打开编辑器'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开编辑器'));
+    await tester.pumpAndSettle();
+    final card = find.descendant(
+      of: find.byType(AppModalSheet),
+      matching: find.byType(Material),
+    ).first;
+    expect(
+      tester.getSize(card).height,
+      inInclusiveRange(844 / 2 - 0.5, 844 * 2 / 3 + 0.5),
+    );
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    final rect = tester.getRect(card);
+    expect(rect.height, closeTo(544 * 2 / 3, 0.5));
+    expect(rect.bottom, closeTo(544, 0.5));
+    await tester.tapAt(Offset(rect.center.dx, rect.top - 20));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppModalSheet), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('birthday and anniversary list fits mobile and desktop widths', (

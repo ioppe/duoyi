@@ -8,6 +8,7 @@ import 'package:duoyi/models/habit.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/screens/habit_screen.dart';
+import 'package:duoyi/widgets/surface_components.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,36 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('新建习惯至多三分之二屏，表单可滚到保存且遮罩可关闭', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habitProvider = HabitProvider();
+    await pumpHabitScreen(tester, habitProvider);
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    final card = tester.getRect(
+      find.descendant(
+        of: find.byType(AppModalSheet),
+        matching: find.byType(Material),
+      ).first,
+    );
+    expect(card.height, closeTo(844 * 2 / 3, 0.5));
+    final saveButton = find.widgetWithText(ElevatedButton, '开启新习惯');
+    // 使用真实拖动手势核验表单滚动，避免只验证 ensureVisible 的程序跳转。
+    for (var i = 0; i < 5; i++) {
+      await tester.dragFrom(const Offset(10, 760), const Offset(0, -350));
+      await tester.pumpAndSettle();
+    }
+    expect(saveButton.hitTestable(), findsOneWidget);
+    await tester.tapAt(Offset(card.center.dx, card.top - 20));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppModalSheet), findsNothing);
+    expect(habitProvider.habits, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('negative habit count uses custom unit on main habit card', (
     tester,

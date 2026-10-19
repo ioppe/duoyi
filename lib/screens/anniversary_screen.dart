@@ -1253,15 +1253,8 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
         : _editTitleForType(_type);
     final titleHint = _titleHintForType(_type);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.8,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (_, controller) => AppSecondaryControlTheme(
-        child: AppModalSheet(
+    return AppModalSheet(
           title: editorTitle,
-          scrollController: controller,
           leadingActions: widget.editing == null
               ? const []
               : [
@@ -1533,8 +1526,6 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
               ],
             ],
           ),
-        ),
-      ),
     );
   }
 

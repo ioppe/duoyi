@@ -327,7 +327,16 @@ void main() {
         'final availableHeight = (media.size.height - viewInsets.bottom)',
       ),
     );
-    expect(source, contains('maxHeight: availableHeight * 0.88'));
+    expect(
+      source,
+      contains('minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor'),
+    );
+    expect(
+      source,
+      contains('maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor'),
+    );
+    expect(source, contains('heightFactor: 1'));
+    expect(source, contains('widthFactor: 1'));
     expect(source, contains('AppSecondaryControlTheme(child: child)'));
     expect(source, contains('...leadingActions'));
     expect(source, contains('...actions'));
@@ -365,7 +374,14 @@ void main() {
     ).readAsStringSync();
     final admin = File('lib/screens/admin_screen.dart').readAsStringSync();
 
-    expect(habit, contains('AppSecondaryControlTheme('));
+    // 习惯创建已统一使用 AppModalSheet；二级控件主题由共享卡片提供。
+    expect(habit, contains('AppModalSheet('));
+    final surfaces = File('lib/widgets/surface_components.dart').readAsStringSync();
+    final modalSheet = surfaces.substring(
+      surfaces.indexOf('class AppModalSheet'),
+      surfaces.indexOf('class AppPickerOption'),
+    );
+    expect(modalSheet, contains('AppSecondaryControlTheme(child: child)'));
     expect(habit, contains('final routeBackground'));
     expect(habit, contains('backgroundColor: routeBackground'));
     expect(calendar, contains('AppSecondaryControlTheme('));

@@ -5,6 +5,7 @@ import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/screens/ai_schedule_screen.dart';
 import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/widgets/quick_capture_fab.dart';
+import 'package:duoyi/widgets/surface_components.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +27,35 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
+  testWidgets('快捷模板占半屏至三分之二屏，点击上方遮罩关闭', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AiService>(
+        create: (_) => _FakeAiService(),
+        child: const MaterialApp(
+          home: Scaffold(floatingActionButton: QuickCaptureFab()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.longPress(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    final card = tester.getRect(
+      find.descendant(
+        of: find.byType(AppModalSheet),
+        matching: find.byType(Material),
+      ).first,
+    );
+    expect(card.height, inInclusiveRange(844 / 2, 844 * 2 / 3));
+    await tester.tapAt(Offset(card.center.dx, card.top - 20));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppModalSheet), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('AI schedule shortcut opens dedicated route', (tester) async {

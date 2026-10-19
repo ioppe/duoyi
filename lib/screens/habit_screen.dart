@@ -122,42 +122,18 @@ class _HabitScreenState extends State<HabitScreen>
     showAppModalSheet(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppSurfaceCard(
-          margin: EdgeInsets.zero,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            left: 20,
-            right: 20,
-            top: 24,
+        builder: (ctx, setSt) => AppModalSheet(
+          title: s.habitCreateTitle,
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.spaceXl,
+            DesignTokens.spaceXxl,
+            DesignTokens.spaceXl,
+            DesignTokens.spaceXl,
           ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          child: AppSecondaryControlTheme(
-            child: SingleChildScrollView(
-              child: Column(
+          child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          ctx,
-                        ).colorScheme.onSurface.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    s.habitCreateTitle,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
 
                   // --- Recommended Section ---
                   const Text(
@@ -664,8 +640,6 @@ class _HabitScreenState extends State<HabitScreen>
                   ),
                 ],
               ),
-            ),
-          ),
         ),
       ),
     );

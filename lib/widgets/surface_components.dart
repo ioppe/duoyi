@@ -1560,7 +1560,7 @@ class AppModalSheet extends StatelessWidget {
     final media = MediaQuery.of(context);
     final viewInsets = shiftForKeyboard ? media.viewInsets : EdgeInsets.zero;
     final availableHeight = (media.size.height - viewInsets.bottom).clamp(
-      320.0,
+      0.0,
       media.size.height,
     );
     final resolvedPadding = padding.resolve(Directionality.of(context));
@@ -1596,7 +1596,12 @@ class AppModalSheet extends StatelessWidget {
         ),
         const SizedBox(height: 12),
       ],
-      AppSecondaryControlTheme(child: child),
+      // 自带 ListView/GridView 的内容必须拿到扣除标题和操作区后的高度，
+      // 否则缩小卡片后仍按原始固定高度布局，底部操作会溢出。
+      if (!scrollable && scrollController == null)
+        Flexible(child: AppSecondaryControlTheme(child: child))
+      else
+        AppSecondaryControlTheme(child: child),
       if (leadingActions.isNotEmpty || actions.isNotEmpty) ...[
         const SizedBox(height: 14),
         AppSecondaryControlTheme(
@@ -1649,10 +1654,14 @@ class AppModalSheet extends StatelessWidget {
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
         child: Align(
           alignment: Alignment.bottomCenter,
+          // 不占用卡片上方的透明区域，让点击交给路由的遮罩关闭。
+          heightFactor: 1,
+          widthFactor: 1,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: maxWidth,
-              maxHeight: availableHeight * 0.88,
+              minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor,
+              maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor,
             ),
             child: SizedBox(
               width: double.infinity,

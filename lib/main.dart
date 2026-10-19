@@ -3498,7 +3498,6 @@ Future<void> _showSharedTextImportSheet(String rawText) async {
     builder: (sheetContext) => AppModalSheet(
       title: '导入分享文本',
       subtitle: '选择保存位置',
-      scrollable: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
