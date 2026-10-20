@@ -847,11 +847,18 @@ class _TodayMetricLink extends StatelessWidget {
               children: [
                 Icon(icon, size: DesignTokens.fontSizeBody, color: home.muted),
                 const SizedBox(width: DesignTokens.spaceXs),
-                Text(label, style: style),
-                const SizedBox(width: DesignTokens.spaceXs),
-                Text(
-                  unit == '%' ? '$value$unit' : '$value $unit',
-                  style: style.copyWith(color: home.text),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(label, style: style),
+                    const SizedBox(width: DesignTokens.spaceXs),
+                    Text(
+                      unit == '%' ? '$value$unit' : '$value $unit',
+                      style: style.copyWith(color: home.text),
+                    ),
+                  ],
                 ),
               ],
             ),
