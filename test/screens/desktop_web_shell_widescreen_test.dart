@@ -35,6 +35,7 @@ import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/services/app_update_service.dart';
 import 'package:duoyi/services/calendar_sync_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,7 +49,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 Finder get _maxWidthBox =>
     find.byKey(const ValueKey('desktop_web_body_max_width'));
 
-Widget _wrapShell(ThemeData theme, {HabitProvider? habitProvider}) {
+Widget _wrapShell(
+  ThemeData theme, {
+  HabitProvider? habitProvider,
+  double textScale = 1,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => TodoProvider()),
@@ -87,6 +92,12 @@ Widget _wrapShell(ThemeData theme, {HabitProvider? habitProvider}) {
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('zh'),
       theme: theme,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
       home: MainShell(),
     ),
   );
@@ -97,11 +108,14 @@ Future<void> _pumpShellAt(
   ThemeData theme,
   Size size, {
   HabitProvider? habitProvider,
+  double textScale = 1,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(_wrapShell(theme, habitProvider: habitProvider));
+  await tester.pumpWidget(
+    _wrapShell(theme, habitProvider: habitProvider, textScale: textScale),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -232,6 +246,77 @@ void main() {
     expect(find.byType(TodayScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  for (final brand in [AppBrands.defaultBrand, AppBrands.starRail]) {
+    for (final (size, scale) in [
+      (const Size(390, 844), 1.0),
+      (const Size(320, 720), 1.5),
+    ]) {
+      testWidgets('${brand.id} $size ×$scale 四个一级页面共用圆体粗体底栏', (tester) async {
+        await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
+              rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+            ))
+            .load();
+        tester.view.padding = const FakeViewPadding(bottom: 24);
+        await _pumpShellAt(tester, brand.theme, size, textScale: scale);
+        final navigation = find.byType(NavigationBar);
+        final shared = brand.theme.navigationBarTheme;
+        List<(IconData?, IconData?)>? icons;
+        for (final (navIndex, tab) in [0, 1, 2, 6].indexed) {
+          tester.state<MainShellState>(find.byType(MainShell)).navigateTo(tab);
+          await tester.pumpAndSettle();
+          final bar = tester.widget<NavigationBar>(navigation);
+          final applied = NavigationBarTheme.of(tester.element(navigation));
+          expect(bar.selectedIndex, navIndex);
+          expect(
+            applied,
+            shared,
+            reason: 'tab=$tab must inherit the shared theme',
+          );
+          expect(tester.getSize(navigation).height, shared.height! + 24);
+          expect(tester.getRect(navigation).bottom, size.height);
+          final destinations = bar.destinations.cast<NavigationDestination>();
+          final destinationIcons = destinations
+              .map(
+                (item) => (
+                  (item.icon as Icon).icon,
+                  (item.selectedIcon as Icon?)?.icon,
+                ),
+              )
+              .toList();
+          icons ??= destinationIcons;
+          expect(
+            destinationIcons,
+            icons,
+            reason: 'selected icons must not change on Today',
+          );
+          for (final item in destinations) {
+            final label = find.descendant(
+              of: navigation,
+              matching: find.text(item.label),
+            );
+            final text = tester.widget<Text>(label);
+            final style = DefaultTextStyle.of(
+              tester.element(label),
+            ).style.merge(text.style);
+            expect(style.fontFamily, DesignTokens.fontFamilyRounded);
+            expect(style.fontWeight, FontWeight.w700);
+            expect(style.fontSize, DesignTokens.fontSizeBottomNavLabel);
+            final selected = item == destinations.elementAt(navIndex);
+            final expectedStyle = shared.labelTextStyle!.resolve(
+              selected ? {WidgetState.selected} : {},
+            )!;
+            expect(style.color, expectedStyle.color);
+          }
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'tab=$tab size=$size scale=$scale',
+          );
+        }
+      });
+    }
+  }
 
   test('web 底导航模糊降级档低于原生档（VM 上 kIsWeb=false 不降级）', () {
     expect(

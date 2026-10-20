@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../services/app_update_installer.dart';
 import '../services/app_update_service.dart';
 import 'brand_background.dart';
@@ -88,7 +89,7 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
                             '需要更新后才能继续使用',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -132,7 +133,7 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
                             Text(
                               '更新内容',
                               style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -252,7 +253,7 @@ class _ForceUpdateInfoRow extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
     final valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
     );
     final labelText = Text(label, style: labelStyle);
     final valueText = Text(

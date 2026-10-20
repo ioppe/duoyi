@@ -100,7 +100,7 @@ class WeeklyProductivityCard extends StatelessWidget {
                     fontSize: DesignTokens.fontSizeXl,
                     color: cs.primary,
                     height: 1,
-                    fontWeight: DesignTokens.fontWeightRegular,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 const SizedBox(height: DesignTokens.spaceXxs),
@@ -130,7 +130,7 @@ class WeeklyProductivityCard extends StatelessWidget {
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: DesignTokens.fontSizeMd,
                           color: cs.onSurface,
-                          fontWeight: DesignTokens.fontWeightRegular,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),

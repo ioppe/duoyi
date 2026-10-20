@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
@@ -119,7 +120,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                             I18n.tr('announcement.center'),
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -181,7 +182,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                 _levelLabel(level),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: levelColor,
                                 ),
                               ),
@@ -192,7 +193,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                 (a['title'] ?? '').toString(),
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(
-                                      fontWeight: FontWeight.normal,
+                                      fontWeight: DesignTokens.fontWeightStrong,
                                       color: cs.onSurface,
                                     ),
                               ),

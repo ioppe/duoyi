@@ -80,7 +80,7 @@ class SyncStatusCard extends StatelessWidget {
             style: TextStyle(
               fontSize: DesignTokens.fontSizeCaption,
               color: cs.tertiary,
-              fontWeight: DesignTokens.fontWeightRegular,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         );
@@ -109,7 +109,7 @@ class SyncStatusCard extends StatelessWidget {
                       fontSize: 13,
                       height: 1.2,
                       color: cs.onSurface,
-                      fontWeight: DesignTokens.fontWeightRegular,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -121,7 +121,7 @@ class SyncStatusCard extends StatelessWidget {
                       fontSize: DesignTokens.fontSizeSm,
                       height: 1.2,
                       color: stateColor,
-                      fontWeight: DesignTokens.fontWeightRegular,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   if (detail.isNotEmpty) ...[

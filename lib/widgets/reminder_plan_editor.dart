@@ -202,7 +202,7 @@ class _ReminderSwitchTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -275,9 +275,7 @@ class _ReminderRuleTile extends StatelessWidget {
               _ruleTitle(rule),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: DesignTokens.fontWeightRegular,
-              ),
+              style: const TextStyle(fontWeight: DesignTokens.fontWeightStrong),
             ),
             subtitle: Text(
               _ruleSummary(rule),
@@ -690,7 +688,7 @@ TextStyle _labelStyle(BuildContext context) {
   return TextStyle(
     fontSize: DesignTokens.fontSizeSm,
     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.68),
-    fontWeight: DesignTokens.fontWeightRegular,
+    fontWeight: DesignTokens.fontWeightStrong,
   );
 }
 

@@ -62,7 +62,7 @@ run_group "1/8 404 and route contracts" \
 
 run_group "2/8 style layout and readable selection" \
   "$FLUTTER_BIN" test \
-    test/services/no_global_bold_static_test.dart \
+    test/services/rounded_typography_static_test.dart \
     test/screens/style_layout_regression_static_test.dart \
     test/widgets/surface_secondary_control_static_test.dart \
     test/screens/almanac_screen_test.dart \

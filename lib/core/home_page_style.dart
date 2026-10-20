@@ -52,7 +52,7 @@ class HomePageStyle {
     double height = 1.5,
   }) => (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
     fontSize: size,
-    fontWeight: DesignTokens.fontWeightRegular,
+    fontWeight: DesignTokens.fontWeightStrong,
     color: color ?? text,
     height: height,
     letterSpacing: 0,

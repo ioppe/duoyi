@@ -65,7 +65,9 @@ The release gate. Runs 8 groups: batched Flutter tests (static guards, screens, 
 
 ### Static guard tests enforce project rules
 
-Roughly 95 of ~240 Flutter test files match `*_static_test.dart`. These regex-scan `lib/` source and **fail when banned patterns appear anywhere in the codebase** — e.g., `test/services/no_global_bold_static_test.dart` bans `FontWeight.bold` / `FontWeight.w500+` in all of `lib/`. When your change trips one, read the test's `reason` message (it states the convention in Chinese) and fix the code to comply — do not weaken the guard. Release commits routinely have to "satisfy release static guards"; expect any UI change to be checked against them.
+Roughly 95 of ~240 Flutter test files match `*_static_test.dart`. These regex-scan `lib/` source and **fail when banned patterns appear anywhere in the codebase**. Typography guards require the bundled rounded sans-serif family and shared bold token (`DesignTokens.fontWeightStrong`, 700); local regular-weight overrides are forbidden. When your change trips a guard, read the test's `reason` message and fix the code to comply — do not weaken the guard. Expect any UI change to be checked against them.
+
+All brands, app controls, input text and secondary pages share `ResourceHanRounded` (资源圆体 CN Bold). Inherit theme styles and use the shared weight token for explicit overrides. Keep the existing size/color/spacing hierarchy and one shared navigation style across primary pages. The font is bundled for consistent offline display; its source, checksum and SIL Open Font License live in `assets/fonts/`. PDF/report font handling is independent.
 
 ### Version bump touches two files
 

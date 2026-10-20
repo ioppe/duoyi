@@ -285,10 +285,10 @@ class _AdminGlassControlTheme extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final controlText = appSecondaryControlTextStyle(
       context,
-    ).copyWith(color: cs.onSurface, fontWeight: FontWeight.normal);
+    ).copyWith(color: cs.onSurface, fontWeight: DesignTokens.fontWeightStrong);
     final labelText = appSecondaryControlLabelStyle(
       context,
-    ).copyWith(color: cs.onSurface, fontWeight: FontWeight.normal);
+    ).copyWith(color: cs.onSurface, fontWeight: DesignTokens.fontWeightStrong);
     final selectedFill = isDark
         ? cs.primary.withValues(alpha: 0.16)
         : cs.primary.withValues(alpha: 0.075);
@@ -565,7 +565,7 @@ class _AdminPermissionGroupPanel extends StatelessWidget {
                   group.title,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: cs.onSurface,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ],
@@ -654,7 +654,7 @@ class _AdminGroupSummaryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: cs.onSurface,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 if (description.isNotEmpty) ...[
@@ -902,7 +902,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                     '近 7 天注册',
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: cs.onSurface,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -925,7 +925,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                               row['date'].toString(),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: cs.onSurface.withValues(alpha: 0.68),
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                           ),
@@ -944,7 +944,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                             '${row['count']}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurface,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                         ],
@@ -1016,7 +1016,7 @@ class _GridCards extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurface.withValues(alpha: 0.62),
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                         Text(
@@ -1025,7 +1025,7 @@ class _GridCards extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: cs.onSurface,
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                       ],
@@ -3506,7 +3506,7 @@ class _AiSettingsTabState extends State<_AiSettingsTab> {
                         _testResult!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.74),
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),
@@ -6480,7 +6480,7 @@ class _UsersTabState extends State<_UsersTab> {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: cs.onSurface,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                               decoration: disabled
                                   ? TextDecoration.lineThrough
                                   : null,
@@ -7223,7 +7223,7 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                               color: cs.onSurface,
                             ),
                           ),
@@ -7841,7 +7841,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
                             Text(
                               '本页 ${_items.length} 条 · 待处理 ${statusCounts['open'] ?? 0} · 处理中 ${statusCounts['in_progress'] ?? 0} · 已解决 ${statusCounts['resolved'] ?? 0}',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: cs.onSurface,
                               ),
                             ),
@@ -8036,7 +8036,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: cs.onSurface,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                           ),
@@ -8102,7 +8102,7 @@ class _FeedbackTabState extends State<_FeedbackTab> {
                                       color: cs.onSurface.withValues(
                                         alpha: 0.68,
                                       ),
-                                      fontWeight: FontWeight.normal,
+                                      fontWeight: DesignTokens.fontWeightStrong,
                                     ),
                                   ),
                                 ),
@@ -8285,7 +8285,7 @@ class _AdminFeedbackDetailField extends StatelessWidget {
                           alpha: multiline ? 0.82 : 0.7,
                         ),
                         height: multiline ? 1.35 : 1.28,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
             ),
           ),
@@ -8785,8 +8785,8 @@ class _InvitesTabState extends State<_InvitesTab> {
                           child: SelectableText(
                             c['code'].toString(),
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.normal,
+                              fontFamily: DesignTokens.fontFamilyRounded,
+                              fontWeight: DesignTokens.fontWeightStrong,
                               color: cs.onSurface,
                             ),
                           ),
@@ -9073,7 +9073,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: cs.onSurface,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     subtitle: Text(

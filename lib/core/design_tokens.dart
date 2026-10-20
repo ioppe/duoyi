@@ -141,7 +141,9 @@ class DesignTokens {
   static const double fontSizeButton = 13;
   static const double fontSizeBottomNavLabel = 11;
 
-  static const FontWeight fontWeightRegular = FontWeight.normal;
+  /// Bundled CJK rounded sans-serif, shared by every brand and UI control.
+  static const String fontFamilyRounded = 'ResourceHanRounded';
+  static const FontWeight fontWeightStrong = FontWeight.w700;
 
   // ----- Elevation / Shadow -----
   static const List<BoxShadow> shadowXs = [

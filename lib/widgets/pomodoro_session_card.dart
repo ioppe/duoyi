@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/design_tokens.dart';
 import '../core/focus_sound_catalog.dart';
 import '../core/i18n_date_format.dart';
 import '../models/pomodoro.dart';
@@ -61,7 +62,7 @@ class PomodoroSessionCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(height: 4),

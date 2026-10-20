@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -235,7 +236,7 @@ class _AnniversaryScreenState extends State<AnniversaryScreen>
                           '${a.daysRemaining}',
                           style: TextStyle(
                             color: Color(a.colorValue),
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                       ),
@@ -473,7 +474,7 @@ class _AnniversarySummaryStat extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: appSecondaryRouteTitleTextStyle(
             context,
-          ).copyWith(fontWeight: FontWeight.normal, color: cs.onSurface),
+          ).copyWith(fontWeight: DesignTokens.fontWeightStrong, color: cs.onSurface),
         ),
         const SizedBox(height: 2),
         Text(
@@ -482,7 +483,7 @@ class _AnniversarySummaryStat extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.62),
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ],
@@ -710,7 +711,7 @@ class _AnniversaryCardState extends State<_AnniversaryCard> {
                               style: TextStyle(
                                 fontSize: days == 0 ? 14 : 18,
                                 height: 1,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: color,
                               ),
                             ),
@@ -721,7 +722,7 @@ class _AnniversaryCardState extends State<_AnniversaryCard> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: color,
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                 ),
                               ),
                             ],
@@ -843,7 +844,7 @@ class _AnniversaryInlineSwipeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
       color: foreground,
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
       height: 1.1,
     );
     return Material(
@@ -892,7 +893,7 @@ class _AnniversaryPill extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             color: color,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ),

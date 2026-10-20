@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_clock.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../core/iterable_extensions.dart';
@@ -292,7 +293,7 @@ class CalendarEventSheet extends StatelessWidget {
                         _timeText(event),
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ],

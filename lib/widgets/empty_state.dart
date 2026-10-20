@@ -81,7 +81,7 @@ class EmptyState extends StatelessWidget {
                         color: cs.onSurface.withValues(alpha: 0.72),
                         fontSize: compact ? 13 : 15,
                         height: compact ? 1.35 : 1.55,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     if (actionLabel != null && onAction != null) ...[

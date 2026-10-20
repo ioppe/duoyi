@@ -292,7 +292,7 @@ class TodayScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     color: Color(c.colorValue),
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -327,7 +327,7 @@ class TodayScreen extends StatelessWidget {
                   '$d',
                   style: TextStyle(
                     color: Color(a.colorValue),
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     fontSize: 11,
                   ),
                 ),
@@ -515,7 +515,7 @@ class TodayScreen extends StatelessWidget {
               '$count',
               style: const TextStyle(
                 fontSize: DesignTokens.homeCounterSize,
-                fontWeight: DesignTokens.fontWeightRegular,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
           ),
@@ -1077,7 +1077,7 @@ class _TodayAlmanacCard extends StatelessWidget {
                                     color: foreground,
                                     fontSize: 16,
                                     height: 1.25,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                   ),
                                 ),
                                 if (term != null || festival != null) ...[
@@ -1196,7 +1196,7 @@ class _TodayDateBadge extends StatelessWidget {
                 color: accent,
                 fontSize: 11,
                 height: 1,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
           ),
@@ -1216,7 +1216,7 @@ class _TodayDateBadge extends StatelessWidget {
                         color: foreground,
                         fontSize: 30,
                         height: 0.96,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                   ),
@@ -1266,7 +1266,7 @@ class _TodayCalendarChip extends StatelessWidget {
             fontSize: 11,
             color: color,
             height: 1.1,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ),
@@ -1315,7 +1315,7 @@ class _TodayYijiPreview extends StatelessWidget {
                 color: color,
                 fontSize: 11,
                 height: 1,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
           ),
@@ -1784,7 +1784,7 @@ class _TodayTodoTitleLine extends StatelessWidget {
                   ? DesignTokens.fontSizeBody
                   : DesignTokens.homeTaskTitleSize,
               decoration: completed ? TextDecoration.lineThrough : null,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         ),
@@ -2516,7 +2516,7 @@ class _TodayReminderSectionState extends State<_TodayReminderSection> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 14,
                               height: 1.25,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -2526,7 +2526,7 @@ class _TodayReminderSectionState extends State<_TodayReminderSection> {
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurface.withValues(alpha: 0.56),
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                         ],
@@ -2540,7 +2540,7 @@ class _TodayReminderSectionState extends State<_TodayReminderSection> {
                       style: TextButton.styleFrom(
                         foregroundColor: cs.primary,
                         textStyle: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                         minimumSize: const Size(44, 44),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -2655,7 +2655,7 @@ class _ReminderGroupBlock extends StatelessWidget {
                     title,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: overdue ? cs.error : cs.onSurface,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   if (overdue) ...[
@@ -2981,7 +2981,7 @@ class _SuggestionSectionState extends State<_SuggestionSection> {
           I18n.tr('today.suggestions'),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontSize: 14,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
         subtitle: Text(

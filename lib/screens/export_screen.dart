@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/anniversary_provider.dart';
 import '../providers/calendar_provider.dart';
@@ -161,7 +162,7 @@ class _ExportScreenState extends State<ExportScreen> {
                           I18n.tr('export.hero.title'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: cs.onSurface,
                               ),
                         ),
@@ -242,7 +243,7 @@ class _ExportScreenState extends State<ExportScreen> {
                             I18n.tr('export.content.title'),
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -269,7 +270,7 @@ class _ExportScreenState extends State<ExportScreen> {
                         child: SelectableText(
                           _ics!,
                           style: const TextStyle(
-                            fontFamily: 'monospace',
+                            fontFamily: DesignTokens.fontFamilyRounded,
                             fontSize: 11,
                           ),
                         ),

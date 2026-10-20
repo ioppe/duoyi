@@ -10,7 +10,7 @@ void main() {
     final timePicker = _readSource('lib/widgets/app_time_picker.dart');
     expect(timePicker, isNot(contains('fontSize: 34')));
     expect(timePicker, contains('fontSize: 24'));
-    expect(timePicker, contains('fontWeight: FontWeight.normal'));
+    expect(timePicker, contains('fontWeight: DesignTokens.fontWeightStrong'));
     expect(
       timePicker,
       contains(

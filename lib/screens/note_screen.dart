@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/note_provider.dart';
@@ -306,7 +307,7 @@ class _NoteListCard extends StatelessWidget {
                   note.title,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -794,7 +795,7 @@ class _MarkdownEditingController extends TextEditingController {
   ) {
     final markerStyle = base.copyWith(
       color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
       fontStyle: FontStyle.normal,
       decoration: TextDecoration.none,
     );
@@ -811,7 +812,7 @@ class _MarkdownEditingController extends TextEditingController {
           trimmed.substring(2),
           base.copyWith(
             fontSize: ((base.fontSize ?? 14) + 4).clamp(16.0, 18.0),
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
           cs,
         ),
@@ -864,7 +865,7 @@ class _MarkdownEditingController extends TextEditingController {
   ) {
     final markerStyle = base.copyWith(
       color: cs.onSurfaceVariant.withValues(alpha: 0.45),
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
       fontStyle: FontStyle.normal,
       decoration: TextDecoration.none,
     );
@@ -898,7 +899,7 @@ class _MarkdownEditingController extends TextEditingController {
             ..add(
               TextSpan(
                 text: source.substring(i + 2, end),
-                style: base.copyWith(fontWeight: FontWeight.normal),
+                style: base.copyWith(fontWeight: DesignTokens.fontWeightStrong),
               ),
             )
             ..add(TextSpan(text: '**', style: markerStyle));
@@ -915,7 +916,7 @@ class _MarkdownEditingController extends TextEditingController {
               TextSpan(
                 text: source.substring(i + 1, end),
                 style: base.copyWith(
-                  fontFamily: 'monospace',
+                  fontFamily: DesignTokens.fontFamilyRounded,
                   backgroundColor: cs.surfaceContainerHighest.withValues(
                     alpha: 0.7,
                   ),
@@ -1243,12 +1244,12 @@ class _PreviewBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     if (block.type == NoteBlockType.heading) {
       final style = block.level <= 1
-          ? Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.normal)
-          : Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.normal);
+          ? Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: DesignTokens.fontWeightStrong,
+            )
+          : Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: DesignTokens.fontWeightStrong,
+            );
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: _InlineMarkdownText(text: block.text, style: style),
@@ -1324,7 +1325,10 @@ class _PreviewBlock extends StatelessWidget {
         ),
         child: Text(
           block.text,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamilyRounded,
+            fontSize: 14,
+          ),
         ),
       );
     }
@@ -1382,7 +1386,7 @@ class _InlineMarkdownText extends StatelessWidget {
           spans.add(
             TextSpan(
               text: source.substring(i + 2, end),
-              style: base.copyWith(fontWeight: FontWeight.normal),
+              style: base.copyWith(fontWeight: DesignTokens.fontWeightStrong),
             ),
           );
           i = end + 2;
@@ -1396,7 +1400,7 @@ class _InlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, end),
               style: base.copyWith(
-                fontFamily: 'monospace',
+                fontFamily: DesignTokens.fontFamilyRounded,
                 backgroundColor: Colors.black.withValues(alpha: 0.06),
               ),
             ),

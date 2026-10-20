@@ -237,7 +237,7 @@ class _RecommendedGoalCard extends StatelessWidget {
                       goal.localizedTitle,
                       style: const TextStyle(
                         fontSize: DesignTokens.fontSizeMd,
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: DesignTokens.spaceXxs),
@@ -390,7 +390,7 @@ class _Badge extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: DesignTokens.fontSizeXs,
-              fontWeight: DesignTokens.fontWeightRegular,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: color,
             ),
           ),

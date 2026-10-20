@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/achievements.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/productivity_challenges.dart';
 import '../providers/achievement_provider.dart';
@@ -186,7 +187,7 @@ class _ChallengeCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),
@@ -292,7 +293,7 @@ class _ProgressHeader extends StatelessWidget {
                   style: TextStyle(
                     color: cs.onPrimary.withValues(alpha: 0.78),
                     fontSize: 12,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -301,7 +302,7 @@ class _ProgressHeader extends StatelessWidget {
                   style: TextStyle(
                     color: cs.onPrimary,
                     fontSize: 24,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -474,7 +475,7 @@ class _AchievementShareCard extends StatelessWidget {
                     Text(
                       '多仪成就海报',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     Text(
@@ -491,9 +492,9 @@ class _AchievementShareCard extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             '$unlockedCount / $totalCount',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.normal),
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: DesignTokens.fontWeightStrong,
+            ),
           ),
           const SizedBox(height: 6),
           ClipRRect(
@@ -520,9 +521,9 @@ class _AchievementShareCard extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               '最近解锁',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.normal),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: DesignTokens.fontWeightStrong,
+              ),
             ),
             const SizedBox(height: 8),
             for (final achievement in achievements)
@@ -592,7 +593,10 @@ class _AchievementShareMetric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.normal),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: DesignTokens.fontWeightStrong,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -655,7 +659,7 @@ class _BadgeCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     fontSize: 13,
                     color: unlocked
                         ? cs.onSurface
@@ -674,7 +678,7 @@ class _BadgeCard extends StatelessWidget {
                   style: TextStyle(
                     color: color,
                     fontSize: 10,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),

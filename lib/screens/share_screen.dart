@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import '../models/workspace.dart';
 import '../providers/auth_provider.dart';
@@ -117,7 +118,9 @@ class _ShareScreenState extends State<ShareScreen> {
                           Text(
                             '共享空间',
                             style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.normal),
+                                ?.copyWith(
+                                  fontWeight: DesignTokens.fontWeightStrong,
+                                ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -333,7 +336,7 @@ class _MentionInboxButton extends StatelessWidget {
                   style: TextStyle(
                     color: cs.onError,
                     fontSize: 9,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -472,7 +475,7 @@ class _WorkspaceCard extends StatelessWidget {
                     Text(
                       workspace.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -588,7 +591,10 @@ class _WorkspaceCard extends StatelessWidget {
         title: const Text('邀请码已复制'),
         content: SelectableText(
           '${invite.code}\n\n角色：${invite.role.label}',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.normal),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: DesignTokens.fontWeightStrong,
+          ),
         ),
         actions: [
           FilledButton(
@@ -795,7 +801,7 @@ class _MentionContextBlock extends StatelessWidget {
                 '提及上下文',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: cs.primary,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
               AppStatusBadge(label: targetId, color: cs.primary),
@@ -855,7 +861,7 @@ class _LeaderboardTile extends StatelessWidget {
         '$percent%',
         style: TextStyle(
           color: cs.primary,
-          fontWeight: FontWeight.normal,
+          fontWeight: DesignTokens.fontWeightStrong,
           fontSize: 13,
         ),
       ),
@@ -977,7 +983,10 @@ class _MemberChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             member.username.isEmpty ? member.userId : member.username,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: DesignTokens.fontWeightStrong,
+            ),
           ),
           const SizedBox(width: 5),
           _MemberRoleBadge(role: member.role),
@@ -1069,7 +1078,7 @@ class _WorkspaceMemberAvatar extends StatelessWidget {
             _memberInitial(member),
             style: TextStyle(
               fontSize: radius <= 12 ? 10 : 11,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: color,
             ),
           ),
@@ -1114,7 +1123,7 @@ class _IdentityAvatar extends StatelessWidget {
             _identityInitial(userId, username),
             style: TextStyle(
               fontSize: radius <= 14 ? 10 : 11,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: color,
             ),
           ),
@@ -1150,7 +1159,7 @@ class _RankBadge extends StatelessWidget {
         '$rank',
         style: TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.normal,
+          fontWeight: DesignTokens.fontWeightStrong,
           color: color,
         ),
       ),
@@ -1180,7 +1189,7 @@ class _ExtraMemberAvatar extends StatelessWidget {
           '+$count',
           style: TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
             color: cs.onSurfaceVariant,
           ),
         ),

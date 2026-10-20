@@ -55,7 +55,7 @@ class HabitActiveWeekdayPicker extends StatelessWidget {
           I18n.tr('habit.active_weekdays'),
           style: const TextStyle(
             fontSize: DesignTokens.fontSizeSm,
-            fontWeight: DesignTokens.fontWeightRegular,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
         const SizedBox(height: DesignTokens.spaceXs),

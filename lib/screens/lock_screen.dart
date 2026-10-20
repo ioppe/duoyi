@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/app_lock_provider.dart';
 import '../providers/theme_provider.dart';
@@ -70,7 +71,7 @@ class _LockScreenState extends State<LockScreen> {
                   s.appTitle,
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -136,7 +137,7 @@ class _Keypad extends StatelessWidget {
                   v,
                   style: const TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
           ),

@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/app_clock.dart';
 import '../core/desktop_tokens.dart';
+import '../core/design_tokens.dart';
 import '../core/focus_tag_stats.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -701,7 +702,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+            style: const TextStyle(
+              fontWeight: DesignTokens.fontWeightStrong,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           child,
@@ -801,7 +805,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         children: [
           const Text(
             '专注标签排行',
-            style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+            style: TextStyle(
+              fontWeight: DesignTokens.fontWeightStrong,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           if (stats.isEmpty)
@@ -818,7 +825,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         '#${index + 1}',
                         style: TextStyle(
                           color: cs.primary,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),
@@ -893,7 +900,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               const Expanded(
                 child: Text(
                   '专注标签趋势',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               Text(
@@ -1005,7 +1015,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 LineTooltipItem(
                   '${series[item.barIndex].tag}\n'
                   '${points[item.x.toInt()].label} · ${item.y.toInt()} 分',
-                  TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                  TextStyle(
+                    color: cs.onInverseSurface,
+                    fontSize: 11,
+                    fontFamily: DesignTokens.fontFamilyRounded,
+                    fontWeight: DesignTokens.fontWeightStrong,
+                  ),
                 ),
             ],
           ),
@@ -1070,7 +1085,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               const Expanded(
                 child: Text(
                   '专注 × 待办相关性',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               _CrossMetricBadge(label: 'r', value: rText, cs: cs),
@@ -1153,7 +1171,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 point == null
                     ? '${spot.x.toInt()} 分 / ${spot.y.toInt()} 项'
                     : '${point.label}\n${point.focusMinutes} 分 / ${point.completedTodos} 项',
-                textStyle: TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                textStyle: TextStyle(
+                  color: cs.onInverseSurface,
+                  fontSize: 11,
+                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               );
             },
           ),
@@ -1238,7 +1261,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               const Expanded(
                 child: Text(
                   '习惯 × 待办相关性',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               _CrossMetricBadge(label: 'r', value: rText, cs: cs),
@@ -1321,7 +1347,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 point == null
                     ? '${spot.x.toInt()} 次 / ${spot.y.toInt()} 项'
                     : '${point.label}\n${point.habitCheckIns} 次 / ${point.completedTodos} 项',
-                textStyle: TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                textStyle: TextStyle(
+                  color: cs.onInverseSurface,
+                  fontSize: 11,
+                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               );
             },
           ),
@@ -1392,7 +1423,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         children: [
           const Text(
             '时间分类占比趋势',
-            style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+            style: TextStyle(
+              fontWeight: DesignTokens.fontWeightStrong,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -1461,7 +1495,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               ];
               return BarTooltipItem(
                 lines.join('\n'),
-                TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                TextStyle(
+                  color: cs.onInverseSurface,
+                  fontSize: 11,
+                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               );
             },
           ),
@@ -1553,7 +1592,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               const Expanded(
                 child: Text(
                   '时间投入 × 待办产出效率',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               _CrossMetricBadge(
@@ -1616,7 +1658,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 '${_timeOutputPeriodLabel(point)}\n'
                 '每小时完成 ${point.completedTodosPerHour.toStringAsFixed(1)} 项\n'
                 '${point.timeMinutes} 分 / ${point.completedTodos} 项',
-                TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                TextStyle(
+                  color: cs.onInverseSurface,
+                  fontSize: 11,
+                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               );
             },
           ),
@@ -1768,7 +1815,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               const Expanded(
                 child: Text(
                   '项目效率拆解',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               _CrossMetricBadge(
@@ -1844,7 +1894,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 '${item.projectLabel}\n'
                 '${item.outputCount} 项输出 / ${item.timeMinutes} 分\n'
                 '${item.outputPerHour.toStringAsFixed(1)} 项/时',
-                TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                TextStyle(
+                  color: cs.onInverseSurface,
+                  fontSize: 11,
+                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               );
             },
           ),
@@ -2087,7 +2142,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       title: v == 0 ? '' : '${((v / total) * 100).toStringAsFixed(0)}%',
       titleStyle: const TextStyle(
         color: Colors.white,
-        fontWeight: FontWeight.normal,
+        fontWeight: DesignTokens.fontWeightStrong,
         fontSize: 11,
       ),
     );
@@ -2558,7 +2613,10 @@ class _ReportShareDialogState extends State<_ReportShareDialog> {
             const SizedBox(height: 14),
             const Text(
               'PDF 模板',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: DesignTokens.fontWeightStrong,
+              ),
             ),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -3445,7 +3503,7 @@ class _ReportShareCard extends StatelessWidget {
           Text(
             '多仪时光报告',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: cs.onSurface,
             ),
           ),
@@ -3539,7 +3597,10 @@ class _ShareMetric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: DesignTokens.fontWeightStrong,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -3616,7 +3677,10 @@ class _QuadrantDistributionCard extends StatelessWidget {
               const Expanded(
                 child: Text(
                   '四象限执行分布',
-                  style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+                  style: TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: 13,
+                  ),
                 ),
               ),
               Text(
@@ -3697,7 +3761,10 @@ class _QuadrantMetric extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 16),
+            style: const TextStyle(
+              fontWeight: DesignTokens.fontWeightStrong,
+              fontSize: 16,
+            ),
           ),
         ],
       ),
@@ -3747,7 +3814,7 @@ class _QuadrantDistributionRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                           fontSize: 13,
                         ),
                       ),
@@ -3802,7 +3869,7 @@ class _QuadrantDistributionRow extends StatelessWidget {
               '${stat.totalCount}',
               textAlign: TextAlign.end,
               style: const TextStyle(
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
                 fontSize: 16,
               ),
             ),
@@ -3853,7 +3920,7 @@ class _Kpi extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey.shade600,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 Text(
@@ -3862,7 +3929,7 @@ class _Kpi extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ],
@@ -3927,7 +3994,7 @@ class _PeriodReportDigestCard extends StatelessWidget {
                     Text(
                       digest.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -4071,7 +4138,7 @@ class _ScoreBadge extends StatelessWidget {
         '$score',
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
           color: cs.primary,
-          fontWeight: FontWeight.normal,
+          fontWeight: DesignTokens.fontWeightStrong,
         ),
       ),
     );
@@ -4102,7 +4169,7 @@ class _CrossMetricBadge extends StatelessWidget {
         '$label $value',
         style: TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.normal,
+          fontWeight: DesignTokens.fontWeightStrong,
           color: cs.primary,
         ),
       ),
@@ -4140,7 +4207,7 @@ class _ProjectEfficiencyRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -4150,7 +4217,7 @@ class _ProjectEfficiencyRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   color: cs.primary,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ],
@@ -4212,7 +4279,7 @@ class _ActivityHeatmapCard extends StatelessWidget {
                       '年度活动热力图',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -4287,7 +4354,7 @@ class _HeatmapSummary extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               color: cs.primary,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
           Text(
@@ -4362,7 +4429,7 @@ class _ProductivityTrendCard extends StatelessWidget {
                       '效率趋势',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -4410,7 +4477,7 @@ class _ProductivityTrendCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: cs.onSurface.withValues(alpha: 0.72),
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
             const SizedBox(height: 6),
@@ -4441,7 +4508,7 @@ class _ProductivityTrendCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: cs.onSurface.withValues(alpha: 0.72),
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
             const SizedBox(height: 6),
@@ -4535,7 +4602,12 @@ class _ProductivityTrendCard extends StatelessWidget {
               for (final item in items)
                 LineTooltipItem(
                   '${points[item.x.toInt()].label}\n${item.y.toInt()} 分',
-                  TextStyle(color: cs.onInverseSurface, fontSize: 11),
+                  TextStyle(
+                    color: cs.onInverseSurface,
+                    fontSize: 11,
+                    fontFamily: DesignTokens.fontFamilyRounded,
+                    fontWeight: DesignTokens.fontWeightStrong,
+                  ),
                 ),
             ],
           ),
@@ -4659,7 +4731,7 @@ class _ProductivityTrendDetailScreen extends StatelessWidget {
                             '趋势概览',
                             style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                           Text(
@@ -4717,7 +4789,7 @@ class _ProductivityTrendDetailScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               color: cs.onSurface.withValues(alpha: 0.72),
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
           const SizedBox(height: 8),
@@ -4848,7 +4920,7 @@ class _TrendDetailTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -4862,7 +4934,7 @@ class _TrendDetailTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   color: isLatest ? cs.primary : cs.onSurface,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
               const SizedBox(width: 6),
@@ -4959,7 +5031,7 @@ class _TrendSummaryBadge extends StatelessWidget {
             '$score 分',
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: color,
             ),
           ),
@@ -5000,7 +5072,10 @@ class _TrendHistoryMetric extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: DesignTokens.fontWeightStrong,
+            ),
           ),
         ],
       ),
@@ -5040,7 +5115,7 @@ class _ProductivityComparisonCard extends StatelessWidget {
                       '效率对比',
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -5072,7 +5147,7 @@ class _ProductivityComparisonCard extends StatelessWidget {
                       _signedNumber(score.difference, suffix: ' 分'),
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         color: trendColor,
                       ),
                     ),
@@ -5100,7 +5175,7 @@ class _ProductivityComparisonCard extends StatelessWidget {
                       comparison.current.productivityScore.toString(),
                       style: TextStyle(
                         fontSize: 24,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         color: cs.primary,
                       ),
                     ),
@@ -5251,7 +5326,7 @@ class _ComparisonMetric extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
             const SizedBox(height: 2),
@@ -5305,7 +5380,10 @@ class _WeeklyTimeOverview extends StatelessWidget {
         children: [
           const Text(
             '本周时间概览',
-            style: TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
+            style: TextStyle(
+              fontWeight: DesignTokens.fontWeightStrong,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 10),
           // Headline total
@@ -5331,7 +5409,7 @@ class _WeeklyTimeOverview extends StatelessWidget {
                     _formatDuration(weekTotalSeconds),
                     style: const TextStyle(
                       fontSize: 22,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   Text(
@@ -5381,7 +5459,7 @@ class _WeeklyTimeOverview extends StatelessWidget {
                         : '${((entry.value / total) * 100).toStringAsFixed(0)}%',
                     titleStyle: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                       fontSize: 11,
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:file_selector/file_selector.dart';
@@ -730,7 +731,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       Text(
                         '样例',
                         style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -748,7 +749,7 @@ class _BackupScreenState extends State<BackupScreen> {
                       Text(
                         '解析提示',
                         style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1387,7 +1388,7 @@ class _BackupScreenState extends State<BackupScreen> {
                           pageTitle,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: cs.onSurface,
                               ),
                         ),
@@ -1504,7 +1505,7 @@ class _BackupScreenState extends State<BackupScreen> {
                             _exportedTitle ?? '导出内容',
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -1531,7 +1532,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         child: SelectableText(
                           _exported!,
                           style: const TextStyle(
-                            fontFamily: 'monospace',
+                            fontFamily: DesignTokens.fontFamilyRounded,
                             fontSize: 11,
                           ),
                         ),

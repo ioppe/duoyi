@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -757,9 +758,10 @@ class _SummaryStat extends StatelessWidget {
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: appSecondaryRouteTitleTextStyle(
-            context,
-          ).copyWith(fontWeight: FontWeight.normal, color: cs.onSurface),
+          style: appSecondaryRouteTitleTextStyle(context).copyWith(
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: cs.onSurface,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
@@ -768,7 +770,7 @@ class _SummaryStat extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodySmall?.copyWith(
             color: cs.onSurface.withValues(alpha: 0.62),
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ],
@@ -984,7 +986,7 @@ class _CountdownCardState extends State<_CountdownCard> {
                               '$absDays',
                               style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: color,
                                 height: 1.0,
                               ),
@@ -995,7 +997,7 @@ class _CountdownCardState extends State<_CountdownCard> {
                               style: TextStyle(
                                 fontSize: 11,
                                 color: color,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                           ],
@@ -1116,7 +1118,7 @@ class _CountdownInlineSwipeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
       color: foreground,
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
       height: 1.1,
     );
     return Material(
@@ -1177,7 +1179,7 @@ class _StatusPill extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   color: color,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ),

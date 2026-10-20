@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/design_tokens.dart';
 import '../core/web_target.dart';
 import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
@@ -484,7 +485,7 @@ class _WidgetPinSupportBanner extends StatelessWidget {
                   title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: cs.onSurface,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -492,7 +493,7 @@ class _WidgetPinSupportBanner extends StatelessWidget {
                   message,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: cs.onSurface.withValues(alpha: 0.72),
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ],
@@ -590,7 +591,10 @@ class _WidgetDisplayModePanel extends StatelessWidget {
               const Expanded(
                 child: Text(
                   '新添加默认样式',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: DesignTokens.fontWeightStrong,
+                  ),
                 ),
               ),
             ],
@@ -1108,7 +1112,7 @@ class WidgetPreviewCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 13,
-                                      fontWeight: FontWeight.normal,
+                                      fontWeight: DesignTokens.fontWeightStrong,
                                     ),
                                   ),
                                 ),
@@ -1490,7 +1494,7 @@ class _WidgetPreviewCalendarBody extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.blue,
                   fontSize: 11,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ),
@@ -1574,7 +1578,7 @@ class _WidgetPreviewCalendarCell extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             color: isToday ? Colors.white : cs.onSurface,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ),
@@ -1730,7 +1734,7 @@ class _WidgetPreviewQuickAdd extends StatelessWidget {
           style: const TextStyle(
             color: Colors.blue,
             fontSize: 11,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ),
@@ -1796,7 +1800,7 @@ class _WidgetPreviewTodoRow extends StatelessWidget {
             style: TextStyle(
               color: Colors.blue,
               fontSize: 13,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         ),
@@ -1836,7 +1840,7 @@ class _WidgetPreviewMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
             color: color,
           ),
         ),
@@ -1882,7 +1886,7 @@ class _WidgetPreviewNav extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     color: i == selectedIndex ? accent : cs.onSurfaceVariant,
                   ),
                 ),

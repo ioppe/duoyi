@@ -918,7 +918,7 @@ class _GoalIconField extends StatelessWidget {
                       Text(
                         goalIconLabel(iconName),
                         style: const TextStyle(
-                          fontWeight: DesignTokens.fontWeightRegular,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1051,7 +1051,7 @@ Future<String?> _showGoalIconPicker(BuildContext context, String selected) {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: DesignTokens.fontSizeXs,
-                                    fontWeight: DesignTokens.fontWeightRegular,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                     color: cs.onSurface.withValues(alpha: 0.76),
                                   ),
                                 ),
@@ -1147,7 +1147,7 @@ class _RecurrenceSection extends StatelessWidget {
                   nextDispatchLabel,
                   style: TextStyle(
                     fontSize: DesignTokens.fontSizeBase,
-                    fontWeight: DesignTokens.fontWeightRegular,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -1861,7 +1861,7 @@ class _SectionCard extends StatelessWidget {
               title,
               style: const TextStyle(
                 fontSize: DesignTokens.fontSizeMd,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
             subtitle: subtitle == null
@@ -1986,7 +1986,7 @@ class _DateField extends StatelessWidget {
                       textAlign: TextAlign.end,
                       style: TextStyle(
                         fontSize: compact ? 11 : DesignTokens.fontSizeSm,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                   ),

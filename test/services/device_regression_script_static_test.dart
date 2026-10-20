@@ -31,7 +31,10 @@ void main() {
       contains('test/services/api_route_contract_static_test.dart'),
     );
     expect(source, contains('test/services/api_client_error_test.dart'));
-    expect(source, contains('test/services/no_global_bold_static_test.dart'));
+    expect(
+      source,
+      contains('test/services/rounded_typography_static_test.dart'),
+    );
     expect(
       source,
       contains('test/screens/style_layout_regression_static_test.dart'),

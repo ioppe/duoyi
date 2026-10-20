@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/design_tokens.dart';
+
 class PomodoroTimerRing extends StatelessWidget {
   final double progress;
   final String timeText;
@@ -64,8 +66,8 @@ class PomodoroTimerRing extends StatelessWidget {
                 timeText,
                 style: TextStyle(
                   fontSize: timeFontSize,
-                  fontWeight: FontWeight.w300,
-                  fontFamily: 'monospace',
+                  fontWeight: DesignTokens.fontWeightStrong,
+                  fontFamily: DesignTokens.fontFamilyRounded,
                   letterSpacing: 0,
                   color: Theme.of(context).textTheme.headlineSmall?.color,
                 ),
@@ -77,7 +79,7 @@ class PomodoroTimerRing extends StatelessWidget {
                   style: TextStyle(
                     fontSize: progress >= 1.0 ? 14 : 16,
                     color: Colors.grey.shade500,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
             ],

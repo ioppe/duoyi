@@ -125,7 +125,7 @@ class _ProfileAvatarLetter extends StatelessWidget {
       style: TextStyle(
         fontSize: radius * 0.62,
         color: color,
-        fontWeight: FontWeight.normal,
+        fontWeight: DesignTokens.fontWeightStrong,
       ),
     );
   }

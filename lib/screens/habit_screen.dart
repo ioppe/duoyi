@@ -140,7 +140,7 @@ class _HabitScreenState extends State<HabitScreen>
                     '推荐目标',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                       color: Colors.grey,
                     ),
                   ),
@@ -633,7 +633,7 @@ class _HabitScreenState extends State<HabitScreen>
                         '开启新习惯',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),
@@ -755,13 +755,13 @@ class _HabitScreenState extends State<HabitScreen>
                 labelStyle: appSecondaryControlLabelStyle(context).copyWith(
                   fontSize: 12,
                   height: 1.1,
-                  fontWeight: DesignTokens.fontWeightRegular,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
                 unselectedLabelStyle: appSecondaryControlLabelStyle(context)
                     .copyWith(
                       fontSize: 12,
                       height: 1.1,
-                      fontWeight: DesignTokens.fontWeightRegular,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                 labelColor: cs.onSurface,
                 unselectedLabelColor: cs.onSurfaceVariant,
@@ -846,7 +846,7 @@ class _HabitHeatmapTab extends StatelessWidget {
                   heading,
                   style: appSecondaryRouteTitleTextStyle(context).copyWith(
                     fontSize: 13,
-                    fontWeight: DesignTokens.fontWeightRegular,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     height: 1.12,
                   ),
                 ),
@@ -978,7 +978,7 @@ class _HabitTodaySummaryCard extends StatelessWidget {
                     '${(progress * 100).toInt()}%',
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                       color: progress >= 1
                           ? const Color(0xFF2E7D32)
                           : cs.primary,
@@ -997,7 +997,7 @@ class _HabitTodaySummaryCard extends StatelessWidget {
                     style: TextStyle(
                       color: cs.onSurface,
                       fontSize: 13,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                       height: 1.1,
                     ),
                   ),
@@ -1062,7 +1062,7 @@ class _HabitGroupSection extends StatelessWidget {
             group.category,
             style: appSecondaryMenuItemTextStyle(context).copyWith(
               fontSize: 12,
-              fontWeight: DesignTokens.fontWeightRegular,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: cs.onSurface,
               height: 1.12,
             ),
@@ -1118,7 +1118,7 @@ class _HabitInsightCard extends StatelessWidget {
                 '智能习惯洞察',
                 style: appSecondaryRouteTitleTextStyle(context).copyWith(
                   fontSize: 13,
-                  fontWeight: DesignTokens.fontWeightRegular,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ],
@@ -1144,7 +1144,7 @@ class _HabitInsightCard extends StatelessWidget {
                           insight.title,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: DesignTokens.fontWeightRegular,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                         const SizedBox(height: 1),
@@ -1241,7 +1241,7 @@ class _HabitSummaryTile extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             height: 1.08,
-                            fontWeight: DesignTokens.fontWeightRegular,
+                            fontWeight: DesignTokens.fontWeightStrong,
                             color: cs.onSurface,
                           ),
                         ),
@@ -1408,7 +1408,7 @@ class _HabitCheckinCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontWeight: DesignTokens.fontWeightRegular,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 fontSize: 13,
                                 height: 1.14,
                                 decoration: isDone && !isNegative
@@ -1563,7 +1563,7 @@ class _HabitCheckinCard extends StatelessWidget {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           textStyle: const TextStyle(
                             fontSize: 10,
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                         child: Text(
@@ -1928,7 +1928,7 @@ class _HabitStreakBadge extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: accent,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
                 fontSize: 10,
                 height: 1.0,
               ),
@@ -2014,7 +2014,7 @@ class _HabitFeedbackBadge extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontSize: 10,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   height: 1.0,
                 ),
               ),

@@ -21,13 +21,14 @@ void main() {
     'lib/screens/goal_edit_screen.dart',
   ];
 
-  test('二级页面避免粗字重、大标题和厚边框回退', () {
+  test('二级页面使用共享粗体且避免大标题和厚边框回退', () {
     for (final path in scopedScreens) {
       final source = File(path).readAsStringSync();
       expect(
         source,
-        isNot(matches(RegExp(r'FontWeight\.(bold|w700|w800|w900)'))),
-        reason: '$path should use regular secondary-page typography',
+        isNot(matches(RegExp(r'FontWeight\.(normal|w[1-6]00)'))),
+        reason:
+            '$path should inherit rounded bold typography or use the shared token',
       );
       expect(
         source,
@@ -453,7 +454,10 @@ void main() {
       contains('TextStyle appSecondaryRouteTitleTextStyle'),
     );
     expect(surfaceComponents, contains('fontSize: DesignTokens.fontSizeMd'));
-    expect(surfaceComponents, contains('fontWeight: FontWeight.normal'));
+    expect(
+      surfaceComponents,
+      contains('fontWeight: DesignTokens.fontWeightStrong'),
+    );
 
     final calendar = File(
       'lib/screens/calendar_screen.dart',
@@ -740,9 +744,9 @@ void main() {
     expect(_requiredFontSize(controlText), lessThan(mainRegularSize));
     expect(_requiredFontSize(menuText), lessThan(mainRegularSize));
     expect(routeTitle, contains('fontSize: DesignTokens.fontSizeMd'));
-    expect(controlText, contains('fontWeight: FontWeight.normal'));
-    expect(menuText, contains('fontWeight: FontWeight.normal'));
-    expect(routeTitle, contains('fontWeight: FontWeight.normal'));
+    expect(controlText, contains('fontWeight: DesignTokens.fontWeightStrong'));
+    expect(menuText, contains('fontWeight: DesignTokens.fontWeightStrong'));
+    expect(routeTitle, contains('fontWeight: DesignTokens.fontWeightStrong'));
 
     final secondaryTheme = surfaceComponents.substring(
       surfaceComponents.indexOf('class AppSecondaryControlTheme'),

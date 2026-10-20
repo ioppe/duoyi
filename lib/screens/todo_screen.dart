@@ -440,7 +440,7 @@ class _TodoScreenState extends State<TodoScreen> {
                           'AI 智能拆解',
                           style: TextStyle(
                             color: Colors.purple,
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                         backgroundColor: Colors.purple.shade50,
@@ -1300,7 +1300,7 @@ class _TodoTodaySummaryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: cs.onSurface,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -1396,7 +1396,7 @@ class _TodoSummaryChip extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: cs.onSurface,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ),
@@ -1838,7 +1838,7 @@ class _TodoBatchActionBar extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       color: cs.primary,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                 ),
@@ -1963,7 +1963,7 @@ class _BatchMenuButton extends StatelessWidget {
             label,
             style: appSecondaryControlTextStyle(
               context,
-            ).copyWith(color: color, fontWeight: FontWeight.normal),
+            ).copyWith(color: color, fontWeight: DesignTokens.fontWeightStrong),
           ),
           const SizedBox(width: 2),
           Icon(Icons.arrow_drop_down, size: 18, color: color),
@@ -2302,7 +2302,7 @@ class _KanbanColumn extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           color: cs.onSurface,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                     ),
@@ -2351,7 +2351,8 @@ class _KanbanColumn extends StatelessWidget {
                                             color: cs.onSurface.withValues(
                                               alpha: 0.62,
                                             ),
-                                            fontWeight: FontWeight.normal,
+                                            fontWeight:
+                                                DesignTokens.fontWeightStrong,
                                           ),
                                         ),
                                       ),
@@ -2559,7 +2560,7 @@ class _KanbanTodoCardState extends State<_KanbanTodoCard> {
                         decoration: isCompleted
                             ? TextDecoration.lineThrough
                             : null,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                   ),
@@ -3087,7 +3088,7 @@ class _ListGroupTileState extends State<_ListGroupTile> {
               widget.groupName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.normal),
+              style: const TextStyle(fontWeight: DesignTokens.fontWeightStrong),
             ),
             subtitle: workspace == null
                 ? null
@@ -3119,7 +3120,7 @@ class _ListGroupTileState extends State<_ListGroupTile> {
                     '${widget.todos.length}',
                     style: TextStyle(
                       color: cs.primary,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                 ),
@@ -3777,7 +3778,7 @@ class _MetaRow extends StatelessWidget {
             style: TextStyle(
               fontSize: DesignTokens.fontSizeXs,
               color: c,
-              fontWeight: DesignTokens.fontWeightRegular,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         ),
@@ -3804,7 +3805,7 @@ class _MetaRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: DesignTokens.fontSizeXs,
                   color: c,
-                  fontWeight: DesignTokens.fontWeightRegular,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ],
@@ -3829,7 +3830,7 @@ class _MetaRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: DesignTokens.fontSizeXs,
                   color: c,
-                  fontWeight: DesignTokens.fontWeightRegular,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ],
@@ -3849,7 +3850,7 @@ class _MetaRow extends StatelessWidget {
             style: TextStyle(
               fontSize: DesignTokens.fontSizeXs,
               color: c,
-              fontWeight: DesignTokens.fontWeightRegular,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import '../services/permission_health_service.dart';
 import 'surface_components.dart';
@@ -181,7 +182,7 @@ class _SummaryBanner extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     color: cs.onSurface,
                   ),
                 ),

@@ -10,7 +10,6 @@ import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
 import 'core/design_tokens.dart';
-import 'core/home_page_style.dart';
 import 'core/desktop_tokens.dart';
 import 'core/i18n.dart';
 import 'core/iterable_extensions.dart';
@@ -4201,57 +4200,16 @@ class MainShellState extends State<MainShell> {
     // 半透明底色由 navigationBarTheme 档位控制，模糊在此包 BackdropFilter，
     // 其余 7 套主题（navBarBlurSigma=0）保持原样，不引入模糊开销。
     final navBarBlurSigma = appSurfaceStyleOf(context)?.navBarBlurSigma ?? 0;
-    final theme = Theme.of(context);
-    final home = HomePageStyle.of(context);
-    final referenceHome = safeIndex == 0 && home.usesReferencePalette;
-    final homeNavigationTheme = theme.navigationBarTheme.copyWith(
-      height: 64,
-      backgroundColor: theme.colorScheme.surface,
-      indicatorColor: home.accent.withValues(alpha: 0.08),
-      indicatorShape: const RoundedRectangleBorder(
-        borderRadius: DesignTokens.borderRadiusSm,
-      ),
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => home.typography(
-          theme,
-          size: DesignTokens.homeCounterSize,
-          color: states.contains(WidgetState.selected)
-              ? home.accent
-              : home.muted,
-        ),
-      ),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(
-          size: DesignTokens.controlIconSize,
-          color: states.contains(WidgetState.selected)
-              ? home.accent
-              : home.muted,
-        ),
-      ),
-    );
-    final navBar = NavigationBarTheme(
-      data: referenceHome ? homeNavigationTheme : theme.navigationBarTheme,
-      child: NavigationBar(
-        selectedIndex: selectedNavIndex < 0 ? 0 : selectedNavIndex,
-        onDestinationSelected: (i) => setState(() {
-          _currentIndex = safeVisibleTabs[i];
-          _builtTabs.add(_currentIndex);
-          _allowHiddenCurrentIndex = false;
-          _hasExplicitNavigation = true;
-        }),
-        destinations: referenceHome
-            ? destinations
-                  .map(
-                    (item) => NavigationDestination(
-                      icon: item.icon,
-                      selectedIcon: item.icon,
-                      label: item.label,
-                    ),
-                  )
-                  .toList()
-            : destinations,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      ),
+    final navBar = NavigationBar(
+      selectedIndex: selectedNavIndex < 0 ? 0 : selectedNavIndex,
+      onDestinationSelected: (i) => setState(() {
+        _currentIndex = safeVisibleTabs[i];
+        _builtTabs.add(_currentIndex);
+        _allowHiddenCurrentIndex = false;
+        _hasExplicitNavigation = true;
+      }),
+      destinations: destinations,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
     );
     // 液态玻璃需要真实内容垫在导航条下：Scaffold 默认（extendBody=false）
     // 的 body 不延伸到 bottomNavigationBar 之下，BackdropFilter 无内容可
@@ -4275,7 +4233,7 @@ class MainShellState extends State<MainShell> {
     // NavigationBar 结构为 Material > SafeArea > SizedBox(height)，
     // 总高 = navigationBarTheme.height + 系统底部 inset。
     final navBarTotalHeight =
-        (referenceHome ? 64 : NavigationBarTheme.of(context).height ?? 80.0) +
+        (NavigationBarTheme.of(context).height ?? 80.0) +
         rootMediaQuery.padding.bottom;
     final tabStack = IndexedStack(
       index: safeIndex,

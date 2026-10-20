@@ -503,7 +503,7 @@ class _NotificationRecordCard extends StatelessWidget {
                     Text(
                       item.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         color: cs.onSurface,
                       ),
                     ),
@@ -1254,8 +1254,8 @@ class _NotificationSettingsScreenState
                                             ?.copyWith(
                                               fontSize: DesignTokens
                                                   .fontSizeCardTitle,
-                                              fontWeight: DesignTokens
-                                                  .fontWeightRegular,
+                                              fontWeight:
+                                                  DesignTokens.fontWeightStrong,
                                             ),
                                       ),
                                       const SizedBox(height: 3),
@@ -1733,7 +1733,7 @@ class _RegisteredReminderDetailRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: cs.onSurface,
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                           height: 1.16,
                         ),
                       ),
@@ -2141,7 +2141,7 @@ class _NotificationHistoryEntryTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final titleStyle = appSecondaryMenuItemTextStyle(
       context,
-    ).copyWith(color: cs.onSurface, fontWeight: DesignTokens.fontWeightRegular);
+    ).copyWith(color: cs.onSurface, fontWeight: DesignTokens.fontWeightStrong);
     final subtitleStyle = appSecondaryControlLabelStyle(
       context,
     ).copyWith(color: cs.onSurface.withValues(alpha: 0.62));
@@ -2270,7 +2270,7 @@ class _SettingsExpansionHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: appSecondaryMenuItemTextStyle(context).copyWith(
                       color: cs.onSurface,
-                      fontWeight: DesignTokens.fontWeightRegular,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -2667,7 +2667,7 @@ class _ReminderKindSettingsTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: appSecondaryMenuItemTextStyle(context).copyWith(
                         color: cs.onSurface,
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -2740,7 +2740,7 @@ class _ReminderKindOptionButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: foreground,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   height: 1.0,
                 ),
               ),
@@ -3167,7 +3167,7 @@ class _RingtoneControlTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: appSecondaryMenuItemTextStyle(context).copyWith(
                           color: cs.onSurface,
-                          fontWeight: DesignTokens.fontWeightRegular,
+                          fontWeight: DesignTokens.fontWeightStrong,
                         ),
                       ),
                       const SizedBox(height: 2),

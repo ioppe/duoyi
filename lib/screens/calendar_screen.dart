@@ -1610,7 +1610,7 @@ class _ProjectStat extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: cs.primary,
             ),
           ),
@@ -1770,7 +1770,7 @@ class _CalendarNavigationHeader extends StatelessWidget {
                             ),
                             textStyle: TextStyle(
                               fontSize: compact ? 12.5 : 13.5,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                               height: 1.15,
                             ),
                           ),
@@ -1970,7 +1970,7 @@ class _ThreeDayLane extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -2081,7 +2081,7 @@ class _CalendarYearOverview extends StatelessWidget {
                   '$month 月',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     color: isSelected ? selectedText : cs.onSurface,
                   ),
                 ),

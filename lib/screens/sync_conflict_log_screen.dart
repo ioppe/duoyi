@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/cloud_sync_provider.dart' show SyncMergeDecision;
@@ -105,7 +106,7 @@ class _SyncConflictLogScreenState extends State<SyncConflictLogScreen> {
                                       ? I18n.tr('sync_conflict.keep_remote')
                                       : I18n.tr('sync_conflict.keep_local'),
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                   ),
                                 ),
                               ),

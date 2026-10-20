@@ -172,7 +172,7 @@ class EmptyHint extends StatelessWidget {
               style: TextStyle(
                 fontSize: DesignTokens.fontSizeSm,
                 color: cs.onSurface.withValues(alpha: 0.5),
-                fontWeight: DesignTokens.fontWeightRegular,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
           ],
@@ -231,7 +231,7 @@ class ErrorState extends StatelessWidget {
                     overflow: narrow ? TextOverflow.ellipsis : null,
                     style: const TextStyle(
                       fontSize: DesignTokens.fontSizeMd,
-                      fontWeight: DesignTokens.fontWeightRegular,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(height: DesignTokens.spaceXs),

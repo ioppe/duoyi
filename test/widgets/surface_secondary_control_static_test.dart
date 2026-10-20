@@ -27,7 +27,7 @@ void main() {
     expect(menuStyle, contains('fontSize: 12'));
     expect(menuStyle, isNot(contains('fontSize: 11,')));
     expect(source, isNot(contains('fontSize: 13.5')));
-    expect(source, contains('fontWeight: FontWeight.normal'));
+    expect(source, contains('fontWeight: DesignTokens.fontWeightStrong'));
     expect(source, contains('class AppSecondaryControlTheme'));
     expect(source, contains('class AppSecondaryMenuText'));
     expect(source, contains('class AppPickerSheet'));
@@ -256,8 +256,8 @@ void main() {
     expect(source, isNot(contains('DropdownButton<T>')));
     expect(source, isNot(contains('DropdownButtonFormField(')));
     expect(source, isNot(contains('DropdownButtonFormField<')));
-    expect(source, isNot(contains('FontWeight.bold')));
-    expect(source, isNot(contains('FontWeight.w700')));
+    expect(source, isNot(contains('fontWeight: FontWeight.normal')));
+    expect(source, isNot(contains('DesignTokens.fontWeightRegular')));
   });
 
   test('危险按钮和状态徽标显式使用高对比前景色', () {
@@ -329,11 +329,15 @@ void main() {
     );
     expect(
       source,
-      contains('minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor'),
+      contains(
+        'minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor',
+      ),
     );
     expect(
       source,
-      contains('maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor'),
+      contains(
+        'maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor',
+      ),
     );
     expect(source, contains('heightFactor: 1'));
     expect(source, contains('widthFactor: 1'));
@@ -376,7 +380,9 @@ void main() {
 
     // 习惯创建已统一使用 AppModalSheet；二级控件主题由共享卡片提供。
     expect(habit, contains('AppModalSheet('));
-    final surfaces = File('lib/widgets/surface_components.dart').readAsStringSync();
+    final surfaces = File(
+      'lib/widgets/surface_components.dart',
+    ).readAsStringSync();
     final modalSheet = surfaces.substring(
       surfaces.indexOf('class AppModalSheet'),
       surfaces.indexOf('class AppPickerOption'),

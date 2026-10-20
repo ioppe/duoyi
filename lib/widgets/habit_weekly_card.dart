@@ -98,7 +98,7 @@ class HabitWeeklyCard extends StatelessWidget {
                       s.habitWeekOverview,
                       style: appSecondaryRouteTitleTextStyle(context).copyWith(
                         fontSize: 13,
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         height: 1.12,
                       ),
                     ),
@@ -135,7 +135,7 @@ class HabitWeeklyCard extends StatelessWidget {
                         color: primaryColor,
                         fontSize: 15,
                         height: 1.0,
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -208,7 +208,7 @@ class HabitWeeklyCard extends StatelessWidget {
                       labels[i],
                       style: TextStyle(
                         fontSize: DesignTokens.fontSizeCaption,
-                        fontWeight: DesignTokens.fontWeightRegular,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         color: isToday
                             ? primaryColor
                             : cs.onSurface.withValues(alpha: 0.56),
@@ -246,7 +246,7 @@ class HabitWeeklyCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 8.5,
                             color: textColor,
-                            fontWeight: DesignTokens.fontWeightRegular,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                       ),

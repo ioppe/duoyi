@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>统一底栏与圆体粗体</title>
+<style>
+  body{margin:0;padding:28px;font:15px/1.7 system-ui,-apple-system,"PingFang SC",sans-serif;background:#f6f7f9;color:#242c38}
+  h1{font-size:22px;font-weight:600;margin:0 0 6px}
+  h2{font-size:16px;font-weight:600;margin:30px 0 10px}
+  p{color:#5b6470;margin:0 0 14px;max-width:900px}
+  img{display:block;width:100%;height:auto;border-radius:10px;background:#fff}
+  .pair{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  figure{margin:0}
+  figcaption{color:#78808b;font-size:13px;margin-top:6px}
+</style>
+<h1>统一底栏与全局圆体粗体</h1>
+<p>今日页曾单独覆盖底栏高度、标签字号、选中色与指示形状。现改为四个一级页面共用同一套 <code>navigationBarTheme</code>，并把全部界面文字换成随包分发的资源圆体 CN Bold（字重 700）。截图为实际 Web 构建、Chromium 390×844。</p>
+<h2>四个一级页面底栏对照</h2>
+<img src="14-nav-comparison.png" alt="四个一级页面底栏并排对照">
+<h2>手机页</h2>
+<div class="pair">
+  <figure><img src="01-today-390.png" alt="今日"><figcaption>今日</figcaption></figure>
+  <figure><img src="02-todo-390.png" alt="待办"><figcaption>待办</figcaption></figure>
+  <figure><img src="03-habit-390.png" alt="习惯"><figcaption>习惯</figcaption></figure>
+  <figure><img src="04-mine-390.png" alt="我的"><figcaption>我的</figcaption></figure>
+</div>
+<h2>暗色主题（星穹铁道）</h2>
+<div class="pair">
+  <figure><img src="08-today-dark-390.png" alt="暗色今日"><figcaption>今日</figcaption></figure>
+  <figure><img src="07-mine-dark-390.png" alt="暗色我的"><figcaption>我的</figcaption></figure>
+  <figure><img src="06-theme-picker-390.png" alt="主题与外观"><figcaption>主题与外观</figcaption></figure>
+</div>
+<h2>窄屏、桌面与控件</h2>
+<div class="pair">
+  <figure><img src="10-today-320.png" alt="320 窄屏"><figcaption>320×720</figcaption></figure>
+  <figure><img src="11-today-desktop-1440.png" alt="1440 桌面"><figcaption>1440×900 桌面侧栏</figcaption></figure>
+  <figure><img src="12-new-task-sheet-390.png" alt="快速待办弹层"><figcaption>快速待办弹层</figcaption></figure>
+  <figure><img src="13-today-with-task-390.png" alt="新建任务后"><figcaption>新建任务后</figcaption></figure>
+</div>
+</html>

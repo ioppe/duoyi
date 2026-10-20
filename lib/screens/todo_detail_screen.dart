@@ -758,7 +758,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                       decoration: const InputDecoration(labelText: '任务名称'),
                       style: const TextStyle(
                         fontSize: DesignTokens.fontSizeMd,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                       onChanged: (_) => _markEditing(),
                     ),
@@ -1026,7 +1026,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                                 style: TextStyle(
                                   color: cs.onSurfaceVariant,
                                   fontSize: DesignTokens.fontSizeSecondary,
-                                  fontWeight: DesignTokens.fontWeightRegular,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                 ),
                               ),
                             ],
@@ -1483,7 +1483,7 @@ class _TodoDetailTheme extends StatelessWidget {
           final body = (theme.textTheme.bodyMedium ?? const TextStyle())
               .copyWith(
                 fontSize: DesignTokens.fontSizeBody,
-                fontWeight: DesignTokens.fontWeightRegular,
+                fontWeight: DesignTokens.fontWeightStrong,
                 height: 1.5,
                 color: cs.onSurface,
               );
@@ -1576,7 +1576,7 @@ class _SectionLabel extends StatelessWidget {
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
         fontSize: DesignTokens.fontSizeBody,
         color: Theme.of(context).colorScheme.onSurface,
-        fontWeight: DesignTokens.fontWeightRegular,
+        fontWeight: DesignTokens.fontWeightStrong,
       ),
     );
   }
@@ -1611,7 +1611,7 @@ class _TodoLocationReminderCard extends StatelessWidget {
                 child: Text(
                   '位置提醒',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),
@@ -1967,7 +1967,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 10),
         child: _TodoInlineMarkdownText(
           text: block.text,
-          style: style?.copyWith(fontWeight: FontWeight.normal),
+          style: style?.copyWith(fontWeight: DesignTokens.fontWeightStrong),
         ),
       );
     }
@@ -2043,7 +2043,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         child: Text(
           block.text,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontFamily: 'monospace',
+            fontFamily: DesignTokens.fontFamilyRounded,
             fontSize: DesignTokens.fontSizeBody,
             color: colorScheme.onSurface,
           ),
@@ -2113,7 +2113,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
           spans.add(
             TextSpan(
               text: source.substring(i + 2, end),
-              style: base.copyWith(fontWeight: FontWeight.normal),
+              style: base.copyWith(fontWeight: DesignTokens.fontWeightStrong),
             ),
           );
           i = end + 2;
@@ -2127,7 +2127,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, end),
               style: base.copyWith(
-                fontFamily: 'monospace',
+                fontFamily: DesignTokens.fontFamilyRounded,
                 backgroundColor: cs.surfaceContainerHighest,
               ),
             ),

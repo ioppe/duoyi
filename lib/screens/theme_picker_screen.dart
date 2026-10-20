@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../services/account_local_data_cleaner.dart';
 
 import '../core/app_brand.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/brand_background.dart';
@@ -434,7 +435,7 @@ class ThemePickerScreen extends StatelessWidget {
                           _styleName(currentBrand),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: cs.onSurface,
                               ),
                         ),
@@ -500,7 +501,7 @@ class ThemePickerScreen extends StatelessWidget {
                             _styleName(brand),
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -572,7 +573,7 @@ class ThemePickerScreen extends StatelessWidget {
                             backdrop.name,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -632,7 +633,7 @@ class ThemePickerScreen extends StatelessWidget {
                             frame.name,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),
@@ -691,7 +692,7 @@ class ThemePickerScreen extends StatelessWidget {
                             skin.name,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                   color: cs.onSurface,
                                 ),
                           ),

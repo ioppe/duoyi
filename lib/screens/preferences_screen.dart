@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/app_clock.dart';
 import '../core/i18n_date_format.dart';
@@ -862,7 +863,7 @@ class _SliderSetting extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: cs.onSurface,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -886,7 +887,7 @@ class _SliderSetting extends StatelessWidget {
                   style: TextStyle(
                     color: color,
                     fontSize: 11,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),

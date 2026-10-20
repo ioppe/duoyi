@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
 import '../core/completion_visibility_policy.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import '../models/calendar_event.dart';
 import '../providers/calendar_provider.dart';
@@ -164,7 +165,7 @@ class CalendarWeekStrip extends StatelessWidget {
                                   '${d.day}',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                     color: isSelected
                                         ? selectedForeground
                                         : null,
@@ -314,7 +315,7 @@ class _WeekDaySection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -411,7 +412,7 @@ class _WeekEventTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: DesignTokens.fontWeightStrong,
                         decoration: isCompleted
                             ? TextDecoration.lineThrough
                             : null,

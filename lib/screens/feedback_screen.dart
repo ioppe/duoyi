@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
@@ -389,7 +390,7 @@ class _FeedbackDetailField extends StatelessWidget {
                         alpha: multiline ? 0.84 : 0.70,
                       ),
                       height: multiline ? 1.38 : 1.25,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
           ),
         ],
@@ -619,7 +620,7 @@ class _FeedbackCategoryMenu extends StatelessWidget {
                     labelFor(selected),
                     style: appSecondaryControlTextStyle(context).copyWith(
                       color: selectedFg,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: DesignTokens.fontWeightStrong,
                     ),
                   ),
                   const SizedBox(width: 4),

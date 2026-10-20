@@ -627,7 +627,7 @@ class _MonthHighlightsCard extends StatelessWidget {
                 '本月重点日期',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontSize: 13,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   color: cs.onSurface.withValues(alpha: 0.78),
                 ),
               ),
@@ -820,7 +820,7 @@ class _SelectedDateSummaryCard extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                     color: cs.onSurface,
                                   ),
                             ),
@@ -934,7 +934,7 @@ class _SummaryYijiLine extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 12,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
             ),
           ),
         ),
@@ -1129,7 +1129,7 @@ class _AlmanacDetailNavBar extends StatelessWidget {
                 maxLines: 1,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontSize: 18,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   letterSpacing: 0,
                   color: cs.onSurface,
                 ),
@@ -1388,7 +1388,7 @@ class _VerticalYijiColumn extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 13,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               height: 1.0,
             ),
           ),
@@ -1484,7 +1484,7 @@ class _DateHeroPanel extends StatelessWidget {
                   height: 0.92,
                   color: cs.onSurface,
                   letterSpacing: 0,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
               const SizedBox(height: 10),
@@ -1499,7 +1499,7 @@ class _DateHeroPanel extends StatelessWidget {
                   height: 1.1,
                   color: cs.onSurface,
                   letterSpacing: 0,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
               const SizedBox(height: 9),
@@ -1612,7 +1612,7 @@ class _ClassicalInfoCell extends StatelessWidget {
             style: TextStyle(
               fontSize: titleSize,
               height: 1.1,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: cs.onSurface,
             ),
           ),
@@ -1747,7 +1747,7 @@ class _ClassicalHourCell extends StatelessWidget {
                     color: luckColor,
                     fontSize: luckSize,
                     height: 1.05,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ],
@@ -1815,7 +1815,7 @@ void _showHourFortuneDialog(BuildContext context, AlmanacHourFortune fortune) {
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 18,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   color: cs.onSurface,
                 ),
               ),
@@ -1903,7 +1903,7 @@ class _AlmanacBadge extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontSize: 12,
-            fontWeight: FontWeight.normal,
+            fontWeight: DesignTokens.fontWeightStrong,
           ),
         ),
       ),
@@ -2012,7 +2012,8 @@ class _MonthCalendar extends StatelessWidget {
                                   style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(
                                         fontSize: 24,
-                                        fontWeight: FontWeight.normal,
+                                        fontWeight:
+                                            DesignTokens.fontWeightStrong,
                                         letterSpacing: 0,
                                         color: cs.onSurface,
                                       ),
@@ -2051,7 +2052,7 @@ class _MonthCalendar extends StatelessWidget {
                             d,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.normal,
+                              fontWeight: DesignTokens.fontWeightStrong,
                             ),
                           ),
                         ),
@@ -2173,7 +2174,8 @@ class _MonthCalendar extends StatelessWidget {
                                             '$d',
                                             style: TextStyle(
                                               fontSize: dayFontSize,
-                                              fontWeight: FontWeight.normal,
+                                              fontWeight:
+                                                  DesignTokens.fontWeightStrong,
                                               color: isSelected
                                                   ? selectedText
                                                   : isWorkMakeupDay

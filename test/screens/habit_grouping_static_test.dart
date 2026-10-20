@@ -271,7 +271,7 @@ void main() {
     expect(weekly, contains('height: 30'));
     expect(weekly, contains('width: 25'));
     expect(weekly, contains('height: 25'));
-    expect(weekly, contains('fontWeight: DesignTokens.fontWeightRegular'));
+    expect(weekly, contains('fontWeight: DesignTokens.fontWeightStrong'));
   });
 
   test('习惯达标状态与任务名同一行靠右展示', () {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/app_lock_provider.dart';
 import '../widgets/surface_components.dart';
@@ -157,7 +158,7 @@ class _LockSettingsScreenState extends State<LockSettingsScreen> {
                           I18n.tr('app_lock.hero.title'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                                 color: cs.onSurface,
                               ),
                         ),

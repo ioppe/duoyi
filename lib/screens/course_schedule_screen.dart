@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:provider/provider.dart';
@@ -286,7 +287,7 @@ class _ScheduleGrid extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: isToday ? cs.primary : null,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: DesignTokens.fontWeightStrong,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -338,7 +339,8 @@ class _ScheduleGrid extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: Colors.grey.shade500,
-                                        fontWeight: FontWeight.normal,
+                                        fontWeight:
+                                            DesignTokens.fontWeightStrong,
                                       ),
                                     ),
                                   ),
@@ -463,7 +465,7 @@ class _CourseBlock extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     height: 1.08,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     color: Colors.white,
                   ),
                   maxLines: titleMaxLines,
@@ -1152,7 +1154,7 @@ class _CourseEditSheetState extends State<_CourseEditSheet> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
               ),

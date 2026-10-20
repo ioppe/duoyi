@@ -24,7 +24,9 @@ scripts/alignment_regression_gate.sh
 
 ## Hard rules (enforced by static guard tests)
 
-~96 files named `test/**/*_static_test.dart` regex-scan `lib/` and **fail the whole suite when banned patterns appear anywhere** — e.g. `FontWeight.bold` / `FontWeight.w500+`, raw values instead of design tokens (`lib/core/design_tokens.dart`), screens not using the i18n wrapper. When one trips: read the test's `reason` message (Chinese) and fix the code — never weaken the guard. Any UI change should be checked against them.
+~96 files named `test/**/*_static_test.dart` regex-scan `lib/` and **fail the whole suite when banned patterns appear anywhere** — e.g. local regular font weights, raw values instead of design tokens (`lib/core/design_tokens.dart`), screens not using the i18n wrapper. When one trips: read the test's `reason` message (Chinese) and fix the code — never weaken the guard. Any UI change should be checked against them.
+
+- **Typography**: all application UI uses bundled `ResourceHanRounded` (资源圆体 CN Bold), with `DesignTokens.fontWeightStrong` (700). Use theme text styles and inherit the rounded family; do not restore `FontWeight.normal`, system serif/monospace families or page-specific bottom-navigation typography. Titles/body/secondary copy retain their size, color and spacing hierarchy. Font attribution and SIL OFL are in `assets/fonts/`. PDF export typography remains separate.
 
 - **Version bump touches two files**: `pubspec.yaml` (`version: 1.1.41+140007`) AND `lib/core/app_version.dart` (`name`/`build`) — change together or update checks disagree.
 - **Backend routes are contract-pinned**: `backend/test_workspaces.py` asserts client-facing routes do not 404. Adding/renaming a route the client calls → add/update the matching contract test; keep `API_CONTRACT_VERSION` / `API_CONTRACT_FEATURES` in `backend/main.py` current.

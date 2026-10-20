@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../models/location_reminder.dart';
@@ -240,7 +241,7 @@ TextStyle _integrationHintTextStyle(
   return (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(
     fontSize: fontSize,
     color: cs.onSurface.withValues(alpha: alpha),
-    fontWeight: FontWeight.normal,
+    fontWeight: DesignTokens.fontWeightStrong,
   );
 }
 
@@ -329,7 +330,9 @@ class _CalendarSubscriptionsTabState extends State<_CalendarSubscriptionsTab> {
                         const SizedBox(width: 8),
                         const Text(
                           '从 ICS URL 订阅',
-                          style: TextStyle(fontWeight: FontWeight.normal),
+                          style: TextStyle(
+                            fontWeight: DesignTokens.fontWeightStrong,
+                          ),
                         ),
                         const Spacer(),
                         if (provider.isSyncing)
@@ -513,7 +516,7 @@ class _OAuthCalendarCard extends StatelessWidget {
                 const Expanded(
                   child: Text(
                     'Google / Outlook OAuth 日历',
-                    style: TextStyle(fontWeight: FontWeight.normal),
+                    style: TextStyle(fontWeight: DesignTokens.fontWeightStrong),
                   ),
                 ),
                 if (provider.isSyncing)
@@ -726,7 +729,7 @@ class _OAuthCalendarCard extends StatelessWidget {
                               '授权链接',
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -956,7 +959,7 @@ class _CalDavWriteTargetCard extends StatelessWidget {
                 const Expanded(
                   child: Text(
                     'CalDAV 写回目标',
-                    style: TextStyle(fontWeight: FontWeight.normal),
+                    style: TextStyle(fontWeight: DesignTokens.fontWeightStrong),
                   ),
                 ),
                 if (provider.isTestingWriteTarget)
@@ -1325,7 +1328,9 @@ class _LocationRemindersTab extends StatelessWidget {
                   children: [
                     const Text(
                       '位置提醒',
-                      style: TextStyle(fontWeight: FontWeight.normal),
+                      style: TextStyle(
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -1701,7 +1706,7 @@ class _LocaleTab extends StatelessWidget {
       children: [
         Text(
           I18n.tr('settings.language'),
-          style: const TextStyle(fontWeight: FontWeight.normal),
+          style: const TextStyle(fontWeight: DesignTokens.fontWeightStrong),
         ),
         const SizedBox(height: 12),
         for (final entry in const <(String, String)>[

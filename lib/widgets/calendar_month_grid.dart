@@ -83,7 +83,7 @@ class CalendarMonthGrid extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 color: cs.onSurfaceVariant,
-                                fontWeight: FontWeight.normal,
+                                fontWeight: DesignTokens.fontWeightStrong,
                               ),
                             ),
                           ),
@@ -224,7 +224,8 @@ class CalendarMonthGrid extends StatelessWidget {
                                             height: cellHeight < 14
                                                 ? 0.95
                                                 : 1.05,
-                                            fontWeight: FontWeight.normal,
+                                            fontWeight:
+                                                DesignTokens.fontWeightStrong,
                                             color: isSelected
                                                 ? selectedForeground
                                                 : (isToday

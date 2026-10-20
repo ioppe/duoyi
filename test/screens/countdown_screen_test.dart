@@ -276,7 +276,7 @@ void main() {
             contains('fontSize: days == 0 ? 14 : 18'),
           ),
         );
-        expect(card, contains('fontWeight: FontWeight.normal'));
+        expect(card, contains('fontWeight: DesignTokens.fontWeightStrong'));
         expect(card, contains('AnimatedContainer('));
         expect(
           card,

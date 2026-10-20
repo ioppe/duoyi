@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import 'package:flutter/services.dart';
@@ -93,7 +94,7 @@ class _AiHistoryScreenState extends State<AiHistoryScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: cs.onSurface.withValues(alpha: 0.62),
-                                  fontWeight: FontWeight.normal,
+                                  fontWeight: DesignTokens.fontWeightStrong,
                                 ),
                               ),
                             ),
@@ -171,7 +172,7 @@ class _AiHistoryScreenState extends State<AiHistoryScreen> {
                           e.summary,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: cs.onSurface.withValues(alpha: 0.68),
-                            fontWeight: FontWeight.normal,
+                            fontWeight: DesignTokens.fontWeightStrong,
                           ),
                         ),
                         ClipRect(

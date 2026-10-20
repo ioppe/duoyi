@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_clock.dart';
+import '../core/design_tokens.dart';
 import '../providers/calendar_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/anniversary_provider.dart';
@@ -128,7 +129,7 @@ class CalendarDayAgenda extends StatelessWidget {
                       Text(
                         c.name,
                         style: const TextStyle(
-                          fontWeight: FontWeight.normal,
+                          fontWeight: DesignTokens.fontWeightStrong,
                           fontSize: 13,
                         ),
                       ),
@@ -242,7 +243,7 @@ class CalendarDayAgenda extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     color: cs.primary,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
                 if (term != null)
@@ -289,7 +290,7 @@ class CalendarDayAgenda extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         color: Colors.grey.shade600,
-        fontWeight: FontWeight.normal,
+        fontWeight: DesignTokens.fontWeightStrong,
       ),
     ),
   );
@@ -606,7 +607,7 @@ class _DraggableEventCardState extends State<_DraggableEventCard> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.normal,
+              fontWeight: DesignTokens.fontWeightStrong,
               color: isCompleted
                   ? Colors.grey
                   : isOverdue
@@ -675,7 +676,7 @@ class _DraggableEventCardState extends State<_DraggableEventCard> {
                 e.title,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: DesignTokens.fontWeightStrong,
                   color: isCompleted
                       ? Colors.grey
                       : isOverdue
@@ -982,7 +983,7 @@ class _AnniversaryTile extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontWeight: FontWeight.normal,
+                    fontWeight: DesignTokens.fontWeightStrong,
                     fontSize: 13,
                   ),
                 ),

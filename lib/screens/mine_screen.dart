@@ -1274,7 +1274,9 @@ class MineScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       I18n.tr('mine.update.available'),
-                      style: const TextStyle(fontWeight: FontWeight.normal),
+                      style: const TextStyle(
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
                     ),
                   ] else if (updater.error == null && !updater.checking) ...[
                     const SizedBox(height: 12),
@@ -1284,7 +1286,9 @@ class MineScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       I18n.tr('mine.update.notes'),
-                      style: const TextStyle(fontWeight: FontWeight.normal),
+                      style: const TextStyle(
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     ConstrainedBox(
@@ -1462,7 +1466,7 @@ class _UpdatePackageInfo extends StatelessWidget {
     final cs = theme.colorScheme;
     final labelStyle = theme.textTheme.labelSmall?.copyWith(
       color: cs.onSurfaceVariant,
-      fontWeight: FontWeight.normal,
+      fontWeight: DesignTokens.fontWeightStrong,
     );
     final valueStyle = theme.textTheme.bodySmall?.copyWith(
       color: cs.onSurface,
@@ -1594,7 +1598,7 @@ class _ProfileAvatar extends StatelessWidget {
               style: TextStyle(
                 fontSize: radius * 0.62,
                 color: cs.onPrimary,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
     );
@@ -1639,7 +1643,7 @@ class _MineUserLineChip extends StatelessWidget {
                   color.withValues(alpha: 0.48),
                   cs.onSurface,
                 ),
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
                 height: 1.1,
               ),
             ),
@@ -1845,7 +1849,7 @@ class _ProfileAvatarLetter extends StatelessWidget {
       style: TextStyle(
         fontSize: radius * 0.62,
         color: color,
-        fontWeight: FontWeight.normal,
+        fontWeight: DesignTokens.fontWeightStrong,
       ),
     );
   }
@@ -2125,7 +2129,9 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
               const SizedBox(width: 8),
               Text(
                 I18n.tr('mine.ai.review_title'),
-                style: const TextStyle(fontWeight: FontWeight.normal),
+                style: const TextStyle(
+                  fontWeight: DesignTokens.fontWeightStrong,
+                ),
               ),
               const Spacer(),
               if (hasReview)
@@ -2288,7 +2294,7 @@ class _TileGroup extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 12,
                 height: 1.15,
-                fontWeight: FontWeight.normal,
+                fontWeight: DesignTokens.fontWeightStrong,
                 color: cs.onSurface.withValues(alpha: 0.62),
               ),
             ),
