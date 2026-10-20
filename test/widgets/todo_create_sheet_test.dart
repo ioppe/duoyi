@@ -137,7 +137,7 @@ void main() {
     I18n.setLocale(AppLocale.zh);
   });
 
-  testWidgets('共享表单保存清单、象限和优先级，保存中阻止重复提交', (tester) async {
+  testWidgets('共享表单保存清单和象限，不再提供优先级标记且阻止重复提交', (tester) async {
     final todos = _DelayedTodos();
     await _open(
       tester,
@@ -149,10 +149,11 @@ void main() {
       '共享表单验收',
     );
     await tester.tap(find.widgetWithText(ChoiceChip, '工作'));
-    final high = find.widgetWithText(ChoiceChip, TodoPriority.high.label);
-    await tester.ensureVisible(high);
-    await tester.pumpAndSettle();
-    await tester.tap(high);
+    expect(find.text(I18n.tr('todo.create.priority')), findsNothing);
+    expect(
+      find.widgetWithText(ChoiceChip, TodoPriority.high.label),
+      findsNothing,
+    );
     await _scrollToSubmit(tester);
     final save = tester
         .widget<FilledButton>(find.byKey(const ValueKey('todo_create_submit')))
@@ -175,7 +176,7 @@ void main() {
     expect(saved.title, '共享表单验收');
     expect(saved.listGroupName, '工作');
     expect(saved.quadrant, EisenhowerQuadrant.urgentNotImportant);
-    expect(saved.priority, TodoPriority.high);
+    expect(saved.priority, TodoPriority.none);
     expect(find.byType(AppModalSheet), findsNothing);
     expect(find.text(I18n.tr('todo.create.created')), findsOneWidget);
     expect(tester.takeException(), isNull);

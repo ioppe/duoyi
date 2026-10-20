@@ -66,7 +66,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   final _titleCtrl = TextEditingController();
   SmartDateParseResult _parsed = SmartDateParseResult.empty;
   late EisenhowerQuadrant _quadrant;
-  TodoPriority _priority = TodoPriority.none;
   String _groupName = '';
   bool _aiBusy = false;
   bool _submitting = false;
@@ -133,7 +132,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       );
       var todo = draft.toTodo(
         quadrant: _quadrant,
-        priority: _priority,
         listGroupName: _groupName.isEmpty ? null : _groupName,
         workspaceId: workspaceId,
         createdBy: auth.userId,
@@ -356,23 +354,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
             onChanged: (value) {
               if (value != null) setState(() => _quadrant = value);
             },
-          ),
-          const SizedBox(height: 16),
-          Text(
-            I18n.tr('todo.create.priority'),
-            style: appSecondaryControlLabelStyle(context),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            children: [
-              for (final priority in TodoPriority.values)
-                ChoiceChip(
-                  label: Text(priority.label),
-                  selected: _priority == priority,
-                  onSelected: (_) => setState(() => _priority = priority),
-                ),
-            ],
           ),
           const SizedBox(height: 20),
           Text(

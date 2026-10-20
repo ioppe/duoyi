@@ -245,7 +245,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(I18n.tr('quick.todo.title')), findsNothing);
     expect(find.text('清单类型'), findsOneWidget);
-    expect(find.text('优先级标记'), findsOneWidget);
+    expect(find.text('优先级标记'), findsNothing);
     expect(find.byType(AppModalSheet), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -261,7 +261,7 @@ void main() {
     expect(find.text(I18n.tr('quick.todo.title')), findsNothing);
     expect(find.byKey(const ValueKey('todo_create_title')), findsOneWidget);
     expect(find.text('清单类型'), findsOneWidget);
-    expect(find.text('优先级标记'), findsOneWidget);
+    expect(find.text('优先级标记'), findsNothing);
     expect(tester.getSize(find.byType(AppModalSheet)), homeSheet);
     expect(tester.takeException(), isNull);
   });
