@@ -66,6 +66,114 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsActivityDescription => '待办、习惯、专注和时间足迹的每日活跃度';
 
   @override
+  String get statisticsPeriodWeek => '本周';
+
+  @override
+  String get statisticsPeriodMonth => '本月';
+
+  @override
+  String get statisticsPeriodYear => '本年';
+
+  @override
+  String get statisticsScopeWeek => '周一至今天，按天查看完成节奏';
+
+  @override
+  String get statisticsScopeMonth => '月初至今天，按周查看推进情况';
+
+  @override
+  String get statisticsScopeYear => '年初至今天，按月查看成长趋势';
+
+  @override
+  String get statisticsActivityWeek => '本周活动分布';
+
+  @override
+  String get statisticsActivityMonth => '本月活动日历';
+
+  @override
+  String get statisticsActivityYear => '年度活动热力图';
+
+  @override
+  String get statisticsActivityHint => '颜色越深代表当天完成、记录或专注越多。';
+
+  @override
+  String statisticsActivityDays(Object days) {
+    return '活跃 $days 天';
+  }
+
+  @override
+  String get statisticsTimeWeek => '本周时间概览';
+
+  @override
+  String get statisticsTimeMonth => '本月时间概览';
+
+  @override
+  String get statisticsTimeYear => '本年时间概览';
+
+  @override
+  String get statisticsTotalWeek => '本周累计投入';
+
+  @override
+  String get statisticsTotalMonth => '本月累计投入';
+
+  @override
+  String get statisticsTotalYear => '本年累计投入';
+
+  @override
+  String get statisticsTimeEmpty => '本期暂无时间记录';
+
+  @override
+  String get statisticsTrendWeek => '本周每日效率';
+
+  @override
+  String get statisticsTrendMonth => '本月每周效率';
+
+  @override
+  String get statisticsTrendYear => '本年每月效率';
+
+  @override
+  String get statisticsTrendBest => '本期最佳';
+
+  @override
+  String get statisticsTrendAverage => '分段平均分';
+
+  @override
+  String get statisticsTrendPartial => '最后一段截至今天，时长可能少于其他段';
+
+  @override
+  String statisticsBucketWeek(Object week) {
+    return '第 $week 周';
+  }
+
+  @override
+  String statisticsBucketMonth(Object month) {
+    return '$month月';
+  }
+
+  @override
+  String get statisticsAnalysis => '专注与项目分析';
+
+  @override
+  String get statisticsSnapshot => '实时快照，不计入所选周期的报告';
+
+  @override
+  String get statisticsFocusWeek => '每日专注分钟数';
+
+  @override
+  String get statisticsFocusMonth => '每周专注分钟数';
+
+  @override
+  String get statisticsFocusYear => '每月专注分钟数';
+
+  @override
+  String get statisticsGranularityWeek => '按日';
+
+  @override
+  String get statisticsGranularityMonth => '按周';
+
+  @override
+  String get statisticsGranularityYear => '按月';
+
+  @override
   String get challengeWeeklyActiveDaysDescription => '本周 5 天有待办、习惯或专注记录';
 
   @override

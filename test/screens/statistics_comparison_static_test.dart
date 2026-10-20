@@ -19,7 +19,7 @@ void main() {
     expect(source, contains('较上期'));
   });
 
-  test('统计页展示多周期效率趋势折线', () {
+  test('统计页按本期日、周、月粒度展示效率趋势', () {
     final source = File(
       'lib/screens/statistics_screen.dart',
     ).readAsStringSync();
@@ -30,12 +30,22 @@ void main() {
     expect(source, contains('LineChart'));
     expect(source, contains('FlSpot'));
     expect(source, contains('效率趋势'));
-    expect(source, contains('近 6 周同段效率分'));
-    expect(source, contains('近 6 个月同段效率分'));
-    expect(source, contains('近 5 年同段效率分'));
+    expect(source, contains('window.buckets'));
+    expect(
+      source,
+      matches(
+        RegExp(
+          r'StatisticsWindow\(\s*StatisticsPeriod\.values\[range\.index\]',
+        ),
+      ),
+    );
+    expect(source, contains("I18n.tr('statistics.trend.\${range.name}')"));
+    expect(source, isNot(contains('近 6 周同段效率分')));
+    expect(source, isNot(contains('近 6 个月同段效率分')));
+    expect(source, isNot(contains('近 5 年同段效率分')));
   });
 
-  test('统计页展示趋势洞察和历史摘要', () {
+  test('统计页保留本期趋势洞察和分段摘要', () {
     final source = File(
       'lib/screens/statistics_screen.dart',
     ).readAsStringSync();
@@ -46,8 +56,9 @@ void main() {
     expect(source, contains('_averageScore'));
     expect(source, contains('_rankText'));
     expect(source, contains('_TrendHistoryMetric'));
-    expect(source, contains('历史最佳'));
-    expect(source, contains('平均分'));
+    expect(source, contains("I18n.tr('statistics.trend.best')"));
+    expect(source, contains("I18n.tr('statistics.trend.average')"));
+    expect(source, isNot(contains('历史最佳')));
     expect(source, contains('当前排名'));
   });
 
@@ -82,24 +93,27 @@ void main() {
     expect(source, contains("label: '当前'"));
   });
 
-  test('统计页展示全局活动热力图', () {
+  test('活动卡片按周期切换，仅本年展示今年的热力图', () {
     final source = File(
       'lib/screens/statistics_screen.dart',
     ).readAsStringSync();
-
-    expect(source, contains("import '../widgets/habit_heatmap.dart';"));
+    final activity = File(
+      'lib/widgets/statistics_activity_card.dart',
+    ).readAsStringSync();
     expect(source, contains('_buildActivityHeatmap'));
-    expect(source, contains('_ActivityHeatmapCard'));
-    expect(source, contains('_HeatmapSummary'));
+    expect(source, contains('StatisticsActivityCard('));
+    expect(source, contains('!window.containsDate(date)'));
+    expect(source, isNot(contains('static const int weeks = 52')));
+    expect(activity, contains('window.period == StatisticsPeriod.year'));
+    expect(activity, contains('startDate: window.start'));
+    expect(activity, contains('endDate: window.calendarEnd'));
     expect(
-      source,
-      contains('HabitHeatmap(heatmapData: heatmapData, weeks: weeks)'),
+      activity,
+      contains("I18n.tr('statistics.activity.\${window.period.name}')"),
     );
-    expect(source, contains('年度活动热力图'));
-    expect(source, contains("I18n.tr('statistics.activity.description')"));
+    expect(activity, contains("I18n.tr('statistics.activity.description')"));
+    expect(activity, contains("I18n.tr('statistics.activity.hint')"));
     expect(source, isNot(contains('DiaryProvider')));
-    expect(source, contains('颜色越深代表当天完成、记录或专注越多。'));
-    expect(source, contains('static const int weeks = 52'));
   });
 
   test('统计页展示多维交叉分析', () {

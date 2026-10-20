@@ -1,4 +1,6 @@
+import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/focus_tag_stats.dart';
+import 'package:duoyi/core/report_engine.dart';
 import 'package:duoyi/models/pomodoro.dart';
 import 'package:test/test.dart';
 
@@ -129,5 +131,103 @@ void main() {
 
     expect(trend.single.points.map((p) => p.label), ['1月', '2月', '3月']);
     expect(trend.single.points.map((p) => p.minutes), [25, 0, 30]);
+  });
+
+  test('uses focus end times for midnight range and daily membership', () {
+    final sessions = [
+      session(
+        id: 'ends-at-start',
+        tag: 'study',
+        minutes: 1,
+        startAt: AppClock.date(2026, 5, 18, 23, 59),
+      ),
+      session(
+        id: 'crosses-midnight',
+        tag: 'study',
+        minutes: 1,
+        startAt: AppClock.date(2026, 5, 19, 23, 59),
+      ),
+      session(
+        id: 'ends-at-exclusive-end',
+        tag: 'study',
+        minutes: 1,
+        startAt: AppClock.date(2026, 5, 20, 23, 59),
+      ),
+    ];
+    final start = DateTime(2026, 5, 19);
+    final end = DateTime(2026, 5, 20);
+    final trend = FocusTagStats.buildTrend(
+      start: start,
+      end: end,
+      tags: const ['study'],
+      bucket: FocusTagTrendBucket.day,
+      sessions: sessions,
+    );
+    final report = ReportEngine.buildReport(
+      start: start,
+      end: end,
+      todos: const [],
+      habits: const [],
+      sessions: sessions,
+      timeEntries: const [],
+    );
+
+    expect(trend.single.points.map((point) => point.minutes), [1, 1]);
+    expect(report.focusSessions, 2);
+    expect(trend.single.totalMinutes, report.focusMinutes);
+  });
+
+  test('aggregates sub-minute seconds before converting every bucket kind', () {
+    final sessions = [
+      for (final (index, seconds) in [30, 35].indexed)
+        PomodoroSession(
+          id: 'short-$index',
+          startTime: AppClock.date(2026, 5, 19, 9, index),
+          endTime: AppClock.date(2026, 5, 19, 9, index, seconds),
+          durationSeconds: seconds,
+          type: PomodoroType.focus,
+          tag: 'study',
+        ),
+    ];
+
+    for (final bucket in FocusTagTrendBucket.values) {
+      final trend = FocusTagStats.buildTrend(
+        start: DateTime(2026, 5, 18),
+        end: DateTime(2026, 5, 20),
+        tags: const ['study'],
+        bucket: bucket,
+        sessions: sessions,
+      );
+      expect(trend.single.totalMinutes, 1, reason: bucket.name);
+    }
+  });
+
+  test('clips natural Monday-Sunday buckets across a year boundary', () {
+    final trend = FocusTagStats.buildTrend(
+      start: DateTime(2026, 12, 30),
+      end: DateTime(2027, 1, 12),
+      tags: const ['study'],
+      bucket: FocusTagTrendBucket.week,
+      sessions: [
+        for (final (index, date, minutes) in [
+          (0, DateTime(2026, 12, 29, 10), 99),
+          (1, DateTime(2026, 12, 30, 10), 5),
+          (2, DateTime(2027, 1, 3, 10), 7),
+          (3, DateTime(2027, 1, 4, 10), 11),
+          (4, DateTime(2027, 1, 10, 10), 13),
+          (5, DateTime(2027, 1, 11, 10), 17),
+          (6, DateTime(2027, 1, 12, 10), 19),
+          (7, DateTime(2027, 1, 13, 10), 99),
+        ])
+          session(id: '$index', tag: 'study', minutes: minutes, startAt: date),
+      ],
+    );
+
+    expect(trend.single.points.map((point) => point.label), [
+      '12/30–1/3',
+      '1/4–1/10',
+      '1/11–1/12',
+    ]);
+    expect(trend.single.points.map((point) => point.minutes), [12, 24, 36]);
   });
 }

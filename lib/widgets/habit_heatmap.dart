@@ -8,13 +8,17 @@ class HabitHeatmap extends StatelessWidget {
   final Map<String, int> heatmapData; // dateKey -> intensity 0-5
   final int weeks;
   final bool fitToWidth;
+  final DateTime? startDate;
+  final DateTime? endDate;
 
   const HabitHeatmap({
     super.key,
     required this.heatmapData,
     this.weeks = 12,
     this.fitToWidth = false,
-  });
+    this.startDate,
+    this.endDate,
+  }) : assert((startDate == null) == (endDate == null));
 
   Color _cellColor({
     required int intensity,
@@ -53,9 +57,42 @@ class HabitHeatmap extends StatelessWidget {
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final today = AppClock.today();
-    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
-    final startDate = thisMonday.subtract(Duration(days: (weeks - 1) * 7));
-    final columns = weeks;
+    final thisMonday = DateTime(
+      today.year,
+      today.month,
+      today.day - today.weekday + 1,
+    );
+    final firstDate = startDate == null
+        ? DateTime(
+            thisMonday.year,
+            thisMonday.month,
+            thisMonday.day - (weeks - 1) * 7,
+          )
+        : DateTime(startDate!.year, startDate!.month, startDate!.day);
+    final lastDate = endDate == null
+        ? DateTime(thisMonday.year, thisMonday.month, thisMonday.day + 6)
+        : DateTime(endDate!.year, endDate!.month, endDate!.day);
+    final gridStart = DateTime(
+      firstDate.year,
+      firstDate.month,
+      firstDate.day - firstDate.weekday + 1,
+    );
+    final columns = startDate == null
+        ? weeks
+        : DateTime.utc(lastDate.year, lastDate.month, lastDate.day)
+                      .difference(
+                        DateTime.utc(
+                          gridStart.year,
+                          gridStart.month,
+                          gridStart.day,
+                        ),
+                      )
+                      .inDays ~/
+                  7 +
+              1;
+    DateTime dateAt(int offset) =>
+        DateTime(gridStart.year, gridStart.month, gridStart.day + offset);
+    final singleLineMonths = fitToWidth || startDate != null;
     final rows = 7;
 
     return LayoutBuilder(
@@ -88,15 +125,21 @@ class HabitHeatmap extends StatelessWidget {
               children: [
                 const SizedBox(width: 28),
                 ...List.generate(columns, (c) {
-                  final w = startDate.add(Duration(days: c * 7));
+                  final w = c == 0 ? firstDate : dateAt(c * 7);
+                  final previousMonth = c <= 1
+                      ? firstDate.month
+                      : dateAt((c - 1) * 7).month;
                   return SizedBox(
                     width: cell + 3,
-                    child: c % 4 == 0
+                    child:
+                        (startDate != null
+                            ? c == 0 || w.month != previousMonth
+                            : c % 4 == 0)
                         ? Text(
                             '${w.month}月',
-                            maxLines: fitToWidth ? 1 : null,
-                            softWrap: !fitToWidth,
-                            overflow: fitToWidth
+                            maxLines: singleLineMonths ? 1 : null,
+                            softWrap: !singleLineMonths,
+                            overflow: singleLineMonths
                                 ? TextOverflow.visible
                                 : TextOverflow.clip,
                             style: TextStyle(
@@ -140,7 +183,10 @@ class HabitHeatmap extends StatelessWidget {
                 ...List.generate(columns, (c) {
                   return Column(
                     children: List.generate(rows, (r) {
-                      final date = startDate.add(Duration(days: c * 7 + r));
+                      final date = dateAt(c * 7 + r);
+                      if (date.isBefore(firstDate) || date.isAfter(lastDate)) {
+                        return SizedBox(width: cell + 3, height: cell + 3);
+                      }
                       final key =
                           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
                       final intensity = heatmapData[key] ?? 0;
@@ -153,6 +199,7 @@ class HabitHeatmap extends StatelessWidget {
                         isFuture: isFuture,
                       );
                       return Tooltip(
+                        key: ValueKey('habit_heatmap_date_$key'),
                         message: '${I18nDateFormat.date(date)} · $intensity 次',
                         child: Container(
                           width: cell,

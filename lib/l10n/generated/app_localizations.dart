@@ -212,6 +212,210 @@ abstract class AppLocalizations {
   /// **'待办、习惯、专注和时间足迹的每日活跃度'**
   String get statisticsActivityDescription;
 
+  /// No description provided for @statisticsPeriodWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周'**
+  String get statisticsPeriodWeek;
+
+  /// No description provided for @statisticsPeriodMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月'**
+  String get statisticsPeriodMonth;
+
+  /// No description provided for @statisticsPeriodYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'本年'**
+  String get statisticsPeriodYear;
+
+  /// No description provided for @statisticsScopeWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'周一至今天，按天查看完成节奏'**
+  String get statisticsScopeWeek;
+
+  /// No description provided for @statisticsScopeMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'月初至今天，按周查看推进情况'**
+  String get statisticsScopeMonth;
+
+  /// No description provided for @statisticsScopeYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'年初至今天，按月查看成长趋势'**
+  String get statisticsScopeYear;
+
+  /// No description provided for @statisticsActivityWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周活动分布'**
+  String get statisticsActivityWeek;
+
+  /// No description provided for @statisticsActivityMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月活动日历'**
+  String get statisticsActivityMonth;
+
+  /// No description provided for @statisticsActivityYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'年度活动热力图'**
+  String get statisticsActivityYear;
+
+  /// No description provided for @statisticsActivityHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色越深代表当天完成、记录或专注越多。'**
+  String get statisticsActivityHint;
+
+  /// No description provided for @statisticsActivityDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'活跃 {days} 天'**
+  String statisticsActivityDays(Object days);
+
+  /// No description provided for @statisticsTimeWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周时间概览'**
+  String get statisticsTimeWeek;
+
+  /// No description provided for @statisticsTimeMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月时间概览'**
+  String get statisticsTimeMonth;
+
+  /// No description provided for @statisticsTimeYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'本年时间概览'**
+  String get statisticsTimeYear;
+
+  /// No description provided for @statisticsTotalWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周累计投入'**
+  String get statisticsTotalWeek;
+
+  /// No description provided for @statisticsTotalMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月累计投入'**
+  String get statisticsTotalMonth;
+
+  /// No description provided for @statisticsTotalYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'本年累计投入'**
+  String get statisticsTotalYear;
+
+  /// No description provided for @statisticsTimeEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'本期暂无时间记录'**
+  String get statisticsTimeEmpty;
+
+  /// No description provided for @statisticsTrendWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周每日效率'**
+  String get statisticsTrendWeek;
+
+  /// No description provided for @statisticsTrendMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月每周效率'**
+  String get statisticsTrendMonth;
+
+  /// No description provided for @statisticsTrendYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'本年每月效率'**
+  String get statisticsTrendYear;
+
+  /// No description provided for @statisticsTrendBest.
+  ///
+  /// In zh, this message translates to:
+  /// **'本期最佳'**
+  String get statisticsTrendBest;
+
+  /// No description provided for @statisticsTrendAverage.
+  ///
+  /// In zh, this message translates to:
+  /// **'分段平均分'**
+  String get statisticsTrendAverage;
+
+  /// No description provided for @statisticsTrendPartial.
+  ///
+  /// In zh, this message translates to:
+  /// **'最后一段截至今天，时长可能少于其他段'**
+  String get statisticsTrendPartial;
+
+  /// No description provided for @statisticsBucketWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {week} 周'**
+  String statisticsBucketWeek(Object week);
+
+  /// No description provided for @statisticsBucketMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月'**
+  String statisticsBucketMonth(Object month);
+
+  /// No description provided for @statisticsAnalysis.
+  ///
+  /// In zh, this message translates to:
+  /// **'专注与项目分析'**
+  String get statisticsAnalysis;
+
+  /// No description provided for @statisticsSnapshot.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时快照，不计入所选周期的报告'**
+  String get statisticsSnapshot;
+
+  /// No description provided for @statisticsFocusWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日专注分钟数'**
+  String get statisticsFocusWeek;
+
+  /// No description provided for @statisticsFocusMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'每周专注分钟数'**
+  String get statisticsFocusMonth;
+
+  /// No description provided for @statisticsFocusYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'每月专注分钟数'**
+  String get statisticsFocusYear;
+
+  /// No description provided for @statisticsGranularityWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'按日'**
+  String get statisticsGranularityWeek;
+
+  /// No description provided for @statisticsGranularityMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'按周'**
+  String get statisticsGranularityMonth;
+
+  /// No description provided for @statisticsGranularityYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'按月'**
+  String get statisticsGranularityYear;
+
   /// No description provided for @challengeWeeklyActiveDaysDescription.
   ///
   /// In zh, this message translates to:

@@ -71,6 +71,117 @@ class AppLocalizationsEn extends AppLocalizations {
       'Daily activity across tasks, habits, focus, and time entries';
 
   @override
+  String get statisticsPeriodWeek => 'This week';
+
+  @override
+  String get statisticsPeriodMonth => 'This month';
+
+  @override
+  String get statisticsPeriodYear => 'This year';
+
+  @override
+  String get statisticsScopeWeek => 'Monday through today, with daily progress';
+
+  @override
+  String get statisticsScopeMonth => 'Month to date, with weekly progress';
+
+  @override
+  String get statisticsScopeYear => 'Year to date, with monthly progress';
+
+  @override
+  String get statisticsActivityWeek => 'Weekly activity';
+
+  @override
+  String get statisticsActivityMonth => 'Monthly activity calendar';
+
+  @override
+  String get statisticsActivityYear => 'Annual activity heatmap';
+
+  @override
+  String get statisticsActivityHint =>
+      'Darker colors mean more completions, records, or focus that day.';
+
+  @override
+  String statisticsActivityDays(Object days) {
+    return '$days active days';
+  }
+
+  @override
+  String get statisticsTimeWeek => 'Weekly time overview';
+
+  @override
+  String get statisticsTimeMonth => 'Monthly time overview';
+
+  @override
+  String get statisticsTimeYear => 'Yearly time overview';
+
+  @override
+  String get statisticsTotalWeek => 'Time recorded this week';
+
+  @override
+  String get statisticsTotalMonth => 'Time recorded this month';
+
+  @override
+  String get statisticsTotalYear => 'Time recorded this year';
+
+  @override
+  String get statisticsTimeEmpty => 'No time entries in this period';
+
+  @override
+  String get statisticsTrendWeek => 'Daily efficiency this week';
+
+  @override
+  String get statisticsTrendMonth => 'Weekly efficiency this month';
+
+  @override
+  String get statisticsTrendYear => 'Monthly efficiency this year';
+
+  @override
+  String get statisticsTrendBest => 'Best in this period';
+
+  @override
+  String get statisticsTrendAverage => 'Average segment score';
+
+  @override
+  String get statisticsTrendPartial =>
+      'The last segment ends today and may be shorter than the others';
+
+  @override
+  String statisticsBucketWeek(Object week) {
+    return 'W$week';
+  }
+
+  @override
+  String statisticsBucketMonth(Object month) {
+    return 'M$month';
+  }
+
+  @override
+  String get statisticsAnalysis => 'Focus and project analysis';
+
+  @override
+  String get statisticsSnapshot =>
+      'Live snapshot, separate from the selected report period';
+
+  @override
+  String get statisticsFocusWeek => 'Focus minutes by day';
+
+  @override
+  String get statisticsFocusMonth => 'Focus minutes by week';
+
+  @override
+  String get statisticsFocusYear => 'Focus minutes by month';
+
+  @override
+  String get statisticsGranularityWeek => 'Daily';
+
+  @override
+  String get statisticsGranularityMonth => 'Weekly';
+
+  @override
+  String get statisticsGranularityYear => 'Monthly';
+
+  @override
   String get challengeWeeklyActiveDaysDescription =>
       'Use tasks, habits, or focus on 5 days this week.';
 

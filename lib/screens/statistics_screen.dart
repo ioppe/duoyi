@@ -20,6 +20,8 @@ import '../core/i18n_date_format.dart';
 import '../core/project_efficiency.dart';
 import '../core/report_cross_analysis.dart';
 import '../core/report_engine.dart';
+import '../core/report_time_slices.dart';
+import '../core/statistics_period.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
@@ -31,7 +33,7 @@ import '../providers/pomodoro_provider.dart';
 import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../services/ai_service.dart';
-import '../widgets/habit_heatmap.dart';
+import '../widgets/statistics_activity_card.dart';
 import '../widgets/result_states.dart';
 import '../widgets/surface_components.dart';
 import 'ai_history_screen.dart';
@@ -54,22 +56,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   String? _aiReportReview;
   String? _aiReportError;
 
-  (DateTime, DateTime) get _rangeBounds {
-    final now = AppClock.now();
-    switch (_range) {
-      case _Range.week:
-        final monday = DateTime(
-          now.year,
-          now.month,
-          now.day,
-        ).subtract(Duration(days: now.weekday - 1));
-        return (monday, now);
-      case _Range.month:
-        return (DateTime(now.year, now.month, 1), now);
-      case _Range.year:
-        return (DateTime(now.year, 1, 1), now);
-    }
-  }
+  StatisticsWindow get _window =>
+      StatisticsWindow(StatisticsPeriod.values[_range.index]);
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +73,19 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final ai = context.watch<AiService>();
     final cs = Theme.of(context).colorScheme;
 
-    final (start, end) = _rangeBounds;
-    final (previousStart, previousEnd) = _previousRangeBounds(start, end);
+    final window = _window;
+    final start = window.start;
+    final end = window.end;
+    final previous = window.previous;
+    final previousStart = previous.start;
+    final previousEnd = previous.end;
+    final habitCompletionDatesById = {
+      for (final habit in habitProv.habits)
+        habit.id: habit.completionDatesInRange(start, end),
+    };
+    final habitCompletionDates = habitCompletionDatesById.values
+        .expand((dates) => dates)
+        .toList();
     final report = ReportEngine.buildReport(
       start: start,
       end: end,
@@ -94,6 +93,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       habits: habitProv.habits,
       sessions: pomoProv.sessions,
       timeEntries: timeAuditProv.entries,
+      habitCompletionDatesById: habitCompletionDatesById,
     );
     final previousReport = ReportEngine.buildReport(
       start: previousStart,
@@ -127,14 +127,19 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       timeEntries: timeAuditProv.entries,
     );
     final activityHeatmap = _buildActivityHeatmap(
+      window: window,
       todos: todoProv.todos,
       habits: habitProv.habits,
       sessions: pomoProv.sessions,
       timeEntries: timeAuditProv.entries,
     );
-    final rangeStart = AppClock.date(start.year, start.month, start.day);
-    final rangeEnd = AppClock.date(end.year, end.month, end.day + 1);
-    final auditEntries = timeAuditProv.entriesInRange(rangeStart, rangeEnd);
+    final rangeStart = window.startInstant;
+    final rangeEnd = window.endExclusive;
+    final auditEntries = reportTimeEntriesInRange(
+      timeAuditProv.entries,
+      start: start,
+      end: end,
+    );
     final auditTotalMinutes =
         timeAuditProv.totalSecondsInRange(rangeStart, rangeEnd) ~/ 60;
     final auditCategorySeconds = timeAuditProv.secondsByCategory(
@@ -149,7 +154,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }).toList();
 
     final focusSessions = pomoProv.sessions
-        .where((s) => s.type == PomodoroType.focus && inRange(s.startTime))
+        .where((s) => s.type == PomodoroType.focus && inRange(s.endTime))
         .toList();
     final focusMinutes =
         focusSessions.fold<int>(0, (sum, s) => sum + s.durationSeconds) ~/ 60;
@@ -159,20 +164,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       start: start,
       end: end,
       tags: focusTagStats.map((stat) => stat.tag).take(3),
-      bucket: _range == _Range.year
-          ? FocusTagTrendBucket.month
-          : FocusTagTrendBucket.day,
+      bucket: switch (_range) {
+        _Range.week => FocusTagTrendBucket.day,
+        _Range.month => FocusTagTrendBucket.week,
+        _Range.year => FocusTagTrendBucket.month,
+      },
     );
-    final habitCompletionDates = [
-      for (final habit in habitProv.habits)
-        ...habit.completionDatesInRange(start, end),
-    ];
     final crossAnalysis = ReportCrossAnalysis.build(
       start: start,
       end: end,
-      bucket: _range == _Range.year
-          ? ReportCrossBucket.month
-          : ReportCrossBucket.day,
+      bucket: switch (_range) {
+        _Range.week => ReportCrossBucket.day,
+        _Range.month => ReportCrossBucket.week,
+        _Range.year => ReportCrossBucket.month,
+      },
       todoCompletions: completedTodos.map(
         (todo) => ReportCrossTodoCompletion(todo.completedAt ?? todo.updatedAt),
       ),
@@ -210,26 +215,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         quadrant: todoProv.getQuadrantTodos(quadrant),
     }, now: now);
 
-    // Weekly time audit data (always computed, independent of selected range)
-    final weekMonday = AppClock.date(
-      now.year,
-      now.month,
-      now.day - now.weekday + 1,
+    final sourceSeconds = timeAuditProv.secondsBySource(rangeStart, rangeEnd);
+    final totalSeconds = timeAuditProv.totalSecondsInRange(
+      rangeStart,
+      rangeEnd,
     );
-    final weekEnd = AppClock.date(
-      weekMonday.year,
-      weekMonday.month,
-      weekMonday.day + 7,
-    );
-    final weekSourceSeconds = timeAuditProv.secondsBySource(
-      weekMonday,
-      weekEnd,
-    );
-    final weekTotalSeconds = timeAuditProv.totalSecondsInRange(
-      weekMonday,
-      weekEnd,
-    );
-    final weekDaySeconds = timeAuditProv.secondsByDay(weekMonday, weekEnd);
+    final daySeconds = timeAuditProv.secondsByDay(rangeStart, rangeEnd);
 
     return Scaffold(
       appBar: AppBar(
@@ -271,10 +262,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: SegmentedButton<_Range>(
-              segments: const [
-                ButtonSegment(value: _Range.week, label: Text('本周')),
-                ButtonSegment(value: _Range.month, label: Text('本月')),
-                ButtonSegment(value: _Range.year, label: Text('本年')),
+              segments: [
+                for (final range in _Range.values)
+                  ButtonSegment(
+                    value: range,
+                    label: Text(I18n.tr('statistics.period.${range.name}')),
+                  ),
               ],
               selected: {_range},
               onSelectionChanged: (s) => setState(() {
@@ -292,6 +285,26 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(12),
           children: [
+            Padding(
+              key: const ValueKey('statistics_period_context'),
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${I18nDateFormat.date(start)} — ${I18nDateFormat.date(end)}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    I18n.tr('statistics.scope.${_range.name}'),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
             LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
@@ -407,35 +420,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             const SizedBox(height: 10),
             _ProductivityTrendCard(points: productivityTrend, range: _range),
             const SizedBox(height: 10),
-            _buildFocusTodoCorrelationCard(
-              correlation: crossAnalysis.focusTodo,
-              cs: cs,
+            StatisticsActivityCard(
+              key: const ValueKey('statistics_activity_card'),
+              window: window,
+              heatmapData: activityHeatmap,
             ),
             const SizedBox(height: 10),
-            _buildHabitTodoCorrelationCard(
-              correlation: crossAnalysis.habitTodo,
-              cs: cs,
-            ),
-            const SizedBox(height: 10),
-            _buildTimeCategoryShareTrendCard(
-              trend: crossAnalysis.timeCategoryTrend,
-              cs: cs,
-            ),
-            const SizedBox(height: 10),
-            _buildTimeOutputEfficiencyCard(
-              trend: crossAnalysis.timeOutputEfficiency,
-              cs: cs,
-            ),
-            const SizedBox(height: 10),
-            _buildProjectEfficiencyCard(breakdown: projectEfficiency, cs: cs),
-            const SizedBox(height: 10),
-            _ActivityHeatmapCard(heatmapData: activityHeatmap),
-            const SizedBox(height: 10),
-            _WeeklyTimeOverview(
-              weekTotalSeconds: weekTotalSeconds,
-              sourceSeconds: weekSourceSeconds,
-              daySeconds: weekDaySeconds,
-              weekMonday: weekMonday,
+            _PeriodTimeOverview(
+              key: const ValueKey('statistics_time_overview'),
+              window: window,
+              totalSeconds: totalSeconds,
+              sourceSeconds: sourceSeconds,
+              daySeconds: daySeconds,
               cs: cs,
             ),
             const SizedBox(height: 10),
@@ -452,26 +448,63 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             const SizedBox(height: 10),
             _chartCard('时间线', _buildAuditTimeline(auditEntries, cs)),
             const SizedBox(height: 10),
-            _chartCard(
-              _range == _Range.year ? '每月专注分钟数' : '每日专注分钟数',
-              SizedBox(
-                height: 180,
-                child: _buildFocusSeries(
-                  sessions: focusSessions,
-                  range: _range,
-                  start: start,
-                  end: end,
-                  cs: cs,
-                ),
+            AppSurfaceCard(
+              padding: EdgeInsets.zero,
+              child: ExpansionTile(
+                key: ValueKey('statistics_analysis_${_range.name}'),
+                title: Text(I18n.tr('statistics.analysis')),
+                shape: const Border(),
+                collapsedShape: const Border(),
+                childrenPadding: const EdgeInsets.all(8),
+                children: [
+                  _buildFocusTodoCorrelationCard(
+                    correlation: crossAnalysis.focusTodo,
+                    cs: cs,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildHabitTodoCorrelationCard(
+                    correlation: crossAnalysis.habitTodo,
+                    cs: cs,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTimeCategoryShareTrendCard(
+                    trend: crossAnalysis.timeCategoryTrend,
+                    cs: cs,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTimeOutputEfficiencyCard(
+                    trend: crossAnalysis.timeOutputEfficiency,
+                    cs: cs,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildProjectEfficiencyCard(
+                    breakdown: projectEfficiency,
+                    cs: cs,
+                  ),
+                  const SizedBox(height: 10),
+                  _chartCard(
+                    I18n.tr('statistics.focus.${_range.name}'),
+                    SizedBox(
+                      height: 180,
+                      child: _buildFocusSeries(
+                        sessions: focusSessions,
+                        range: _range,
+                        start: start,
+                        end: end,
+                        cs: cs,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildFocusTagRankingCard(stats: focusTagStats, cs: cs),
+                  const SizedBox(height: 10),
+                  _buildFocusTagTrendCard(
+                    series: focusTagTrend,
+                    range: _range,
+                    cs: cs,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            _buildFocusTagRankingCard(stats: focusTagStats, cs: cs),
-            const SizedBox(height: 10),
-            _buildFocusTagTrendCard(
-              series: focusTagTrend,
-              range: _range,
-              cs: cs,
             ),
             const SizedBox(height: 10),
             _QuadrantDistributionCard(stats: quadrantStats, cs: cs),
@@ -498,15 +531,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  (DateTime, DateTime) _previousRangeBounds(DateTime start, DateTime end) {
-    final startDate = DateTime(start.year, start.month, start.day);
-    final endDate = DateTime(end.year, end.month, end.day);
-    final days = endDate.difference(startDate).inDays + 1;
-    final previousEnd = startDate.subtract(const Duration(days: 1));
-    final previousStart = previousEnd.subtract(Duration(days: days - 1));
-    return (previousStart, previousEnd);
-  }
-
   List<_ProductivityTrendPoint> _buildProductivityTrend({
     required _Range range,
     required DateTime start,
@@ -516,104 +540,28 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<PomodoroSession> sessions,
     required List<TimeEntry> timeEntries,
   }) {
-    final startDate = DateTime(start.year, start.month, start.day);
-    final endDate = DateTime(end.year, end.month, end.day);
-    final currentSpanDays = endDate.difference(startDate).inDays;
-
-    return switch (range) {
-      _Range.week => [
-        for (int offset = 5; offset >= 0; offset--)
-          _productivityTrendPoint(
-            label: offset == 0
-                ? '本周'
-                : '${startDate.subtract(Duration(days: offset * 7)).month}/'
-                      '${startDate.subtract(Duration(days: offset * 7)).day}',
-            start: startDate.subtract(Duration(days: offset * 7)),
-            end: startDate
-                .subtract(Duration(days: offset * 7))
-                .add(Duration(days: currentSpanDays)),
-            todos: todos,
-            habits: habits,
-            sessions: sessions,
-            timeEntries: timeEntries,
-          ),
-      ],
-      _Range.month => [
-        for (int offset = 5; offset >= 0; offset--)
-          _monthTrendPoint(
-            offset: offset,
-            end: endDate,
-            todos: todos,
-            habits: habits,
-            sessions: sessions,
-            timeEntries: timeEntries,
-          ),
-      ],
-      _Range.year => [
-        for (int offset = 4; offset >= 0; offset--)
-          _yearTrendPoint(
-            offset: offset,
-            end: endDate,
-            todos: todos,
-            habits: habits,
-            sessions: sessions,
-            timeEntries: timeEntries,
-          ),
-      ],
+    final window = StatisticsWindow(
+      StatisticsPeriod.values[range.index],
+      today: end,
+    );
+    final buckets = window.buckets;
+    final completions = {
+      for (final habit in habits)
+        habit.id: habit.completionDatesInRange(start, end),
     };
-  }
-
-  _ProductivityTrendPoint _monthTrendPoint({
-    required int offset,
-    required DateTime end,
-    required List<TodoItem> todos,
-    required List<Habit> habits,
-    required List<PomodoroSession> sessions,
-    required List<TimeEntry> timeEntries,
-  }) {
-    final periodStart = DateTime(end.year, end.month - offset, 1);
-    final periodLastDay = DateTime(periodStart.year, periodStart.month + 1, 0);
-    final periodEnd = DateTime(
-      periodStart.year,
-      periodStart.month,
-      end.day.clamp(1, periodLastDay.day),
-    );
-    return _productivityTrendPoint(
-      label: offset == 0 ? '本月' : '${periodStart.month}月',
-      start: periodStart,
-      end: periodEnd,
-      todos: todos,
-      habits: habits,
-      sessions: sessions,
-      timeEntries: timeEntries,
-    );
-  }
-
-  _ProductivityTrendPoint _yearTrendPoint({
-    required int offset,
-    required DateTime end,
-    required List<TodoItem> todos,
-    required List<Habit> habits,
-    required List<PomodoroSession> sessions,
-    required List<TimeEntry> timeEntries,
-  }) {
-    final year = end.year - offset;
-    final periodStart = DateTime(year, 1, 1);
-    final targetMonthLastDay = DateTime(year, end.month + 1, 0).day;
-    final periodEnd = DateTime(
-      year,
-      end.month,
-      end.day.clamp(1, targetMonthLastDay),
-    );
-    return _productivityTrendPoint(
-      label: offset == 0 ? '今年' : '$year',
-      start: periodStart,
-      end: periodEnd,
-      todos: todos,
-      habits: habits,
-      sessions: sessions,
-      timeEntries: timeEntries,
-    );
+    return [
+      for (var index = 0; index < buckets.length; index++)
+        _productivityTrendPoint(
+          label: _statisticsBucketLabel(window.period, buckets[index], index),
+          start: buckets[index].start,
+          end: buckets[index].end,
+          todos: todos,
+          habits: habits,
+          sessions: sessions,
+          timeEntries: timeEntries,
+          habitCompletionDatesById: completions,
+        ),
+    ];
   }
 
   _ProductivityTrendPoint _productivityTrendPoint({
@@ -624,6 +572,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required List<Habit> habits,
     required List<PomodoroSession> sessions,
     required List<TimeEntry> timeEntries,
+    required Map<String, Iterable<DateTime>> habitCompletionDatesById,
   }) {
     final report = ReportEngine.buildReport(
       start: start,
@@ -632,6 +581,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       habits: habits,
       sessions: sessions,
       timeEntries: timeEntries,
+      habitCompletionDatesById: habitCompletionDatesById,
     );
     return _ProductivityTrendPoint(
       label: label,
@@ -642,6 +592,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Map<String, int> _buildActivityHeatmap({
+    required StatisticsWindow window,
     required List<TodoItem> todos,
     required List<Habit> habits,
     required List<PomodoroSession> sessions,
@@ -650,7 +601,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final raw = <String, int>{};
 
     void add(DateTime date, int amount) {
-      if (amount <= 0) return;
+      if (amount <= 0 || !window.containsDate(date)) return;
       final key = _dateKey(date);
       raw[key] = (raw[key] ?? 0) + amount;
     }
@@ -672,7 +623,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         add(AppClock.toLocal(session.endTime), 2);
       }
     }
-    for (final entry in timeEntries) {
+    for (final entry in reportTimeEntriesInRange(
+      timeEntries,
+      start: window.start,
+      end: window.end,
+    )) {
       final minutes = entry.durationSeconds ~/ 60;
       add(AppClock.toLocal(entry.startAt), minutes >= 60 ? 2 : 1);
     }
@@ -907,7 +862,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
               Text(
-                range == _Range.year ? '按月' : '按日',
+                I18n.tr('statistics.granularity.${range.name}'),
                 style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
               ),
             ],
@@ -2490,29 +2445,25 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     required DateTime end,
     required ColorScheme cs,
   }) {
-    final buckets = <String, int>{};
-    DateTime cursor = DateTime(start.year, start.month, start.day);
-    final endNorm = DateTime(end.year, end.month, end.day);
-
-    if (range == _Range.year) {
-      for (int m = 1; m <= AppClock.now().month; m++) {
-        buckets['$m月'] = 0;
-      }
-    } else {
-      while (!cursor.isAfter(endNorm)) {
-        final k = '${cursor.month}/${cursor.day}';
-        buckets[k] = 0;
-        cursor = cursor.add(const Duration(days: 1));
+    final window = StatisticsWindow(
+      StatisticsPeriod.values[range.index],
+      today: end,
+    );
+    final spans = window.buckets;
+    final buckets = <String, int>{
+      for (var i = 0; i < spans.length; i++)
+        _statisticsBucketLabel(window.period, spans[i], i): 0,
+    };
+    for (final session in sessions) {
+      for (var i = 0; i < spans.length; i++) {
+        if (spans[i].containsInstant(session.endTime)) {
+          final label = _statisticsBucketLabel(window.period, spans[i], i);
+          buckets[label] = buckets[label]! + session.durationSeconds;
+          break;
+        }
       }
     }
-
-    for (final s in sessions) {
-      final local = AppClock.toLocal(s.startTime);
-      final k = range == _Range.year
-          ? '${local.month}月'
-          : '${local.month}/${local.day}';
-      buckets[k] = (buckets[k] ?? 0) + (s.durationSeconds ~/ 60);
-    }
+    buckets.updateAll((_, seconds) => seconds ~/ 60);
 
     if (buckets.values.every((v) => v == 0)) {
       return const EmptyHint(icon: Icons.timer_outlined, message: '暂无专注数据');
@@ -2583,6 +2534,24 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       ),
     );
   }
+}
+
+String _statisticsBucketLabel(
+  StatisticsPeriod period,
+  StatisticsSpan span,
+  int index,
+) {
+  return switch (period) {
+    StatisticsPeriod.week => I18n.tr(
+      'weekday.${const ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][span.start.weekday - 1]}',
+    ),
+    StatisticsPeriod.month => I18n.tr(
+      'statistics.bucket.week',
+    ).replaceAll('{week}', '${index + 1}'),
+    StatisticsPeriod.year => I18n.tr(
+      'statistics.bucket.month',
+    ).replaceAll('{month}', '${span.start.month}'),
+  };
 }
 
 class _ReportShareDialog extends StatefulWidget {
@@ -3697,6 +3666,11 @@ class _QuadrantDistributionCard extends StatelessWidget {
             '按重要/紧急象限拆解未完成压力、今日到期和已完成沉淀。',
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
           ),
+          const SizedBox(height: 4),
+          Text(
+            I18n.tr('statistics.snapshot'),
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -4247,129 +4221,6 @@ class _ProjectEfficiencyRow extends StatelessWidget {
   }
 }
 
-class _ActivityHeatmapCard extends StatelessWidget {
-  static const int weeks = 52;
-
-  final Map<String, int> heatmapData;
-
-  const _ActivityHeatmapCard({required this.heatmapData});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final visibleValues = _visibleValues();
-    final activeDays = visibleValues.where((value) => value > 0).length;
-    final maxIntensity = visibleValues.fold<int>(
-      0,
-      (max, value) => value > max ? value : max,
-    );
-    return AppSurfaceCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '年度活动热力图',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: DesignTokens.fontWeightStrong,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      I18n.tr('statistics.activity.description'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: cs.onSurface.withValues(alpha: 0.58),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _HeatmapSummary(
-                activeDays: activeDays,
-                maxIntensity: maxIntensity,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          HabitHeatmap(heatmapData: heatmapData, weeks: weeks),
-          const SizedBox(height: 4),
-          Text(
-            '颜色越深代表当天完成、记录或专注越多。',
-            style: TextStyle(
-              fontSize: 10,
-              color: cs.onSurface.withValues(alpha: 0.54),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<int> _visibleValues() {
-    final today = AppClock.now();
-    final start = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    ).subtract(const Duration(days: weeks * 7 - 1));
-    return [
-      for (var i = 0; i < weeks * 7; i++)
-        heatmapData[_dateKey(start.add(Duration(days: i)))] ?? 0,
-    ];
-  }
-
-  String _dateKey(DateTime date) =>
-      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-}
-
-class _HeatmapSummary extends StatelessWidget {
-  final int activeDays;
-  final int maxIntensity;
-
-  const _HeatmapSummary({required this.activeDays, required this.maxIntensity});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            '$activeDays 天',
-            style: TextStyle(
-              fontSize: 12,
-              color: cs.primary,
-              fontWeight: DesignTokens.fontWeightStrong,
-            ),
-          ),
-          Text(
-            '最高 $maxIntensity 级',
-            style: TextStyle(
-              fontSize: 10,
-              color: cs.onSurface.withValues(alpha: 0.56),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProductivityTrendPoint {
   final String label;
   final DateTime start;
@@ -4495,36 +4346,25 @@ class _ProductivityTrendCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _TrendHistoryMetric(
-                  label: '历史最佳',
+                  label: I18n.tr('statistics.trend.best'),
                   value: '${best.label} · ${best.score} 分',
                 ),
-                _TrendHistoryMetric(label: '平均分', value: '$averageScore 分'),
+                _TrendHistoryMetric(
+                  label: I18n.tr('statistics.trend.average'),
+                  value: '$averageScore 分',
+                ),
                 _TrendHistoryMetric(label: '当前排名', value: _rankText),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              '周期明细',
-              style: TextStyle(
-                fontSize: 12,
-                color: cs.onSurface.withValues(alpha: 0.72),
-                fontWeight: DesignTokens.fontWeightStrong,
+            if (range != _Range.week) ...[
+              const SizedBox(height: 8),
+              Text(
+                I18n.tr('statistics.trend.partial'),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
-            ),
-            const SizedBox(height: 6),
-            ...points.reversed.map((point) {
-              final index = points.indexOf(point);
-              final previous = index <= 0 ? null : points[index - 1];
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: _TrendDetailTile(
-                  point: point,
-                  previous: previous,
-                  isLatest: point == latest,
-                  isBest: point == best,
-                ),
-              );
-            }),
+            ],
           ],
         ],
       ),
@@ -4639,11 +4479,7 @@ class _ProductivityTrendCard extends StatelessWidget {
     );
   }
 
-  String get _trendSubtitle => switch (range) {
-    _Range.week => '近 6 周同段效率分',
-    _Range.month => '近 6 个月同段效率分',
-    _Range.year => '近 5 年同段效率分',
-  };
+  String get _trendSubtitle => I18n.tr('statistics.trend.${range.name}');
 
   _ProductivityTrendPoint? get _bestPoint {
     if (points.isEmpty) return null;
@@ -4683,7 +4519,7 @@ class _ProductivityTrendCard extends StatelessWidget {
         : '保持稳定';
     final bestText = best == null
         ? ''
-        : '历史最佳是 ${best.label} 的 ${best.score} 分，';
+        : '${I18n.tr('statistics.trend.best')}：${best.label}，${best.score} 分。';
     final averageText = latest.score >= average
         ? '当前高于最近平均 $average 分。'
         : '当前低于最近平均 $average 分。';
@@ -4768,13 +4604,13 @@ class _ProductivityTrendDetailScreen extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     _TrendHistoryMetric(
-                      label: '历史最佳',
+                      label: I18n.tr('statistics.trend.best'),
                       value: best == null
                           ? '暂无'
                           : '${best.label} · ${best.score} 分',
                     ),
                     _TrendHistoryMetric(
-                      label: '平均分',
+                      label: I18n.tr('statistics.trend.average'),
                       value: '$_averageScore 分',
                     ),
                     _TrendHistoryMetric(label: '当前排名', value: _rankText),
@@ -4808,11 +4644,7 @@ class _ProductivityTrendDetailScreen extends StatelessWidget {
     );
   }
 
-  String get _rangeSubtitle => switch (range) {
-    _Range.week => '近 6 周同段效率分',
-    _Range.month => '近 6 个月同段效率分',
-    _Range.year => '近 5 年同段效率分',
-  };
+  String get _rangeSubtitle => I18n.tr('statistics.trend.${range.name}');
 
   _ProductivityTrendPoint? get _bestPoint {
     if (points.isEmpty) return null;
@@ -4852,7 +4684,7 @@ class _ProductivityTrendDetailScreen extends StatelessWidget {
         : '保持稳定';
     final bestText = best == null
         ? ''
-        : '历史最佳是 ${best.label} 的 ${best.score} 分，';
+        : '${I18n.tr('statistics.trend.best')}：${best.label}，${best.score} 分。';
     final averageText = latest.score >= average
         ? '当前高于最近平均 $average 分。'
         : '当前低于最近平均 $average 分。';
@@ -5352,21 +5184,22 @@ class _ComparisonMetric extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Weekly Time Overview card  (M4 Time Audit integration)
+// Selected-period Time Overview card
 // ---------------------------------------------------------------------------
 
-class _WeeklyTimeOverview extends StatelessWidget {
-  final int weekTotalSeconds;
+class _PeriodTimeOverview extends StatelessWidget {
+  final int totalSeconds;
   final Map<String, int> sourceSeconds;
   final Map<String, int> daySeconds;
-  final DateTime weekMonday;
+  final StatisticsWindow window;
   final ColorScheme cs;
 
-  const _WeeklyTimeOverview({
-    required this.weekTotalSeconds,
+  const _PeriodTimeOverview({
+    super.key,
+    required this.totalSeconds,
     required this.sourceSeconds,
     required this.daySeconds,
-    required this.weekMonday,
+    required this.window,
     required this.cs,
   });
 
@@ -5378,9 +5211,9 @@ class _WeeklyTimeOverview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '本周时间概览',
-            style: TextStyle(
+          Text(
+            I18n.tr('statistics.time.${window.period.name}'),
+            style: const TextStyle(
               fontWeight: DesignTokens.fontWeightStrong,
               fontSize: 13,
             ),
@@ -5402,32 +5235,42 @@ class _WeeklyTimeOverview extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDuration(weekTotalSeconds),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: DesignTokens.fontWeightStrong,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDuration(totalSeconds),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '本周累计投入',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
-                ],
+                    Text(
+                      I18n.tr('statistics.total.${window.period.name}'),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          // Source breakdown pie
-          if (weekTotalSeconds > 0) ...[
+          if (totalSeconds > 0) ...[
             SizedBox(height: 160, child: _buildSourcePie(context)),
             const SizedBox(height: 10),
-          ],
-          // Daily bar trend
-          SizedBox(height: 120, child: _buildDailyBars(context)),
+            SizedBox(height: 140, child: _buildPeriodBars(context)),
+          ] else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: EmptyHint(
+                icon: Icons.date_range,
+                message: I18n.tr('statistics.time.empty'),
+              ),
+            ),
         ],
       ),
     );
@@ -5505,19 +5348,30 @@ class _WeeklyTimeOverview extends StatelessWidget {
     );
   }
 
-  Widget _buildDailyBars(BuildContext context) {
-    const dayLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  Widget _buildPeriodBars(BuildContext context) {
+    final spans = window.buckets;
     final buckets = <String, int>{};
-    for (int i = 0; i < 7; i++) {
-      final d = weekMonday.add(Duration(days: i));
-      final key =
-          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-      buckets[dayLabels[i]] = daySeconds[key] ?? 0;
+    for (var index = 0; index < spans.length; index++) {
+      final span = spans[index];
+      var seconds = 0;
+      for (
+        var date = span.start;
+        !date.isAfter(span.end);
+        date = date.add(const Duration(days: 1))
+      ) {
+        final key =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        seconds += daySeconds[key] ?? 0;
+      }
+      buckets[_statisticsBucketLabel(window.period, span, index)] = seconds;
     }
 
     final maxV = buckets.values.fold<int>(0, (a, b) => a > b ? a : b);
     if (maxV == 0) {
-      return const EmptyHint(icon: Icons.date_range, message: '暂无本周数据');
+      return EmptyHint(
+        icon: Icons.date_range,
+        message: I18n.tr('statistics.time.empty'),
+      );
     }
 
     final entries = buckets.entries.toList();
@@ -5545,6 +5399,9 @@ class _WeeklyTimeOverview extends StatelessWidget {
               getTitlesWidget: (v, _) {
                 final i = v.toInt();
                 if (i < 0 || i >= entries.length) return const SizedBox();
+                if (entries.length > 8 && i.isOdd && i != entries.length - 1) {
+                  return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(

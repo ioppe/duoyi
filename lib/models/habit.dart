@@ -523,8 +523,12 @@ class Habit {
     final day = DateTime(date.year, date.month, date.day);
     return switch (flexPeriod ?? HabitFlexPeriod.week) {
       HabitFlexPeriod.week => HabitPeriodBounds(
-        start: day.subtract(Duration(days: day.weekday - 1)),
-        end: day.add(Duration(days: DateTime.daysPerWeek - day.weekday)),
+        start: DateTime(day.year, day.month, day.day - day.weekday + 1),
+        end: DateTime(
+          day.year,
+          day.month,
+          day.day + DateTime.daysPerWeek - day.weekday,
+        ),
       ),
       HabitFlexPeriod.month => HabitPeriodBounds(
         start: DateTime(day.year, day.month),
@@ -536,8 +540,12 @@ class Habit {
   HabitPeriodBounds previousPeriodBounds(HabitPeriodBounds bounds) {
     return switch (flexPeriod ?? HabitFlexPeriod.week) {
       HabitFlexPeriod.week => HabitPeriodBounds(
-        start: bounds.start.subtract(const Duration(days: 7)),
-        end: bounds.end.subtract(const Duration(days: 7)),
+        start: DateTime(
+          bounds.start.year,
+          bounds.start.month,
+          bounds.start.day - 7,
+        ),
+        end: DateTime(bounds.end.year, bounds.end.month, bounds.end.day - 7),
       ),
       HabitFlexPeriod.month => HabitPeriodBounds(
         start: DateTime(bounds.start.year, bounds.start.month - 1),
@@ -572,7 +580,7 @@ class Habit {
       for (
         var date = startDay;
         !date.isAfter(endDay);
-        date = date.add(const Duration(days: 1))
+        date = DateTime(date.year, date.month, date.day + 1)
       ) {
         if (!activeForDate(date)) continue;
         if (isCompletedForDate(date)) {
@@ -597,7 +605,7 @@ class Habit {
         for (
           var date = overlapStart;
           !date.isAfter(overlapEnd);
-          date = date.add(const Duration(days: 1))
+          date = DateTime(date.year, date.month, date.day + 1)
         ) {
           if (activeForDate(date) && countForDate(date) > 0) {
             representative = DateTime(date.year, date.month, date.day, 12);
@@ -607,8 +615,12 @@ class Habit {
       }
       bounds = switch (flexPeriod!) {
         HabitFlexPeriod.week => HabitPeriodBounds(
-          start: bounds.start.add(const Duration(days: 7)),
-          end: bounds.end.add(const Duration(days: 7)),
+          start: DateTime(
+            bounds.start.year,
+            bounds.start.month,
+            bounds.start.day + 7,
+          ),
+          end: DateTime(bounds.end.year, bounds.end.month, bounds.end.day + 7),
         ),
         HabitFlexPeriod.month => HabitPeriodBounds(
           start: DateTime(bounds.start.year, bounds.start.month + 1),
@@ -663,7 +675,13 @@ class Habit {
 
   int completionCountInRange(DateTime start, DateTime end) {
     int count = 0;
-    for (var d = start; !d.isAfter(end); d = d.add(const Duration(days: 1))) {
+    final first = DateTime(start.year, start.month, start.day);
+    final last = DateTime(end.year, end.month, end.day);
+    for (
+      var d = first;
+      !d.isAfter(last);
+      d = DateTime(d.year, d.month, d.day + 1)
+    ) {
       if (!activeForDate(d)) continue;
       if (kind == HabitKind.positive
           ? countForDate(d) > 0

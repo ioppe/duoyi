@@ -201,7 +201,151 @@ void main() {
         timeEntries: const [],
       );
 
-      expect(report.habitCheckIns, 3);
+      expect(report.habitCheckIns, 2);
     });
+
+    test(
+      'counts successful target days instead of quantities or partial days',
+      () {
+        final habit = Habit(
+          id: 'water',
+          name: 'Water',
+          targetCount: 8,
+          currentStreak: 9,
+          completions: {
+            '2026-05-10': 8,
+            '2026-05-11': 7,
+            '2026-05-12': 8,
+            '2026-05-13': 16,
+            '2026-05-14': 0,
+          },
+        );
+        final report = ReportEngine.buildReport(
+          start: DateTime(2026, 5, 11),
+          end: DateTime(2026, 5, 17),
+          todos: const [],
+          habits: [habit],
+          sessions: const [],
+          timeEntries: const [],
+        );
+
+        expect(report.habitCheckIns, 2);
+        expect(report.longestHabitStreak, 2);
+      },
+    );
+
+    test('counts each successful flexible week once', () {
+      final habit = Habit(
+        id: 'exercise',
+        name: 'Exercise',
+        flexPeriod: HabitFlexPeriod.week,
+        flexTarget: 2,
+        completions: {
+          '2026-05-04': 3,
+          '2026-05-06': 4,
+          '2026-05-08': 1,
+          '2026-05-11': 8,
+          '2026-05-18': 2,
+          '2026-05-19': 2,
+        },
+      );
+      final report = ReportEngine.buildReport(
+        start: DateTime(2026, 5, 4),
+        end: DateTime(2026, 5, 24),
+        todos: const [],
+        habits: [habit],
+        sessions: const [],
+        timeEntries: const [],
+      );
+
+      expect(report.habitCheckIns, 2);
+    });
+
+    test(
+      'reuses monthly success dates across weekly buckets without repeats',
+      () {
+        final start = DateTime(2026, 5, 1);
+        final end = DateTime(2026, 5, 31);
+        final habit = Habit(
+          id: 'monthly',
+          name: 'Monthly exercise',
+          flexPeriod: HabitFlexPeriod.month,
+          flexTarget: 2,
+          completions: {
+            '2026-05-04': 1,
+            '2026-05-06': 1,
+            '2026-05-14': 1,
+            '2026-05-25': 1,
+          },
+        );
+        final completionDates = habit.completionDatesInRange(start, end);
+        final report = ReportEngine.buildReport(
+          start: start,
+          end: end,
+          todos: const [],
+          habits: [habit],
+          sessions: const [],
+          timeEntries: const [],
+        );
+        final bucketCounts = [
+          for (final (first, last) in [
+            (1, 3),
+            (4, 10),
+            (11, 17),
+            (18, 24),
+            (25, 31),
+          ])
+            ReportEngine.buildReport(
+              start: DateTime(2026, 5, first),
+              end: DateTime(2026, 5, last),
+              todos: const [],
+              habits: [habit],
+              sessions: const [],
+              timeEntries: const [],
+              habitCompletionDates: completionDates,
+            ).habitCheckIns,
+        ];
+
+        expect(report.habitCheckIns, 1);
+        expect(bucketCounts, [0, 0, 0, 0, 1]);
+        expect(
+          bucketCounts.fold<int>(0, (sum, count) => sum + count),
+          report.habitCheckIns,
+        );
+      },
+    );
+
+    test(
+      'supplied dates override habits and retain floating inclusive dates',
+      () {
+        final habit = Habit(
+          id: 'override',
+          name: 'Override',
+          completions: {'2026-05-12': 1},
+        );
+        PeriodReport build(Iterable<DateTime> dates) =>
+            ReportEngine.buildReport(
+              start: DateTime(2026, 5, 11),
+              end: DateTime(2026, 5, 17),
+              todos: const [],
+              habits: [habit],
+              sessions: const [],
+              timeEntries: const [],
+              habitCompletionDates: dates,
+            );
+
+        expect(build(const []).habitCheckIns, 0);
+        expect(
+          build([
+            DateTime.utc(2026, 5, 10, 23, 59),
+            DateTime.utc(2026, 5, 11),
+            DateTime.utc(2026, 5, 17, 23, 59),
+            DateTime.utc(2026, 5, 17, 12), // A second habit on the same day.
+            DateTime.utc(2026, 5, 18),
+          ]).habitCheckIns,
+          3,
+        );
+      },
+    );
   });
 }

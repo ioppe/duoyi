@@ -1,4 +1,6 @@
 import 'package:test/test.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'package:duoyi/core/period_report.dart';
 
@@ -122,6 +124,51 @@ void main() {
       expect(comparison.todosCreated.direction, ReportTrendDirection.up);
       expect(comparison.habitCheckIns.direction, ReportTrendDirection.flat);
     });
+
+    test(
+      'uses equal calendar-day targets when a compared week crosses DST',
+      () {
+        tzdata.initializeTimeZones();
+        final zone = tz.getLocation('America/New_York');
+        PeriodReport report(DateTime start, DateTime end) => PeriodReport(
+          start: start,
+          end: end,
+          todosCreated: 14,
+          todosCompleted: 7,
+          habitCheckIns: 3,
+          longestHabitStreak: 3,
+          focusSessions: 7,
+          focusSeconds: 210 * 60,
+          timeEntrySeconds: 210 * 60,
+        );
+        final current = report(
+          tz.TZDateTime(zone, 2026, 3, 8),
+          tz.TZDateTime(zone, 2026, 3, 14),
+        );
+        final previous = report(
+          tz.TZDateTime(zone, 2026, 3, 1),
+          tz.TZDateTime(zone, 2026, 3, 7),
+        );
+        final fall = report(
+          tz.TZDateTime(zone, 2026, 11, 1),
+          tz.TZDateTime(zone, 2026, 11, 7),
+        );
+        final comparison = ReportComparison.compare(
+          current: current,
+          previous: previous,
+        );
+
+        expect(current.end.difference(current.start).inHours, 143);
+        expect(previous.end.difference(previous.start).inHours, 144);
+        expect(fall.end.difference(fall.start).inHours, 145);
+        expect(current.dayCount, 7);
+        expect(previous.dayCount, 7);
+        expect(fall.dayCount, 7);
+        expect(current.productivityScore, previous.productivityScore);
+        expect(fall.productivityScore, previous.productivityScore);
+        expect(comparison.productivityScore.difference, 0);
+      },
+    );
   });
 
   group('PeriodReportDigest', () {

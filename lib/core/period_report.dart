@@ -21,7 +21,7 @@ class PeriodReport {
   /// 周期内完成的待办数。
   final int todosCompleted;
 
-  /// 周期内打卡的习惯次数总和。
+  /// 周期内成功的习惯天数 / 弹性周期完成次数。
   final int habitCheckIns;
 
   /// 周期内已坚持的最长习惯连续天数。
@@ -56,7 +56,9 @@ class PeriodReport {
   int get timeEntryMinutes => timeEntrySeconds ~/ 60;
 
   int get dayCount {
-    final days = end.difference(start).inDays + 1;
+    final startDate = DateTime.utc(start.year, start.month, start.day);
+    final endDate = DateTime.utc(end.year, end.month, end.day);
+    final days = endDate.difference(startDate).inDays + 1;
     return days < 1 ? 1 : days;
   }
 

@@ -20,7 +20,7 @@ class FocusTagStat {
       sessionCount == 0 ? 0 : (totalSeconds ~/ sessionCount) ~/ 60;
 }
 
-enum FocusTagTrendBucket { day, month }
+enum FocusTagTrendBucket { day, week, month }
 
 class FocusTagTrendPoint {
   final String label;
@@ -105,7 +105,7 @@ class FocusTagStats {
     final bucketDefs = _buildBuckets(start: start, end: end, bucket: bucket);
     if (bucketDefs.isEmpty) return const [];
 
-    final minutesByTag = {
+    final secondsByTag = {
       for (final tag in orderedTags)
         tag: {for (final b in bucketDefs) b.key: 0},
     };
@@ -116,16 +116,16 @@ class FocusTagStats {
       if (session.type != PomodoroType.focus || session.durationSeconds <= 0) {
         continue;
       }
-      if (session.startTime.isBefore(startInstant) ||
-          !session.startTime.isBefore(endExclusive)) {
+      if (session.endTime.isBefore(startInstant) ||
+          !session.endTime.isBefore(endExclusive)) {
         continue;
       }
       final tag = _normalizeTag(session.tag);
-      final tagBuckets = minutesByTag[tag];
+      final tagBuckets = secondsByTag[tag];
       if (tagBuckets == null) continue;
-      final key = _bucketKey(AppClock.toLocal(session.startTime), bucket);
+      final key = _bucketKey(AppClock.toLocal(session.endTime), bucket);
       if (!tagBuckets.containsKey(key)) continue;
-      tagBuckets[key] = tagBuckets[key]! + (session.durationSeconds ~/ 60);
+      tagBuckets[key] = tagBuckets[key]! + session.durationSeconds;
     }
 
     return List<FocusTagTrendSeries>.unmodifiable([
@@ -136,7 +136,7 @@ class FocusTagStats {
             for (final b in bucketDefs)
               FocusTagTrendPoint(
                 label: b.label,
-                minutes: minutesByTag[tag]![b.key] ?? 0,
+                minutes: (secondsByTag[tag]![b.key] ?? 0) ~/ 60,
               ),
           ]),
         ),
@@ -154,6 +154,9 @@ class FocusTagStats {
     required FocusTagTrendBucket bucket,
   }) {
     final defs = <_FocusTagTrendBucketDef>[];
+    final startDate = AppClock.dateOnly(start);
+    final endDate = AppClock.dateOnly(end);
+    if (endDate.isBefore(startDate)) return defs;
     switch (bucket) {
       case FocusTagTrendBucket.day:
         for (
@@ -165,6 +168,23 @@ class FocusTagStats {
             _FocusTagTrendBucketDef(
               key: _bucketKey(cursor, bucket),
               label: '${cursor.month}/${cursor.day}',
+            ),
+          );
+        }
+      case FocusTagTrendBucket.week:
+        for (
+          var cursor = _weekStart(startDate);
+          !cursor.isAfter(endDate);
+          cursor = DateTime(cursor.year, cursor.month, cursor.day + 7)
+        ) {
+          final lastDay = DateTime(cursor.year, cursor.month, cursor.day + 6);
+          final bucketStart = cursor.isBefore(startDate) ? startDate : cursor;
+          final bucketEnd = lastDay.isAfter(endDate) ? endDate : lastDay;
+          defs.add(
+            _FocusTagTrendBucketDef(
+              key: _bucketKey(cursor, bucket),
+              label:
+                  '${bucketStart.month}/${bucketStart.day}–${bucketEnd.month}/${bucketEnd.day}',
             ),
           );
         }
@@ -190,9 +210,16 @@ class FocusTagStats {
     return switch (bucket) {
       FocusTagTrendBucket.day =>
         '${date.year}-$month-${date.day.toString().padLeft(2, '0')}',
+      FocusTagTrendBucket.week => _bucketKey(
+        _weekStart(date),
+        FocusTagTrendBucket.day,
+      ),
       FocusTagTrendBucket.month => '${date.year}-$month',
     };
   }
+
+  static DateTime _weekStart(DateTime date) =>
+      DateTime(date.year, date.month, date.day - date.weekday + 1);
 }
 
 class _FocusTagBucket {

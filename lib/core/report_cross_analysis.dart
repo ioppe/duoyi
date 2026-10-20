@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'app_clock.dart';
 
-enum ReportCrossAnalysisBucket { day, month }
+enum ReportCrossAnalysisBucket { day, week, month }
 
-enum ReportCrossBucket { day, month }
+enum ReportCrossBucket { day, week, month }
 
 class ReportCompletionRecord {
   final DateTime completedAt;
@@ -398,6 +398,7 @@ class ReportCrossAnalysis {
     ];
     final analysisBucket = switch (bucket) {
       ReportCrossBucket.day => ReportCrossAnalysisBucket.day,
+      ReportCrossBucket.week => ReportCrossAnalysisBucket.week,
       ReportCrossBucket.month => ReportCrossAnalysisBucket.month,
     };
     final focusCompletion = buildFocusCompletionCorrelation(
@@ -726,6 +727,36 @@ class ReportCrossAnalysis {
   }) {
     final normalizedStart = DateTime(start.year, start.month, start.day);
     final normalizedEnd = DateTime(end.year, end.month, end.day);
+    if (normalizedEnd.isBefore(normalizedStart)) return const [];
+    if (bucket == ReportCrossAnalysisBucket.week) {
+      final result = <_ReportBucket>[];
+      for (
+        var cursor = DateTime(
+          normalizedStart.year,
+          normalizedStart.month,
+          normalizedStart.day - normalizedStart.weekday + 1,
+        );
+        !cursor.isAfter(normalizedEnd);
+        cursor = DateTime(cursor.year, cursor.month, cursor.day + 7)
+      ) {
+        final lastDay = DateTime(cursor.year, cursor.month, cursor.day + 6);
+        final bucketStart = cursor.isBefore(normalizedStart)
+            ? normalizedStart
+            : cursor;
+        final bucketEnd = lastDay.isAfter(normalizedEnd)
+            ? normalizedEnd
+            : lastDay;
+        result.add(
+          _ReportBucket(
+            label:
+                '${bucketStart.month}/${bucketStart.day}–${bucketEnd.month}/${bucketEnd.day}',
+            start: bucketStart,
+            end: bucketEnd,
+          ),
+        );
+      }
+      return result;
+    }
     if (bucket == ReportCrossAnalysisBucket.month) {
       final result = <_ReportBucket>[];
       var cursor = DateTime(normalizedStart.year, normalizedStart.month);

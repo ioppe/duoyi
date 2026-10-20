@@ -9,6 +9,7 @@ import '../models/time_entry.dart';
 import '../models/todo.dart';
 import 'app_clock.dart';
 import 'period_report.dart';
+import 'report_time_slices.dart';
 
 export 'period_report.dart';
 
@@ -25,6 +26,8 @@ class ReportEngine {
   /// 生成 [start, end] 区间的报告。
   ///
   /// [start]/[end] 应为日期对齐（hour=0），end 含当日。
+  /// [habitCompletionDates] 可复用整个所选周期的成功日期，避免分桶时重复
+  /// 计算同一弹性习惯周期；不传时，每个习惯计算一次成功日期。
   static PeriodReport buildReport({
     required DateTime start,
     required DateTime end,
@@ -32,6 +35,8 @@ class ReportEngine {
     required List<Habit> habits,
     required List<PomodoroSession> sessions,
     required List<TimeEntry> timeEntries,
+    Iterable<DateTime>? habitCompletionDates,
+    Map<String, Iterable<DateTime>>? habitCompletionDatesById,
   }) {
     final startInstant = AppClock.date(start.year, start.month, start.day);
     final endExclusive = AppClock.date(end.year, end.month, end.day + 1);
@@ -41,7 +46,8 @@ class ReportEngine {
     bool inRange(DateTime d) =>
         !d.isBefore(startInstant) && d.isBefore(endExclusive);
     bool dateInRange(DateTime d) =>
-        !d.isBefore(startDate) && d.isBefore(endDate);
+        !AppClock.dateOnly(d).isBefore(startDate) &&
+        AppClock.dateOnly(d).isBefore(endDate);
 
     final created = todos.where((t) => inRange(t.createdAt)).length;
     final completed = todos.where((t) {
@@ -49,18 +55,34 @@ class ReportEngine {
       return t.isCompleted && c != null && inRange(c);
     }).length;
 
-    var habitCheckIns = 0;
+    final completionsByHabit =
+        habitCompletionDatesById ??
+        {
+          for (final habit in habits)
+            habit.id: habit.completionDatesInRange(start, end),
+        };
+    final completionDates =
+        habitCompletionDates ??
+        completionsByHabit.values.expand((dates) => dates);
+    final habitCheckIns = completionDates.where(dateInRange).length;
     var longestStreak = 0;
-    for (final h in habits) {
-      for (final entry in h.completions.entries) {
-        final d = _parseDateKey(entry.key);
-        if (d != null && dateInRange(d) && h.activeForDate(d)) {
-          habitCheckIns += entry.value;
-        }
+    for (final dates in completionsByHabit.values) {
+      final days =
+          dates
+              .where(dateInRange)
+              .map((date) => DateTime.utc(date.year, date.month, date.day))
+              .toSet()
+              .toList()
+            ..sort();
+      DateTime? previous;
+      var streak = 0;
+      for (final day in days) {
+        streak = previous != null && day.difference(previous).inDays == 1
+            ? streak + 1
+            : 1;
+        if (streak > longestStreak) longestStreak = streak;
+        previous = day;
       }
-      longestStreak = longestStreak > h.currentStreak
-          ? longestStreak
-          : h.currentStreak;
     }
 
     final focusSessions = sessions
@@ -71,7 +93,11 @@ class ReportEngine {
       (a, s) => a + s.durationSeconds,
     );
 
-    final periodEntries = timeEntries.where((e) => inRange(e.startAt)).toList();
+    final periodEntries = reportTimeEntriesInRange(
+      timeEntries,
+      start: start,
+      end: end,
+    );
     final timeEntrySeconds = periodEntries.fold<int>(
       0,
       (a, e) => a + e.durationSeconds,
@@ -136,15 +162,5 @@ class ReportEngine {
       sessions: sessions,
       timeEntries: timeEntries,
     );
-  }
-
-  static DateTime? _parseDateKey(String key) {
-    final parts = key.split('-');
-    if (parts.length != 3) return null;
-    final y = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    final d = int.tryParse(parts[2]);
-    if (y == null || m == null || d == null) return null;
-    return DateTime(y, m, d);
   }
 }

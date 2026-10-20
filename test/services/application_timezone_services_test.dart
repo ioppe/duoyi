@@ -219,7 +219,7 @@ void main() {
         );
         expect(report.todosCompleted, expected);
         expect(report.focusSessions, expected);
-        expect(report.habitCheckIns, 3);
+        expect(report.habitCheckIns, 1);
         final cross = ReportCrossAnalysis.build(
           start: day,
           end: AppClock.date(2026, 1, 1),
