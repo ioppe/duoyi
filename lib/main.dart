@@ -4016,30 +4016,15 @@ class MainShellState extends State<MainShell> {
 
   List<int> _visibleBottomNavTabs(PreferencesProvider prefs) {
     final result = prefs.visibleBottomNavTabs
-        .where((tab) => tab >= 0 && tab < _tabCount)
+        .where(
+          (tab) =>
+              tab >= 0 &&
+              tab < _tabCount &&
+              PreferencesProvider.isBottomNavTabSupported(tab),
+        )
         .toList(growable: false);
     final visible = result.length < 2 ? _fallbackVisibleTabs : result;
-    return WebTarget.isDesktopWebBuild
-        ? _desktopWebVisibleBottomNavTabs(visible)
-        : List.unmodifiable(visible);
-  }
-
-  List<int> _desktopWebVisibleBottomNavTabs(List<int> tabs) {
-    final next = <int>[];
-    for (final tab in tabs) {
-      if (tab == 5) continue;
-      if (!next.contains(tab)) next.add(tab);
-    }
-    if (!next.contains(3)) {
-      final mineIndex = next.indexOf(6);
-      next.insert(mineIndex >= 0 ? mineIndex : next.length, 3);
-    }
-    while (next.length > PreferencesProvider.maxBottomNavTabs) {
-      final removeAt = next.lastIndexWhere((tab) => tab != 3 && tab != 6);
-      if (removeAt < 0) break;
-      next.removeAt(removeAt);
-    }
-    return List.unmodifiable(next);
+    return List.unmodifiable(visible);
   }
 
   int _coerceTabIndex(int index) {
@@ -4177,7 +4162,7 @@ class MainShellState extends State<MainShell> {
     // 无条件按运行时宽度分派：≥900 走 rail 壳，<900 原样落回移动壳——
     // Android 手机视口恒 <900，行为零变化；平板/折叠屏展开 >900 与
     // today 桌面档（纯宽度判定）同口径升级为 rail 壳。tab 集过滤（隐藏
-    // 小组件 tab）仍走编译期 WebTarget.isDesktopWebBuild，移动包不受影响。
+    // 小组件 tab）统一走 WebTarget.isWebBuild，原生移动包不受影响。
     return LayoutBuilder(
       builder: (context, constraints) {
         AppClock.watch(context);

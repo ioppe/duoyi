@@ -138,15 +138,15 @@ class PreferencesProvider extends ChangeNotifier {
   static const maxBottomNavTabs = 5;
   static const fixedBottomNavTabs = <int>{6};
   static const mobileDefaultBottomNavTabs = <int>{0, 1, 2, 5, 6};
-  static const desktopWebDefaultBottomNavTabs = <int>{0, 1, 2, 3, 6};
-  static Set<int> get defaultBottomNavTabs => WebTarget.isDesktopWebBuild
-      ? desktopWebDefaultBottomNavTabs
+  static const webDefaultBottomNavTabs = <int>{0, 1, 2, 6};
+  static Set<int> get defaultBottomNavTabs => WebTarget.isWebBuild
+      ? webDefaultBottomNavTabs
       : mobileDefaultBottomNavTabs;
   static bool isBottomNavTabSupported(int tab) =>
-      !(WebTarget.isDesktopWebBuild && tab == 5);
+      !(WebTarget.isWebBuild && tab == 5);
   static int normalizeDefaultTab(int tab) {
     final normalized = tab.clamp(0, 6).toInt();
-    return isBottomNavTabSupported(normalized) ? normalized : 3;
+    return isBottomNavTabSupported(normalized) ? normalized : 0;
   }
 
   static const _kFirstDayOfWeek = 'pref_first_day_of_week';
@@ -201,6 +201,7 @@ class PreferencesProvider extends ChangeNotifier {
       'pref_yearly_report_reminder_minute';
   static const _kBottomNavOrder = 'pref_bottom_nav_order';
   static const _kBottomNavVisible = 'pref_bottom_nav_visible';
+  static const _kWebNavigationMigrated = 'pref_web_navigation_v2';
   static const _kAppTimeZone = LocalTimezoneResolver.preferenceKey;
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
 
@@ -467,6 +468,16 @@ class PreferencesProvider extends ChangeNotifier {
     _appTimeZone = LocalTimezoneResolver.currentIana;
     final storedOrder = p.getStringList(_kBottomNavOrder);
     final storedVisible = p.getStringList(_kBottomNavVisible);
+    final needsWebNavMigration =
+        WebTarget.isWebBuild && !(p.getBool(_kWebNavigationMigrated) ?? false);
+    final storedVisibleSet = storedVisible
+        ?.map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+    final legacyWebDefault =
+        needsWebNavMigration &&
+        (setEquals(storedVisibleSet, mobileDefaultBottomNavTabs) ||
+            setEquals(storedVisibleSet, const <int>{0, 1, 2, 3, 6}));
     final isOldBottomNavConfig =
         (storedOrder == null || !storedOrder.contains('6')) &&
         (storedVisible == null || !storedVisible.contains('6'));
@@ -589,10 +600,25 @@ class PreferencesProvider extends ChangeNotifier {
       storedOrder?.map(int.tryParse).whereType<int>(),
     );
     _bottomNavVisible = _normalizeNavVisible(
-      storedVisible?.map(int.tryParse).whereType<int>(),
+      legacyWebDefault
+          ? webDefaultBottomNavTabs
+          : storedVisible?.map(int.tryParse).whereType<int>(),
       order: _bottomNavOrder,
     );
     if (generation != _storageGeneration) return;
+    if (WebTarget.isWebBuild &&
+        storedVisible != null &&
+        !setEquals(storedVisibleSet, _bottomNavVisible)) {
+      await p.setStringList(
+        _kBottomNavVisible,
+        _bottomNavVisible.map((tab) => '$tab').toList(),
+      );
+      if (generation != _storageGeneration) return;
+    }
+    if (needsWebNavMigration) {
+      await p.setBool(_kWebNavigationMigrated, true);
+      if (generation != _storageGeneration) return;
+    }
     notifyListeners();
   }
 

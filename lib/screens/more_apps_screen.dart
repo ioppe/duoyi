@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/web_target.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
@@ -63,7 +62,7 @@ class MoreApplicationsScreen extends StatelessWidget {
     ];
     return apps
         .where((app) => !visible.contains(app.tab))
-        .where((app) => !(WebTarget.isDesktopWebBuild && app.tab == 5))
+        .where((app) => PreferencesProvider.isBottomNavTabSupported(app.tab))
         .toList(growable: false);
   }
 

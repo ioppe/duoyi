@@ -3346,6 +3346,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mineTileMoreAppsSubtitle => 'See hidden features';
 
   @override
+  String get mineTileWidgetSettings => 'Widget settings';
+
+  @override
+  String get mineTileWidgetSettingsSubtitle =>
+      'Choose widget styles and preview them';
+
+  @override
+  String get widgetStyleSaved => 'Widget style saved on this device';
+
+  @override
+  String get preferencesNavWebSubtitle =>
+      'Today, tasks, habits, and Me by default. Manage widgets in Settings';
+
+  @override
   String get mineTileStatistics => 'Statistics';
 
   @override

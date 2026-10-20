@@ -6428,6 +6428,30 @@ abstract class AppLocalizations {
   /// **'查看隐藏功能'**
   String get mineTileMoreAppsSubtitle;
 
+  /// No description provided for @mineTileWidgetSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'小组件设置'**
+  String get mineTileWidgetSettings;
+
+  /// No description provided for @mineTileWidgetSettingsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择小组件样式并查看预览'**
+  String get mineTileWidgetSettingsSubtitle;
+
+  /// No description provided for @widgetStyleSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'小组件样式已保存在此设备'**
+  String get widgetStyleSaved;
+
+  /// No description provided for @preferencesNavWebSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认显示今日、待办、习惯和我的，小组件在设置中管理'**
+  String get preferencesNavWebSubtitle;
+
   /// No description provided for @mineTileStatistics.
   ///
   /// In zh, this message translates to:

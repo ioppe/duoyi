@@ -123,6 +123,13 @@ void main() {
 
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(TodayScreen), findsOneWidget);
+    expect(
+      tester
+          .widget<NavigationRail>(find.byType(NavigationRail))
+          .destinations
+          .map((item) => (item.label as Text).data),
+      ['今日', '待办', '习惯', '我的'],
+    );
     expect(tester.takeException(), isNull);
 
     final width = tester.getSize(_maxWidthBox).width;
@@ -213,6 +220,13 @@ void main() {
     );
 
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(
+      tester
+          .widget<NavigationBar>(find.byType(NavigationBar))
+          .destinations
+          .map((item) => (item as NavigationDestination).label),
+      ['今日', '待办', '习惯', '我的'],
+    );
     expect(find.byType(NavigationRail), findsNothing);
     expect(_maxWidthBox, findsNothing);
     expect(find.byType(TodayScreen), findsOneWidget);

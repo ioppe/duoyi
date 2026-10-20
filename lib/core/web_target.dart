@@ -11,6 +11,13 @@ class WebTarget {
   /// （NavigationRail 壳）无法用真实编译期条件触达，宽屏壳测试靠此注入。
   static bool? debugDesktopWebBuild;
 
+  /// 测试中模拟任意 Web 构建（desktop / mobile / responsive）。
+  @visibleForTesting
+  static bool? debugWebBuild;
+
+  static bool get isWebBuild =>
+      debugWebBuild ?? (kIsWeb || debugDesktopWebBuild == true);
+
   static bool get isDesktopWebBuild =>
       debugDesktopWebBuild ?? (kIsWeb && raw == 'desktop');
   static bool get isMobileWebBuild => kIsWeb && raw == 'mobile';
@@ -22,10 +29,8 @@ class WebTarget {
   /// 运行时宽度判定入口：≥[desktopShellBreakpoint] 渲染桌面壳
   /// （NavigationRail + 限宽内容区），<阈值原样回落移动壳。
   ///
-  /// 与编译期 [isDesktopWebBuild] 分工——外壳布局只认视口：responsive 包、
-  /// dev web 与 Linux 桌面端宽屏同样获得 rail 壳；tab 集过滤等"桌面包
-  /// 专属行为"（隐藏小组件 tab）仍只认编译期档位，Android 折叠屏/平板
-  /// 展开时的小组件入口不受宽度分派影响。
+  /// 一级导航的平台规则使用 [isWebBuild]，与视口宽度和构建档位独立。
+  /// Android 折叠屏/平板的原生导航配置不受宽度分派影响。
   static bool isWidescreenLayout(double width) =>
       width >= desktopShellBreakpoint;
 

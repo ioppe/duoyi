@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../core/i18n.dart';
 import '../core/app_clock.dart';
 import '../core/i18n_date_format.dart';
-import '../core/web_target.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/language_settings_tile.dart';
@@ -95,7 +94,7 @@ class PreferencesScreen extends StatelessWidget {
                   icon: Icons.space_dashboard_outlined,
                   color: Colors.blueGrey,
                   title: I18n.tr('preferences.navigation.title'),
-                  subtitle: I18n.tr('preferences.section.bottom_nav.subtitle'),
+                  subtitle: _bottomNavSettingsSubtitle(),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -559,14 +558,12 @@ class _BottomNavSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<PreferencesProvider>();
-    final tabs = WebTarget.isDesktopWebBuild
-        ? p.bottomNavOrder
-              .where(PreferencesProvider.isBottomNavTabSupported)
-              .toList(growable: false)
-        : p.bottomNavOrder;
+    final tabs = p.bottomNavOrder
+        .where(PreferencesProvider.isBottomNavTabSupported)
+        .toList(growable: false);
     return AppSettingsSection(
       title: I18n.tr('preferences.section.bottom_nav'),
-      subtitle: I18n.tr('preferences.section.bottom_nav.subtitle'),
+      subtitle: _bottomNavSettingsSubtitle(),
       children: [
         for (final tab in tabs)
           _NavConfigTile(
@@ -909,3 +906,9 @@ class _SliderSetting extends StatelessWidget {
     );
   }
 }
+
+String _bottomNavSettingsSubtitle() => I18n.tr(
+  PreferencesProvider.isBottomNavTabSupported(5)
+      ? 'preferences.section.bottom_nav.subtitle'
+      : 'preferences.nav.web.subtitle',
+);

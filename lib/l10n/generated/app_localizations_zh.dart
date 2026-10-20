@@ -3197,6 +3197,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mineTileMoreAppsSubtitle => '查看隐藏功能';
 
   @override
+  String get mineTileWidgetSettings => '小组件设置';
+
+  @override
+  String get mineTileWidgetSettingsSubtitle => '选择小组件样式并查看预览';
+
+  @override
+  String get widgetStyleSaved => '小组件样式已保存在此设备';
+
+  @override
+  String get preferencesNavWebSubtitle => '默认显示今日、待办、习惯和我的，小组件在设置中管理';
+
+  @override
   String get mineTileStatistics => '统计报表';
 
   @override

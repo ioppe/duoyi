@@ -36,6 +36,8 @@ import 'package:duoyi/screens/profile_screen.dart';
 import 'package:duoyi/screens/today_screen.dart';
 import 'package:duoyi/screens/preferences_screen.dart';
 import 'package:duoyi/screens/statistics_screen.dart';
+import 'package:duoyi/screens/widget_screen.dart';
+import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/widgets/weekly_productivity_card.dart';
 import 'package:duoyi/screens/calendar_screen.dart';
 import 'package:duoyi/services/ai_service.dart';
@@ -181,6 +183,52 @@ void main() {
       }
     }
   });
+  testWidgets('Web小组件从设置打开并保存样式', (tester) async {
+    WebTarget.debugWebBuild = true;
+    WebTarget.debugDesktopWebBuild = true;
+    addTearDown(() {
+      WebTarget.debugWebBuild = null;
+      WebTarget.debugDesktopWebBuild = null;
+    });
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(const MineScreen(), theme: AppBrands.defaultBrand.theme),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('mine_widget_settings_entry')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('mine_settings_entry')));
+    await tester.pumpAndSettle();
+    final entry = find.byKey(const ValueKey('mine_widget_settings_entry'));
+    await tester.ensureVisible(entry);
+    await tester.pumpAndSettle();
+    await tester.tap(entry);
+    await tester.pumpAndSettle();
+    final page = tester.widget<WidgetScreen>(find.byType(WidgetScreen));
+    expect(page.asSettings, isTrue);
+    expect(find.text(I18n.tr('mine.tile.widget_settings')), findsOneWidget);
+    expect(find.byType(SegmentedButton<WidgetDisplayMode>), findsOneWidget);
+    final detailed = find.text(
+      '${WidgetDisplayMode.detailed.label} ${WidgetDisplayMode.detailed.launcherRequestLabel}',
+    );
+    await tester.ensureVisible(detailed);
+    await tester.pumpAndSettle();
+    await tester.tap(detailed);
+    await tester.pumpAndSettle();
+    expect(
+      (await SharedPreferences.getInstance()).getString(
+        'duoyi_widget_display_mode',
+      ),
+      'detailed',
+    );
+    expect(find.text(I18n.tr('widget.style.saved')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('外层应用壳下的首页提示条避让创建按钮', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

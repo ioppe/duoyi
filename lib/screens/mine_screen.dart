@@ -51,6 +51,7 @@ import 'share_screen.dart';
 import 'sync_conflict_log_screen.dart';
 import 'profile_screen.dart';
 import 'more_apps_screen.dart';
+import 'widget_screen.dart';
 import 'notification_history_screen.dart';
 
 const double _mineHeaderCompactHeight = 96;
@@ -711,6 +712,17 @@ class MineScreen extends StatelessWidget {
                   builder: (_) =>
                       const BrandRouteSurface(child: PreferencesScreen()),
                 ),
+              ),
+            ),
+            _Tile(
+              key: const ValueKey('mine_widget_settings_entry'),
+              icon: Icons.widgets_outlined,
+              label: I18n.tr('mine.tile.widget_settings'),
+              subtitle: I18n.tr('mine.tile.widget_settings.subtitle'),
+              color: Colors.teal,
+              onTap: () => _openBrandedRoute(
+                context,
+                const WidgetScreen(asSettings: true),
               ),
             ),
             _Tile(

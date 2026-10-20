@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/web_target.dart';
+import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
 import '../services/android_widget_manager.dart';
 import '../services/home_widget_service.dart';
@@ -9,7 +10,9 @@ import '../widgets/surface_components.dart';
 import 'calendar_screen.dart';
 
 class WidgetScreen extends StatefulWidget {
-  const WidgetScreen({super.key});
+  final bool asSettings;
+
+  const WidgetScreen({super.key, this.asSettings = false});
 
   @override
   State<WidgetScreen> createState() => _WidgetScreenState();
@@ -68,6 +71,13 @@ class _WidgetScreenState extends State<WidgetScreen>
     setState(() => _displayMode = mode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_displayModeKey, mode.id);
+    if (WebTarget.isWebBuild) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(I18n.tr('widget.style.saved'))));
+      return;
+    }
     final homeWidgetSynced = await HomeWidgetService.setDisplayMode(mode.id);
     final appliedCount =
         await AndroidWidgetManager.applyDisplayModeToExistingWidgets(
@@ -112,13 +122,17 @@ class _WidgetScreenState extends State<WidgetScreen>
     return Scaffold(
       backgroundColor: routeBackground,
       appBar: AppBar(
-        title: const Text('小组件'),
+        title: Text(
+          widget.asSettings
+              ? I18n.tr('mine.tile.widget_settings')
+              : I18n.tr('nav.widget'),
+        ),
         titleTextStyle: appSecondaryRouteTitleTextStyle(context),
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
       ),
       body: AppSecondaryControlTheme(
-        child: WebTarget.isDesktopWebBuild
+        child: WebTarget.isDesktopWebBuild && !widget.asSettings
             ? const _DesktopWebWidgetFallback()
             : ListView(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),

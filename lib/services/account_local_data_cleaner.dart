@@ -157,6 +157,7 @@ class AccountLocalDataCleaner {
     'pref_daily_reminder_slot3_repeat_days',
     'pref_bottom_nav_order',
     'pref_bottom_nav_visible',
+    'pref_web_navigation_v2',
   };
 
   static const accountScopedPrefixes = <String>[
