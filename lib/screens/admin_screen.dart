@@ -69,7 +69,7 @@ class _AdminScreenState extends State<AdminScreen>
     final routeBackground = Theme.of(context).brightness == Brightness.dark
         ? cs.surface
         : cs.surfaceContainerLowest;
-    if (!auth.state.isAdmin) {
+    if (!auth.state.isLoggedIn || !auth.state.isAdmin) {
       return Scaffold(
         backgroundColor: routeBackground,
         appBar: AppBar(

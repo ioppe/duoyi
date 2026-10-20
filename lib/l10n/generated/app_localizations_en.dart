@@ -9,6 +9,70 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get authDesignTagline => 'A little more space for every day';
+
+  @override
+  String get authDesignEveryday => 'Make time. See progress.';
+
+  @override
+  String get authDesignHeadline => 'Make room for\nwhat matters.';
+
+  @override
+  String get authDesignDescription =>
+      'Start with one small thing today.\nGrow into the life you have in mind.';
+
+  @override
+  String get authDesignTasks =>
+      'Find your priorities and turn plans into progress';
+
+  @override
+  String get authDesignHabits => 'Small steps that make a difference over time';
+
+  @override
+  String get authDesignFocus =>
+      'Set aside a quiet moment for one meaningful thing';
+
+  @override
+  String get authDesignFooter => 'Every little effort counts.';
+
+  @override
+  String get authDesignWelcome => 'Welcome back';
+
+  @override
+  String get authDesignLoginSubtitle =>
+      'Sign in to pick up where you left off.';
+
+  @override
+  String get authDesignSignup => 'Your everyday starts here';
+
+  @override
+  String get authDesignSignupSubtitle =>
+      'Create an account for your plans and progress.';
+
+  @override
+  String get authDesignFirstAdmin =>
+      'First visit? Sign in as admin with the password generated during installation.';
+
+  @override
+  String get authPasswordShow => 'Show password';
+
+  @override
+  String get authPasswordHide => 'Hide password';
+
+  @override
+  String get authSessionChecking => 'Verifying your session…';
+
+  @override
+  String get authSessionUnavailable =>
+      'The server is unavailable. Check your connection and try again.';
+
+  @override
+  String get authSessionTitle => 'Connect to your everyday';
+
+  @override
+  String get authSessionSignInAgain => 'Sign in again';
+
+  @override
   String get todoCreateHint =>
       'What needs doing? For example: meeting tomorrow at 3 PM';
 

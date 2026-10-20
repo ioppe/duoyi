@@ -28,6 +28,13 @@ class DesignTokens {
   static const double controlMinHeight = 44;
   static const double controlIconSize = 20;
 
+  // ----- Shared authentication pages -----
+  static const double authPageMaxWidth = 1120;
+  static const double authFormMaxWidth = 440;
+  static const double authWideBreakpoint = 960;
+  static const double authHeroSize = 42;
+  static const double authLogoSize = 44;
+
   // ----- Habit heatmap -----
   static const double habitHeatmapWidthFactor = 0.8;
 

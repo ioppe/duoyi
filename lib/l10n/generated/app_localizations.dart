@@ -98,6 +98,120 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @authDesignTagline.
+  ///
+  /// In zh, this message translates to:
+  /// **'把每一天，过得从容一点'**
+  String get authDesignTagline;
+
+  /// No description provided for @authDesignEveryday.
+  ///
+  /// In zh, this message translates to:
+  /// **'安排当下 · 看见成长'**
+  String get authDesignEveryday;
+
+  /// No description provided for @authDesignHeadline.
+  ///
+  /// In zh, this message translates to:
+  /// **'把时间，留给\n重要的事。'**
+  String get authDesignHeadline;
+
+  /// No description provided for @authDesignDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'从今天的一件小事开始，\n慢慢靠近理想中的自己。'**
+  String get authDesignDescription;
+
+  /// No description provided for @authDesignTasks.
+  ///
+  /// In zh, this message translates to:
+  /// **'理清轻重缓急，让计划一步步落地'**
+  String get authDesignTasks;
+
+  /// No description provided for @authDesignHabits.
+  ///
+  /// In zh, this message translates to:
+  /// **'积累小小的坚持，看见日常的变化'**
+  String get authDesignHabits;
+
+  /// No description provided for @authDesignFocus.
+  ///
+  /// In zh, this message translates to:
+  /// **'留一段不被打扰的时间，专心做好一件事'**
+  String get authDesignFocus;
+
+  /// No description provided for @authDesignFooter.
+  ///
+  /// In zh, this message translates to:
+  /// **'每一次认真，都算数。'**
+  String get authDesignFooter;
+
+  /// No description provided for @authDesignWelcome.
+  ///
+  /// In zh, this message translates to:
+  /// **'欢迎回来'**
+  String get authDesignWelcome;
+
+  /// No description provided for @authDesignLoginSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录你的账号，继续今天的安排。'**
+  String get authDesignLoginSubtitle;
+
+  /// No description provided for @authDesignSignup.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启你的日常'**
+  String get authDesignSignup;
+
+  /// No description provided for @authDesignSignupSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建自己的账号，把计划与成长留在一起。'**
+  String get authDesignSignupSubtitle;
+
+  /// No description provided for @authDesignFirstAdmin.
+  ///
+  /// In zh, this message translates to:
+  /// **'首次使用？请用安装时生成的 admin 账号和密码登录。'**
+  String get authDesignFirstAdmin;
+
+  /// No description provided for @authPasswordShow.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示密码'**
+  String get authPasswordShow;
+
+  /// No description provided for @authPasswordHide.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏密码'**
+  String get authPasswordHide;
+
+  /// No description provided for @authSessionChecking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在验证登录状态…'**
+  String get authSessionChecking;
+
+  /// No description provided for @authSessionUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法连接服务器，请检查网络后重试。'**
+  String get authSessionUnavailable;
+
+  /// No description provided for @authSessionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接你的日常'**
+  String get authSessionTitle;
+
+  /// No description provided for @authSessionSignInAgain.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新登录'**
+  String get authSessionSignInAgain;
+
   /// No description provided for @todoCreateHint.
   ///
   /// In zh, this message translates to:

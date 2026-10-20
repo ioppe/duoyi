@@ -51,7 +51,7 @@ python -m unittest test_workspaces.WorkspaceApiTest.test_admin_current_managemen
 
 Despite its name, `backend/test_workspaces.py` (~150 tests in `WorkspaceApiTest`) is the **entire backend test suite**: route contracts, auth, admin, sync, feedback, coins — not just workspaces.
 
-**Backend configuration**: process environment > ignored `backend/.env` (`DUOYI_ENV_FILE`) > public `config/deployment.json` (`DUOYI_CONFIG_FILE`) > schema defaults. Fresh bootstrap accounts require an explicit password. Database runtime settings only receive missing initial values; preserve existing data and PASSWORD_HASH_SALT. See `docs/configuration.md` and `backend/.env.example`.
+**Backend configuration**: process environment > ignored `backend/.env` (`DUOYI_ENV_FILE`) > public `config/deployment.json` (`DUOYI_CONFIG_FILE`) > schema defaults. Only a genuinely fresh database receives the bootstrap admin (default `admin`); an empty/unset `ADMIN_BOOTSTRAP_PASSWORD` generates a random password once and saves local credentials to `<DUOYI_DB_PATH>.bootstrap-admin.json` with mode `0600` (default `backend/duoyi.db.bootstrap-admin.json`). Explicit bootstrap passwords remain supported. Existing installations never gain/reset/promote bootstrap accounts; restarts preserve password hashes, data and PASSWORD_HASH_SALT. Database runtime settings only receive missing initial values. See `docs/configuration.md` and `backend/.env.example`.
 
 ### Full Regression Gate
 

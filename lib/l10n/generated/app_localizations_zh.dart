@@ -9,6 +9,63 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get authDesignTagline => '把每一天，过得从容一点';
+
+  @override
+  String get authDesignEveryday => '安排当下 · 看见成长';
+
+  @override
+  String get authDesignHeadline => '把时间，留给\n重要的事。';
+
+  @override
+  String get authDesignDescription => '从今天的一件小事开始，\n慢慢靠近理想中的自己。';
+
+  @override
+  String get authDesignTasks => '理清轻重缓急，让计划一步步落地';
+
+  @override
+  String get authDesignHabits => '积累小小的坚持，看见日常的变化';
+
+  @override
+  String get authDesignFocus => '留一段不被打扰的时间，专心做好一件事';
+
+  @override
+  String get authDesignFooter => '每一次认真，都算数。';
+
+  @override
+  String get authDesignWelcome => '欢迎回来';
+
+  @override
+  String get authDesignLoginSubtitle => '登录你的账号，继续今天的安排。';
+
+  @override
+  String get authDesignSignup => '开启你的日常';
+
+  @override
+  String get authDesignSignupSubtitle => '创建自己的账号，把计划与成长留在一起。';
+
+  @override
+  String get authDesignFirstAdmin => '首次使用？请用安装时生成的 admin 账号和密码登录。';
+
+  @override
+  String get authPasswordShow => '显示密码';
+
+  @override
+  String get authPasswordHide => '隐藏密码';
+
+  @override
+  String get authSessionChecking => '正在验证登录状态…';
+
+  @override
+  String get authSessionUnavailable => '暂时无法连接服务器，请检查网络后重试。';
+
+  @override
+  String get authSessionTitle => '连接你的日常';
+
+  @override
+  String get authSessionSignInAgain => '重新登录';
+
+  @override
   String get todoCreateHint => '准备做什么？例如：明天下午3点开会';
 
   @override

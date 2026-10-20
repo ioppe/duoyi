@@ -90,6 +90,7 @@ import 'screens/time_audit_screen.dart';
 import 'screens/today_detail_router.dart';
 import 'widgets/brand_background.dart';
 import 'widgets/force_update_gate.dart';
+import 'widgets/web_auth_gate.dart';
 import 'widgets/todo_completion_flow.dart';
 import 'widgets/surface_components.dart';
 
@@ -3973,7 +3974,12 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       locale: locale.flutterLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (context, child) => AppClockScope(child: child!),
+      builder: (context, child) => AppClockScope(
+        child: WebAuthGate(
+          enabled: WebTarget.isWebBuild && !mustUpdate,
+          child: child!,
+        ),
+      ),
       theme: brand.theme,
       home: mustUpdate
           ? const Stack(children: [ForceUpdateGate()])

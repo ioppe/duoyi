@@ -36,6 +36,8 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       final auth = AuthProvider(baseUrl: 'https://my-server.test');
       await tester.pumpWidget(app(auth, const LoginScreen()));
+      await tester.tap(find.text(I18n.tr('auth.token.login')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('token-server-url')), findsOneWidget);
       final token = tester.widget<TextField>(
         find.byKey(const ValueKey('access-token')),

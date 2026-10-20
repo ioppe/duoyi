@@ -26,7 +26,6 @@ import '../widgets/surface_components.dart';
 import '../widgets/sync_status_card.dart';
 import '../widgets/weekly_productivity_card.dart';
 import 'theme_picker_screen.dart';
-import 'login_screen.dart';
 import 'announcements_screen.dart';
 import 'feedback_screen.dart';
 import 'note_screen.dart';
@@ -177,8 +176,8 @@ class MineScreen extends StatelessWidget {
     final displayName = auth.isLoggedIn
         ? _firstNonEmpty([
             auth.displayName,
-            profile.displayName,
             auth.username,
+            profile.displayName,
             localDisplayName,
           ])
         : localDisplayName;
@@ -314,39 +313,28 @@ class MineScreen extends StatelessWidget {
           final username = auth.isLoggedIn
               ? _firstNonEmpty([auth.username, profile.username])
               : profile.username;
-          final accountAction = SizedBox(
-            width: auth.isLoggedIn ? 38 : 54,
-            height: 30,
-            child: auth.isLoggedIn
-                ? Tooltip(
-                    message: I18n.tr('auth.logout'),
-                    child: IconButton.filledTonal(
-                      key: const ValueKey('mine_top_logout_button'),
-                      onPressed: () => _confirmLogout(context),
-                      icon: const Icon(Icons.logout, size: 16),
-                      style: IconButton.styleFrom(
-                        backgroundColor: cs.errorContainer.withValues(
-                          alpha: 0.58,
-                        ),
-                        foregroundColor: cs.onErrorContainer,
-                        visualDensity: VisualDensity.compact,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        padding: EdgeInsets.zero,
+          final accountAction = auth.isLoggedIn
+              ? Tooltip(
+                  message: I18n.tr('auth.logout'),
+                  child: IconButton.filledTonal(
+                    key: const ValueKey('mine_top_logout_button'),
+                    onPressed: () => _confirmLogout(context),
+                    icon: const Icon(
+                      Icons.logout,
+                      size: DesignTokens.controlIconSize,
+                    ),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size.square(
+                        DesignTokens.controlMinHeight,
                       ),
-                    ),
-                  )
-                : FilledButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    ),
-                    style: appSecondaryFilledButtonStyle(context),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(I18n.tr('auth.login'), maxLines: 1),
+                      backgroundColor: cs.errorContainer.withValues(
+                        alpha: 0.58,
+                      ),
+                      foregroundColor: cs.onErrorContainer,
                     ),
                   ),
-          );
+                )
+              : const SizedBox.shrink();
           final nameText = displayName.trim().isEmpty
               ? I18n.tr('profile.default_user')
               : displayName.trim();

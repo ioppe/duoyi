@@ -48,6 +48,7 @@ app.*.map.json
 backend/__pycache__/
 backend/*.db
 backend/*.db-journal
+*.bootstrap-admin.json
 backend/.venv/
 *.pyc
 

@@ -1285,10 +1285,72 @@ def _user_admin_order_by(sort: str) -> str:
     }.get(sort, "u.created_at DESC")
 
 
+def _write_bootstrap_credentials(credentials: dict[str, str]) -> Path:
+    db_path = Path(DB_PATH).resolve()
+    path = db_path.with_name(db_path.name + ".bootstrap-admin.json")
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except OSError:
+        raise ConfigurationError(
+            "Bootstrap credentials: cannot exclusively create <DUOYI_DB_PATH>.bootstrap-admin.json; "
+            "check directory permissions and any existing credentials file"
+        ) from None
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            os.fchmod(handle.fileno(), 0o600)
+            json.dump(credentials, handle, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        # Persist the directory entry before committing an account that needs it.
+        directory_descriptor = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    except BaseException as error:
+        try:
+            path.unlink()
+        except OSError:
+            raise ConfigurationError(
+                "Bootstrap credentials: writing failed; remove the local credentials file before retrying"
+            ) from None
+        if isinstance(error, (OSError, UnicodeError)):
+            raise ConfigurationError("Bootstrap credentials: cannot write private credentials file") from None
+        raise
+    return path
+
+
 def init_db():
     conn = get_db()
-    conn.executescript(
-        """
+    credentials_path = None
+    try:
+        # Serialize first-run detection, schema changes and bootstrap across workers.
+        conn.execute("BEGIN IMMEDIATE")
+        fresh_database = conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone() is None
+        credentials = _initialize_database(conn, fresh_database)
+        # Finish all DB work before persisting a generated secret, then commit only
+        # after its private file is durable. Explicit credentials need no file.
+        if credentials is not None:
+            credentials_path = _write_bootstrap_credentials(credentials)
+        conn.commit()
+    except BaseException:
+        try:
+            if credentials_path is not None:
+                credentials_path.unlink()
+        except OSError:
+            raise ConfigurationError(
+                "Bootstrap failed; remove the local bootstrap credentials file before retrying"
+            ) from None
+        finally:
+            conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _initialize_database(conn, fresh_database: bool):
+    schema = """
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
@@ -1599,7 +1661,11 @@ def init_db():
             FOREIGN KEY(friend_user_id) REFERENCES users(id) ON DELETE CASCADE
         );
         """
-    )
+    # This static schema contains only table/index definitions. Execute each
+    # statement in the caller's transaction; executescript would commit it first.
+    for statement in schema.split(";"):
+        if statement.strip():
+            conn.execute(statement)
 
     # Schema migrations
     for table, col, default in [
@@ -1916,34 +1982,31 @@ def init_db():
         """
     )
 
-    # Bootstrap admin
-    cur = conn.execute(
-        "SELECT 1 FROM users WHERE username=?", (ADMIN_BOOTSTRAP_USER,)
-    ).fetchone()
-    if cur is None:
-        if not ADMIN_BOOTSTRAP_PASSWORD.strip():
-            conn.rollback()
-            conn.close()
-            raise ConfigurationError(
-                "ADMIN_BOOTSTRAP_PASSWORD: required to create the bootstrap administrator"
-            )
+    # Only a database with no pre-existing schema may receive a bootstrap admin.
+    # Missing/renamed/deleted bootstrap users on an installation are never recreated.
+    credentials = None
+    if fresh_database:
+        password = ADMIN_BOOTSTRAP_PASSWORD
+        if not password.strip():
+            password = secrets.token_urlsafe(32)
+            credentials = {"username": ADMIN_BOOTSTRAP_USER, "password": password}
         admin_id = secrets.token_hex(16)
         conn.execute(
-            "INSERT INTO users(id, username, password_hash, is_admin, admin_permissions) "
-            "VALUES(?,?,?,?,?)",
+            "INSERT INTO users(id, username, password_hash, is_admin, admin_permissions, role_id) "
+            "VALUES(?,?,?,?,?,?)",
             (
                 admin_id,
                 ADMIN_BOOTSTRAP_USER,
-                _hash_password(ADMIN_BOOTSTRAP_PASSWORD),
+                _hash_password(password),
                 1,
                 json.dumps([ADMIN_ALL_PERMISSION]),
+                "role_admin",
             ),
         )
         conn.execute("INSERT INTO sync_data(user_id) VALUES(?)", (admin_id,))
     for row in conn.execute("SELECT id FROM users").fetchall():
         _ensure_private_workspace(conn, row["id"])
-    conn.commit()
-    conn.close()
+    return credentials
 
 
 def _private_workspace_id(user_id: str) -> str:

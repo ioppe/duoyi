@@ -23,6 +23,9 @@ void main() {
       client: ApiClient(
         baseUrl: 'https://api.example.test',
         httpClient: MockClient((request) {
+          if (request.url.path == '/api/config') {
+            return Future.value(http.Response('{}', 200));
+          }
           expect(request.url.path, '/api/auth/login');
           return loginResponse.future;
         }),
@@ -38,10 +41,6 @@ void main() {
         child: const MaterialApp(home: LoginScreen()),
       ),
     );
-    if (!kIsWeb) {
-      await tester.tap(find.text(I18n.tr('auth.token.password_login')));
-      await tester.pumpAndSettle();
-    }
 
     await tester.enterText(
       find.widgetWithText(TextField, I18n.tr('auth.account')),
@@ -50,6 +49,9 @@ void main() {
     await tester.enterText(
       find.widgetWithText(TextField, I18n.tr('auth.password')),
       'wrong-password',
+    );
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, I18n.tr('auth.login')),
     );
     await tester.tap(find.widgetWithText(FilledButton, I18n.tr('auth.login')));
     await tester.pump();
@@ -94,10 +96,6 @@ void main() {
         child: const MaterialApp(home: LoginScreen()),
       ),
     );
-    if (!kIsWeb) {
-      await tester.tap(find.text(I18n.tr('auth.token.password_login')));
-      await tester.pumpAndSettle();
-    }
     await tester.tap(find.text(I18n.tr('auth.email_code_login')));
     await tester.pumpAndSettle();
     expect(

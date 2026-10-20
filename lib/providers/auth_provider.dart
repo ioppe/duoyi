@@ -612,7 +612,7 @@ class AuthProvider extends ChangeNotifier {
     }
     _state = const AuthState();
     _markAccountMutation('logout');
-    _client = ApiClient(baseUrl: _baseUrl);
+    _client = _newClient(_baseUrl, null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_state');
     await prefs.remove(AccountLocalDataCleaner.accountDataOwnerKey);
@@ -822,8 +822,32 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> _refreshMeNow({required String reason}) async {
+  /// Web entry must validate a restored session before mounting account routes.
+  /// Unlike a background profile refresh, a connection failure is actionable.
+  Future<void> verifyWebSession() async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        await _refreshMeNow(reason: 'web_entry', requireServerResponse: true);
+        return;
+      } on _SupersededWebSessionVerification {
+        if (attempt == 1) {
+          throw ApiException(I18n.tr('auth.connection_changed'));
+        }
+      }
+    }
+  }
+
+  Future<void> _refreshMeNow({
+    required String reason,
+    bool requireServerResponse = false,
+  }) async {
     if (!_state.isLoggedIn) return;
+    void rejectSupersededVerification() {
+      if (requireServerResponse) {
+        throw const _SupersededWebSessionVerification();
+      }
+    }
+
     final requestId = ++_refreshMeRequestSerial;
     final mutationSerialAtStart = _stateMutationSerial;
     final tokenAtStart = _state.token;
@@ -836,23 +860,29 @@ class AuthProvider extends ChangeNotifier {
     );
     try {
       final me = await _getFirstAvailable(const ['/api/auth/me', '/api/me']);
-      if (!identical(clientAtStart, _client)) return;
+      if (!identical(clientAtStart, _client)) {
+        rejectSupersededVerification();
+        return;
+      }
       _lastRefreshMeAt = DateTime.now();
       _lastRefreshMeToken = tokenAtStart;
       _lastRefreshMeMutationSerial = mutationSerialAtStart;
       if (requestId != _refreshMeRequestSerial ||
           requestId < _lastAppliedRefreshMeRequestSerial) {
         debugPrint('[auth-sync] refreshMe#$requestId skipped: older response');
+        rejectSupersededVerification();
         return;
       }
       if (!_state.isLoggedIn || _state.token != tokenAtStart) {
         debugPrint('[auth-sync] refreshMe#$requestId skipped: token changed');
+        rejectSupersededVerification();
         return;
       }
       if (userIdAtStart != null &&
           _state.userId != null &&
           _state.userId != userIdAtStart) {
         debugPrint('[auth-sync] refreshMe#$requestId skipped: user changed');
+        rejectSupersededVerification();
         return;
       }
       if (_stateMutationSerial != mutationSerialAtStart) {
@@ -860,9 +890,21 @@ class AuthProvider extends ChangeNotifier {
           '[auth-sync] refreshMe#$requestId skipped: newer account mutation '
           '$_stateMutationSerial > $mutationSerialAtStart',
         );
+        rejectSupersededVerification();
         return;
       }
-      final nextState = _stateFromAuthResponse(me, keepToken: true);
+      final nextState = _stateFromAuthResponse(
+        me,
+        keepToken: true,
+        fallbackState: requireServerResponse
+            ? AuthState(token: tokenAtStart)
+            : null,
+      );
+      if (requireServerResponse &&
+          ((nextState.userId?.trim().isEmpty ?? true) ||
+              (userIdAtStart != null && nextState.userId != userIdAtStart))) {
+        throw ApiException(I18n.tr('auth.token.invalid_response'));
+      }
       _lastAppliedRefreshMeRequestSerial = requestId;
       if (_authStatesEqual(_state, nextState)) {
         await _notifyAccountPayloadChanged(me);
@@ -878,8 +920,13 @@ class AuthProvider extends ChangeNotifier {
         'coin=${_state.coinBalance} lifetime=${_state.lifetimeCoins}',
       );
       notifyListeners();
+    } on _SupersededWebSessionVerification {
+      rethrow;
     } on ApiException catch (e) {
-      if (!identical(clientAtStart, _client)) return;
+      if (!identical(clientAtStart, _client)) {
+        rejectSupersededVerification();
+        return;
+      }
       if (_isAuthExpired(e)) {
         await _clearLocalSession(
           expectedClient: clientAtStart,
@@ -887,6 +934,7 @@ class AuthProvider extends ChangeNotifier {
         );
       } else {
         debugPrint('[auth-sync] refreshMe#$requestId failed: ${e.message}');
+        if (requireServerResponse) rethrow;
       }
     } catch (e, st) {
       debugPrint('[auth-sync] refreshMe#$requestId failed: $e\n$st');
@@ -1645,4 +1693,8 @@ void _throwIfEmailCodeNotDelivered(Map<String, dynamic> result) {
 String? _nonEmptyString(Object? value) {
   final text = value?.toString().trim();
   return text == null || text.isEmpty ? null : text;
+}
+
+class _SupersededWebSessionVerification implements Exception {
+  const _SupersededWebSessionVerification();
 }

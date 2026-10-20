@@ -114,7 +114,17 @@ python3 scripts/flutter_with_config.py build web --release \
 
 ## 后端配置与兼容性
 
-复制 `backend/.env.example` 为私有文件 `backend/.env`。新建管理员前，必须填入自己的 `ADMIN_BOOTSTRAP_PASSWORD`。环境文件只接受 `KEY=value`、成对的单/双引号、空值及独立注释行；不执行 shell、不插值、不支持 `export` 或行尾注释。
+复制 `backend/.env.example` 为私有文件 `backend/.env`。只有没有任何既有表结构的新建/空 SQLite 数据库会自动创建 bootstrap 管理员，用户名默认为 `admin`，可由 `ADMIN_BOOTSTRAP_USER` 指定。`ADMIN_BOOTSTRAP_PASSWORD` 含非空白字符时沿用显式密码；留空、仅空白或未配置时，首次成功初始化使用系统安全随机源生成 256 位随机密码。环境文件只接受 `KEY=value`、成对的单/双引号、空值及独立注释行；不执行 shell、不插值、不支持 `export` 或行尾注释。
+
+自动生成的用户名和初始密码仅写入数据库实际路径旁的 `<DUOYI_DB_PATH>.bootstrap-admin.json`，例如默认的 `backend/duoyi.db.bootstrap-admin.json`。文件以排他创建方式建立，权限为 `0600`（仅服务运行账号可读写）；已有文件或符号链接不会被覆盖。设置显式密码不会生成此文件。运维人员通过服务运行账号或 root 在服务器本地读取，例如自定义数据库为 `/srv/duoyi/duoyi.db` 时：
+
+```bash
+sudo cat /srv/duoyi/duoyi.db.bootstrap-admin.json
+```
+
+文件为含 `username`、`password` 的 JSON；用这组凭据在 Web 或应用的账号密码入口登录，随后修改密码，并妥善保管或删除初始凭据文件。此文件记录的是初始值，修改密码后不会更新，删除后也不会在重启时重建。容器部署需在容器内或其持久化数据库挂载目录中本地读取。不要将数据库目录或凭据文件放入 Web 静态目录、公开配置或仓库；初始密码不会通过日志、异常、`/api/bootstrap`、`/api/config` 等接口返回。
+
+数据库初始化与首次创建在同一写事务内串行执行，并发启动仅一个进程创建管理员和凭据。所有数据库初始化步骤成功后才写入并同步凭据文件；写入或提交失败会回滚数据库并清理本次创建的文件。若进程恰在文件创建后、数据库提交前被强制终止，可能留下完整或部分凭据文件；下次启动会拒绝覆盖它。此时先确认数据库确为未初始化的新库，再由运维保管并移走遗留文件后重试，切勿删除现有实例的数据库。
 
 后端优先级为：**进程环境 > 私有环境文件 > 公开 JSON 派生默认 > schema 默认**。历史 SMTP、邮件与 OpenClaw 变量别名仍可用，同一来源中的别名顺序保持兼容。高优先级来源中的旧别名仍高于低优先级来源中的新键名。
 
@@ -124,7 +134,7 @@ python3 scripts/flutter_with_config.py build web --release \
 - 密码、API Key、SMTP 密码和 WebDAV 密码只能放在后端环境或受权限保护的管理员设置中，不能写入公共 JSON 或 Dart define。
 - AI、注册策略、邮件与备份的环境参数只补齐数据库中缺失的键；已有管理员配置不会因重启或修改默认值被覆盖。
 - 历史 `REGISTRATION_EMAIL_REQUIRED` 一次性迁移和显式设置语义保持不变。
-- bootstrap 同名账号已存在时不会重置密码；改变 bootstrap 用户名可能新增账号，因此应保持现有部署值。
+- 既有数据库不再创建 bootstrap 账号，即使 bootstrap 用户名不存在、已改名、已删除或数据库中的用户已清空也一样；不会重置密码或把同名普通用户提升为管理员。更改 bootstrap 环境变量不会为既有安装新增管理员。公开注册始终创建普通用户。
 - **必须保留已有 `PASSWORD_HASH_SALT`。** 未设置时沿用旧算法兼容常量；已有实例若配置了自定义 salt，需要原样保留，改盐会使原密码无法校验。
 - 客户端版本优先从根目录 `pubspec.yaml` 读取；只有独立后端没有版本文件时，才回退到 `0.0.0/0`。API 契约版本仍由代码定义。
 

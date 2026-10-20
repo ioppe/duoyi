@@ -1,15 +1,21 @@
 import hashlib
-from contextlib import closing
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing, redirect_stderr, redirect_stdout
 import importlib
+import io
 import json
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
+from threading import Barrier
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
+
+from fastapi.testclient import TestClient
 
 if __package__:
     from . import config
@@ -356,17 +362,13 @@ class SettingsDatabaseTest(unittest.TestCase):
                 with closing(self.api.get_db()) as db, db:
                     self.assertFalse(self.api._setting_get(db, "registration_email_required", True))
 
-    def test_bootstrap_password_required_only_for_new_account(self):
+    def test_explicit_bootstrap_password_hash_is_preserved_on_restart(self):
         with patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", ""):
             self.api.init_db()
-            with patch.object(self.api, "DB_PATH", str(self.root / "empty.db")):
-                with self.assertRaisesRegex(config.ConfigurationError, "ADMIN_BOOTSTRAP_PASSWORD"):
-                    self.api.init_db()
-                with closing(self.api.get_db()) as db, db:
-                    self.assertEqual(db.execute("SELECT COUNT(*) FROM users").fetchone()[0], 0)
-        with closing(self.api.get_db()) as db, db:
+        with closing(self.api.get_db()) as db:
             saved = db.execute("SELECT password_hash FROM users WHERE username='admin'").fetchone()[0]
         self.assertEqual(saved, hashlib.sha256((config.LEGACY_PASSWORD_HASH_SALT + "admin123").encode()).hexdigest())
+        self.assertFalse(Path(self.api.DB_PATH + ".bootstrap-admin.json").exists())
 
     def test_unconfigured_openclaw_tool_returns_actionable_error(self):
         with patch.object(self.api, "OPENCLAW_MAIL_SCRIPT", ""), patch.object(self.api.subprocess, "run") as run:
@@ -395,6 +397,254 @@ class SettingsDatabaseTest(unittest.TestCase):
             cwd=Path(__file__).resolve().parents[1], env=environment, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+
+class BootstrapDatabaseTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        temporary = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(temporary.cleanup)
+        with patch.dict(os.environ, {
+            "DUOYI_DB_PATH": str(Path(temporary.name) / "import.db"),
+            "DUOYI_ENV_FILE": "", "APP_UPDATE_REPOSITORY": "",
+        }, clear=True):
+            cls.api = importlib.import_module(f"{__package__}.main" if __package__ else "main")
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.db_path = self.root / "fresh.db"
+        self.credentials_path = self.root / "fresh.db.bootstrap-admin.json"
+        settings = config.load_settings({
+            "DUOYI_DB_PATH": str(self.db_path), "DUOYI_ENV_FILE": "",
+            "APP_UPDATE_REPOSITORY": "", "REGISTRATION_EMAIL_REQUIRED": "false",
+        })
+        aliases = patch.multiple(
+            self.api, SETTINGS=settings, DB_PATH=settings.db_path,
+            ADMIN_BOOTSTRAP_USER=settings.admin_bootstrap_user,
+            ADMIN_BOOTSTRAP_PASSWORD=settings.admin_bootstrap_password,
+            _env_present=settings.environment.present,
+        )
+        aliases.start()
+        self.addCleanup(aliases.stop)
+        self.addCleanup(self.api.TOKENS.clear)
+        self.addCleanup(self.api.TOKEN_LAST_ACTIVE.clear)
+        self.client = TestClient(self.api.app)
+        self.addCleanup(self.client.close)
+
+    def _credentials(self):
+        return json.loads(self.credentials_path.read_text(encoding="utf-8"))
+
+    def _login(self, username, password):
+        return self.client.post("/api/auth/login", json={"username": username, "password": password})
+
+    def _assert_database_empty(self):
+        with closing(self.api.get_db()) as db:
+            self.assertIsNone(db.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone())
+
+    def test_fresh_database_generates_private_credentials_and_can_login(self):
+        output = io.StringIO()
+        with redirect_stdout(output), redirect_stderr(output), patch.object(
+            self.api.secrets, "token_urlsafe", wraps=self.api.secrets.token_urlsafe,
+        ) as generate:
+            self.api.init_db()
+        generate.assert_called_once_with(32)
+        credentials = self._credentials()
+        self.assertEqual(credentials["username"], "admin")
+        self.assertRegex(credentials["password"], r"^[A-Za-z0-9_-]{43}$")
+        self.assertEqual(stat.S_IMODE(self.credentials_path.stat().st_mode), 0o600)
+        self.assertNotIn(credentials["password"], output.getvalue())
+        with closing(self.api.get_db()) as db:
+            row = db.execute("SELECT * FROM users").fetchone()
+            self.assertEqual(row["password_hash"], self.api._hash_password(credentials["password"]))
+            self.assertEqual(row["is_admin"], 1)
+            self.assertEqual(row["role_id"], "role_admin")
+            self.assertEqual(json.loads(row["admin_permissions"]), ["*"])
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM sync_data").fetchone()[0], 1)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM workspaces").fetchone()[0], 1)
+        self.assertNotIn(credentials["password"].encode(), self.db_path.read_bytes())
+        response = self._login(**credentials)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertTrue(response.json()["is_admin"])
+        self.assertNotIn(credentials["password"], response.text)
+        allowed = self.client.get("/api/admin/users", headers={"Authorization": "Bearer " + response.json()["token"]})
+        self.assertEqual(allowed.status_code, 200, allowed.text)
+
+    def test_restart_preserves_generated_file_and_changed_password_hash(self):
+        self.api.init_db()
+        original = self.credentials_path.read_bytes()
+        original_stat = self.credentials_path.stat()
+        changed_hash = self.api._hash_password("changed-admin-password")
+        with closing(self.api.get_db()) as db, db:
+            db.execute("UPDATE users SET password_hash=?", (changed_hash,))
+        with patch.object(self.api.secrets, "token_urlsafe", side_effect=AssertionError("password regenerated")):
+            self.api.init_db()
+            with patch.multiple(self.api, ADMIN_BOOTSTRAP_USER="another-admin", ADMIN_BOOTSTRAP_PASSWORD="replacement"):
+                self.api.init_db()
+            self.assertEqual(self.credentials_path.read_bytes(), original)
+            self.assertEqual(self.credentials_path.stat().st_mtime_ns, original_stat.st_mtime_ns)
+            self.assertEqual(self.credentials_path.stat().st_ino, original_stat.st_ino)
+            self.credentials_path.unlink()
+            self.api.init_db()
+        self.assertFalse(self.credentials_path.exists())
+        with closing(self.api.get_db()) as db:
+            rows = db.execute("SELECT username, password_hash FROM users").fetchall()
+        self.assertEqual([(row["username"], row["password_hash"]) for row in rows], [("admin", changed_hash)])
+        self.assertEqual(self._login("admin", "changed-admin-password").status_code, 200)
+        self.assertEqual(self._login(**json.loads(original)).status_code, 401)
+
+    def test_explicit_bootstrap_credentials_need_no_generated_file(self):
+        with patch.multiple(self.api, ADMIN_BOOTSTRAP_USER="operator", ADMIN_BOOTSTRAP_PASSWORD="operator-password"), patch.object(
+            self.api.secrets, "token_urlsafe", side_effect=AssertionError("generated despite explicit password"),
+        ):
+            self.api.init_db()
+        self.assertFalse(self.credentials_path.exists())
+        response = self._login("operator", "operator-password")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertTrue(response.json()["is_admin"])
+
+    def test_existing_custom_admin_and_data_survive_default_bootstrap(self):
+        with patch.multiple(self.api, ADMIN_BOOTSTRAP_USER="custom-owner", ADMIN_BOOTSTRAP_PASSWORD="existing-password"):
+            self.api.init_db()
+        with closing(self.api.get_db()) as db, db:
+            db.execute("UPDATE sync_data SET todos=?", ('[{"id":"saved-task"}]',))
+            saved = dict(db.execute("SELECT * FROM users").fetchone())
+            self.api._setting_set(db, "maintenance_message", "saved-setting")
+        for password in ("", "new-configured-password"):
+            with self.subTest(password_configured=bool(password)), patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", password):
+                self.api.init_db()
+                with closing(self.api.get_db()) as db:
+                    self.assertEqual([dict(row) for row in db.execute("SELECT * FROM users")], [saved])
+                    self.assertEqual(db.execute("SELECT todos FROM sync_data").fetchone()[0], '[{"id":"saved-task"}]')
+                    self.assertEqual(self.api._setting_get(db, "maintenance_message", ""), "saved-setting")
+        self.assertFalse(self.credentials_path.exists())
+        self.assertEqual(self._login("custom-owner", "existing-password").status_code, 200)
+
+    def test_existing_ordinary_user_named_admin_is_not_promoted_or_reset(self):
+        with patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", "existing-password"):
+            self.api.init_db()
+        with closing(self.api.get_db()) as db, db:
+            db.execute("UPDATE users SET is_admin=0, admin_permissions='[]', role_id='role_user'")
+            saved = dict(db.execute("SELECT * FROM users").fetchone())
+        for password in ("", "new-configured-password"):
+            with self.subTest(password_configured=bool(password)), patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", password):
+                self.api.init_db()
+                with closing(self.api.get_db()) as db:
+                    self.assertEqual([dict(row) for row in db.execute("SELECT * FROM users")], [saved])
+        self.assertFalse(self.credentials_path.exists())
+        response = self._login("admin", "existing-password")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(response.json()["is_admin"])
+        denied = self.client.get("/api/admin/users", headers={"Authorization": "Bearer " + response.json()["token"]})
+        self.assertEqual(denied.status_code, 403)
+
+    def test_existing_installation_with_no_users_does_not_receive_new_admin(self):
+        with patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", "existing-password"):
+            self.api.init_db()
+        with closing(self.api.get_db()) as db, db:
+            db.execute("DELETE FROM users")
+        for password in ("", "new-configured-password"):
+            with self.subTest(password_configured=bool(password)), patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", password):
+                self.api.init_db()
+                with closing(self.api.get_db()) as db:
+                    self.assertEqual(db.execute("SELECT COUNT(*) FROM users").fetchone()[0], 0)
+        self.assertFalse(self.credentials_path.exists())
+
+    def test_public_bootstrap_config_and_registration_do_not_expose_admin_secrets_or_roles(self):
+        self.api.init_db()
+        credentials = self._credentials()
+        with closing(self.api.get_db()) as db:
+            password_hash = db.execute("SELECT password_hash FROM users").fetchone()[0]
+        for path in ("/api/bootstrap", "/api/config", "/api/health"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200, response.text)
+                for private in (credentials["password"], password_hash, str(self.credentials_path), "bootstrap_password", "bootstrap_credentials"):
+                    self.assertNotIn(private, response.text)
+        response = self.client.post("/api/auth/register", json={
+            "username": "public-user", "password": "ordinary-user-password",
+            "is_admin": True, "role_id": "role_admin", "admin_permissions": ["*"],
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(response.json()["is_admin"])
+        with closing(self.api.get_db()) as db:
+            row = db.execute("SELECT * FROM users WHERE username='public-user'").fetchone()
+            self.assertEqual(row["is_admin"], 0)
+            self.assertEqual(row["role_id"], "role_user")
+            self.assertEqual(json.loads(row["admin_permissions"]), [])
+        denied = self.client.get("/api/admin/users", headers={"Authorization": "Bearer " + response.json()["token"]})
+        self.assertEqual(denied.status_code, 403)
+
+    def test_file_creation_and_write_failure_roll_back_without_leaking_secret(self):
+        secret = "private-generated-test-secret"
+        for operation in ("open", "fsync"):
+            with self.subTest(operation=operation), patch.object(self.api.secrets, "token_urlsafe", return_value=secret), patch.object(
+                self.api.os, operation, side_effect=OSError(secret),
+            ), self.assertRaises(self.api.ConfigurationError) as failure:
+                self.api.init_db()
+            self.assertNotIn(secret, str(failure.exception))
+            self.assertFalse(self.credentials_path.exists())
+            self._assert_database_empty()
+        self.api.init_db()
+        self.assertEqual(self._login(**self._credentials()).status_code, 200)
+
+    def test_existing_credentials_file_or_symlink_is_never_overwritten(self):
+        target = self.root / "operator-file"
+        target.write_text("keep-existing-content", encoding="utf-8")
+        for symlink in (False, True):
+            with self.subTest(symlink=symlink):
+                if symlink:
+                    self.credentials_path.symlink_to(target)
+                else:
+                    self.credentials_path.write_text("keep-existing-content", encoding="utf-8")
+                with self.assertRaises(self.api.ConfigurationError):
+                    self.api.init_db()
+                self.assertEqual(self.credentials_path.read_text(), "keep-existing-content")
+                self.assertEqual(target.read_text(), "keep-existing-content")
+                self._assert_database_empty()
+                self.credentials_path.unlink()
+
+    def test_unrelated_db_failure_does_not_persist_generated_credentials(self):
+        with patch.object(self.api, "_ensure_private_workspace", side_effect=sqlite3.DatabaseError("workspace insert failed")), self.assertRaises(sqlite3.DatabaseError):
+            self.api.init_db()
+        self.assertFalse(self.credentials_path.exists())
+        self._assert_database_empty()
+        self.api.init_db()
+        self.assertEqual(self._login(**self._credentials()).status_code, 200)
+
+    def test_commit_failure_removes_generated_credentials_and_rolls_back(self):
+        connection = Mock(wraps=self.api.get_db())
+
+        def failed_commit():
+            self.assertTrue(self.credentials_path.exists())
+            raise sqlite3.OperationalError("commit failed")
+
+        connection.commit.side_effect = failed_commit
+        with patch.object(self.api, "get_db", return_value=connection), self.assertRaises(sqlite3.OperationalError):
+            self.api.init_db()
+        connection.rollback.assert_called_once()
+        connection.close.assert_called_once()
+        self.assertFalse(self.credentials_path.exists())
+        self._assert_database_empty()
+
+    def test_concurrent_initialization_creates_one_working_admin_and_secret(self):
+        barrier = Barrier(4)
+
+        def initialize():
+            barrier.wait(timeout=10)
+            self.api.init_db()
+
+        with patch.object(self.api.secrets, "token_urlsafe", wraps=self.api.secrets.token_urlsafe) as generate:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [executor.submit(initialize) for _ in range(4)]
+                for future in futures:
+                    future.result(timeout=15)
+        generate.assert_called_once_with(32)
+        with closing(self.api.get_db()) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM users").fetchone()[0], 1)
+        self.assertEqual(stat.S_IMODE(self.credentials_path.stat().st_mode), 0o600)
+        self.assertEqual(self._login(**self._credentials()).status_code, 200)
 
 
 if __name__ == "__main__":

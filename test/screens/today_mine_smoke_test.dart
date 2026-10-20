@@ -134,6 +134,51 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  testWidgets('我的不再显示登录按钮，账号信息与管理入口跟随实际角色', (tester) async {
+    tester.view.physicalSize = const Size(390, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final admin in [false, true]) {
+      final username = admin ? 'admin' : 'ordinary-user';
+      final auth = AuthProvider(
+        initialState: AuthState(
+          userId: username,
+          username: username,
+          token: 'test-session',
+          isAdmin: admin,
+        ),
+      );
+      await tester.pumpWidget(_wrap(const MineScreen(), authProvider: auth));
+      await tester.pumpAndSettle();
+      final header = find.byKey(const ValueKey('mine_user_info_row'));
+      expect(
+        find.descendant(of: header, matching: find.text(username)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: header, matching: find.text('@$username')),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(FilledButton, I18n.tr('auth.login')),
+        findsNothing,
+      );
+      expect(
+        find.text(I18n.tr('mine.badge.admin')),
+        admin ? findsOneWidget : findsNothing,
+      );
+      final settings = find.byKey(const ValueKey('mine_settings_entry'));
+      await tester.ensureVisible(settings);
+      await tester.tap(settings);
+      await tester.pumpAndSettle();
+      expect(
+        find.text(I18n.tr('mine.tile.admin')),
+        admin ? findsOneWidget : findsNothing,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
   testWidgets('我的首页仅保留四个分类入口，窄屏放大字体与主题不溢出', (tester) async {
     addTearDown(tester.view.reset);
     for (final size in const [

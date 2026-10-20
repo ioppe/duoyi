@@ -41,6 +41,25 @@ extension AppLocaleX on AppLocale {
 }
 
 const Map<String, String> _zh = <String, String>{
+  'auth.design.tagline': '把每一天，过得从容一点',
+  'auth.design.everyday': '安排当下 · 看见成长',
+  'auth.design.headline': '把时间，留给\n重要的事。',
+  'auth.design.description': '从今天的一件小事开始，\n慢慢靠近理想中的自己。',
+  'auth.design.tasks': '理清轻重缓急，让计划一步步落地',
+  'auth.design.habits': '积累小小的坚持，看见日常的变化',
+  'auth.design.focus': '留一段不被打扰的时间，专心做好一件事',
+  'auth.design.footer': '每一次认真，都算数。',
+  'auth.design.welcome': '欢迎回来',
+  'auth.design.login_subtitle': '登录你的账号，继续今天的安排。',
+  'auth.design.signup': '开启你的日常',
+  'auth.design.signup_subtitle': '创建自己的账号，把计划与成长留在一起。',
+  'auth.design.first_admin': '首次使用？请用安装时生成的 admin 账号和密码登录。',
+  'auth.password.show': '显示密码',
+  'auth.password.hide': '隐藏密码',
+  'auth.session.checking': '正在验证登录状态…',
+  'auth.session.unavailable': '暂时无法连接服务器，请检查网络后重试。',
+  'auth.session.title': '连接你的日常',
+  'auth.session.sign_in_again': '重新登录',
   // 通用动作
   'feature.unavailable': '此功能已不可用',
   'ai.command.help': '请说“添加待办… / 记笔记… / 开始专注”',
@@ -1277,6 +1296,25 @@ const Map<String, String> _zh = <String, String>{
 };
 
 const Map<String, String> _en = <String, String>{
+  'auth.design.tagline': 'A little more space for every day',
+  'auth.design.everyday': 'Make time. See progress.',
+  'auth.design.headline': 'Make room for\nwhat matters.',
+  'auth.design.description': 'Start with one small thing today.\nGrow into the life you have in mind.',
+  'auth.design.tasks': 'Find your priorities and turn plans into progress',
+  'auth.design.habits': 'Small steps that make a difference over time',
+  'auth.design.focus': 'Set aside a quiet moment for one meaningful thing',
+  'auth.design.footer': 'Every little effort counts.',
+  'auth.design.welcome': 'Welcome back',
+  'auth.design.login_subtitle': 'Sign in to pick up where you left off.',
+  'auth.design.signup': 'Your everyday starts here',
+  'auth.design.signup_subtitle': 'Create an account for your plans and progress.',
+  'auth.design.first_admin': 'First visit? Sign in as admin with the password generated during installation.',
+  'auth.password.show': 'Show password',
+  'auth.password.hide': 'Hide password',
+  'auth.session.checking': 'Verifying your session…',
+  'auth.session.unavailable': 'The server is unavailable. Check your connection and try again.',
+  'auth.session.title': 'Connect to your everyday',
+  'auth.session.sign_in_again': 'Sign in again',
   'feature.unavailable': 'This feature is no longer available.',
   'ai.command.help': 'Create a task, save a note, or start focus.',
   'statistics.activity.description':
