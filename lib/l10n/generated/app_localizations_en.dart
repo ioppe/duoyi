@@ -9,6 +9,58 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get todoCreateHint =>
+      'What needs doing? For example: meeting tomorrow at 3 PM';
+
+  @override
+  String get todoCreateListType => 'List type';
+
+  @override
+  String get todoCreateQuadrant => 'Priority';
+
+  @override
+  String get todoCreatePriority => 'Priority flag';
+
+  @override
+  String get todoCreateReminder => 'Reminder';
+
+  @override
+  String get todoCreateNoReminder => 'No reminder';
+
+  @override
+  String get todoCreateAtTime => 'Remind at';
+
+  @override
+  String get todoCreatePickTime => 'Choose reminder time';
+
+  @override
+  String get todoCreateAi => 'AI task breakdown';
+
+  @override
+  String get todoCreateAiFailed => 'AI task breakdown failed';
+
+  @override
+  String get todoCreateFailed => 'Unable to create task. Please try again.';
+
+  @override
+  String get todoCreateReadOnly =>
+      'You only have viewing permission in this workspace.';
+
+  @override
+  String get todoCreateSubmit => 'Add task';
+
+  @override
+  String get todoCreateCreated => 'Task created';
+
+  @override
+  String get todoCreateCreatedReminder =>
+      'Task created. Check reminder status in notification settings or task details.';
+
+  @override
+  String get todoCreateReminderIssueTitle =>
+      'Task reminder registration failed';
+
+  @override
   String get featureUnavailable => 'This feature is no longer available.';
 
   @override

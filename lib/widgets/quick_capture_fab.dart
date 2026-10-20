@@ -2,12 +2,9 @@ import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/ai_command.dart';
-import '../core/i18n_date_format.dart';
 import '../core/i18n.dart';
-import '../core/smart_date_parser.dart';
 import '../core/design_tokens.dart';
 import '../core/home_page_style.dart';
-import '../core/smart_todo_draft.dart';
 import '../models/goal.dart'
     show ReminderKind, ReminderPlan, ReminderRule, ReminderRuleType;
 import '../models/note.dart';
@@ -24,6 +21,7 @@ import '../providers/notification_service.dart';
 import '../services/reminder_scheduler.dart';
 import '../screens/ai_schedule_screen.dart';
 import 'surface_components.dart';
+import 'todo_create_sheet.dart';
 
 /// 展开式快速捕获 FAB：3 个子按钮 + 一个搜索入口。
 class QuickCaptureFab extends StatefulWidget {
@@ -73,88 +71,7 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
 
   Future<void> _quickTodo() async {
     _closeIfOpen();
-    final ctrl = TextEditingController();
-    SmartDateParseResult parsed = SmartDateParseResult.empty;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: Text(I18n.tr('quick.todo.title')),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: I18n.tr('quick.todo.hint'),
-                ),
-                onChanged: (v) => setSt(() {
-                  parsed = SmartDateParser.parse(v);
-                }),
-              ),
-              if (parsed.isSuccess) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      ctx,
-                    ).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 14,
-                        color: Theme.of(ctx).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${I18n.tr('quick.todo.parsed_prefix')}${_formatParsed(parsed)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(ctx).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(I18n.tr('action.cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(I18n.tr('action.add')),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (ok == true && ctrl.text.trim().isNotEmpty) {
-      if (!mounted) return;
-      final draft = SmartTodoDraftBuilder.fromText(ctrl.text.trim());
-      await _createTodoWithReminderFeedback(
-        draft.toTodo(),
-        issueTitle: '待办提醒注册失败',
-      );
-    }
-  }
-
-  String _formatParsed(SmartDateParseResult r) {
-    return I18nDateFormat.smartDate(r.dateTime!, includeTime: r.hasTimeOfDay);
+    await showTodoCreateSheet(context);
   }
 
   Future<void> _quickAiTodo() async {

@@ -33,13 +33,24 @@ void main() {
     expect(source, contains('_TodoFilterMenu<TodoDueFilter>'));
     expect(source, contains('_TodoFilterMenu<TodoCompletionFilter>'));
     expect(source, contains('AppSecondaryMenuText('));
-    expect(source, contains('AppSecondaryControlTheme('));
-    expect(source, contains('appSecondaryRouteTitleTextStyle(ctx)'));
-    expect(source, contains('appSecondaryControlLabelStyle(ctx)'));
-    expect(source, contains('height: 42'));
+    expect(
+      source,
+      contains(
+        'showTodoCreateSheet(context, initialQuadrant: initialQuadrant)',
+      ),
+    );
+    final form = File('lib/widgets/todo_create_sheet.dart').readAsStringSync();
+    expect(form, contains('AppModalSheet('));
+    expect(form, contains('AppFormFieldTheme('));
+    expect(form, contains('title: strings.todoCreateTitle'));
+    expect(form, contains('appSecondaryControlLabelStyle(context)'));
+    expect(form, contains('minimumSize: const Size(0, 42)'));
     expect(source, isNot(contains('fontSize: 20')));
-    expect(source, isNot(contains('selectedColor: t.color,')));
-    expect(source, contains('selectedColor: t.color.withValues(alpha: 0.12)'));
+    expect(form, isNot(contains('selectedColor: template.color,')));
+    expect(
+      form,
+      contains('selectedColor: template.color.withValues(alpha: 0.12)'),
+    );
   });
 
   test('任务筛选覆盖日期、完成状态、标签、清单和空结果', () {
@@ -97,7 +108,9 @@ void main() {
   });
 
   test('清单模板选中态使用浅色主题背景避免白字实心块', () {
-    final source = File('lib/screens/todo_screen.dart').readAsStringSync();
+    final source = File(
+      'lib/widgets/todo_create_sheet.dart',
+    ).readAsStringSync();
 
     expect(source, isNot(contains('Color _todoTemplateChipForeground')));
     expect(source, isNot(contains('double _todoContrastRatio')));
@@ -111,12 +124,12 @@ void main() {
     expect(templateEnd, greaterThan(templateStart));
     final templateBlock = source.substring(templateStart, templateEnd);
     expect(templateBlock, isNot(contains('? Colors.white')));
-    expect(templateBlock, isNot(contains('selectedColor: t.color,')));
+    expect(templateBlock, isNot(contains('selectedColor: template.color,')));
     expect(
       templateBlock,
-      contains('selectedColor: t.color.withValues(alpha: 0.12)'),
+      contains('selectedColor: template.color.withValues(alpha: 0.12)'),
     );
-    expect(templateBlock, contains('checkmarkColor: t.color'));
+    expect(templateBlock, contains('checkmarkColor: template.color'));
   });
 
   test('四象限详情继承外层自定义视图条件', () {

@@ -9,6 +9,54 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get todoCreateHint => '准备做什么？例如：明天下午3点开会';
+
+  @override
+  String get todoCreateListType => '清单类型';
+
+  @override
+  String get todoCreateQuadrant => '优先级';
+
+  @override
+  String get todoCreatePriority => '优先级标记';
+
+  @override
+  String get todoCreateReminder => '提醒';
+
+  @override
+  String get todoCreateNoReminder => '不提醒';
+
+  @override
+  String get todoCreateAtTime => '到点提醒';
+
+  @override
+  String get todoCreatePickTime => '选择提醒时间';
+
+  @override
+  String get todoCreateAi => 'AI 智能拆解';
+
+  @override
+  String get todoCreateAiFailed => 'AI 拆解失败';
+
+  @override
+  String get todoCreateFailed => '创建失败，请稍后重试';
+
+  @override
+  String get todoCreateReadOnly => '你在这个共享空间中只有查看权限';
+
+  @override
+  String get todoCreateSubmit => '添加任务';
+
+  @override
+  String get todoCreateCreated => '待办已创建';
+
+  @override
+  String get todoCreateCreatedReminder => '待办已创建，提醒状态可在通知设置/待办详情检查';
+
+  @override
+  String get todoCreateReminderIssueTitle => '待办提醒注册失败';
+
+  @override
   String get featureUnavailable => '此功能已不可用';
 
   @override

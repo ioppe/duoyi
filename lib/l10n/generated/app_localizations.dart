@@ -98,6 +98,102 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @todoCreateHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'准备做什么？例如：明天下午3点开会'**
+  String get todoCreateHint;
+
+  /// No description provided for @todoCreateListType.
+  ///
+  /// In zh, this message translates to:
+  /// **'清单类型'**
+  String get todoCreateListType;
+
+  /// No description provided for @todoCreateQuadrant.
+  ///
+  /// In zh, this message translates to:
+  /// **'优先级'**
+  String get todoCreateQuadrant;
+
+  /// No description provided for @todoCreatePriority.
+  ///
+  /// In zh, this message translates to:
+  /// **'优先级标记'**
+  String get todoCreatePriority;
+
+  /// No description provided for @todoCreateReminder.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒'**
+  String get todoCreateReminder;
+
+  /// No description provided for @todoCreateNoReminder.
+  ///
+  /// In zh, this message translates to:
+  /// **'不提醒'**
+  String get todoCreateNoReminder;
+
+  /// No description provided for @todoCreateAtTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'到点提醒'**
+  String get todoCreateAtTime;
+
+  /// No description provided for @todoCreatePickTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择提醒时间'**
+  String get todoCreatePickTime;
+
+  /// No description provided for @todoCreateAi.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 智能拆解'**
+  String get todoCreateAi;
+
+  /// No description provided for @todoCreateAiFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 拆解失败'**
+  String get todoCreateAiFailed;
+
+  /// No description provided for @todoCreateFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建失败，请稍后重试'**
+  String get todoCreateFailed;
+
+  /// No description provided for @todoCreateReadOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'你在这个共享空间中只有查看权限'**
+  String get todoCreateReadOnly;
+
+  /// No description provided for @todoCreateSubmit.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加任务'**
+  String get todoCreateSubmit;
+
+  /// No description provided for @todoCreateCreated.
+  ///
+  /// In zh, this message translates to:
+  /// **'待办已创建'**
+  String get todoCreateCreated;
+
+  /// No description provided for @todoCreateCreatedReminder.
+  ///
+  /// In zh, this message translates to:
+  /// **'待办已创建，提醒状态可在通知设置/待办详情检查'**
+  String get todoCreateCreatedReminder;
+
+  /// No description provided for @todoCreateReminderIssueTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'待办提醒注册失败'**
+  String get todoCreateReminderIssueTitle;
+
   /// No description provided for @featureUnavailable.
   ///
   /// In zh, this message translates to:

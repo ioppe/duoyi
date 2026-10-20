@@ -34,6 +34,7 @@ import 'package:duoyi/screens/mine_screen.dart';
 import 'package:duoyi/screens/more_apps_screen.dart';
 import 'package:duoyi/screens/profile_screen.dart';
 import 'package:duoyi/screens/today_screen.dart';
+import 'package:duoyi/screens/todo_screen.dart';
 import 'package:duoyi/screens/preferences_screen.dart';
 import 'package:duoyi/screens/statistics_screen.dart';
 import 'package:duoyi/screens/widget_screen.dart';
@@ -229,6 +230,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('首页新建待办复用完整添加表单', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(showCaptureFab: true),
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(find.text(I18n.tr('quick.todo.title')), findsNothing);
+    expect(find.text('清单类型'), findsOneWidget);
+    expect(find.text('优先级标记'), findsOneWidget);
+    expect(find.byType(AppModalSheet), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final homeSheet = tester.getSize(find.byType(AppModalSheet));
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _wrap(const TodoScreen(), theme: AppBrands.defaultBrand.theme),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.text(I18n.tr('quick.todo.title')), findsNothing);
+    expect(find.byKey(const ValueKey('todo_create_title')), findsOneWidget);
+    expect(find.text('清单类型'), findsOneWidget);
+    expect(find.text('优先级标记'), findsOneWidget);
+    expect(tester.getSize(find.byType(AppModalSheet)), homeSheet);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('外层应用壳下的首页提示条避让创建按钮', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -246,7 +283,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home_create_button')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '验收任务');
-    await tester.tap(find.widgetWithText(FilledButton, I18n.tr('action.add')));
+    final submit = find.byKey(const ValueKey('todo_create_submit'));
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsOneWidget);
     expect(
@@ -304,6 +344,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home_create_button')));
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsOneWidget);
+    await tester.ensureVisible(
+      find.widgetWithText(TextButton, I18n.tr('action.cancel')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, I18n.tr('action.cancel')));
     await tester.pumpAndSettle();
     await tester.longPress(find.byKey(const ValueKey('home_create_button')));

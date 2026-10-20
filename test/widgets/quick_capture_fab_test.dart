@@ -128,18 +128,26 @@ void main() {
     expect(find.text('AI 创建日程'), findsOneWidget);
   });
 
-  test('Quick todo still reuses smart date parsing before creating task', () {
+  test('待办快捷入口复用完整添加表单并保留智能日期解析', () {
     final source = File(
       'lib/widgets/quick_capture_fab.dart',
     ).readAsStringSync();
     final start = source.indexOf('Future<void> _quickTodo');
-    final end = source.indexOf('String _formatParsed', start);
+    final end = source.indexOf('Future<void> _quickAiTodo', start);
     expect(start, greaterThanOrEqualTo(0));
     expect(end, greaterThan(start));
     final method = source.substring(start, end);
-
-    expect(method, contains('SmartTodoDraftBuilder.fromText'));
-    expect(method, contains('draft.toTodo'));
+    expect(method, contains('showTodoCreateSheet(context)'));
+    expect(method, isNot(contains('showDialog')));
+    final form = File('lib/widgets/todo_create_sheet.dart').readAsStringSync();
+    expect(form, contains('SmartTodoDraftBuilder.fromText'));
+    expect(form, contains('draft.toTodo'));
+    expect(
+      File('lib/screens/todo_screen.dart').readAsStringSync(),
+      contains(
+        'showTodoCreateSheet(context, initialQuadrant: initialQuadrant)',
+      ),
+    );
   });
 
   test('AI schedule shortcut routes into the dedicated AI schedule screen', () {
