@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../widgets/app_page_tabs.dart';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
@@ -106,26 +107,21 @@ class _NoteScreenState extends State<NoteScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                  child: SegmentedButton<_NoteLibraryView>(
-                    segments: [
-                      ButtonSegment(
+                  child: AppPageSwitcher<_NoteLibraryView>(
+                    options: [
+                      AppPageOption(
                         value: _NoteLibraryView.active,
-                        icon: const Icon(Icons.notes_outlined),
-                        label: Text(
-                          '${I18n.tr('note.active')} ${provider.activeNotes.length}',
-                        ),
+                        text:
+                            '${I18n.tr('note.active')} ${provider.activeNotes.length}',
                       ),
-                      ButtonSegment(
+                      AppPageOption(
                         value: _NoteLibraryView.archived,
-                        icon: const Icon(Icons.inventory_2_outlined),
-                        label: Text(
-                          '${I18n.tr('note.archived')} ${provider.archivedNotes.length}',
-                        ),
+                        text:
+                            '${I18n.tr('note.archived')} ${provider.archivedNotes.length}',
                       ),
                     ],
-                    selected: {_view},
-                    onSelectionChanged: (selected) =>
-                        setState(() => _view = selected.single),
+                    value: _view,
+                    onChanged: (value) => setState(() => _view = value),
                   ),
                 ),
                 Expanded(

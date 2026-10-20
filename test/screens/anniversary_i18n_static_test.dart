@@ -167,14 +167,8 @@ void main() {
     );
     expect(source, contains('ColoredBox('));
     expect(source, contains('AppSecondaryControlTheme('));
-    expect(
-      source,
-      contains('labelStyle: appSecondaryMenuItemTextStyle(context)'),
-    );
-    expect(
-      source,
-      contains('unselectedLabelStyle: appSecondaryMenuItemTextStyle(context)'),
-    );
+    expect(source, contains('AppPageTabs('));
+    expect(source, contains('height: AppPageTabs.heightFor(context)'));
     expect(source, contains("'anniversary_summary_total'"));
     expect(source, contains("'anniversary_summary_within_30_days'"));
     expect(source, contains('AppSectionHeader('));

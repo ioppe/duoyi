@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'design_tokens.dart';
+import 'page_tab_style.dart';
 
 /// The approved home palette is scoped to the default theme. Branded themes
 /// keep their own accents and body text, including image-background contrast.
@@ -59,45 +60,8 @@ class HomePageStyle {
   );
 }
 
-/// A short, rounded mark anchored to the start of the selected text label.
-class HomeTabIndicator extends Decoration {
-  final Color color;
-
-  const HomeTabIndicator({required this.color});
-
-  @override
-  BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
-      _HomeTabIndicatorPainter(color, onChanged);
-}
-
-class _HomeTabIndicatorPainter extends BoxPainter {
-  final Color color;
-
-  _HomeTabIndicatorPainter(this.color, super.onChanged);
-
-  @override
-  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
-    final size = configuration.size;
-    if (size == null) return;
-    final width = math.min(DesignTokens.homeTabIndicatorWidth, size.width);
-    final x = configuration.textDirection == TextDirection.rtl
-        ? offset.dx + size.width - width
-        : offset.dx;
-    final rect = Rect.fromLTWH(
-      x,
-      offset.dy + size.height - DesignTokens.spaceXxs,
-      width,
-      DesignTokens.spaceXxs,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        rect,
-        const Radius.circular(DesignTokens.spaceXxs),
-      ),
-      Paint()..color = color,
-    );
-  }
-}
+/// Compatibility name for the indicator now shared by all subpage tabs.
+typedef HomeTabIndicator = PageTabIndicator;
 
 /// Keeps the creation button on the content edge at both phone and desktop sizes.
 class HomeFabLocation extends FloatingActionButtonLocation {

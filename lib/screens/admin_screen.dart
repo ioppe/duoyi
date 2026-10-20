@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../widgets/app_page_tabs.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show File;
@@ -99,29 +100,9 @@ class _AdminScreenState extends State<AdminScreen>
             icon: const Icon(Icons.refresh),
           ),
         ],
-        bottom: TabBar(
+        bottom: AppPageTabs(
           controller: _tabs,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-          labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelStyle: appSecondaryMenuItemTextStyle(context),
-          unselectedLabelStyle: appSecondaryMenuItemTextStyle(context),
-          indicator: BoxDecoration(
-            color: Color.alphaBlend(
-              cs.primary.withValues(alpha: 0.10),
-              cs.surface,
-            ),
-            borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-            border: Border.all(
-              color: cs.primary.withValues(alpha: 0.20),
-              width: 0.45,
-            ),
-          ),
-          labelColor: cs.onSurface,
-          unselectedLabelColor: cs.onSurfaceVariant,
+          height: AppPageTabs.heightFor(context),
           tabs: const [
             Tab(
               height: 34,
@@ -379,22 +360,9 @@ class _AdminTabLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textWidth = text.length * 12.0 + 28.0;
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minWidth: textWidth.clamp(72.0, 118.0),
-        maxWidth: 128,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [Icon(icon, size: 16), const SizedBox(width: 5), Text(text)],
     );
   }
 }
@@ -4194,9 +4162,8 @@ class _BackupSettingsTabState extends State<_BackupSettingsTab> {
         length: 2,
         child: Column(
           children: [
-            TabBar(
-              labelStyle: appSecondaryMenuItemTextStyle(context),
-              unselectedLabelStyle: appSecondaryMenuItemTextStyle(context),
+            AppPageTabs(
+              height: AppPageTabs.heightFor(context),
               tabs: const [
                 Tab(text: '服务器备份记录'),
                 Tab(text: '所有用户备份'),

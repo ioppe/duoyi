@@ -111,7 +111,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('专注自习室'),
       220,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.descendant(
+        of: find.byKey(const PageStorageKey<String>('focus_room_tab_scroll')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('专注自习室'), findsOneWidget);
     expect(tester.takeException(), isNull);

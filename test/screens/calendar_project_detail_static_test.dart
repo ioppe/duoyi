@@ -26,13 +26,12 @@ void main() {
   test('calendar detail area and paging are widened for dense views', () {
     final source = File('lib/screens/calendar_screen.dart').readAsStringSync();
 
-    expect(source, contains('isScrollable: true'));
-    expect(source, contains('tabAlignment: TabAlignment.start'));
-    expect(
-      source,
-      contains('labelPadding: const EdgeInsets.symmetric(horizontal: 14)'),
-    );
-    expect(source, contains('Tab(height: 34'));
+    expect(source, contains('child: AppPageTabs('));
+    expect(source, contains('height: AppPageTabs.heightFor(context)'));
+    final tabs = File('lib/widgets/app_page_tabs.dart').readAsStringSync();
+    expect(tabs, contains('isScrollable: true'));
+    expect(tabs, contains('tabAlignment: TabAlignment.start'));
+    expect(tabs, contains('DesignTokens.spaceMd'));
     expect(source, contains('fontSize: compact ? 12.5 : 13.5'));
     expect(source, contains("'calendar_navigation_date_button'"));
     expect(source, contains('height: compact ? 62 : 68'));

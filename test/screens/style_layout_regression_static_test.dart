@@ -188,16 +188,12 @@ void main() {
     );
 
     final primaryTabBar = admin.substring(
-      admin.indexOf('bottom: TabBar('),
-      admin.indexOf('tabs: const [', admin.indexOf('bottom: TabBar(')),
+      admin.indexOf('bottom: AppPageTabs('),
+      admin.indexOf('tabs: const [', admin.indexOf('bottom: AppPageTabs(')),
     );
-    expect(primaryTabBar, contains('labelColor: cs.onSurface'));
-    expect(
-      primaryTabBar,
-      isNot(contains('labelColor: cs.primary')),
-      reason:
-          'Admin selected tabs should stay readable and not use a loud primary foreground.',
-    );
+    expect(primaryTabBar, contains('height: AppPageTabs.heightFor(context)'));
+    expect(primaryTabBar, isNot(contains('labelColor:')));
+    expect(primaryTabBar, isNot(contains('indicator: BoxDecoration')));
   });
 
   test('管理后台筛选控件不因低高度退回固定窄宽', () {
@@ -518,14 +514,8 @@ void main() {
     final habit = File('lib/screens/habit_screen.dart').readAsStringSync();
     expect(habit, contains('final routeBackground'));
     expect(habit, contains('backgroundColor: routeBackground'));
-    expect(
-      habit,
-      contains('labelStyle: appSecondaryControlLabelStyle(context)'),
-    );
-    expect(
-      habit,
-      contains('unselectedLabelStyle: appSecondaryControlLabelStyle(context)'),
-    );
+    expect(habit, contains('AppPageTabs('));
+    expect(habit, contains('height: AppPageTabs.heightFor(context)'));
     expect(habit, isNot(contains('backgroundColor: Colors.transparent')));
 
     final preferences = File(
@@ -657,10 +647,7 @@ void main() {
     expect(monthGrid, isNot(contains('? Colors.white60')));
     expect(monthGrid, isNot(contains('? Colors.white54')));
 
-    expect(
-      calendar,
-      contains('labelStyle: appSecondaryMenuItemTextStyle(context)'),
-    );
+    expect(calendar, contains('child: AppPageTabs('));
     expect(calendar, contains('Color.alphaBlend('));
     expect(calendar, isNot(contains('labelColor: cs.onPrimaryContainer')));
     expect(calendar, isNot(contains('foregroundColor: cs.onPrimaryContainer')));
@@ -966,17 +953,16 @@ void main() {
       profile,
       contains('textStyle: appSecondaryControlTextStyle(context)'),
     );
-    expect(
-      admin,
-      contains('labelStyle: appSecondaryMenuItemTextStyle(context)'),
-    );
-    expect(
-      admin,
-      contains('unselectedLabelStyle: appSecondaryMenuItemTextStyle(context)'),
-    );
+    expect(admin, contains('bottom: AppPageTabs('));
+    expect(admin, contains('height: AppPageTabs.heightFor(context)'));
     expect(admin, contains('height: 38'));
     expect(admin, isNot(contains('height: 44')));
-    expect(admin, contains('text.length * 12.0 + 28.0'));
+    final tabLabel = admin.substring(
+      admin.indexOf('class _AdminTabLabel'),
+      admin.indexOf('class _AdminChipWrap'),
+    );
+    expect(tabLabel, contains('mainAxisSize: MainAxisSize.min'));
+    expect(tabLabel, isNot(contains('maxWidth: 128')));
     expect(admin, contains('Icon(icon, size: 16)'));
 
     for (final className in [

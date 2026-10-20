@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_page_tabs.dart';
 import '../core/app_clock.dart';
 import '../core/calendar_view.dart';
 import '../core/local_timezone_resolver.dart';
@@ -884,12 +885,9 @@ class _CalendarScreenState extends State<CalendarScreen>
           ),
           Material(
             color: cs.surface,
-            child: TabBar(
+            child: AppPageTabs(
               controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+              height: AppPageTabs.heightFor(context),
               tabs: [
                 Tab(height: 34, text: s.calendarTabMonth),
                 Tab(height: 34, text: s.calendarTabWeek),
@@ -897,23 +895,6 @@ class _CalendarScreenState extends State<CalendarScreen>
                 const Tab(height: 34, text: '三日'),
                 const Tab(height: 34, text: '年'),
               ],
-              labelStyle: appSecondaryMenuItemTextStyle(context),
-              unselectedLabelStyle: appSecondaryMenuItemTextStyle(context),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                color: Color.alphaBlend(
-                  cs.primary.withValues(alpha: 0.10),
-                  cs.surface,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: cs.primary.withValues(alpha: 0.20),
-                  width: 0.45,
-                ),
-              ),
-              labelColor: cs.onSurface,
-              unselectedLabelColor: cs.onSurfaceVariant,
             ),
           ),
           _calendarFilterStrip(

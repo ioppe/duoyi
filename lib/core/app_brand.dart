@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'brand_strings.dart';
 import 'design_tokens.dart';
 import 'i18n.dart';
+import 'page_tab_style.dart';
 
 const String _cnFontFamily = DesignTokens.fontFamilyRounded;
 const List<String> _cnFontFallback = [
@@ -298,14 +299,6 @@ ThemeData _withSharedControls(
   final selectedControlForeground = _highContrastForeground(
     selectedControlBackground,
     cs.onSurface,
-  );
-  final selectedTabBackground = Color.alphaBlend(
-    cs.primary.withValues(alpha: isDark ? 0.16 : 0.09),
-    surface,
-  );
-  final selectedTabForeground = _highContrastForeground(
-    selectedTabBackground,
-    cs.primary,
   );
   final selectedNavigationBackground = Color.alphaBlend(
     cs.primary.withValues(alpha: isDark ? 0.18 : 0.10),
@@ -745,23 +738,7 @@ ThemeData _withSharedControls(
       tileColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),
-    tabBarTheme: TabBarThemeData(
-      dividerColor: Colors.transparent,
-      indicatorSize: TabBarIndicatorSize.tab,
-      indicator: BoxDecoration(
-        color: selectedTabBackground,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      labelColor: selectedTabForeground,
-      unselectedLabelColor: cs.onSurfaceVariant,
-      labelStyle: theme.textTheme.labelMedium?.copyWith(
-        fontWeight: DesignTokens.fontWeightStrong,
-      ),
-      unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
-        fontWeight: DesignTokens.fontWeightStrong,
-      ),
-      overlayColor: WidgetStatePropertyAll(cs.primary.withValues(alpha: 0.08)),
-    ),
+    tabBarTheme: appPageTabTheme(theme),
     navigationBarTheme: NavigationBarThemeData(
       height: 60,
       elevation: 0,

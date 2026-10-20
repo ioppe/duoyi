@@ -51,9 +51,12 @@ void main() {
       expect(today, contains("\${I18n.tr('today.unit.course_section')}"));
       expect(today, contains('final headerStyle = home.typography('));
       expect(today, contains('size: DesignTokens.homeCaptionSize'));
-      expect(today, contains('indicator: HomeTabIndicator('));
-      expect(today, contains('indicatorSize: TabBarIndicatorSize.label'));
-      expect(today, contains('tabAlignment: TabAlignment.start'));
+      expect(today, contains('child: AppPageTabs('));
+      final shared = File('lib/widgets/app_page_tabs.dart').readAsStringSync();
+      final style = File('lib/core/page_tab_style.dart').readAsStringSync();
+      expect(style, contains('indicator: PageTabIndicator('));
+      expect(style, contains('indicatorSize: TabBarIndicatorSize.label'));
+      expect(shared, contains('tabAlignment: TabAlignment.start'));
       expect(today, contains("I18n.tr('today.all_todos')"));
       expect(today, contains("I18n.tr('today.all_goals')"));
       expect(today, isNot(contains("'今日待办 · \$todayTodosCount 项")));

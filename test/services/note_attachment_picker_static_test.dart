@@ -102,7 +102,7 @@ void main() {
     final i18n = File('lib/core/i18n.dart').readAsStringSync();
 
     expect(screen, contains('enum _NoteLibraryView { active, archived }'));
-    expect(screen, contains('SegmentedButton<_NoteLibraryView>'));
+    expect(screen, contains('AppPageSwitcher<_NoteLibraryView>'));
     expect(screen, contains("I18n.tr('note.search.hint')"));
     expect(screen, contains("I18n.tr('note.search.empty')"));
     expect(screen, contains("I18n.tr('note.archived.empty')"));

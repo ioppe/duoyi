@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../widgets/app_page_tabs.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -495,8 +496,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(s.focusTitle),
-          bottom: TabBar(
+          bottom: AppPageTabs(
             controller: _tabCtrl,
+            height: AppPageTabs.heightFor(context),
             tabs: [
               Tab(text: s.focusTabTimer),
               Tab(text: s.focusTabHistory),

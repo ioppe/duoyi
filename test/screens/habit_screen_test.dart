@@ -33,6 +33,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('习惯子页使用左对齐文字短线切换', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpHabitScreen(tester, HabitProvider());
+    final tabs = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabs.isScrollable, isTrue);
+    expect(tabs.tabAlignment, TabAlignment.start);
+    expect(tabs.indicator, isNot(isA<BoxDecoration>()));
+    await tester.tap(find.text('热度图'));
+    await tester.pumpAndSettle();
+    expect(tabs.controller!.index, 1);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('新建习惯至多三分之二屏，表单可滚到保存且遮罩可关闭', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -43,10 +58,12 @@ void main() {
     await tester.pumpAndSettle();
 
     final card = tester.getRect(
-      find.descendant(
-        of: find.byType(AppModalSheet),
-        matching: find.byType(Material),
-      ).first,
+      find
+          .descendant(
+            of: find.byType(AppModalSheet),
+            matching: find.byType(Material),
+          )
+          .first,
     );
     expect(card.height, closeTo(844 * 2 / 3, 0.5));
     final saveButton = find.widgetWithText(ElevatedButton, '开启新习惯');

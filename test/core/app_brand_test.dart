@@ -102,13 +102,15 @@ void main() {
     );
     expect(source, contains('final selectedControlForeground'));
     expect(source, contains('return selectedControlForeground;'));
-    expect(source, contains('final selectedTabBackground = Color.alphaBlend'));
-    expect(source, contains('final selectedTabForeground'));
+    expect(source, contains('tabBarTheme: appPageTabTheme(theme)'));
+    final tabs = File('lib/core/page_tab_style.dart').readAsStringSync();
+    expect(tabs, contains('indicator: PageTabIndicator(color: accent)'));
+    expect(tabs, contains('labelColor: accent'));
     expect(source, contains('final selectedNavigationBackground'));
     expect(source, contains('final selectedNavigationForeground'));
-    expect(source, contains('color: selectedTabBackground'));
+    expect(tabs, contains('indicatorSize: TabBarIndicatorSize.label'));
     expect(source, contains('indicatorColor: selectedNavigationBackground'));
-    expect(source, contains('labelColor: selectedTabForeground'));
+    expect(tabs, contains('unselectedLabelColor: muted'));
     expect(source, contains('color: selected ? selectedNavigationForeground'));
     expect(
       source,

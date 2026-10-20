@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>统一子页切换风格</title>
+<style>
+body{margin:0;padding:24px;background:#f6f7f9;color:#242c38;font:15px/1.6 system-ui,sans-serif}h1{font-size:22px}h2{font-size:17px;margin-top:28px}p{max-width:940px;color:#626c78}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}figure{margin:0}img{display:block;width:100%;height:auto;background:white;border-radius:10px}figcaption{padding:7px;color:#626c78}.wide{max-width:1440px;margin:20px 0}
+</style>
+<h1>统一页面内部切换风格</h1>
+<p>首页、习惯、专注、纪念日、日历、扩展、后台及待办／随手记／时间足迹的内容视图使用同一套文字短线页签。圆体粗体、左对齐、主题色与 22px 短线，支持窄屏滚动和文字缩放。</p>
+<figure class="wide"><img src="22-habit-comparison.png" alt="习惯页前后对照"><figcaption>习惯页：相同 490×710 视口，左侧修改前，右侧修改后。</figcaption></figure>
+<h2>首页与习惯</h2>
+<div class="grid">
+<figure><img src="02-home-after-490.png" alt="首页"><figcaption>首页</figcaption></figure>
+<figure><img src="03-habit-after-490.png" alt="习惯今日打卡"><figcaption>习惯 · 今日打卡</figcaption></figure>
+<figure><img src="04-habit-heatmap-490.png" alt="习惯热度图"><figcaption>习惯 · 热度图</figcaption></figure>
+</div>
+<h2>其他页面</h2>
+<div class="grid">
+<figure><img src="05-focus-timer-490.png" alt="专注计时"><figcaption>专注 · 计时</figcaption></figure>
+<figure><img src="06-focus-history-490.png" alt="专注记录"><figcaption>专注 · 记录</figcaption></figure>
+<figure><img src="08-time-audit-490.png" alt="时间足迹"><figcaption>时间足迹</figcaption></figure>
+<figure><img src="09-notes-active-490.png" alt="随手记"><figcaption>随手记 · 有内容状态</figcaption></figure>
+<figure><img src="11-calendar-490.png" alt="日历"><figcaption>日历</figcaption></figure>
+<figure><img src="19-todo-list-490.png" alt="待办列表"><figcaption>待办 · 列表视图</figcaption></figure>
+</div>
+<h2>窄屏、暗色与桌面</h2>
+<div class="grid">
+<figure><img src="13-integrations-320.png" alt="窄屏扩展"><figcaption>扩展功能 · 320px</figcaption></figure>
+<figure><img src="15-habit-dark-320.png" alt="暗色习惯"><figcaption>习惯 · 暗色 320px</figcaption></figure>
+</div>
+<figure class="wide"><img src="21-todo-list-desktop.png" alt="桌面待办列表"><figcaption>桌面待办内容切换</figcaption></figure>
+<p>最终相关回归 102 项通过，静态分析与 Web 构建通过。全量运行及既有基线见 <a href="README.md">验证记录</a>。</p>
+</html>

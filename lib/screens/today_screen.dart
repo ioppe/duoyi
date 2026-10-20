@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../widgets/app_page_tabs.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -486,10 +487,7 @@ class TodayScreen extends StatelessWidget {
     }
 
     final scaler = MediaQuery.textScalerOf(context);
-    final tabHeight = math.max(
-      DesignTokens.controlMinHeight,
-      scaler.scale(DesignTokens.fontSizeBody) * 1.5 + DesignTokens.spaceMd,
-    );
+    final tabHeight = AppPageTabs.heightFor(context);
     final toolbarHeight =
         DesignTokens.homeTopInset +
         scaler.scale(DesignTokens.homeHeadingSize) * 1.5 +
@@ -594,31 +592,10 @@ class TodayScreen extends StatelessWidget {
                     DesignTokens.spaceMd,
                     0,
                   ),
-                  child: TabBar(
-                    key: const ValueKey('today_home_tabs'),
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    dividerColor: Colors.transparent,
-                    labelColor: home.accent,
-                    unselectedLabelColor: home.muted,
-                    overlayColor: const WidgetStatePropertyAll(
-                      Colors.transparent,
-                    ),
-                    labelPadding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.spaceMd,
-                    ),
-                    indicatorSize: TabBarIndicatorSize.label,
-                    indicator: HomeTabIndicator(color: home.accent),
-                    labelStyle: home.typography(
-                      theme,
-                      size: DesignTokens.fontSizeBody,
-                      color: home.accent,
-                    ),
-                    unselectedLabelStyle: home.typography(
-                      theme,
-                      size: DesignTokens.fontSizeBody,
-                      color: home.muted,
-                    ),
+                  child: AppPageTabs(
+                    barKey: const ValueKey('today_home_tabs'),
+                    height: tabHeight,
+                    padding: EdgeInsets.zero,
                     tabs: [
                       homeTab(
                         key: const ValueKey('today_todos_tab'),

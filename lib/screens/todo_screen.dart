@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_page_tabs.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/app_clock.dart';
@@ -638,27 +639,14 @@ class _TodoViewSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: SegmentedButton<_TodoViewMode>(
-        segments: const [
-          ButtonSegment(
-            value: _TodoViewMode.matrix,
-            icon: Icon(Icons.grid_view),
-            label: Text('四象限'),
-          ),
-          ButtonSegment(
-            value: _TodoViewMode.list,
-            icon: Icon(Icons.view_list_outlined),
-            label: Text('列表'),
-          ),
-          ButtonSegment(
-            value: _TodoViewMode.kanban,
-            icon: Icon(Icons.view_kanban_outlined),
-            label: Text('看板'),
-          ),
+      child: AppPageSwitcher<_TodoViewMode>(
+        options: const [
+          AppPageOption(value: _TodoViewMode.matrix, text: '四象限'),
+          AppPageOption(value: _TodoViewMode.list, text: '列表'),
+          AppPageOption(value: _TodoViewMode.kanban, text: '看板'),
         ],
-        selected: {selected},
-        showSelectedIcon: false,
-        onSelectionChanged: (values) => onChanged(values.first),
+        value: selected,
+        onChanged: onChanged,
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_page_tabs.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/app_clock.dart';
@@ -747,32 +748,9 @@ class _HabitScreenState extends State<HabitScreen>
         // 宽屏双栏并置时 TabBar 失去切换意义，顶栏不再挂载。
         bottom: isWidescreen
             ? null
-            : TabBar(
+            : AppPageTabs(
                 controller: _tabCtrl,
-                indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                labelStyle: appSecondaryControlLabelStyle(context).copyWith(
-                  fontSize: 12,
-                  height: 1.1,
-                  fontWeight: DesignTokens.fontWeightStrong,
-                ),
-                unselectedLabelStyle: appSecondaryControlLabelStyle(context)
-                    .copyWith(
-                      fontSize: 12,
-                      height: 1.1,
-                      fontWeight: DesignTokens.fontWeightStrong,
-                    ),
-                labelColor: cs.onSurface,
-                unselectedLabelColor: cs.onSurfaceVariant,
-                indicator: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: cs.primary.withValues(alpha: 0.16),
-                    width: 0.55,
-                  ),
-                ),
+                height: AppPageTabs.heightFor(context),
                 tabs: [
                   Tab(text: s.habitTabToday),
                   Tab(text: s.habitTabHeatmap),

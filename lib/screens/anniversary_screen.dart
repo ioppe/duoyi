@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_page_tabs.dart';
 import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -158,10 +159,9 @@ class _AnniversaryScreenState extends State<AnniversaryScreen>
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
         bottom: fixedType == null
-            ? TabBar(
+            ? AppPageTabs(
                 controller: _tabs,
-                labelStyle: appSecondaryMenuItemTextStyle(context),
-                unselectedLabelStyle: appSecondaryMenuItemTextStyle(context),
+                height: AppPageTabs.heightFor(context),
                 tabs: [
                   Tab(text: I18n.tr('anniversary.tab.all')),
                   Tab(text: I18n.tr('anniversary.birthday')),

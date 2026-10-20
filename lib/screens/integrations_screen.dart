@@ -6,6 +6,8 @@
 /// - 语言：在中 / 英 之间切换。
 library;
 
+import '../widgets/app_page_tabs.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -150,11 +152,8 @@ class _IntegrationsScreenBody extends StatelessWidget {
           title: const Text('扩展功能'),
           backgroundColor: routeBackground.withValues(alpha: 0.96),
           surfaceTintColor: Colors.transparent,
-          bottom: TabBar(
-            labelStyle: appSecondaryMenuItemTextStyle(context),
-            unselectedLabelStyle: appSecondaryMenuItemTextStyle(context),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 12),
-            indicatorSize: TabBarIndicatorSize.tab,
+          bottom: AppPageTabs(
+            height: AppPageTabs.heightFor(context),
             tabs: const [
               Tab(height: 34, text: '日历订阅'),
               Tab(height: 34, text: '位置提醒'),

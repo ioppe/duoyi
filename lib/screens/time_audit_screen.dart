@@ -11,6 +11,7 @@ import '../providers/time_audit_provider.dart';
 import '../widgets/app_date_picker.dart';
 import '../widgets/app_time_picker.dart';
 import '../widgets/surface_components.dart';
+import '../widgets/app_page_tabs.dart';
 
 enum _AuditRange { today, week, month, all }
 
@@ -108,35 +109,27 @@ class _TimeAuditScreenState extends State<TimeAuditScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          _HorizontalSegmentStrip(
-            child: SegmentedButton<_AuditView>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: _AuditView.timeline,
-                  icon: const Icon(Icons.view_agenda_outlined),
-                  label: Text(I18n.tr('time_audit.view.timeline')),
-                ),
-                ButtonSegment(
-                  value: _AuditView.category,
-                  icon: const Icon(Icons.donut_small_outlined),
-                  label: Text(I18n.tr('time_audit.view.category')),
-                ),
-                ButtonSegment(
-                  value: _AuditView.calendar,
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text(I18n.tr('time_audit.view.calendar')),
-                ),
-                ButtonSegment(
-                  value: _AuditView.trend,
-                  icon: const Icon(Icons.bar_chart_outlined),
-                  label: Text(I18n.tr('time_audit.view.trend')),
-                ),
-              ],
-              selected: {_view},
-              onSelectionChanged: (value) =>
-                  setState(() => _view = value.first),
-            ),
+          AppPageSwitcher<_AuditView>(
+            options: [
+              AppPageOption(
+                value: _AuditView.timeline,
+                text: I18n.tr('time_audit.view.timeline'),
+              ),
+              AppPageOption(
+                value: _AuditView.category,
+                text: I18n.tr('time_audit.view.category'),
+              ),
+              AppPageOption(
+                value: _AuditView.calendar,
+                text: I18n.tr('time_audit.view.calendar'),
+              ),
+              AppPageOption(
+                value: _AuditView.trend,
+                text: I18n.tr('time_audit.view.trend'),
+              ),
+            ],
+            value: _view,
+            onChanged: (value) => setState(() => _view = value),
           ),
           const SizedBox(height: 12),
           if (entries.isEmpty)
