@@ -205,8 +205,14 @@ void main() {
     );
     expect(
       source,
-      contains('final openAbove = belowSpace < 160 && aboveSpace > belowSpace'),
+      contains('belowSpace < preferredMaxHeight && aboveSpace > belowSpace'),
     );
+    expect(
+      source,
+      contains('items.length * itemHeight + menuPadding.vertical'),
+    );
+    expect(source, contains('menuPadding: menuPadding'));
+    expect(source, contains('height: itemHeight'));
     expect(source, contains('maxHeight: availableHeight'));
     expect(source, contains('maxHeight: initialPosition.height'));
     expect(source, contains('class _DropdownMenuPosition'));

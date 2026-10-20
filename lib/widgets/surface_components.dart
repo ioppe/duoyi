@@ -2047,6 +2047,22 @@ Future<T?> _showAnchoredDropdownMenu<T>({
     return null;
   }
 
+  const menuPadding = EdgeInsets.symmetric(vertical: 8);
+  const itemContentPadding = EdgeInsets.symmetric(horizontal: 8, vertical: 7);
+  final controlText = appSecondaryControlTextStyle(context);
+  final scaledTextHeight =
+      MediaQuery.textScalerOf(context).scale(controlText.fontSize!) *
+      controlText.height!;
+  final itemHeight = (scaledTextHeight + itemContentPadding.vertical)
+      .clamp(36.0, double.infinity)
+      .toDouble();
+  // Match the rendered rows and padding: short menus must not reserve the full
+  // height limit above the field and leave an empty gap below their contents.
+  final contentHeight = items.length * itemHeight + menuPadding.vertical;
+  final preferredMaxHeight = contentHeight
+      .clamp(0.0, menuMaxHeight ?? 320.0)
+      .toDouble();
+
   _DropdownMenuPosition positionForCurrentLayout() {
     final currentFieldBox = context.findRenderObject() as RenderBox?;
     final currentOverlay =
@@ -2073,12 +2089,12 @@ Future<T?> _showAnchoredDropdownMenu<T>({
       safeTop + 48,
       activeOverlay.size.height,
     );
-    final preferredMaxHeight = menuMaxHeight ?? 320;
     final belowSpace = safeBottom - fieldBottomRight.dy - 6;
     final aboveSpace = fieldTopLeft.dy - safeTop - 6;
-    final openAbove = belowSpace < 160 && aboveSpace > belowSpace;
+    final openAbove =
+        belowSpace < preferredMaxHeight && aboveSpace > belowSpace;
     final availableHeight = (openAbove ? aboveSpace : belowSpace)
-        .clamp(96.0, preferredMaxHeight)
+        .clamp(preferredMaxHeight.clamp(0.0, 96.0), preferredMaxHeight)
         .toDouble();
     final unclampedTop = openAbove
         ? fieldTopLeft.dy - availableHeight - 6
@@ -2107,6 +2123,7 @@ Future<T?> _showAnchoredDropdownMenu<T>({
   return showMenu<T>(
     context: context,
     requestFocus: false,
+    menuPadding: menuPadding,
     positionBuilder: (_, constraints) => positionForCurrentLayout().rect,
     constraints: BoxConstraints(
       minWidth: fieldBox.size.width,
@@ -2128,7 +2145,7 @@ Future<T?> _showAnchoredDropdownMenu<T>({
         PopupMenuItem<T>(
           value: item.value,
           enabled: item.enabled,
-          height: 36,
+          height: itemHeight,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: DefaultTextStyle.merge(
             maxLines: 1,
@@ -2147,7 +2164,7 @@ Future<T?> _showAnchoredDropdownMenu<T>({
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                padding: itemContentPadding,
                 child: Row(
                   children: [
                     Expanded(child: item.child),

@@ -182,6 +182,48 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final scale in [1.0, 1.5]) {
+    testWidgets('实际新建表单四象限菜单 ×$scale 紧贴字段并可选择', (tester) async {
+      await _open(tester, textScale: scale);
+      final anchor = find.byKey(const ValueKey('todo_create_quadrant'));
+      await tester.ensureVisible(anchor);
+      await tester.pumpAndSettle();
+      await tester.tap(anchor);
+      for (
+        var i = 0;
+        i < 24 &&
+            find.byType(PopupMenuItem<EisenhowerQuadrant>).evaluate().isEmpty;
+        i++
+      ) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pumpAndSettle();
+      final entries = find.byType(PopupMenuItem<EisenhowerQuadrant>);
+      expect(entries, findsNWidgets(4));
+      final menuRect = tester.getRect(
+        find.ancestor(of: entries.first, matching: find.byType(Material)).first,
+      );
+      final anchorRect = tester.getRect(anchor);
+      final gap = menuRect.top >= anchorRect.bottom
+          ? menuRect.top - anchorRect.bottom
+          : anchorRect.top - menuRect.bottom;
+      expect(gap, closeTo(6, 1));
+      expect(menuRect.left, closeTo(anchorRect.left, 1));
+      expect(menuRect.width, closeTo(anchorRect.width, 1));
+      await tester.tap(entries.at(2));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .state<FormFieldState<EisenhowerQuadrant>>(
+              find.byType(FormField<EisenhowerQuadrant>),
+            )
+            .value,
+        EisenhowerQuadrant.urgentNotImportant,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final (size, keyboard) in [
     (const Size(320, 720), 0.0),
     (const Size(390, 844), 300.0),

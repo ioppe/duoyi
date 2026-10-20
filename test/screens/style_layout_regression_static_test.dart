@@ -866,8 +866,11 @@ void main() {
     );
     expect(
       menu,
-      contains('final openAbove = belowSpace < 160 && aboveSpace > belowSpace'),
+      contains('belowSpace < preferredMaxHeight && aboveSpace > belowSpace'),
     );
+    expect(menu, contains('items.length * itemHeight + menuPadding.vertical'));
+    expect(menu, contains('menuPadding: menuPadding'));
+    expect(menu, contains('height: itemHeight'));
     expect(
       menu,
       contains(
