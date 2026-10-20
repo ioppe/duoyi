@@ -61,6 +61,48 @@ class WorkspaceApiTest(unittest.TestCase):
         finally:
             db.close()
 
+    def _enable_email_code_login(self):
+        db = api.get_db()
+        try:
+            for key, value in {
+                "email_code_login_enabled": True,
+                "email_service_enabled": True,
+                "email_code_primary_provider": "smtp",
+                "email_smtp_host": "smtp.example.test",
+                "email_smtp_username": "sender@example.test",
+                "email_smtp_password": "test-mail-secret",
+            }.items():
+                api._setting_set(db, key, value)
+            db.commit()
+        finally:
+            db.close()
+        sender = patch.object(api, "_email_smtp_send", return_value={"sent": True})
+        self.addCleanup(sender.stop)
+        return sender.start()
+
+    def _assert_email_code_login_blocked(self, client, email: str, code: str):
+        send_routes = [
+            route.path for route in api.app.routes
+            if getattr(route, "endpoint", None) is api.auth_email_code
+        ]
+        login_routes = [
+            route.path for route in api.app.routes
+            if getattr(route, "endpoint", None) is api.email_login
+        ]
+        self.assertTrue(send_routes)
+        self.assertTrue(login_routes)
+        for index, route in enumerate(send_routes):
+            body = {"email": email}
+            if index % 4 != 0:
+                body["purpose"] = ("login", " LOGIN ", "")[index % 3]
+            response = client.post(route, json=body)
+            self.assertEqual(response.status_code, 403, f"{route}: {response.text}")
+            self.assertNotIn("dev_code", response.json())
+        for route in login_routes:
+            response = client.post(route, json={"email": email, "code": code})
+            self.assertEqual(response.status_code, 403, f"{route}: {response.text}")
+            self.assertNotIn("token", response.json())
+
     def _register_with_email(
         self,
         username: str,
@@ -294,6 +336,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(row["password_hash"], api._hash_password("pass123456"))
 
     def test_account_email_login_profile_update_and_uniqueness(self):
+        self._enable_email_code_login()
         registered = self._register_with_email(
             "profile-user",
             "profile@example.com",
@@ -431,6 +474,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 },
                 headers={"Authorization": f"Bearer {token}"},
             )
+            login_sender = self._enable_email_code_login()
             login_code_response = client.post(
                 "/api/auth/send-email_code",
                 json={"email": "profile-route@example.com", "purpose": "login"},
@@ -440,7 +484,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 "/api/auth/login/email",
                 json={
                     "email": "profile-route@example.com",
-                    "email_code": login_code_response.json()["dev_code"],
+                    "email_code": login_sender.call_args.kwargs["body"].split("验证码是 ", 1)[1].split("，", 1)[0],
                 },
             )
 
@@ -756,6 +800,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(avatar_response.status_code, 200)
         self.assertIn("/api/uploads/avatars/", avatar_response.json()["avatar"])
 
+        self._enable_email_code_login()
         db = api.get_db()
         try:
             login_code = api._create_email_code(
@@ -781,6 +826,7 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(email_login.json()["user_id"], user_id)
 
     def test_email_login_alias_routes_match_client_contracts(self):
+        self._enable_email_code_login()
         registered = self._register_with_email(
             "email-login-alias",
             "email-login-alias@example.com",
@@ -2559,6 +2605,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 ]
                 login_email = f"empty-bind-{len(bind_routes) - 1}@example.com"
                 latest_login_token = registered["token"]
+                self._enable_email_code_login()
                 for route in login_routes:
                     db = api.get_db()
                     try:
@@ -3563,7 +3610,258 @@ class WorkspaceApiTest(unittest.TestCase):
             api._github_latest_mobile_release = old_github_latest
             api.MOBILE_APK_DIR = old_mobile_apk_dir
 
+    def test_email_code_login_is_disabled_by_default_and_for_missing_settings(self):
+        db = api.get_db()
+        try:
+            self.assertIs(api._setting_get(db, "email_code_login_enabled"), False)
+        finally:
+            db.close()
+        self.assertIs(api.public_config()["email_code_login_enabled"], False)
+        registered = self._register_with_email("gate-default", "gate-default@example.test")
+        sender = self._enable_email_code_login()
+        code = self._email_code(registered["email"], "login")
+        with TestClient(api.app) as client:
+            for missing in (True, False):
+                with self.subTest(missing=missing):
+                    db = api.get_db()
+                    try:
+                        if missing:
+                            db.execute("DELETE FROM settings WHERE key='email_code_login_enabled'")
+                        else:
+                            api._setting_set(db, "email_code_login_enabled", False)
+                        db.commit()
+                    finally:
+                        db.close()
+                    for route in ("/api/config", "/api/bootstrap"):
+                        self.assertIs(client.get(route).json()["email_code_login_enabled"], False)
+                    self._assert_email_code_login_blocked(client, registered["email"], code)
+                    self.assertEqual(api.TOKENS[registered["user_id"]], registered["token"])
+                    db = api.get_db()
+                    try:
+                        with self.assertRaises(HTTPException) as blocked:
+                            api._create_email_code(db, email=registered["email"], purpose="login")
+                        self.assertEqual(blocked.exception.status_code, 403)
+                        row = db.execute(
+                            "SELECT consumed_at FROM email_verification_codes WHERE purpose='login'"
+                        ).fetchone()
+                        self.assertIsNone(row["consumed_at"])
+                    finally:
+                        db.close()
+                    api.init_db()
+                    db = api.get_db()
+                    try:
+                        self.assertIs(api._setting_get(db, "email_code_login_enabled"), False)
+                    finally:
+                        db.close()
+        sender.assert_not_called()
+
+    def test_email_code_login_blocks_incomplete_providers_and_disabled_mail_service(self):
+        registered = self._register_with_email("gate-incomplete", "gate-incomplete@example.test")
+        sender = self._enable_email_code_login()
+        code = self._email_code(registered["email"], "login")
+        defaults = {
+            "email_service_enabled": True,
+            "email_code_primary_provider": "none",
+            "email_code_backup_provider": "none",
+            "email_smtp_host": "", "email_smtp_username": "", "email_smtp_password": "",
+            "resend_api_key": "", "resend_from": "",
+            "openclaw_mail_enabled": False, "openclaw_mail_user": "", "openclaw_mail_api_key": "",
+            "hermes_base_url": "", "hermes_api_key": "",
+        }
+        cases = [
+            {},
+            {"email_smtp_host": "smtp.example.test", "email_smtp_username": "sender@example.test"},
+            {"email_code_primary_provider": "resend", "resend_api_key": "resend-secret", "resend_from": "  "},
+            {"email_code_primary_provider": "claw163", "openclaw_mail_user": "user", "openclaw_mail_api_key": "key"},
+            {"email_code_primary_provider": "claw163", "openclaw_mail_enabled": True, "openclaw_mail_user": "user", "openclaw_mail_api_key": "  "},
+            {"hermes_base_url": "https://hermes.example.test", "hermes_api_key": "  "},
+            {"email_smtp_host": "smtp.example.test", "email_smtp_username": "sender@example.test", "email_smtp_password": "  "},
+            {"email_service_enabled": False, "email_smtp_host": "smtp.example.test", "email_smtp_username": "sender@example.test", "email_smtp_password": "secret"},
+        ]
+        with TestClient(api.app) as client:
+            for index, updates in enumerate(cases):
+                with self.subTest(case=index):
+                    db = api.get_db()
+                    try:
+                        for key, value in {**defaults, **updates}.items():
+                            api._setting_set(db, key, value)
+                        db.commit()
+                        self.assertIs(api._setting_get(db, "email_code_login_enabled"), True)
+                    finally:
+                        db.close()
+                    self.assertIs(client.get("/api/config").json()["email_code_login_enabled"], False)
+                    self._assert_email_code_login_blocked(client, registered["email"], code)
+        sender.assert_not_called()
+        db = api.get_db()
+        try:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM email_verification_codes WHERE purpose='login'"
+            ).fetchone()[0], 1)
+        finally:
+            db.close()
+
+    def test_email_code_login_readiness_matches_dispatch_slots_and_fallbacks(self):
+        defaults = {
+            "email_code_login_enabled": True, "email_service_enabled": True,
+            "email_code_primary_provider": "none", "email_code_backup_provider": "none",
+            "email_code_active_slot": "primary", "email_auto_switch_enabled": False,
+            "email_smtp_host": "", "email_smtp_username": "", "email_smtp_password": "",
+            "resend_api_key": "", "resend_from": "",
+            "openclaw_mail_enabled": False, "openclaw_mail_user": "", "openclaw_mail_api_key": "",
+            "hermes_base_url": "", "hermes_api_key": "",
+        }
+        smtp = {"email_smtp_host": " smtp.example.test ", "email_smtp_username": " sender@example.test ", "email_smtp_password": "smtp-secret"}
+        resend = {"resend_api_key": " resend-secret ", "resend_from": " sender@example.test "}
+        claw = {"openclaw_mail_enabled": True, "openclaw_mail_user": " test-user ", "openclaw_mail_api_key": " claw-secret "}
+        cases = [
+            ({**smtp, "email_code_primary_provider": "smtp"}, "smtp", "primary", "primary"),
+            ({**resend, "email_code_backup_provider": "resend"}, "resend", "backup", "primary"),
+            ({**resend, "email_code_backup_provider": "resend", "email_auto_switch_enabled": True}, "resend", "backup", "backup"),
+            ({**smtp, **resend, "email_code_primary_provider": "smtp", "email_code_backup_provider": "resend"}, "resend", "backup", "primary"),
+            ({**smtp, **resend, "email_code_primary_provider": "smtp", "email_code_backup_provider": "resend", "email_auto_switch_enabled": True}, "resend", "backup", "backup"),
+            ({**resend, "email_code_backup_provider": "resend", "email_code_active_slot": "backup"}, "resend", "backup", "backup"),
+            ({**resend, "email_code_primary_provider": "resend", "email_code_active_slot": "backup"}, "resend", "primary", "backup"),
+            ({**smtp}, "smtp", "smtp_fallback", "primary"),
+            ({"hermes_base_url": " https://hermes.example.test/ ", "hermes_api_key": " hermes-secret "}, "hermes", "hermes_fallback", "primary"),
+            ({**claw, "email_code_primary_provider": "openclaw"}, "claw163", "primary", "primary"),
+            ({**resend, **claw}, "none", None, "primary"),
+        ]
+        with patch.object(api, "_email_smtp_send", return_value={"sent": True}) as smtp_sender, \
+                patch.object(api, "_resend_send_email", return_value={"sent": True}), \
+                patch.object(api, "_openclaw_mail_send_email", return_value={"sent": True}), \
+                patch.object(api, "_hermes_send_email", return_value={"sent": True}):
+            for index, (updates, provider, slot, saved_slot) in enumerate(cases):
+                with self.subTest(case=index):
+                    primary_fails = updates.get("email_code_primary_provider") == "smtp" and updates.get("email_code_backup_provider") == "resend"
+                    smtp_sender.return_value = {"sent": not primary_fails}
+                    db = api.get_db()
+                    try:
+                        for key, value in {**defaults, **updates}.items():
+                            api._setting_set(db, key, value)
+                        db.commit()
+                        self.assertIs(api.public_config()["email_code_login_enabled"], provider != "none")
+                        result = api._send_account_email(db, to_addr="recipient@example.test", subject="test", body="test")
+                        self.assertEqual(result["provider"], provider)
+                        self.assertIs(result["sent"], provider != "none")
+                        self.assertEqual(result.get("slot"), slot)
+                        self.assertEqual(api._setting_get(db, "email_code_active_slot"), saved_slot)
+                    finally:
+                        db.close()
+
+    def test_admin_email_code_login_switch_transitions_apply_to_issued_codes(self):
+        admin_id = self._make_admin("gate-admin", ["settings", "backup"])
+        headers = {"Authorization": f"Bearer {api.TOKENS[admin_id]}"}
+        registered = self._register_with_email("gate-transitions", "gate-transitions@example.test")
+        with TestClient(api.app) as client, patch.object(api, "_email_smtp_send", return_value={"sent": True}) as sender:
+            enabled = client.patch("/api/admin/settings", headers=headers, json={"email_code_login_enabled": True})
+            self.assertEqual(enabled.status_code, 200, enabled.text)
+            self.assertIs(enabled.json()["changed"]["email_code_login_enabled"], True)
+            self.assertIs(client.get("/api/admin/settings", headers=headers).json()["email_code_login_enabled"], True)
+            self.assertIs(client.get("/api/config").json()["email_code_login_enabled"], False)
+            configured = client.patch("/api/admin/settings", headers=headers, json={
+                "email_code_primary_provider": "smtp", "email_smtp_host": "smtp.example.test",
+                "email_smtp_username": "sender@example.test", "email_smtp_password": "test-secret",
+            })
+            self.assertEqual(configured.status_code, 200, configured.text)
+            self.assertIs(client.get("/api/bootstrap").json()["email_code_login_enabled"], True)
+            sent = client.post("/api/auth/email-code", json={"email": registered["email"], "purpose": "login"})
+            self.assertEqual(sent.status_code, 200, sent.text)
+            self.assertTrue(sent.json()["sent"])
+            self.assertNotIn("dev_code", sent.json())
+            code = sender.call_args.kwargs["body"].split("验证码是 ", 1)[1].split("，", 1)[0]
+            sender.reset_mock()
+            disabled = client.patch("/api/admin/settings", headers=headers, json={"email_code_login_enabled": False})
+            self.assertEqual(disabled.status_code, 200, disabled.text)
+            api.init_db()
+            self.assertIs(client.get("/api/config").json()["email_code_login_enabled"], False)
+            self._assert_email_code_login_blocked(client, registered["email"], code)
+            sender.assert_not_called()
+            password_login = client.post("/api/auth/login", json={"email": registered["email"], "password": "pass123456"})
+            self.assertEqual(password_login.status_code, 200, password_login.text)
+            reenabled = client.post("/api/admin/system-settings", headers=headers, json={"email_code_login_enabled": True})
+            self.assertEqual(reenabled.status_code, 200, reenabled.text)
+            api.init_db()
+            self.assertIs(client.get("/api/config").json()["email_code_login_enabled"], True)
+            logged_in = client.post("/api/auth/email-login", json={"email": registered["email"], "code": code})
+            self.assertEqual(logged_in.status_code, 200, logged_in.text)
+            self.assertEqual(logged_in.json()["user_id"], registered["user_id"])
+            self.assertFalse(logged_in.json()["is_admin"])
+            reused = client.post("/api/auth/email-login", json={"email": registered["email"], "code": code})
+            self.assertEqual(reused.status_code, 400)
+
+    def test_email_code_login_switch_requires_settings_permission_and_typed_boolean(self):
+        user_id = self._register("gate-ordinary")
+        users_admin = self._make_admin("gate-users-admin", ["users"])
+        mail_admin = self._make_admin("gate-mail-admin", ["backup"])
+        settings_admin = self._make_admin("gate-settings-admin", ["settings"])
+        with TestClient(api.app) as client:
+            for actor in (None, user_id, users_admin, mail_admin):
+                for route in ("/api/admin/settings", "/api/admin/system-settings"):
+                    with self.subTest(actor=actor, route=route):
+                        headers = {} if actor is None else {"Authorization": f"Bearer {api.TOKENS[actor]}"}
+                        denied = client.patch(route, headers=headers, json={"email_code_login_enabled": True})
+                        self.assertIn(denied.status_code, {401, 403})
+            headers = {"Authorization": f"Bearer {api.TOKENS[settings_admin]}"}
+            invalid = client.patch("/api/admin/settings", headers=headers, json={"email_code_login_enabled": "maybe"})
+            self.assertEqual(invalid.status_code, 422)
+            for value, expected in (("true", True), ("false", False)):
+                saved = client.patch("/api/admin/settings", headers=headers, json={"email_code_login_enabled": value})
+                self.assertEqual(saved.status_code, 200, saved.text)
+                self.assertIs(saved.json()["changed"]["email_code_login_enabled"], expected)
+            saved = client.patch("/api/admin/system-settings", headers=headers, json={"email_code_login_enabled": "false"})
+            self.assertEqual(saved.status_code, 200, saved.text)
+            db = api.get_db()
+            try:
+                self.assertIs(api._setting_get(db, "email_code_login_enabled"), False)
+            finally:
+                db.close()
+            self.assertFalse(api.me(user_id=user_id)["is_admin"])
+
+    def test_email_code_login_public_flag_exposes_no_provider_credentials(self):
+        private_settings = {
+            "email_code_login_enabled": True, "email_code_primary_provider": "smtp",
+            "email_smtp_host": "private-host.example.test", "email_smtp_username": "private-sender@example.test",
+            "email_smtp_password": "smtp-private-secret", "email_smtp_from": "private-from@example.test",
+            "openclaw_mail_enabled": True, "openclaw_mail_user": "private-claw-user",
+            "openclaw_mail_api_key": "claw-private-secret", "resend_api_key": "resend-private-secret",
+            "resend_from": "private-resend@example.test", "hermes_base_url": "https://private-hermes.example.test",
+            "hermes_api_key": "hermes-private-secret",
+        }
+        db = api.get_db()
+        try:
+            for key, value in private_settings.items():
+                api._setting_set(db, key, value)
+            db.commit()
+        finally:
+            db.close()
+        with TestClient(api.app) as client:
+            for route in ("/api/config", "/api/bootstrap"):
+                response = client.get(route)
+                self.assertEqual(response.status_code, 200)
+                self.assertIs(response.json()["email_code_login_enabled"], True)
+                for key, value in private_settings.items():
+                    if key != "email_code_login_enabled":
+                        self.assertNotIn(key, response.json())
+                    if isinstance(value, str) and "private" in value:
+                        self.assertNotIn(value, response.text)
+
+    def test_disabled_email_code_login_preserves_bind_registration_and_reset_mail(self):
+        registered = self._register_with_email("gate-other-mail", "gate-other-mail@example.test")
+        with TestClient(api.app) as client:
+            for index, purpose in enumerate(("bind", "register", "registration", "signup", "sign_up")):
+                response = client.post("/api/auth/email-code", json={"email": f"gate-bind-{index}@example.test", "purpose": purpose})
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(response.json()["purpose"], "bind")
+                self.assertIn("dev_code", response.json())
+            reset = client.post("/api/auth/email-code", json={"email": registered["email"], "purpose": "reset"})
+            self.assertEqual(reset.status_code, 200, reset.text)
+            self.assertIn("dev_code", reset.json())
+            self._enable_email_code_login()
+            wrong_purpose = client.post("/api/auth/email-login", json={"email": registered["email"], "code": reset.json()["dev_code"]})
+            self.assertEqual(wrong_purpose.status_code, 400)
+
     def test_email_code_login_uses_verified_bound_email(self):
+        self._enable_email_code_login()
         db = api.get_db()
         try:
             code_result = api._create_email_code(
@@ -3923,6 +4221,7 @@ class WorkspaceApiTest(unittest.TestCase):
         )
         db = api.get_db()
         try:
+            api._setting_set(db, "email_code_login_enabled", True)
             api._setting_set(db, "email_code_primary_provider", "none")
             api._setting_set(db, "email_code_backup_provider", "none")
             api._setting_set(db, "hermes_base_url", "https://hermes.example.test")

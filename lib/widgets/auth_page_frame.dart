@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,19 +9,23 @@ import '../providers/theme_provider.dart';
 import 'brand_background.dart';
 import 'surface_components.dart';
 
-/// One visual system for password, registration and token entry on all devices.
+/// Shared, stable-size authentication surface for Web and installed clients.
 class AuthPageFrame extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
+  final Widget? footer;
   final bool allowBack;
+  final Object formModeKey;
 
   const AuthPageFrame({
     super.key,
     required this.title,
     required this.subtitle,
     required this.child,
+    this.footer,
     this.allowBack = true,
+    this.formModeKey = 'login',
   });
 
   @override
@@ -37,111 +43,107 @@ class AuthPageFrame extends StatelessWidget {
               final wide =
                   constraints.maxWidth >= DesignTokens.authWideBreakpoint;
               final inset = wide ? DesignTokens.space5xl : DesignTokens.spaceXl;
-              final header = Row(
-                children: [
-                  if (canGoBack) ...[
-                    IconButton(
-                      tooltip: I18n.tr('action.back'),
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
-                    const SizedBox(width: DesignTokens.spaceSm),
-                  ],
-                  Container(
-                    width: DesignTokens.authLogoSize,
-                    height: DesignTokens.authLogoSize,
-                    decoration: BoxDecoration(
-                      color: cs.primary,
-                      borderRadius: DesignTokens.borderRadiusLg,
-                    ),
-                    child: Icon(
-                      Icons.space_dashboard_rounded,
-                      color: cs.onPrimary,
-                    ),
+              // Keyboard resizing changes the outer viewport, never the card's
+              // two-face geometry. The outer scroll view keeps it reachable.
+              final fullHeight =
+                  constraints.maxHeight +
+                  MediaQuery.viewInsetsOf(context).bottom;
+              final cardHeight = (fullHeight - DesignTokens.space5xl * 3)
+                  .clamp(
+                    DesignTokens.authCardMinHeight,
+                    wide
+                        ? DesignTokens.authCardHeightWide
+                        : DesignTokens.authCardHeightMobile,
+                  )
+                  .toDouble();
+              final padding = wide
+                  ? DesignTokens.space3xl
+                  : DesignTokens.spaceXl;
+              final face = Container(
+                key: ValueKey(formModeKey),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
+                  border: Border.all(
+                    color: cs.outlineVariant.withValues(alpha: 0.45),
                   ),
-                  const SizedBox(width: DesignTokens.spaceMd),
-                  Expanded(
+                  boxShadow: DesignTokens.shadowXs,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
+                  child: AppFormFieldTheme(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          strings.appTitle,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        Text(
-                          I18n.tr('auth.design.tagline'),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
+                        Expanded(
+                          child: SingleChildScrollView(
+                            key: const ValueKey('auth_page_scroll'),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: EdgeInsets.fromLTRB(
+                              padding,
+                              padding,
+                              padding,
+                              DesignTokens.spaceLg,
+                            ),
+                            child: AutofillGroup(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          fontSize: DesignTokens.fontSizeXxl,
+                                          height: 1.3,
+                                        ),
+                                  ),
+                                  const SizedBox(height: DesignTokens.spaceSm),
+                                  Text(
+                                    subtitle,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                      height: 1.6,
+                                    ),
+                                  ),
+                                  const SizedBox(height: DesignTokens.spaceXxl),
+                                  child,
+                                ],
+                              ),
+                            ),
                           ),
                         ),
+                        if (footer != null)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              padding,
+                              DesignTokens.spaceXs,
+                              padding,
+                              DesignTokens.spaceLg,
+                            ),
+                            child: footer,
+                          ),
                       ],
                     ),
                   ),
-                  if (wide)
-                    Text(
-                      I18n.tr('auth.design.everyday'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                ],
+                ),
               );
               final form = ConstrainedBox(
                 constraints: const BoxConstraints(
                   maxWidth: DesignTokens.authFormMaxWidth,
                 ),
-                child: Container(
+                child: SizedBox(
                   key: const ValueKey('auth_form_surface'),
-                  padding: EdgeInsets.all(
-                    wide ? DesignTokens.space3xl : DesignTokens.spaceXl,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cs.surface,
-                    borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
-                    border: Border.all(
-                      color: cs.outlineVariant.withValues(alpha: 0.45),
-                    ),
-                    boxShadow: DesignTokens.shadowXs,
-                  ),
-                  child: AutofillGroup(
-                    child: AppFormFieldTheme(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontSize: DesignTokens.fontSizeXxl,
-                              height: 1.3,
-                            ),
-                          ),
-                          const SizedBox(height: DesignTokens.spaceSm),
-                          Text(
-                            subtitle,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: cs.onSurfaceVariant,
-                              height: 1.6,
-                            ),
-                          ),
-                          const SizedBox(height: DesignTokens.spaceXxl),
-                          child,
-                        ],
-                      ),
-                    ),
-                  ),
+                  height: cardHeight,
+                  child: _AuthFlipCard(mode: formModeKey, child: face),
                 ),
               );
               return SingleChildScrollView(
-                key: const ValueKey('auth_page_scroll'),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
+                key: const ValueKey('auth_outer_scroll'),
                 padding: EdgeInsets.all(inset),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: (constraints.maxHeight - inset * 2).clamp(
-                      0,
-                      double.infinity,
-                    ),
+                    minHeight: math.max(0, constraints.maxHeight - inset * 2),
                   ),
                   child: Center(
                     child: ConstrainedBox(
@@ -152,15 +154,64 @@ class AuthPageFrame extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          header,
+                          Row(
+                            children: [
+                              if (canGoBack) ...[
+                                IconButton(
+                                  tooltip: I18n.tr('action.back'),
+                                  onPressed: () =>
+                                      Navigator.of(context).maybePop(),
+                                  icon: const Icon(Icons.arrow_back_rounded),
+                                ),
+                                const SizedBox(width: DesignTokens.spaceSm),
+                              ],
+                              Container(
+                                width: DesignTokens.authLogoSize,
+                                height: DesignTokens.authLogoSize,
+                                decoration: BoxDecoration(
+                                  color: cs.primary,
+                                  borderRadius: DesignTokens.borderRadiusLg,
+                                ),
+                                child: Icon(
+                                  Icons.space_dashboard_rounded,
+                                  color: cs.onPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: DesignTokens.spaceMd),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      strings.appTitle,
+                                      style: theme.textTheme.titleLarge,
+                                    ),
+                                    Text(
+                                      I18n.tr('auth.design.tagline'),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: cs.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (wide)
+                                Text(
+                                  I18n.tr('auth.design.everyday'),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
                           SizedBox(
                             height: wide
                                 ? DesignTokens.space5xl
-                                : DesignTokens.space3xl,
+                                : DesignTokens.spaceXxl,
                           ),
                           if (wide)
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 const Expanded(child: _AuthIntroduction()),
                                 const SizedBox(width: DesignTokens.space5xl),
@@ -169,7 +220,7 @@ class AuthPageFrame extends StatelessWidget {
                             )
                           else
                             Align(alignment: Alignment.topCenter, child: form),
-                          const SizedBox(height: DesignTokens.spaceXxl),
+                          const SizedBox(height: DesignTokens.spaceLg),
                           Text(
                             I18n.tr('auth.design.footer'),
                             textAlign: TextAlign.center,
@@ -186,6 +237,188 @@ class AuthPageFrame extends StatelessWidget {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Only one face is mounted at a time: controllers, focus and autofill never
+/// belong to simultaneous outgoing/incoming forms. Motion follows the toggle.
+class _AuthFlipCard extends StatefulWidget {
+  final Object mode;
+  final Widget child;
+  const _AuthFlipCard({required this.mode, required this.child});
+
+  @override
+  State<_AuthFlipCard> createState() => _AuthFlipCardState();
+}
+
+class _AuthFlipCardState extends State<_AuthFlipCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: DesignTokens.authFlipDuration,
+    value: 1,
+  );
+  Widget? _outgoing;
+  bool _reduceMotion = false;
+  double _direction = -1;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_reduceMotion) _controller.value = 1;
+  }
+
+  @override
+  void didUpdateWidget(_AuthFlipCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mode != widget.mode) {
+      _direction = -_direction;
+      _outgoing = oldWidget.child;
+      _controller.forward(from: _reduceMotion ? 1 : 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (context, _) {
+      final progress = Curves.easeInOutCubic.transform(_controller.value);
+      final front = progress < 0.5 && _outgoing != null;
+      final angle = (front ? progress : progress - 1) * math.pi * _direction;
+      return IgnorePointer(
+        ignoring: _controller.isAnimating,
+        child: ExcludeSemantics(
+          excluding: _controller.isAnimating,
+          child: Transform(
+            key: const ValueKey('auth_card_flip'),
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: front ? _outgoing! : widget.child,
+          ),
+        ),
+      );
+    },
+  );
+}
+
+enum AuthMethod { password, emailCode, token }
+
+/// Selected and unselected methods share exactly the same text and box metrics.
+class AuthMethodSelector extends StatelessWidget {
+  final AuthMethod selected;
+  final bool showEmailCode;
+  final bool showToken;
+  final ValueChanged<AuthMethod>? onChanged;
+
+  const AuthMethodSelector({
+    super.key,
+    required this.selected,
+    required this.showEmailCode,
+    required this.showToken,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final style = theme.textTheme.labelLarge!.copyWith(
+      fontSize: DesignTokens.fontSizeButton,
+      fontWeight: DesignTokens.fontWeightStrong,
+      height: 1.3,
+    );
+    final options = <(AuthMethod, String)>[
+      (AuthMethod.password, I18n.tr('auth.password_login')),
+      if (showEmailCode)
+        (AuthMethod.emailCode, I18n.tr('auth.email_code_login')),
+      if (showToken) (AuthMethod.token, I18n.tr('auth.token.login')),
+    ];
+    final scaler = MediaQuery.textScalerOf(context);
+    var labelWidth = 0.0;
+    var labelHeight = 0.0;
+    for (final option in options) {
+      final painter = TextPainter(
+        text: TextSpan(text: option.$2, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+      )..layout();
+      labelWidth = math.max(labelWidth, painter.width);
+      labelHeight = math.max(labelHeight, painter.height);
+      painter.dispose();
+    }
+    final height = math.max(
+      DesignTokens.controlMinHeight,
+      labelHeight + DesignTokens.spaceLg,
+    );
+    return SizedBox(
+      key: const ValueKey('auth_method_selector'),
+      height: height,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = math.max(
+            constraints.maxWidth,
+            (labelWidth + DesignTokens.spaceXxl) * options.length,
+          );
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: width,
+              child: Row(
+                children: [
+                  for (var index = 0; index < options.length; index++) ...[
+                    if (index > 0) const SizedBox(width: DesignTokens.spaceXs),
+                    Expanded(
+                      child: Semantics(
+                        selected: selected == options[index].$1,
+                        child: TextButton(
+                          key: ValueKey(
+                            'auth-method-${options[index].$1.name}',
+                          ),
+                          onPressed: onChanged == null
+                              ? null
+                              : () => onChanged!(options[index].$1),
+                          style: TextButton.styleFrom(
+                            textStyle: style,
+                            minimumSize: Size(0, height),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: DesignTokens.spaceSm,
+                            ),
+                            foregroundColor: selected == options[index].$1
+                                ? cs.primary
+                                : cs.onSurfaceVariant,
+                            backgroundColor: selected == options[index].$1
+                                ? cs.primary.withValues(alpha: 0.10)
+                                : Colors.transparent,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: DesignTokens.borderRadiusMd,
+                            ),
+                            side: BorderSide(
+                              color: selected == options[index].$1
+                                  ? cs.primary.withValues(alpha: 0.3)
+                                  : cs.outlineVariant,
+                            ),
+                          ),
+                          child: Text(options[index].$2, maxLines: 1),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -255,7 +488,6 @@ class _AuthFeature extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
-
   const _AuthFeature({
     required this.icon,
     required this.title,
@@ -307,7 +539,6 @@ class _AuthFeature extends StatelessWidget {
 class AuthNotice extends StatelessWidget {
   final String message;
   final bool isError;
-
   const AuthNotice({super.key, required this.message, this.isError = false});
 
   @override

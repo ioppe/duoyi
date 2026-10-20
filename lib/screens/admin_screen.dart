@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../core/app_version.dart';
 import '../core/design_tokens.dart';
+import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/auth_provider.dart';
 import '../services/admin_api.dart';
@@ -2353,6 +2354,7 @@ class _SettingsTabState extends State<_SettingsTab> {
         registrationEmailRequired: key == 'registration_email_required'
             ? value
             : null,
+        emailCodeLoginEnabled: key == 'email_code_login_enabled' ? value : null,
         maintenanceMode: key == 'maintenance_mode' ? value : null,
         maintenanceMessage: key == 'maintenance_message' ? value : null,
         forceUpdateRequired: key == 'force_update_required' ? value : null,
@@ -3101,6 +3103,16 @@ class _SettingsTabState extends State<_SettingsTab> {
                 onChanged: _saving('registration_email_required')
                     ? null
                     : (v) => _set('registration_email_required', v),
+              ),
+              AppSwitchTile(
+                icon: Icons.mark_email_unread_outlined,
+                color: Colors.teal,
+                value: _data['email_code_login_enabled'] == true,
+                title: I18n.tr('admin.email_code_login.title'),
+                subtitle: I18n.tr('admin.email_code_login.subtitle'),
+                onChanged: _saving('email_code_login_enabled')
+                    ? null
+                    : (value) => _set('email_code_login_enabled', value),
               ),
             ],
           ),

@@ -50,8 +50,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create an account for your plans and progress.';
 
   @override
-  String get authDesignFirstAdmin =>
-      'First visit? Sign in as admin with the password generated during installation.';
+  String get adminEmailCodeLoginTitle => 'Allow email code sign-in';
+
+  @override
+  String get adminEmailCodeLoginSubtitle =>
+      'Also enable the email service and configure the active sending provider in email settings.';
+
+  @override
+  String get authEmailLoginUnavailable =>
+      'Email code sign-in is unavailable. Use your password to sign in.';
 
   @override
   String get authPasswordShow => 'Show password';

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>多仪 · 认证卡片翻转实测</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f3f6;color:#242c38;font:16px/1.6 system-ui}main{max-width:1280px;margin:auto;padding:32px 24px}h1{font-size:26px;margin:0 0 8px}h2{font-size:19px;margin:28px 0 12px}p{color:#667085;margin:0 0 20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;align-items:start}figure{margin:0}img{display:block;width:100%;height:auto;border-radius:12px}figcaption{padding:8px 0;color:#667085;font-size:14px}video{display:block;width:390px;max-width:100%;max-height:700px;background:#fff;border-radius:16px}a{color:#a94444}.desktop img{border-radius:8px}
+</style>
+<main>
+<h1>多仪 · 登录与注册卡片</h1>
+<p>实际 Flutter 构建与 Android 组件渲染。登录/注册等高翻转；主操作固定底部；邮箱入口按服务器能力显示。<a href="README.md">查看验证记录</a></p>
+<h2>实际双向翻转</h2><video controls muted loop playsinline preload="metadata" src="07-card-flip.webm"></video>
+<h2>手机 Web</h2><section class="grid">
+<figure><img src="03-web-password-390.png" alt="手机Web密码登录，无令牌和首次admin提示"><figcaption>默认密码入口</figcaption></figure>
+<figure><img src="04-web-register-390.png" alt="等高注册卡片，按钮固定底部"><figcaption>等高注册卡片，内容内部滚动</figcaption></figure>
+<figure><img src="06-web-email-form-390.png" alt="配置邮件后显示的邮箱登录"><figcaption>管理员启用并配置邮件后</figcaption></figure>
+</section>
+<h2>桌面 Web</h2><section class="grid desktop">
+<figure><img src="01-web-password-1440.png" alt="1440像素桌面登录页"><figcaption>登录页 1440×1000</figcaption></figure>
+<figure><img src="02-web-register-1440.png" alt="1440像素等高桌面注册页"><figcaption>注册页 1440×1000</figcaption></figure>
+</section>
+<h2>Android 共享方式选择器</h2><section class="grid">
+<figure><img src="11-android-password-390.png" alt="Android密码登录"><figcaption>密码</figcaption></figure>
+<figure><img src="12-android-email-390.png" alt="Android邮箱登录"><figcaption>邮箱验证码</figcaption></figure>
+<figure><img src="13-android-token-390.png" alt="Android令牌登录"><figcaption>安装客户端令牌</figcaption></figure>
+</section>
+<h2>缩放与主题</h2><section class="grid">
+<figure><img src="14-android-register-390.png" alt="Android等高注册"><figcaption>注册</figcaption></figure>
+<figure><img src="15-android-large-320.png" alt="320像素放大字体"><figcaption>320px / 1.5倍文字</figcaption></figure>
+<figure><img src="16-android-dark-390.png" alt="深色主题"><figcaption>深色主题</figcaption></figure>
+</section>
+</main>
+</html>

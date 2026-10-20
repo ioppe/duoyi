@@ -280,6 +280,15 @@ class AccessTokenApiTest(unittest.TestCase):
         self.assertEqual(password_login.status_code, 200)
         db = api.get_db()
         try:
+            for key, value in {
+                "email_code_login_enabled": True,
+                "email_service_enabled": True,
+                "email_code_primary_provider": "smtp",
+                "email_smtp_host": "smtp.example.test",
+                "email_smtp_username": "sender@example.test",
+                "email_smtp_password": "test-mail-secret",
+            }.items():
+                api._setting_set(db, key, value)
             code = api._create_email_code(
                 db, email="token-owner@example.invalid", purpose="login", user_id=self.owner["user_id"]
             )["code"]

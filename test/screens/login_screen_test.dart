@@ -86,7 +86,17 @@ void main() {
     tester.view.physicalSize = const Size(320, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final auth = AuthProvider(baseUrl: 'https://api.example.test');
+    final auth = AuthProvider(
+      client: ApiClient(
+        baseUrl: 'https://api.example.test',
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'email_code_login_enabled': true}),
+            200,
+          ),
+        ),
+      ),
+    );
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -96,6 +106,7 @@ void main() {
         child: const MaterialApp(home: LoginScreen()),
       ),
     );
+    await tester.pumpAndSettle();
     await tester.tap(find.text(I18n.tr('auth.email_code_login')));
     await tester.pumpAndSettle();
     expect(
@@ -110,7 +121,7 @@ void main() {
     );
     expect(server.readOnly, kIsWeb);
     expect(server.controller?.text, kIsWeb ? Uri.base.origin : auth.baseUrl);
-    await tester.tap(find.text(I18n.tr('auth.token.password_login')));
+    await tester.tap(find.text(I18n.tr('auth.password_login')));
     await tester.pumpAndSettle();
     expect(
       find.widgetWithText(TextField, I18n.tr('auth.password')),

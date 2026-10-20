@@ -48,9 +48,10 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.3"
+API_CONTRACT_VERSION = "2026-06-01.4"
 API_CONTRACT_FEATURES = {
     "email_code": True,
+    "email_code_login_gating": True,
     "email_bind": True,
     "avatar_upload": True,
     "avatar_read": True,
@@ -694,6 +695,10 @@ def _normalize_email_setting_aliases(update_items: dict) -> None:
 
 def _coerce_update_settings(db, update_items: dict) -> None:
     _normalize_email_setting_aliases(update_items)
+    if "email_code_login_enabled" in update_items:
+        update_items["email_code_login_enabled"] = _as_bool(
+            update_items["email_code_login_enabled"]
+        )
     if "force_app_update_enabled" in update_items:
         update_items["force_update_required"] = _as_bool(
             update_items["force_app_update_enabled"]
@@ -2820,20 +2825,20 @@ def _account_mail_runtime(db) -> dict:
             _setting_get(db, "email_auto_switch_enabled", False)
         ),
         "openclaw_mail_enabled": bool(_setting_get(db, "openclaw_mail_enabled", False)),
-        "openclaw_mail_user": str(_setting_get(db, "openclaw_mail_user", "") or ""),
-        "openclaw_mail_api_key": str(_setting_get(db, "openclaw_mail_api_key", "") or ""),
+        "openclaw_mail_user": str(_setting_get(db, "openclaw_mail_user", "") or "").strip(),
+        "openclaw_mail_api_key": str(_setting_get(db, "openclaw_mail_api_key", "") or "").strip(),
         "resend_base_url": str(
             _setting_get(db, "resend_base_url", "https://api.resend.com")
             or "https://api.resend.com"
-        ).rstrip("/"),
-        "resend_api_key": str(_setting_get(db, "resend_api_key", "") or ""),
-        "resend_from": str(_setting_get(db, "resend_from", DEFAULT_RESEND_FROM) or ""),
-        "hermes_base_url": str(_setting_get(db, "hermes_base_url", "") or "").rstrip("/"),
-        "hermes_api_key": str(_setting_get(db, "hermes_api_key", "") or ""),
+        ).strip().rstrip("/"),
+        "resend_api_key": str(_setting_get(db, "resend_api_key", "") or "").strip(),
+        "resend_from": str(_setting_get(db, "resend_from", DEFAULT_RESEND_FROM) or "").strip(),
+        "hermes_base_url": str(_setting_get(db, "hermes_base_url", "") or "").strip().rstrip("/"),
+        "hermes_api_key": str(_setting_get(db, "hermes_api_key", "") or "").strip(),
         "system_notice_email_to": str(_setting_get(db, "system_notice_email_to", "") or ""),
-        "email_smtp_host": str(smtp_host or ""),
+        "email_smtp_host": str(smtp_host or "").strip(),
         "email_smtp_port": int(smtp_port or 465),
-        "email_smtp_username": str(smtp_username or ""),
+        "email_smtp_username": str(smtp_username or "").strip(),
         "email_smtp_password": str(smtp_password or ""),
         "email_smtp_use_ssl": bool(smtp_use_ssl),
         "email_smtp_from": str(
@@ -2852,7 +2857,7 @@ def _account_mail_runtime(db) -> dict:
             )
             or smtp_username
             or ""
-        ),
+        ).strip(),
     }
 
 
@@ -3452,6 +3457,7 @@ class SettingsUpdate(BaseModel):
     registration_invite_required: Optional[bool] = None
     registration_enabled: Optional[bool] = None
     registration_email_required: Optional[bool] = None
+    email_code_login_enabled: Optional[bool] = None
     maintenance_mode: Optional[bool] = None
     maintenance_message: Optional[str] = None
     # App update policy
@@ -3666,6 +3672,7 @@ def public_config():
             "registration_enabled": registration_enabled,
             "allow_public_registration": registration_enabled,
             "registration_email_required": _setting_get(db, "registration_email_required", True),
+            "email_code_login_enabled": _email_code_login_enabled(db),
             "maintenance_mode": _setting_get(db, "maintenance_mode", False),
             "maintenance_message": _setting_get(db, "maintenance_message", ""),
             "force_update_required": update_policy["force_update_required"],
@@ -4426,23 +4433,50 @@ def _reset_email_payload(
 
 def _email_code_provider_configured(runtime: dict, provider: str) -> bool:
     provider = _normalize_email_code_provider(provider)
+
+    def configured(*keys: str) -> bool:
+        return all(str(runtime.get(key) or "").strip() for key in keys)
+
     if provider == "claw163":
         return bool(
             runtime.get("openclaw_mail_enabled")
-            and runtime.get("openclaw_mail_user")
-            and runtime.get("openclaw_mail_api_key")
+            and configured("openclaw_mail_user", "openclaw_mail_api_key")
         )
     if provider == "resend":
-        return bool(runtime.get("resend_api_key") and runtime.get("resend_from"))
+        return configured("resend_api_key", "resend_from")
     if provider == "smtp":
-        return bool(
-            runtime.get("email_smtp_host")
-            and runtime.get("email_smtp_username")
-            and runtime.get("email_smtp_password")
+        return configured(
+            "email_smtp_host", "email_smtp_username", "email_smtp_password"
         )
     if provider == "hermes":
-        return bool(runtime.get("hermes_base_url") and runtime.get("hermes_api_key"))
+        return configured("hermes_base_url", "hermes_api_key")
     return False
+
+
+def _email_code_login_enabled(db) -> bool:
+    if _setting_get(db, "email_code_login_enabled", False) is not True:
+        return False
+    runtime = _account_mail_runtime(db)
+    if not runtime["email_service_enabled"]:
+        return False
+    active_slot = _normalize_email_code_slot(runtime.get("email_code_active_slot"))
+    other_slot = "backup" if active_slot == "primary" else "primary"
+    # Dispatch always tries both slots, then SMTP/Hermes fallbacks. Auto-switch
+    # only persists the successful slot; it does not disable fallback delivery.
+    return any(
+        _email_code_provider_configured(runtime, provider)
+        for provider in (
+            runtime.get(f"email_code_{active_slot}_provider", "none"),
+            runtime.get(f"email_code_{other_slot}_provider", "none"),
+            "smtp",
+            "hermes",
+        )
+    )
+
+
+def _require_email_code_login_enabled(db) -> None:
+    if not _email_code_login_enabled(db):
+        raise HTTPException(status_code=403, detail="邮箱验证码登录未启用，请使用账号密码登录")
 
 
 def _account_email_runtime_status(runtime: dict) -> dict:
@@ -4466,9 +4500,7 @@ def _account_email_runtime_status(runtime: dict) -> dict:
         "openclaw_mail_configured": _email_code_provider_configured(runtime, "claw163"),
         "resend_configured": _email_code_provider_configured(runtime, "resend"),
         "smtp_configured": _email_code_provider_configured(runtime, "smtp"),
-        "hermes_configured": bool(
-            runtime.get("hermes_base_url") and runtime.get("hermes_api_key")
-        ),
+        "hermes_configured": _email_code_provider_configured(runtime, "hermes"),
     }
 
 
@@ -4580,7 +4612,7 @@ def _send_account_email(
             result.setdefault("message", "验证码已发送，请查看邮箱。")
             return result
         errors.append(str(result.get("detail") or result.get("message") or "smtp 兜底发送失败"))
-    if runtime.get("hermes_base_url") and runtime.get("hermes_api_key"):
+    if _email_code_provider_configured(runtime, "hermes"):
         try:
             result = _hermes_send_email(
                 runtime=runtime,
@@ -5356,6 +5388,8 @@ def _create_email_code(
         purpose = "bind"
     if purpose not in {"bind", "login", "reset"}:
         raise HTTPException(status_code=400, detail="验证码用途不受支持")
+    if purpose == "login":
+        _require_email_code_login_enabled(db)
     normalized_email = _clean_email(email)
     if not normalized_email:
         raise HTTPException(status_code=400, detail="邮箱不能为空")
@@ -5860,6 +5894,7 @@ def email_login(req: EmailLoginRequest):
     code = req.code or req.email_code or req.emailCode or ""
     db = get_db()
     try:
+        _require_email_code_login_enabled(db)
         row = db.execute(
             """
             SELECT * FROM users

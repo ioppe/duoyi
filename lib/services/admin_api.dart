@@ -203,6 +203,7 @@ class AdminApi {
     bool? inviteCodeRequired,
     bool? registrationEnabled,
     bool? registrationEmailRequired,
+    bool? emailCodeLoginEnabled,
     bool? maintenanceMode,
     String? maintenanceMessage,
     bool? forceUpdateRequired,
@@ -221,6 +222,9 @@ class AdminApi {
     }
     if (registrationEmailRequired != null) {
       body['registration_email_required'] = registrationEmailRequired;
+    }
+    if (emailCodeLoginEnabled != null) {
+      body['email_code_login_enabled'] = emailCodeLoginEnabled;
     }
     if (maintenanceMode != null) body['maintenance_mode'] = maintenanceMode;
     if (maintenanceMessage != null) {

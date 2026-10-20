@@ -34,6 +34,10 @@ class DesignTokens {
   static const double authWideBreakpoint = 960;
   static const double authHeroSize = 42;
   static const double authLogoSize = 44;
+  static const double authCardHeightMobile = 620;
+  static const double authCardHeightWide = 680;
+  static const double authCardMinHeight = 440;
+  static const Duration authFlipDuration = Duration(milliseconds: 480);
 
   // ----- Habit heatmap -----
   static const double habitHeatmapWidthFactor = 0.8;

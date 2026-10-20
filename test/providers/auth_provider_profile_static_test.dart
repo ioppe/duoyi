@@ -403,8 +403,6 @@ void main() {
     final source = File('lib/screens/login_screen.dart').readAsStringSync();
 
     for (final field in [
-      "I18n.tr('auth.password_login')",
-      "I18n.tr('auth.email_code_login')",
       "I18n.tr('auth.account')",
       "I18n.tr('auth.verified_email')",
       'bool _registerWithEmail = true;',
@@ -431,6 +429,10 @@ void main() {
     ]) {
       expect(source, contains(field));
     }
+    final frame = File('lib/widgets/auth_page_frame.dart').readAsStringSync();
+    expect(source, contains('AuthMethodSelector('));
+    expect(frame, contains("I18n.tr('auth.password_login')"));
+    expect(frame, contains("I18n.tr('auth.email_code_login')"));
     expect(source, isNot(contains("labelText: '邮件 token'")));
     expect(source, isNot(contains("setState(() => _error = '请填写账号已绑定邮箱')")));
     expect(source, isNot(contains('重置邮件已发送，请查收邮件中的 token。')));

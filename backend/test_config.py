@@ -56,6 +56,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.openclaw_mail_script, "")
         self.assertEqual(settings.initial_settings["ai_base_url"], DEFAULT_AI_BASE_URL)
         self.assertEqual(settings.initial_settings["ai_model"], DEFAULT_AI_MODEL)
+        self.assertIs(settings.initial_settings["email_code_login_enabled"], False)
         self.assertFalse((self.root / "duoyi.db").exists())
         self.assertFalse((self.root / "backups").exists())
 
@@ -135,6 +136,11 @@ class ConfigTest(unittest.TestCase):
             with self.subTest(key=key), self.assertRaisesRegex(config.ConfigurationError, key):
                 config.load_settings({key: str(self.root / "absent")}, backend_dir=self.root)
 
+    def test_email_code_login_environment_default_and_explicit_opt_in(self):
+        self.assertIs(self.load().initial_settings["email_code_login_enabled"], False)
+        self.assertIs(self.load({"EMAIL_CODE_LOGIN_ENABLED": "true"}).initial_settings["email_code_login_enabled"], True)
+        self.assertIs(self.load({"EMAIL_CODE_LOGIN_ENABLED": "false"}).initial_settings["email_code_login_enabled"], False)
+
     def test_boolean_and_numeric_errors_are_strict_and_redacted(self):
         bad_values = {
             "SESSION_ONLINE_SECONDS": ["not-a-number", "0", "-1", "1.5"],
@@ -152,6 +158,7 @@ class ConfigTest(unittest.TestCase):
             "SERVER_BACKUP_INTERVAL_MINUTES": ["0"],
             "SERVER_BACKUP_RETAIN_DAYS": ["-1"],
             "EMAIL_SERVICE_ENABLED": ["", "private-token"],
+            "EMAIL_CODE_LOGIN_ENABLED": ["", "private-token"],
             "SMTP_USE_SSL": ["maybe"],
             "ALLOW_PUBLIC_REGISTRATION": ["maybe"],
             "REGISTRATION_EMAIL_REQUIRED": ["maybe"],
@@ -332,6 +339,7 @@ class SettingsDatabaseTest(unittest.TestCase):
             "ai_model": "saved-model", "email_smtp_password": "saved-mail-secret",
             "server_backup_enabled": False, "registration_email_required": False,
             "registration_enabled": False, "invite_code_required": True,
+            "email_code_login_enabled": True,
         }
         with closing(self.api.get_db()) as db, db:
             for key, value in custom.items():

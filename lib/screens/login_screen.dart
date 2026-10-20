@@ -10,12 +10,17 @@ import '../services/api_client.dart';
 import 'package:flutter/services.dart';
 import '../widgets/auth_page_frame.dart';
 import '../widgets/surface_components.dart';
-import 'server_token_login.dart';
+import '../core/web_target.dart';
 
 class LoginScreen extends StatefulWidget {
   final bool asEntry;
+  final AuthMethod initialMethod;
 
-  const LoginScreen({super.key, this.asEntry = false});
+  const LoginScreen({
+    super.key,
+    this.asEntry = false,
+    this.initialMethod = AuthMethod.password,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -58,6 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _confirmPwdCtrl = TextEditingController();
   final _inviteCtrl = TextEditingController();
   final _serverCtrl = TextEditingController();
+  final _tokenCtrl = TextEditingController();
+  bool _obscureToken = true;
   bool _tokenLogin = false;
   bool _obscurePassword = true;
   final _pwdFocus = FocusNode();
@@ -75,8 +82,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _serverCtrl.text = context.read<AuthProvider>().baseUrl;
+    _tokenLogin =
+        !WebTarget.isWebBuild && widget.initialMethod == AuthMethod.token;
     _userCtrl.addListener(_refreshControls);
     _emailCtrl.addListener(_refreshControls);
+    _serverCtrl.addListener(_refreshControls);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         unawaited(context.read<AuthProvider>().refreshServerConfigFromServer());
@@ -89,9 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailCooldownTimer?.cancel();
     _userCtrl.removeListener(_refreshControls);
     _emailCtrl.removeListener(_refreshControls);
+    _serverCtrl.removeListener(_refreshControls);
     _userCtrl.dispose();
     _emailCtrl.dispose();
     _emailCodeCtrl.dispose();
+    _tokenCtrl.dispose();
     _displayNameCtrl.dispose();
     _pwdCtrl.dispose();
     _confirmPwdCtrl.dispose();
@@ -105,6 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
     if (mounted) setState(() {});
   }
 
+  bool get _usesEmailLogin =>
+      _emailLogin && context.read<AuthProvider>().emailCodeLoginEnabled;
+
+  Future<void> _refreshServerConnection() async {
+    if (_busy || _sendingEmailCode || WebTarget.isWebBuild) return;
+    try {
+      final auth = context.read<AuthProvider>();
+      await auth.configureServer(_serverCtrl.text);
+      await auth.refreshServerConfigFromServer();
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = userVisibleApiError(error));
+    }
+  }
+
   Future<void> _submit() async {
     if (_busy || _sendingEmailCode) return;
     final auth = context.read<AuthProvider>();
@@ -113,17 +139,24 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
       _message = null;
     });
-    final passwordLogin = !_isRegister && !_emailLogin;
+    final passwordLogin = !_isRegister && !_usesEmailLogin && !_tokenLogin;
     try {
       if (!kIsWeb) await auth.configureServer(_serverCtrl.text);
-      if (_isRegister) await auth.refreshServerConfigFromServer();
+      if (_isRegister || _emailLogin) {
+        await auth.refreshServerConfigFromServer();
+      }
       if (!mounted) return;
       final validationError = _validateSubmit(auth);
       if (validationError != null) {
         setState(() => _error = validationError);
         return;
       }
-      if (_isRegister) {
+      if (_tokenLogin && !_isRegister && !WebTarget.isWebBuild) {
+        await auth.loginWithToken(
+          serverUrl: _serverCtrl.text,
+          token: _tokenCtrl.text,
+        );
+      } else if (_isRegister) {
         await auth.register(
           username: _userCtrl.text.trim(),
           password: _pwdCtrl.text,
@@ -132,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
           displayName: _displayNameCtrl.text.trim(),
           inviteCode: auth.inviteCodeRequired ? _inviteCtrl.text.trim() : null,
         );
-      } else if (_emailLogin) {
+      } else if (_usesEmailLogin) {
         await auth.emailLogin(
           email: _userCtrl.text.trim(),
           code: _emailCodeCtrl.text.trim(),
@@ -209,11 +242,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool get _canSendEmailCode {
     if (_busy || _sendingEmailCode || _emailCooldownSeconds > 0) return false;
+    if (!_isRegister && !_usesEmailLogin) return false;
     final email = _isRegister ? _emailCtrl.text.trim() : _userCtrl.text.trim();
     return email.isNotEmpty && _looksLikeEmail(email);
   }
 
   String? _validateSubmit(AuthProvider auth) {
+    if (_tokenLogin && !_isRegister && !WebTarget.isWebBuild) {
+      return _tokenCtrl.text.trim().isEmpty
+          ? I18n.tr('auth.token.required')
+          : null;
+    }
     final account = _userCtrl.text.trim();
     if (account.isEmpty) {
       return _isRegister
@@ -246,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (auth.inviteCodeRequired && _inviteCtrl.text.trim().isEmpty) {
         return I18n.tr('auth.error.invite_required');
       }
-    } else if (_emailLogin) {
+    } else if (_usesEmailLogin) {
       if (!_looksLikeEmail(account)) {
         return I18n.tr('auth.error.verified_email_required');
       }
@@ -346,6 +385,9 @@ class _LoginScreenState extends State<LoginScreen> {
     autocorrect: false,
     textInputAction: TextInputAction.next,
     autofillHints: autofillHints,
+    onEditingComplete: controller == _serverCtrl
+        ? _refreshServerConnection
+        : null,
     decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
   );
 
@@ -386,7 +428,10 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 
   void _switchRegistration() {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
+      _tokenLogin = false;
+      _tokenCtrl.clear();
       _isRegister = !_isRegister;
       _emailLogin = false;
       _registerWithEmail = true;
@@ -401,24 +446,82 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_tokenLogin) {
-      return ServerTokenLogin(
-        asEntry: widget.asEntry,
-        onPasswordLogin: () => setState(() {
-          _tokenLogin = false;
-          _emailLogin = false;
-          _serverCtrl.text = context.read<AuthProvider>().baseUrl;
-        }),
-      );
-    }
+    final isWeb = WebTarget.isWebBuild;
     final auth = context.watch<AuthProvider>();
     final cs = Theme.of(context).colorScheme;
+    final emailAvailable =
+        auth.emailCodeLoginEnabled &&
+        (isWeb || _serverCtrl.text.trim() == auth.baseUrl);
+    final emailLogin = _emailLogin && emailAvailable;
+    final tokenLogin = _tokenLogin && !isWeb && !_isRegister;
     final registrationEmailRequired = auth.registrationEmailRequired;
     final shouldBindRegistrationEmail =
         registrationEmailRequired || _registerWithEmail;
     final disabled = _busy || _sendingEmailCode;
     return AuthPageFrame(
       allowBack: !widget.asEntry,
+      formModeKey: _isRegister ? 'register' : 'login',
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton(
+            key: const ValueKey('auth-submit'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, DesignTokens.formFieldMinHeight),
+              padding: const EdgeInsets.all(DesignTokens.spaceLg),
+              shape: const RoundedRectangleBorder(
+                borderRadius: DesignTokens.borderRadiusLg,
+              ),
+            ),
+            onPressed: disabled || (_isRegister && !auth.registrationEnabled)
+                ? null
+                : _submit,
+            child: _busy
+                ? const SizedBox(
+                    width: DesignTokens.spaceXl,
+                    height: DesignTokens.spaceXl,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    _isRegister
+                        ? I18n.tr('auth.register')
+                        : I18n.tr('auth.login'),
+                  ),
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          Row(
+            key: const ValueKey('auth_footer_actions'),
+            mainAxisAlignment: _isRegister
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.spaceBetween,
+            children: [
+              if (!_isRegister)
+                Flexible(
+                  child: TextButton(
+                    onPressed: disabled ? null : _showPasswordResetDialog,
+                    child: Text(
+                      I18n.tr('auth.forgot_password'),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              Flexible(
+                child: TextButton(
+                  key: const ValueKey('auth-switch-mode'),
+                  onPressed: disabled ? null : _switchRegistration,
+                  child: Text(
+                    _isRegister
+                        ? I18n.tr('auth.switch_to_login')
+                        : I18n.tr('auth.switch_to_register'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
       title: I18n.tr(
         _isRegister ? 'auth.design.signup' : 'auth.design.welcome',
       ),
@@ -439,53 +542,30 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: DesignTokens.spaceLg),
           ],
           if (!_isRegister) ...[
-            AppSecondaryControlTheme(
-              child: Wrap(
-                spacing: DesignTokens.spaceSm,
-                runSpacing: DesignTokens.spaceSm,
-                children: [
-                  ChoiceChip(
-                    label: Text(I18n.tr('auth.password_login')),
-                    selected: !_emailLogin,
-                    showCheckmark: false,
-                    onSelected: disabled
-                        ? null
-                        : (_) => setState(() {
-                            _emailLogin = false;
-                            _emailCodeCtrl.clear();
-                            _error = null;
-                            _message = null;
-                          }),
-                  ),
-                  ChoiceChip(
-                    label: Text(I18n.tr('auth.email_code_login')),
-                    selected: _emailLogin,
-                    showCheckmark: false,
-                    onSelected: disabled
-                        ? null
-                        : (_) => setState(() {
-                            _emailLogin = true;
-                            _pwdCtrl.clear();
-                            _error = null;
-                            _message = null;
-                          }),
-                  ),
-                  ChoiceChip(
-                    label: Text(I18n.tr('auth.token.login')),
-                    selected: false,
-                    showCheckmark: false,
-                    onSelected: disabled
-                        ? null
-                        : (_) => setState(() => _tokenLogin = true),
-                  ),
-                ],
-              ),
+            AuthMethodSelector(
+              selected: tokenLogin
+                  ? AuthMethod.token
+                  : (emailLogin ? AuthMethod.emailCode : AuthMethod.password),
+              showEmailCode: emailAvailable,
+              showToken: !isWeb,
+              onChanged: disabled
+                  ? null
+                  : (method) => setState(() {
+                      _tokenLogin = method == AuthMethod.token && !isWeb;
+                      _emailLogin =
+                          method == AuthMethod.emailCode && emailAvailable;
+                      _pwdCtrl.clear();
+                      _tokenCtrl.clear();
+                      _emailCodeCtrl.clear();
+                      _error = null;
+                      _message = null;
+                    }),
             ),
             const SizedBox(height: DesignTokens.spaceXl),
           ],
-          if (!kIsWeb) ...[
+          if (!isWeb) ...[
             _field(
-              key: 'password-server-url',
+              key: tokenLogin ? 'token-server-url' : 'password-server-url',
               controller: _serverCtrl,
               label: I18n.tr('auth.server.address'),
               icon: Icons.dns_outlined,
@@ -493,125 +573,158 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: DesignTokens.spaceLg),
           ],
-          _field(
-            key: 'auth-account',
-            controller: _userCtrl,
-            label: _isRegister
-                ? I18n.tr('auth.username')
-                : (_emailLogin
-                      ? I18n.tr('auth.verified_email')
-                      : I18n.tr('auth.account')),
-            icon: _emailLogin
-                ? Icons.mail_outline_rounded
-                : Icons.person_outline_rounded,
-            keyboard: _emailLogin
-                ? TextInputType.emailAddress
-                : TextInputType.text,
-            autofillHints: [
-              _isRegister ? AutofillHints.newUsername : AutofillHints.username,
-            ],
-          ),
-          const SizedBox(height: DesignTokens.spaceLg),
-          if (_isRegister || !_emailLogin) _passwordField(),
-          if (_isRegister) ...[
-            const SizedBox(height: DesignTokens.spaceLg),
-            _passwordField(confirm: true),
-            const SizedBox(height: DesignTokens.spaceLg),
-            _field(
-              key: 'auth-display-name',
-              controller: _displayNameCtrl,
-              label: I18n.tr('auth.display_name.optional'),
-              icon: Icons.badge_outlined,
-              autofillHints: const [AutofillHints.nickname],
+          if (tokenLogin) ...[
+            TextField(
+              key: const ValueKey('access-token'),
+              controller: _tokenCtrl,
+              enabled: !disabled,
+              obscureText: _obscureToken,
+              autocorrect: false,
+              enableSuggestions: false,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                labelText: I18n.tr('auth.token.label'),
+                prefixIcon: const Icon(Icons.key_outlined),
+                suffixIcon: IconButton(
+                  tooltip: I18n.tr(
+                    _obscureToken ? 'auth.token.show' : 'auth.token.hide',
+                  ),
+                  onPressed: disabled
+                      ? null
+                      : () => setState(() => _obscureToken = !_obscureToken),
+                  icon: Icon(
+                    _obscureToken
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: DesignTokens.spaceLg),
-            if (!registrationEmailRequired) ...[
-              AppSecondaryControlTheme(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(I18n.tr('profile.email.binding')),
-                          const SizedBox(height: DesignTokens.spaceXs),
-                          Text(
-                            I18n.tr('auth.email.optional'),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: cs.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Switch.adaptive(
-                      value: _registerWithEmail,
-                      onChanged: disabled
-                          ? null
-                          : (value) => setState(() {
-                              _registerWithEmail = value;
-                              _error = null;
-                              _message = null;
-                              if (!value) {
-                                _emailCtrl.clear();
-                                _emailCodeCtrl.clear();
-                              }
-                            }),
-                    ),
-                  ],
-                ),
+            Text(
+              I18n.tr('auth.token.help'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.spaceLg),
+          ] else ...[
+            _field(
+              key: 'auth-account',
+              controller: _userCtrl,
+              label: _isRegister
+                  ? I18n.tr('auth.username')
+                  : (emailLogin
+                        ? I18n.tr('auth.verified_email')
+                        : I18n.tr('auth.account')),
+              icon: emailLogin
+                  ? Icons.mail_outline_rounded
+                  : Icons.person_outline_rounded,
+              keyboard: emailLogin
+                  ? TextInputType.emailAddress
+                  : TextInputType.text,
+              autofillHints: [
+                _isRegister
+                    ? AutofillHints.newUsername
+                    : AutofillHints.username,
+              ],
+            ),
+            const SizedBox(height: DesignTokens.spaceLg),
+            if (_isRegister || !emailLogin) _passwordField(),
+            if (_isRegister) ...[
+              const SizedBox(height: DesignTokens.spaceLg),
+              _passwordField(confirm: true),
+              const SizedBox(height: DesignTokens.spaceLg),
+              _field(
+                key: 'auth-display-name',
+                controller: _displayNameCtrl,
+                label: I18n.tr('auth.display_name.optional'),
+                icon: Icons.badge_outlined,
+                autofillHints: const [AutofillHints.nickname],
               ),
               const SizedBox(height: DesignTokens.spaceLg),
-            ],
-            if (shouldBindRegistrationEmail) ...[
-              _field(
-                key: 'auth-email',
-                controller: _emailCtrl,
-                label: registrationEmailRequired
-                    ? I18n.tr('auth.email')
-                    : I18n.tr('auth.email.optional'),
-                icon: Icons.mail_outline_rounded,
-                keyboard: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-              ),
-              const SizedBox(height: DesignTokens.spaceSm),
-              if (registrationEmailRequired) ...[
-                Text(
-                  I18n.tr('auth.email.required_helper'),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              if (!registrationEmailRequired) ...[
+                AppSecondaryControlTheme(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(I18n.tr('profile.email.binding')),
+                            const SizedBox(height: DesignTokens.spaceXs),
+                            Text(
+                              I18n.tr('auth.email.optional'),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: _registerWithEmail,
+                        onChanged: disabled
+                            ? null
+                            : (value) => setState(() {
+                                _registerWithEmail = value;
+                                _error = null;
+                                _message = null;
+                                if (!value) {
+                                  _emailCtrl.clear();
+                                  _emailCodeCtrl.clear();
+                                }
+                              }),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.spaceLg),
+              ],
+              if (shouldBindRegistrationEmail) ...[
+                _field(
+                  key: 'auth-email',
+                  controller: _emailCtrl,
+                  label: registrationEmailRequired
+                      ? I18n.tr('auth.email')
+                      : I18n.tr('auth.email.optional'),
+                  icon: Icons.mail_outline_rounded,
+                  keyboard: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
                 ),
                 const SizedBox(height: DesignTokens.spaceSm),
+                if (registrationEmailRequired) ...[
+                  Text(
+                    I18n.tr('auth.email.required_helper'),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: DesignTokens.spaceSm),
+                ],
+                _emailCodeSendField(
+                  controller: _emailCodeCtrl,
+                  labelText: I18n.tr('auth.email_code'),
+                ),
+                const SizedBox(height: DesignTokens.spaceLg),
               ],
+              if (auth.inviteCodeRequired) ...[
+                _field(
+                  key: 'auth-invite-code',
+                  controller: _inviteCtrl,
+                  label: I18n.tr('auth.invite_code'),
+                  icon: Icons.confirmation_number_outlined,
+                ),
+                const SizedBox(height: DesignTokens.spaceLg),
+              ],
+            ] else if (emailLogin) ...[
               _emailCodeSendField(
                 controller: _emailCodeCtrl,
                 labelText: I18n.tr('auth.email_code'),
               ),
               const SizedBox(height: DesignTokens.spaceLg),
             ],
-            if (auth.inviteCodeRequired) ...[
-              _field(
-                key: 'auth-invite-code',
-                controller: _inviteCtrl,
-                label: I18n.tr('auth.invite_code'),
-                icon: Icons.confirmation_number_outlined,
-              ),
-              const SizedBox(height: DesignTokens.spaceLg),
-            ],
-          ] else if (_emailLogin) ...[
-            _emailCodeSendField(
-              controller: _emailCodeCtrl,
-              labelText: I18n.tr('auth.email_code'),
-            ),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ] else ...[
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton(
-                onPressed: disabled ? null : _showPasswordResetDialog,
-                child: Text(I18n.tr('auth.forgot_password')),
-              ),
-            ),
           ],
           if (_isRegister && !auth.registrationEnabled) ...[
             AuthNotice(message: I18n.tr('auth.registration_closed')),
@@ -624,57 +737,6 @@ class _LoginScreenState extends State<LoginScreen> {
           if (_message != null) ...[
             AuthNotice(message: _message!),
             const SizedBox(height: DesignTokens.spaceLg),
-          ],
-          FilledButton(
-            key: const ValueKey('auth-submit'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, DesignTokens.formFieldMinHeight),
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.spaceLg,
-                vertical: DesignTokens.spaceLg,
-              ),
-              shape: const RoundedRectangleBorder(
-                borderRadius: DesignTokens.borderRadiusLg,
-              ),
-            ),
-            onPressed:
-                _busy ||
-                    _sendingEmailCode ||
-                    (_isRegister && !auth.registrationEnabled)
-                ? null
-                : _submit,
-            child: _busy
-                ? const SizedBox(
-                    width: DesignTokens.spaceXl,
-                    height: DesignTokens.spaceXl,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    _isRegister
-                        ? I18n.tr('auth.register')
-                        : I18n.tr('auth.login'),
-                  ),
-          ),
-          const SizedBox(height: DesignTokens.spaceSm),
-          TextButton(
-            key: const ValueKey('auth-switch-mode'),
-            onPressed: disabled ? null : _switchRegistration,
-            child: Text(
-              _isRegister
-                  ? I18n.tr('auth.switch_to_login')
-                  : I18n.tr('auth.switch_to_register'),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          if (kIsWeb && !_isRegister) ...[
-            const SizedBox(height: DesignTokens.spaceMd),
-            Text(
-              I18n.tr('auth.design.first_admin'),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-                height: 1.6,
-              ),
-            ),
           ],
         ],
       ),

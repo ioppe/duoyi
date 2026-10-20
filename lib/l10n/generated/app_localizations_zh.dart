@@ -45,7 +45,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authDesignSignupSubtitle => '创建自己的账号，把计划与成长留在一起。';
 
   @override
-  String get authDesignFirstAdmin => '首次使用？请用安装时生成的 admin 账号和密码登录。';
+  String get adminEmailCodeLoginTitle => '允许邮箱验证码登录';
+
+  @override
+  String get adminEmailCodeLoginSubtitle => '开启后仍需在邮件设置中启用邮件服务并完成当前发信渠道配置';
+
+  @override
+  String get authEmailLoginUnavailable => '当前站点未启用邮箱验证码登录，请使用账号密码登录。';
 
   @override
   String get authPasswordShow => '显示密码';

@@ -90,6 +90,7 @@ def build_settings_defaults(
         ),
         "registration_enabled": default_registration_enabled,
         "registration_email_required": env.boolean("REGISTRATION_EMAIL_REQUIRED", default=True),
+        "email_code_login_enabled": env.boolean("EMAIL_CODE_LOGIN_ENABLED", default=False),
         "maintenance_mode": False,
         "maintenance_message": "",
         "force_update_required": False,

@@ -170,11 +170,23 @@ abstract class AppLocalizations {
   /// **'创建自己的账号，把计划与成长留在一起。'**
   String get authDesignSignupSubtitle;
 
-  /// No description provided for @authDesignFirstAdmin.
+  /// No description provided for @adminEmailCodeLoginTitle.
   ///
   /// In zh, this message translates to:
-  /// **'首次使用？请用安装时生成的 admin 账号和密码登录。'**
-  String get authDesignFirstAdmin;
+  /// **'允许邮箱验证码登录'**
+  String get adminEmailCodeLoginTitle;
+
+  /// No description provided for @adminEmailCodeLoginSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后仍需在邮件设置中启用邮件服务并完成当前发信渠道配置'**
+  String get adminEmailCodeLoginSubtitle;
+
+  /// No description provided for @authEmailLoginUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前站点未启用邮箱验证码登录，请使用账号密码登录。'**
+  String get authEmailLoginUnavailable;
 
   /// No description provided for @authPasswordShow.
   ///
