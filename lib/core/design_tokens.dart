@@ -28,6 +28,9 @@ class DesignTokens {
   static const double controlMinHeight = 44;
   static const double controlIconSize = 20;
 
+  // ----- Habit heatmap -----
+  static const double habitHeatmapWidthFactor = 0.8;
+
   // ----- Home preview specification -----
   static const double homeContentMaxWidth = 720;
   static const double homeTopInset = 28;

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/widgets/habit_heatmap.dart';
 import 'package:duoyi/models/goal.dart';
 import 'package:duoyi/models/habit.dart';
 import 'package:duoyi/providers/habit_provider.dart';
@@ -46,6 +48,66 @@ void main() {
     await tester.pumpAndSettle();
     expect(tabs.controller!.index, 1);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('热度图在内容区居中且占约80%宽度，格子保持正方形', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final width in [320.0, 490.0, 800.0, 1440.0]) {
+      for (final theme in [
+        AppBrands.defaultBrand.theme,
+        AppBrands.starRail.theme,
+      ]) {
+        tester.view.physicalSize = Size(width, 1000);
+        SharedPreferences.setMockInitialValues({});
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => HabitProvider()),
+              ChangeNotifierProvider(create: (_) => ThemeProvider()),
+            ],
+            child: MaterialApp(
+              key: ValueKey('$width-${theme.brightness}'),
+              theme: theme,
+              home: const HabitScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        if (find.byType(TabBar).evaluate().isNotEmpty) {
+          await tester.tap(find.text('热度图'));
+          await tester.pumpAndSettle();
+        }
+        final card = find.byKey(const ValueKey('habit_heatmap_skin_card'));
+        final content = tester.widget<AppSurfaceCard>(card).child;
+        final contentRect = tester.getRect(find.byWidget(content));
+        final chart = find.descendant(
+          of: card,
+          matching: find.byType(HabitHeatmap),
+        );
+        final chartRect = tester.getRect(chart);
+        expect(chartRect.width, closeTo(contentRect.width * 0.8, 1));
+        expect(chartRect.center.dx, closeTo(contentRect.center.dx, 1));
+        final cells = find.descendant(
+          of: chart,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Container &&
+                widget.margin == const EdgeInsets.all(1.5),
+          ),
+        );
+        expect(cells, findsNWidgets(12 * 7));
+        for (final element in cells.evaluate()) {
+          final cell = tester.getSize(find.byWidget(element.widget));
+          expect(cell.width, closeTo(cell.height, 0.01));
+        }
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '$width ${theme.brightness}',
+        );
+      }
+    }
   });
 
   testWidgets('新建习惯至多三分之二屏，表单可滚到保存且遮罩可关闭', (tester) async {
@@ -478,6 +540,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('habit_swipe_end_button')), findsNothing);
 
+    await tester.ensureVisible(find.text('已结束习惯').first);
+    await tester.pumpAndSettle();
     await tester.drag(find.text('已结束习惯').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
 
@@ -513,6 +577,8 @@ void main() {
       findsNothing,
     );
 
+    await tester.ensureVisible(find.text('专注').first);
+    await tester.pumpAndSettle();
     await tester.drag(find.text('专注').first, const Offset(160, 0));
     await tester.pumpAndSettle();
 

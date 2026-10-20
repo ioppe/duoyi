@@ -7,8 +7,14 @@ import '../core/i18n_date_format.dart';
 class HabitHeatmap extends StatelessWidget {
   final Map<String, int> heatmapData; // dateKey -> intensity 0-5
   final int weeks;
+  final bool fitToWidth;
 
-  const HabitHeatmap({super.key, required this.heatmapData, this.weeks = 12});
+  const HabitHeatmap({
+    super.key,
+    required this.heatmapData,
+    this.weeks = 12,
+    this.fitToWidth = false,
+  });
 
   Color _cellColor({
     required int intensity,
@@ -57,15 +63,26 @@ class HabitHeatmap extends StatelessWidget {
         final available = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : 360.0;
-        final cell = ((available - 38 - columns * 3.0) / columns).clamp(
-          10.0,
-          18.0,
-        );
+        const horizontalPadding = 10.0;
+        final weekdayWidth = fitToWidth ? 28.0 : 24.0;
+        final reservedWidth = fitToWidth
+            ? horizontalPadding * 2 + weekdayWidth
+            : 38.0;
+        final minimumCell = fitToWidth
+            ? (MediaQuery.textScalerOf(context).scale(9.5) - 3).clamp(
+                10.0,
+                double.infinity,
+              )
+            : 10.0;
+        final cell = ((available - reservedWidth - columns * 3.0) / columns)
+            .clamp(minimumCell, fitToWidth ? double.infinity : 18.0);
         final cellRadius = BorderRadius.circular(
           cell >= 15 ? DesignTokens.radiusXs : 3,
         );
         final grid = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: fitToWidth
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -77,6 +94,11 @@ class HabitHeatmap extends StatelessWidget {
                     child: c % 4 == 0
                         ? Text(
                             '${w.month}月',
+                            maxLines: fitToWidth ? 1 : null,
+                            softWrap: !fitToWidth,
+                            overflow: fitToWidth
+                                ? TextOverflow.visible
+                                : TextOverflow.clip,
                             style: TextStyle(
                               fontSize: 9.5,
                               height: 1,
@@ -96,7 +118,7 @@ class HabitHeatmap extends StatelessWidget {
                       .map(
                         (s) => SizedBox(
                           height: cell + 3,
-                          width: 24,
+                          width: weekdayWidth,
                           child: s.isEmpty
                               ? null
                               : Center(
@@ -172,8 +194,18 @@ class HabitHeatmap extends StatelessWidget {
         );
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 14),
-          child: grid,
+          padding: const EdgeInsets.fromLTRB(
+            horizontalPadding,
+            10,
+            horizontalPadding,
+            14,
+          ),
+          child: fitToWidth
+              ? SizedBox(
+                  width: weekdayWidth + columns * (cell + 3),
+                  child: grid,
+                )
+              : grid,
         );
       },
     );

@@ -829,7 +829,12 @@ class _HabitHeatmapTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                HabitHeatmap(heatmapData: heatmapData),
+                Center(
+                  child: FractionallySizedBox(
+                    widthFactor: DesignTokens.habitHeatmapWidthFactor,
+                    child: HabitHeatmap(heatmapData: heatmapData, fitToWidth: true),
+                  ),
+                ),
               ],
             ),
           ),

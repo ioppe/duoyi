@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>习惯热力图居中</title>
+<style>body{margin:0;padding:24px;font:15px/1.6 system-ui,sans-serif;color:#242c38;background:#f6f7f9}h1{font-size:22px}p{max-width:900px;color:#626c78}figure{margin:0}img{display:block;width:100%;height:auto;border-radius:12px}.wide{max-width:1440px;margin:24px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}figcaption{padding:8px 0;color:#626c78}</style>
+<h1>习惯热力图居中与自适应宽度</h1>
+<p>绘图区按卡片内容宽度的约 80% 居中，格子保持正方形并随宽度调整，图例居中。以下为实际应用最终 Web 构建的截图。</p>
+<figure class="wide"><img src="06-comparison.png" alt="习惯热力图修改前后对比"><figcaption>左侧修改前，右侧修改后；均为 490×710。</figcaption></figure>
+<div class="grid">
+<figure><img src="02-after-490.png" alt="居中的习惯热力图"><figcaption>常规手机宽度</figcaption></figure>
+<figure><img src="03-after-320.png" alt="窄屏热力图"><figcaption>320px 窄屏，月份单行</figcaption></figure>
+<figure><img src="05-after-dark-490.png" alt="暗色热力图"><figcaption>暗色主题</figcaption></figure>
+</div>
+<figure class="wide"><img src="04-after-desktop.png" alt="桌面双栏中的热力图"><figcaption>桌面双栏</figcaption></figure>
+<p>77 项相关回归通过，静态分析和 Web 构建通过，详见 <a href="README.md">验证记录</a>。</p>
+</html>
