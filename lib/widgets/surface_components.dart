@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -1379,6 +1382,7 @@ Future<T?> showAppModalSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     requestFocus: false,
+    useSafeArea: true,
     // 路由层的 Material 会和 AppModalSheet 自己的卡片叠加：它把
     // bottomSheetTheme.showDragHandle 默认打开后，会在卡片外额外占用
     // kMinInteractiveDimension 高度并再画一个拖动手柄，于是出现
@@ -1527,7 +1531,7 @@ class AppDialog extends StatelessWidget {
   }
 }
 
-class AppModalSheet extends StatelessWidget {
+class AppModalSheet extends StatefulWidget {
   final String? title;
   final String? subtitle;
   final Widget child;
@@ -1556,10 +1560,146 @@ class AppModalSheet extends StatelessWidget {
   });
 
   @override
+  State<AppModalSheet> createState() => _AppModalSheetState();
+}
+
+class _AppModalSheetState extends State<AppModalSheet> {
+  bool _expanded = false;
+  bool _startedAtTop = false;
+  bool _changedDuringDrag = false;
+  double _dragDistance = 0;
+  double _wheelDistance = 0;
+  ScrollMetrics? _metrics;
+  PointerScrollEvent? _pointerScrollEvent;
+  bool _pointerStartedAtTop = false;
+
+  bool get _atTop => (_metrics?.extentBefore ?? 0) <= 0.5;
+
+  void _setExpanded(bool value) {
+    if (_expanded == value) return;
+    setState(() => _expanded = value);
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    // 只跟随内容的第一层竖向滚动，忽略推荐项横滑、输入框内部滚动。
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    _metrics = notification.metrics;
+    if (notification is ScrollStartNotification) {
+      _startedAtTop = _atTop;
+      _changedDuringDrag = false;
+      _dragDistance = 0;
+    }
+    final delta = switch (notification) {
+      ScrollUpdateNotification(:final scrollDelta) => scrollDelta,
+      OverscrollNotification(:final overscroll) => overscroll,
+      _ => null,
+    };
+    if (delta == null) return false;
+    final dragDetails = switch (notification) {
+      ScrollUpdateNotification(:final dragDetails) => dragDetails,
+      OverscrollNotification(:final dragDetails) => dragDetails,
+      _ => null,
+    };
+    if (dragDetails == null) {
+      if (_pointerScrollEvent != null) {
+        _onWheelDelta(delta, canCollapse: _pointerStartedAtTop && _atTop);
+      }
+      return false;
+    }
+    // 程序定位、键盘避让和惯性滚动不能切换弹窗高度。
+    if (_changedDuringDrag) return false;
+    // 弹性滚动会缩小内容位移；阈值按手指位移，避免桌面短列表拉不回。
+    final dragDelta =
+        axisDirectionIsReversed(notification.metrics.axisDirection)
+        ? dragDetails.delta.dy
+        : -dragDetails.delta.dy;
+    if (!_expanded && dragDelta > 0) {
+      _dragDistance += dragDelta;
+    } else if (_expanded && _startedAtTop && _atTop && dragDelta < 0) {
+      _dragDistance -= dragDelta;
+    } else {
+      _dragDistance = 0;
+    }
+    if (_dragDistance >= DesignTokens.modalSheetDragThreshold) {
+      _changedDuringDrag = true;
+      _setExpanded(!_expanded);
+    }
+    return false;
+  }
+
+  bool _onMetrics(ScrollMetricsNotification notification) {
+    if (notification.depth == 0 && notification.metrics.axis == Axis.vertical) {
+      _metrics = notification.metrics;
+    }
+    return false;
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent ||
+        event.scrollDelta.dy.abs() <= event.scrollDelta.dx.abs()) {
+      return;
+    }
+    // pointerScroll 会先更新 pixels 再发 ScrollStart，须保存事件前的位置。
+    _pointerStartedAtTop = _atTop;
+    _pointerScrollEvent = event;
+    scheduleMicrotask(() {
+      if (_pointerScrollEvent == event) _pointerScrollEvent = null;
+    });
+    // 内层时间滚轮等先消费事件；只有没人接收的边界滚动才交给弹窗。
+    GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+      _onWheelDelta(event.scrollDelta.dy, canCollapse: _atTop);
+    });
+  }
+
+  void _onWheelDelta(double delta, {required bool canCollapse}) {
+    if (!_expanded && delta > 0) {
+      _wheelDistance = _wheelDistance.clamp(0.0, double.infinity) + delta;
+      if (_wheelDistance >= DesignTokens.modalSheetDragThreshold) {
+        _wheelDistance = 0;
+        _setExpanded(true);
+      }
+    } else if (_expanded && canCollapse && delta < 0) {
+      _wheelDistance =
+          _wheelDistance.clamp(double.negativeInfinity, 0.0) + delta;
+      if (-_wheelDistance >= DesignTokens.modalSheetDragThreshold) {
+        _wheelDistance = 0;
+        _setExpanded(false);
+      }
+    } else {
+      _wheelDistance = 0;
+    }
+  }
+
+  void _onHandleDrag(DragUpdateDetails details) {
+    if (!_atTop || details.delta.dy <= 0) {
+      _dragDistance = 0;
+      return;
+    }
+    _dragDistance += details.delta.dy;
+    if (_dragDistance >= DesignTokens.modalSheetDragThreshold) {
+      _setExpanded(false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final title = widget.title;
+    final subtitle = widget.subtitle;
+    final child = widget.child;
+    final leadingActions = widget.leadingActions;
+    final actions = widget.actions;
+    final scrollController = widget.scrollController;
+    final scrollable = widget.scrollable;
+    final showDragHandle = widget.showDragHandle;
+    final padding = widget.padding;
+    final maxWidth = widget.maxWidth;
+    final shiftForKeyboard = widget.shiftForKeyboard;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final scrollBehavior = ScrollConfiguration.of(context);
     final media = MediaQuery.of(context);
     final viewInsets = shiftForKeyboard ? media.viewInsets : EdgeInsets.zero;
     final availableHeight = (media.size.height - viewInsets.bottom).clamp(
@@ -1579,17 +1719,26 @@ class AppModalSheet extends StatelessWidget {
 
     final children = <Widget>[
       if (showDragHandle) ...[
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: cs.outlineVariant.withValues(alpha: isDark ? 0.28 : 0.34),
-              borderRadius: BorderRadius.circular(999),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragStart: _expanded ? (_) => _dragDistance = 0 : null,
+          onVerticalDragUpdate: _expanded ? _onHandleDrag : null,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant.withValues(
+                    alpha: isDark ? 0.28 : 0.34,
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 14),
       ],
       if (title != null || subtitle != null) ...[
         AppSectionHeader(
@@ -1602,7 +1751,17 @@ class AppModalSheet extends StatelessWidget {
       // 自带 ListView/GridView 的内容必须拿到扣除标题和操作区后的高度，
       // 否则缩小卡片后仍按原始固定高度布局，底部操作会溢出。
       if (!scrollable && scrollController == null)
-        Flexible(child: AppSecondaryControlTheme(child: child))
+        Flexible(
+          fit: _expanded ? FlexFit.tight : FlexFit.loose,
+          child: ScrollConfiguration(
+            behavior: scrollBehavior.copyWith(
+              physics: AlwaysScrollableScrollPhysics(
+                parent: scrollBehavior.getScrollPhysics(context),
+              ),
+            ),
+            child: AppSecondaryControlTheme(child: child),
+          ),
+        )
       else
         AppSecondaryControlTheme(child: child),
       if (leadingActions.isNotEmpty || actions.isNotEmpty) ...[
@@ -1622,11 +1781,13 @@ class AppModalSheet extends StatelessWidget {
     if (scrollController != null) {
       body = ListView(
         controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: sheetPadding,
         children: children,
       );
     } else if (scrollable) {
       body = SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: sheetPadding,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1645,6 +1806,21 @@ class AppModalSheet extends StatelessWidget {
       );
     }
 
+    body = Listener(
+      onPointerSignal: _onPointerSignal,
+      child: NotificationListener<ScrollMetricsNotification>(
+        onNotification: _onMetrics,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: body,
+        ),
+      ),
+    );
+    final initialConstraints = BoxConstraints(
+      minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor,
+      maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor,
+    );
+
     // 卡片要贴住屏幕底边：bottom 交给内部 padding 处理。若这里保留
     // bottom: true，卡片会在安全区之上，而路由层的形状/阴影画在下面，
     // 于是弹窗与它的阴影之间会出现一条错位的缝。
@@ -1660,12 +1836,14 @@ class AppModalSheet extends StatelessWidget {
           // 不占用卡片上方的透明区域，让点击交给路由的遮罩关闭。
           heightFactor: 1,
           widthFactor: 1,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: maxWidth,
-              minHeight: availableHeight * DesignTokens.modalSheetMinHeightFactor,
-              maxHeight: availableHeight * DesignTokens.modalSheetMaxHeightFactor,
-            ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            constraints:
+                (_expanded
+                        ? BoxConstraints.tightFor(height: availableHeight)
+                        : initialConstraints)
+                    .copyWith(maxWidth: maxWidth),
             child: SizedBox(
               width: double.infinity,
               child: Material(

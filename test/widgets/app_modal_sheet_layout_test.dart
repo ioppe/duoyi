@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Finder sheetCard() => find
-    .descendant(
-      of: find.byType(AppModalSheet),
-      matching: find.byType(Material),
-    )
+    .descendant(of: find.byType(AppModalSheet), matching: find.byType(Material))
     .first;
 
 void expectSheetHeight(WidgetTester tester, double availableHeight) {
@@ -30,9 +27,9 @@ Future<void> openSheet(
     MaterialApp(
       theme: AppBrands.defaultBrand.theme,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          textScaler: TextScaler.linear(textScale),
-        ),
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
       home: Scaffold(
@@ -73,7 +70,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('长内容至多三分之二屏且可滚到底 ${size.width}×${size.height}', (
+    testWidgets('长内容初始至多三分之二屏且可滚到底 ${size.width}×${size.height}', (
       tester,
     ) async {
       await openSheet(
@@ -177,8 +174,7 @@ void main() {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (var i = 0; i < 12; i++)
-            const Text('长内容在弹窗内部滚动，保留页面上方遮罩。'),
+          for (var i = 0; i < 12; i++) const Text('长内容在弹窗内部滚动，保留页面上方遮罩。'),
         ],
       ),
     );

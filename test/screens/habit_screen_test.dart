@@ -110,7 +110,7 @@ void main() {
     }
   });
 
-  testWidgets('新建习惯至多三分之二屏，表单可滚到保存且遮罩可关闭', (tester) async {
+  testWidgets('新建习惯浏览时展开，到顶后可收回且保留推荐选项', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -119,7 +119,7 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    final card = tester.getRect(
+    Rect cardRect() => tester.getRect(
       find
           .descendant(
             of: find.byType(AppModalSheet),
@@ -127,7 +127,15 @@ void main() {
           )
           .first,
     );
+    final card = cardRect();
     expect(card.height, closeTo(844 * 2 / 3, 0.5));
+    await tester.tap(find.byType(ActionChip).first);
+    await tester.pumpAndSettle();
+    final name = tester
+        .widget<TextField>(find.widgetWithText(TextField, '习惯名称'))
+        .controller!
+        .text;
+    expect(name, isNotEmpty);
     final saveButton = find.widgetWithText(ElevatedButton, '开启新习惯');
     // 使用真实拖动手势核验表单滚动，避免只验证 ensureVisible 的程序跳转。
     for (var i = 0; i < 5; i++) {
@@ -135,7 +143,22 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(saveButton.hitTestable(), findsOneWidget);
-    await tester.tapAt(Offset(card.center.dx, card.top - 20));
+    expect(cardRect().height, closeTo(844, 0.5));
+    await tester.dragFrom(const Offset(10, 400), const Offset(0, 3000));
+    await tester.pumpAndSettle();
+    expect(cardRect().height, closeTo(844, 0.5));
+    await tester.dragFrom(const Offset(10, 400), const Offset(0, 100));
+    await tester.pumpAndSettle();
+    expect(cardRect().height, closeTo(card.height, 0.5));
+    expect(
+      tester
+          .widget<TextField>(find.widgetWithText(TextField, '习惯名称'))
+          .controller!
+          .text,
+      name,
+    );
+    final collapsed = cardRect();
+    await tester.tapAt(Offset(collapsed.center.dx, collapsed.top - 20));
     await tester.pumpAndSettle();
     expect(find.byType(AppModalSheet), findsNothing);
     expect(habitProvider.habits, isEmpty);

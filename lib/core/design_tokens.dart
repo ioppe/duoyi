@@ -48,9 +48,11 @@ class DesignTokens {
   static const Color homeCategory = Color(0xFF668AA5);
 
   // ----- Modal bottom sheets -----
+  // 初始高度为半屏至三分之二屏；用户浏览后可展开到安全区内整页。
   // 键盘弹出时，以键盘上方可用高度为基准。
   static const double modalSheetMinHeightFactor = 1 / 2;
   static const double modalSheetMaxHeightFactor = 2 / 3;
+  static const double modalSheetDragThreshold = 24;
 
   // ----- Default palette -----
   static const Color defaultPageBackground = Color(0xFFF6F7F9);

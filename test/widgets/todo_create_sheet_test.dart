@@ -229,7 +229,7 @@ void main() {
     (const Size(390, 844), 300.0),
     (const Size(1440, 900), 0.0),
   ]) {
-    testWidgets('$size keyboard=$keyboard 表单保持范围、可滚动并能点击遮罩关闭', (tester) async {
+    testWidgets('$size keyboard=$keyboard 表单可展开、收回并点击遮罩关闭', (tester) async {
       final todos = TodoProvider();
       await _open(
         tester,
@@ -255,7 +255,21 @@ void main() {
         greaterThanOrEqualTo(DesignTokens.formFieldMinHeight),
       );
       await _scrollToSubmit(tester);
-      await tester.tapAt(Offset(card.center.dx, card.top - 15));
+      final scroll = find.descendant(
+        of: sheet,
+        matching: find.byType(SingleChildScrollView),
+      );
+      final scrollRect = tester.getRect(scroll);
+      final start = Offset(scrollRect.left + 4, scrollRect.center.dy);
+      await tester.dragFrom(start, const Offset(0, 3000));
+      await tester.pumpAndSettle();
+      await tester.dragFrom(start, const Offset(0, 100));
+      await tester.pumpAndSettle();
+      final collapsed = tester.getRect(
+        find.descendant(of: sheet, matching: find.byType(Material)).first,
+      );
+      expect(collapsed.height, closeTo(card.height, 1));
+      await tester.tapAt(Offset(collapsed.center.dx, collapsed.top - 15));
       await tester.pumpAndSettle();
       expect(find.byType(AppModalSheet), findsNothing);
       expect(todos.todos, isEmpty);
