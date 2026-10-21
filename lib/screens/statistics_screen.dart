@@ -33,6 +33,7 @@ import '../providers/pomodoro_provider.dart';
 import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../services/ai_service.dart';
+import '../widgets/ai_review_markdown.dart';
 import '../widgets/statistics_activity_card.dart';
 import '../widgets/result_states.dart';
 import '../widgets/surface_components.dart';
@@ -4075,12 +4076,7 @@ class _PeriodReportDigestCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    aiReview!,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(height: 1.58),
-                  ),
+                  AiReviewMarkdown(data: aiReview!),
                 ],
               ),
             ),

@@ -5,6 +5,7 @@ import '../core/i18n_date_format.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
+import '../widgets/ai_review_markdown.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/surface_components.dart';
 
@@ -183,14 +184,7 @@ class _AiHistoryScreenState extends State<AiHistoryScreen> {
                             child: expanded
                                 ? Padding(
                                     padding: const EdgeInsets.only(top: 8),
-                                    child: Text(
-                                      e.content,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: cs.onSurface,
-                                            height: 1.62,
-                                          ),
-                                    ),
+                                    child: AiReviewMarkdown(data: e.content),
                                   )
                                 : const SizedBox.shrink(),
                           ),
