@@ -298,7 +298,7 @@ void main() {
   });
 
   for (final autoToggle in [true, false]) {
-    testWidgets('所有子任务勾选仅在保存后聚合父完成态 autoToggle=$autoToggle', (tester) async {
+    testWidgets('所有子任务勾选后保存一律聚合父任务 autoToggle=$autoToggle', (tester) async {
       final provider = await _openDetail(tester, autoToggle: autoToggle);
       for (final id in ['a', 'b', 'c']) {
         await tester.tap(find.byKey(ValueKey('todo_subtask_complete_$id')));
@@ -315,13 +315,11 @@ void main() {
       expect(provider.todos.single.isCompleted, isFalse);
       await _save(tester);
       expect(provider.recomputes, 0);
-      expect(provider.todos.single.isCompleted, autoToggle);
-      expect(
-        provider.todos.single.completedAt,
-        autoToggle ? isNotNull : isNull,
-      );
+      // 有子任务时父完成态只由子任务推导，autoToggleByChildren 不再能绕过。
+      expect(provider.todos.single.isCompleted, isTrue);
+      expect(provider.todos.single.completedAt, isNotNull);
       final stored = await _reloadStoredTodo();
-      expect(stored.isCompleted, autoToggle);
+      expect(stored.isCompleted, isTrue);
       expect(stored.subtasks.every((child) => child.isCompleted), isTrue);
     });
   }

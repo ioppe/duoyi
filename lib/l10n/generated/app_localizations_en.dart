@@ -3451,6 +3451,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not update the subtask. Please try again.';
 
   @override
+  String get todoCompleteBlockedBySubtasks =>
+      'Finish the subtasks first — the task completes when they all do.';
+
+  @override
   String get todayTodosEmpty => 'No tasks today. Tap to view or add one';
 
   @override

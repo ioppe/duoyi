@@ -376,15 +376,14 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final todos = TodoProvider();
-    await todos.addTodo(
-      TodoItem(
-        title: '首页子任务',
-        subtasks: [
-          Subtask(id: 's1', title: '第一步', sortOrder: 0),
-          Subtask(id: 's2', title: '第二步', sortOrder: 1),
-        ],
-      ),
+    final parent = TodoItem(
+      title: '首页子任务',
+      subtasks: [
+        Subtask(id: 's1', title: '第一步', sortOrder: 0),
+        Subtask(id: 's2', title: '第二步', sortOrder: 1),
+      ],
     );
+    await todos.addTodo(parent);
     await tester.pumpWidget(
       _wrap(
         const TodayScreen(),
@@ -393,6 +392,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // 有子任务时不再提供整任务勾选，改为显示“已完成/总数”进度。
+    expect(find.bySemanticsLabel('标记为完成'), findsNothing);
+    expect(
+      find.byKey(ValueKey('today_subtask_progress_${parent.id}')),
+      findsOneWidget,
+    );
     final first = find.byKey(const ValueKey('today_subtask_toggle_s1'));
     expect(first, findsOneWidget);
     await tester.tap(first);
@@ -405,6 +410,29 @@ void main() {
     expect(todos.todos.single.subtasks.last.isCompleted, isTrue);
     // 全部子任务完成后按 autoToggle 规则自动完成父任务。
     expect(todos.todos.single.isCompleted, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('无子任务的任务保留整任务勾选', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final todos = TodoProvider();
+    final plain = TodoItem(title: '无子任务任务');
+    await todos.addTodo(plain);
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(),
+        todoProvider: todos,
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('标记为完成'), findsOneWidget);
+    expect(
+      find.byKey(ValueKey('today_subtask_progress_${plain.id}')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 

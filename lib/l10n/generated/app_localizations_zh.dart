@@ -3288,6 +3288,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todaySubtaskUpdateFailed => '子任务更新失败，请重试';
 
   @override
+  String get todoCompleteBlockedBySubtasks => '请先完成子任务，父任务会随子任务自动完成';
+
+  @override
   String get todayTodosEmpty => '今天暂无待办，点击查看或添加任务';
 
   @override

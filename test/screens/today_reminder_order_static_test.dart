@@ -58,7 +58,9 @@ void main() {
     expect(today, contains('today_todo_template_icon'));
     expect(today, contains('today_reminder_template_icon'));
     expect(today, contains("iconKeyPrefix = 'today_todo_template_icon'"));
-    expect(today, contains('leading: _TodayTodoLeading('));
+    // 无子任务时左侧是可点的完成控件；有子任务时改为进度，完成交给子任务。
+    expect(today, contains('? _TodayTodoLeading('));
+    expect(today, contains(': _TodaySubtaskProgress(todo: todo)'));
     expect(today, contains('class _TodayTodoStatusToggle'));
     expect(today, contains('class _TodayTodoTitleLine'));
     expect(today, contains('static const double width = 44'));

@@ -1022,6 +1022,7 @@ const Map<String, String> _zh = <String, String>{
   'todo.subtask.reorder': '拖动调整顺序',
   'todo.subtask.empty': '子任务内容不能为空，请填写或删除该项',
   'todo.subtask.save_hint': '子任务修改将随任务一起保存',
+  'todo.complete.blocked_by_subtasks': '请先完成子任务，父任务会随子任务自动完成',
   'todo.create.no_reminder': '不提醒',
   'todo.create.at_time': '到点提醒',
   'todo.create.pick_time': '选择提醒时间',
@@ -2395,6 +2396,8 @@ const Map<String, String> _en = <String, String>{
   'todo.subtask.empty':
       'Subtasks cannot be empty. Enter content or remove the item.',
   'todo.subtask.save_hint': 'Subtask changes are saved with the task.',
+  'todo.complete.blocked_by_subtasks':
+      'Finish the subtasks first — the task completes when they all do.',
   'todo.create.no_reminder': 'No reminder',
   'todo.create.at_time': 'Remind at',
   'todo.create.pick_time': 'Choose reminder time',

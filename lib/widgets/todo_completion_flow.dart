@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/i18n.dart';
 
 import '../models/time_entry.dart';
 import '../models/todo.dart';
@@ -36,6 +37,16 @@ Future<void> _completeTodoWithOptionalTimeRecord(
   }
 
   if (currentTodo.isCompleted) return;
+  // 有未完成子任务时，父任务完成态只能由子任务推导。
+  if (currentTodo.subtasks.any((subtask) => !subtask.isCompleted)) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(I18n.tr('todo.complete.blocked_by_subtasks')),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
 
   final confirmed = await showDialog<bool>(
     context: context,

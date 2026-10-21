@@ -6596,6 +6596,12 @@ abstract class AppLocalizations {
   /// **'子任务更新失败，请重试'**
   String get todaySubtaskUpdateFailed;
 
+  /// No description provided for @todoCompleteBlockedBySubtasks.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先完成子任务，父任务会随子任务自动完成'**
+  String get todoCompleteBlockedBySubtasks;
+
   /// No description provided for @todayTodosEmpty.
   ///
   /// In zh, this message translates to:

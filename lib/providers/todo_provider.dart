@@ -72,6 +72,9 @@ class TodoProvider extends ChangeNotifier {
   DateTime? _lastReminderSyncAttemptAt;
   DateTime? _lastReminderSyncSucceededAt;
 
+  /// 最近一次完成操作中，因“仍有未完成子任务”被跳过的任务数。
+  int lastSkippedBySubtasks = 0;
+
   /// 注入或解绑调度器；传 `null` 即解绑。
   // ignore: use_setters_to_change_properties
   set scheduler(ReminderScheduler? s) {
@@ -315,6 +318,18 @@ class TodoProvider extends ChangeNotifier {
           parsed,
           onDuplicate: () => shouldRewrite = true,
         );
+        // 历史数据可能“父已完成但子任务未全完成”，加载时按新规则纠正。
+        final normalized = <TodoItem>[];
+        for (final todo in _todos) {
+          final fixed = _deriveParentCompletion(todo);
+          if (fixed == null) {
+            normalized.add(todo);
+          } else {
+            normalized.add(fixed);
+            shouldRewrite = true;
+          }
+        }
+        _todos = normalized;
       } catch (e, st) {
         shouldRewrite = true;
         debugPrint('[TodoProvider] todos storage decode failed: $e\n$st');
@@ -338,6 +353,19 @@ class TodoProvider extends ChangeNotifier {
   }
 
   /// 同一 id 出现多条属于存储异常（例如同步应用与本地写入交叠留下的重复），
+  /// 有子任务时，父完成态必须等于“全部子任务完成”。
+  ///
+  /// 返回 `null` 表示当前状态已自洽；否则返回纠正后的任务，供加载与同步时回落。
+  static TodoItem? _deriveParentCompletion(TodoItem todo) {
+    if (todo.subtasks.isEmpty) return null;
+    final allDone = todo.subtasks.every((subtask) => subtask.isCompleted);
+    if (todo.isCompleted == allDone) return null;
+    return todo.copyWith(
+      isCompleted: allDone,
+      completedAt: allDone ? (todo.completedAt ?? DateTime.now()) : null,
+    );
+  }
+
   /// 保留 `updatedAt` 最新的一条，避免列表重复展示并被再次同步放大。
   List<TodoItem> _dedupeTodosById(
     List<TodoItem> items, {
@@ -504,7 +532,8 @@ class TodoProvider extends ChangeNotifier {
       duplicateMessage: '待办正在创建中，请勿重复提交',
     );
     try {
-      _todos.add(todo);
+      // 新建即保持“父完成态 = 子任务是否全完成”，避免写进矛盾数据。
+      _todos.add(_deriveParentCompletion(todo) ?? todo);
       DomainEventBus.instance.publish(
         DomainEvent(type: DomainEventType.todoCreated, objectId: todo.id),
       );
@@ -603,18 +632,15 @@ class TodoProvider extends ChangeNotifier {
       var next = updated.isCompleted && updated.completedAt == null
           ? updated.copyWith(completedAt: DateTime.now())
           : updated;
-      // Commit edited children and their aggregate as one persisted task.
-      final childrenChanged =
-          jsonEncode(prev.subtasks.map((task) => task.toJson()).toList()) !=
-          jsonEncode(next.subtasks.map((task) => task.toJson()).toList());
-      if (childrenChanged &&
-          next.autoToggleByChildren &&
-          next.subtasks.isNotEmpty) {
+      // 有子任务时，父任务完成态是推导值：只能由“是否全部完成”决定，
+      // 任何入口（勾选、左滑、批量、同步）都不能把它单独改成已完成。
+      if (next.subtasks.isNotEmpty) {
         final allDone = next.subtasks.every((task) => task.isCompleted);
-        if (allDone && !next.isCompleted) {
-          next = next.copyWith(isCompleted: true, completedAt: DateTime.now());
-        } else if (!allDone && next.isCompleted) {
-          next = next.copyWith(isCompleted: false, completedAt: null);
+        if (next.isCompleted != allDone) {
+          next = next.copyWith(
+            isCompleted: allDone,
+            completedAt: allDone ? (next.completedAt ?? DateTime.now()) : null,
+          );
         }
       }
       if (!prev.isCompleted && next.isCompleted) {
@@ -683,10 +709,15 @@ class TodoProvider extends ChangeNotifier {
     await _ensureStorageLoaded();
     final completed = <TodoItem>[];
     var changed = 0;
+    lastSkippedBySubtasks = 0;
     for (var i = 0; i < _todos.length; i++) {
       final prev = _todos[i];
       if (!selected.contains(prev.id) || prev.isCompleted) continue;
-
+      // 有未完成子任务时，父任务不能直接完成；交给子任务驱动。
+      if (prev.subtasks.any((subtask) => !subtask.isCompleted)) {
+        lastSkippedBySubtasks++;
+        continue;
+      }
       final next = prev.copyWith(
         isCompleted: true,
         completedAt: DateTime.now(),
@@ -744,9 +775,15 @@ class TodoProvider extends ChangeNotifier {
     await _ensureStorageLoaded();
     final reopened = <TodoItem>[];
     var changed = 0;
+    lastSkippedBySubtasks = 0;
     for (var i = 0; i < _todos.length; i++) {
       final prev = _todos[i];
       if (!selected.contains(prev.id) || !prev.isCompleted) continue;
+      // 有子任务的任务不能单独恢复父任务，需先取消某个子任务。
+      if (prev.subtasks.isNotEmpty) {
+        lastSkippedBySubtasks++;
+        continue;
+      }
       _todos[i] = prev.copyWith(
         isCompleted: false,
         completedAt: null,

@@ -245,16 +245,31 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _completeSelected() async {
+    var skipped = 0;
     await _runBatchAction(
-      (ids) => context.read<TodoProvider>().completeTodos(ids),
-      (count) => '已完成 $count 个任务',
+      (ids) async {
+        final provider = context.read<TodoProvider>();
+        final count = await provider.completeTodos(ids);
+        skipped = provider.lastSkippedBySubtasks;
+        return count;
+      },
+      (count) =>
+          skipped > 0 ? '已完成 $count 个任务，$skipped 个需先完成子任务' : '已完成 $count 个任务',
     );
   }
 
   Future<void> _reopenSelected() async {
+    var skipped = 0;
     await _runBatchAction(
-      (ids) => context.read<TodoProvider>().reopenTodos(ids),
-      (count) => '已恢复 $count 个任务为未完成',
+      (ids) async {
+        final provider = context.read<TodoProvider>();
+        final count = await provider.reopenTodos(ids);
+        skipped = provider.lastSkippedBySubtasks;
+        return count;
+      },
+      (count) => skipped > 0
+          ? '已恢复 $count 个任务为未完成，$skipped 个有子任务需在子任务里取消'
+          : '已恢复 $count 个任务为未完成',
     );
   }
 
@@ -2926,25 +2941,46 @@ class _TodoTileState extends State<_TodoTile> {
                         child: SizedBox(
                           width: 32,
                           height: 32,
-                          child: Checkbox(
-                            value: widget.batchMode
-                                ? widget.selected
-                                : todo.isCompleted,
-                            shape: const CircleBorder(),
-                            activeColor: visualAccentColor,
-                            onChanged: canEdit
-                                ? (_) {
-                                    if (widget.batchMode) {
-                                      widget.onToggleSelection(todo.id);
-                                    } else {
-                                      completeTodoWithOptionalTimeRecord(
-                                        context,
-                                        todo,
-                                      );
-                                    }
-                                  }
-                                : null,
-                          ),
+                          // 有子任务时完成态由子任务决定，这里显示进度而不是整任务勾选。
+                          child: !widget.batchMode && todo.subtasks.isNotEmpty
+                              ? Center(
+                                  child: Text(
+                                    '${todo.subtasks.where((subtask) => subtask.isCompleted).length}/${todo.subtasks.length}',
+                                    key: ValueKey(
+                                      'todo_subtask_progress_${todo.id}',
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: 11,
+                                          color: todo.isCompleted
+                                              ? visualAccentColor
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                )
+                              : Checkbox(
+                                  value: widget.batchMode
+                                      ? widget.selected
+                                      : todo.isCompleted,
+                                  shape: const CircleBorder(),
+                                  activeColor: visualAccentColor,
+                                  onChanged: canEdit
+                                      ? (_) {
+                                          if (widget.batchMode) {
+                                            widget.onToggleSelection(todo.id);
+                                          } else {
+                                            completeTodoWithOptionalTimeRecord(
+                                              context,
+                                              todo,
+                                            );
+                                          }
+                                        }
+                                      : null,
+                                ),
                         ),
                       ),
                       const SizedBox(width: DesignTokens.spaceXs),
@@ -3651,16 +3687,31 @@ class _QuadrantListScreenState extends State<QuadrantListScreen> {
   }
 
   Future<void> _completeSelected() async {
+    var skipped = 0;
     await _runBatchAction(
-      (ids) => context.read<TodoProvider>().completeTodos(ids),
-      (count) => '已完成 $count 个任务',
+      (ids) async {
+        final provider = context.read<TodoProvider>();
+        final count = await provider.completeTodos(ids);
+        skipped = provider.lastSkippedBySubtasks;
+        return count;
+      },
+      (count) =>
+          skipped > 0 ? '已完成 $count 个任务，$skipped 个需先完成子任务' : '已完成 $count 个任务',
     );
   }
 
   Future<void> _reopenSelected() async {
+    var skipped = 0;
     await _runBatchAction(
-      (ids) => context.read<TodoProvider>().reopenTodos(ids),
-      (count) => '已恢复 $count 个任务为未完成',
+      (ids) async {
+        final provider = context.read<TodoProvider>();
+        final count = await provider.reopenTodos(ids);
+        skipped = provider.lastSkippedBySubtasks;
+        return count;
+      },
+      (count) => skipped > 0
+          ? '已恢复 $count 个任务为未完成，$skipped 个有子任务需在子任务里取消'
+          : '已恢复 $count 个任务为未完成',
     );
   }
 

@@ -1783,6 +1783,35 @@ class _TodoTemplateAvatar extends StatelessWidget {
   }
 }
 
+/// 有子任务时替代整任务勾选：显示已完成/总数，完成只能通过子任务。
+class _TodaySubtaskProgress extends StatelessWidget {
+  final TodoItem todo;
+
+  const _TodaySubtaskProgress({required this.todo});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final done = todo.subtasks.where((subtask) => subtask.isCompleted).length;
+    final total = todo.subtasks.length;
+    final completed = total > 0 && done == total;
+    return SizedBox(
+      width: _TodayTodoLeading.width,
+      height: _TodayTodoLeading.height,
+      child: Center(
+        child: Text(
+          '$done/$total',
+          key: ValueKey('today_subtask_progress_${todo.id}'),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontSize: 11,
+            color: completed ? cs.primary : cs.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TodayTodoLeading extends StatelessWidget {
   static const double width = 44;
   static const double height = 44;
@@ -2115,16 +2144,19 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
         minLeadingWidth: widget.leading == null ? _TodayTodoLeading.width : 30,
         leading:
             widget.leading ??
-            _TodayTodoLeading(
-              statusColor: widget.flat && visual == TodoVisualState.normal
-                  ? cs.primary
-                  : statusColor,
-              isCompleted: isCompleted,
-              completedCheckColor: cs.onTertiary,
-              onChanged: canEdit
-                  ? (_) => widget.onToggle()
-                  : (_) => _showReadOnlyMessage('完成任务'),
-            ),
+            // 有子任务时完成态由子任务决定：不再提供整任务勾选，改为显示进度。
+            (todo.subtasks.isEmpty
+                ? _TodayTodoLeading(
+                    statusColor: widget.flat && visual == TodoVisualState.normal
+                        ? cs.primary
+                        : statusColor,
+                    isCompleted: isCompleted,
+                    completedCheckColor: cs.onTertiary,
+                    onChanged: canEdit
+                        ? (_) => widget.onToggle()
+                        : (_) => _showReadOnlyMessage('完成任务'),
+                  )
+                : _TodaySubtaskProgress(todo: todo)),
         title: _TodayTodoTitleLine(
           todo: todo,
           title: widget.title ?? todo.title,
@@ -2160,17 +2192,20 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
             ),
             child: Row(
               children: [
-                _TodayTodoLeading(
-                  neutral: true,
-                  statusColor: visual == TodoVisualState.normal
-                      ? home.accent
-                      : statusColor,
-                  isCompleted: isCompleted,
-                  completedCheckColor: cs.onPrimary,
-                  onChanged: canEdit
-                      ? (_) => widget.onToggle()
-                      : (_) => _showReadOnlyMessage('完成任务'),
-                ),
+                // 平板/扁平布局同样遵守“有子任务则显示进度”。
+                todo.subtasks.isEmpty
+                    ? _TodayTodoLeading(
+                        neutral: true,
+                        statusColor: visual == TodoVisualState.normal
+                            ? home.accent
+                            : statusColor,
+                        isCompleted: isCompleted,
+                        completedCheckColor: cs.onPrimary,
+                        onChanged: canEdit
+                            ? (_) => widget.onToggle()
+                            : (_) => _showReadOnlyMessage('完成任务'),
+                      )
+                    : _TodaySubtaskProgress(todo: todo),
                 const SizedBox(width: DesignTokens.spaceXxs),
                 Expanded(
                   child: Column(
@@ -2880,16 +2915,18 @@ class _TodayReminderTile extends StatelessWidget {
         todo: todo,
         onToggle: () => onToggleTodo(todo),
         onOpen: () => onOpenTodo(item.id),
-        leading: _TodayTodoLeading(
-          statusColor: overdue
-              ? cs.error
-              : completed
-              ? completedColor
-              : _todoTemplateVisual(context, todo).color,
-          isCompleted: completed,
-          completedCheckColor: overdue ? cs.onError : cs.onTertiary,
-          onChanged: (_) => onToggleTodo(todo),
-        ),
+        leading: todo.subtasks.isNotEmpty
+            ? _TodaySubtaskProgress(todo: todo)
+            : _TodayTodoLeading(
+                statusColor: overdue
+                    ? cs.error
+                    : completed
+                    ? completedColor
+                    : _todoTemplateVisual(context, todo).color,
+                isCompleted: completed,
+                completedCheckColor: overdue ? cs.onError : cs.onTertiary,
+                onChanged: (_) => onToggleTodo(todo),
+              ),
         title: item.title,
         titleColor: overdue
             ? overdueTitleColor

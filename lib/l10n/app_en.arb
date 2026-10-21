@@ -1083,6 +1083,7 @@
   "todayNoDueDate": "No due date",
   "todaySubtaskReadOnly": "This shared space is read-only, so subtasks cannot be completed",
   "todaySubtaskUpdateFailed": "Could not update the subtask. Please try again.",
+  "todoCompleteBlockedBySubtasks": "Finish the subtasks first — the task completes when they all do.",
   "todayTodosEmpty": "No tasks today. Tap to view or add one",
   "todoStatusOverdue": "Overdue",
   "todoStatusDueSoon": "Due soon",
