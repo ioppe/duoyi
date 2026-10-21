@@ -307,11 +307,23 @@ void main() {
     final create = find.byKey(const ValueKey('todo_list_group_create'));
     await _revealListGroup(tester, create);
     expect(find.text('新建清单'), findsOneWidget);
-    // 新建入口排在所有清单 chip 之前。
+    final templateChip = find.byKey(const ValueKey('todo_list_group_工作'));
+    // 新建入口排在所有清单 chip 之前，并使用与清单一致的 ChoiceChip 样式。
     expect(
       tester.getTopLeft(create).dx,
-      lessThan(tester.getTopLeft(find.byType(ChoiceChip).first).dx),
+      lessThan(tester.getTopLeft(templateChip).dx),
     );
+    final createWidget = tester.widget<ChoiceChip>(create);
+    final templateWidget = tester.widget<ChoiceChip>(templateChip);
+    expect(
+      createWidget.labelStyle?.fontSize,
+      templateWidget.labelStyle?.fontSize,
+    );
+    expect(
+      createWidget.labelStyle?.fontWeight,
+      templateWidget.labelStyle?.fontWeight,
+    );
+    expect(createWidget.showCheckmark, isFalse);
     await tester.tap(create);
     await tester.pumpAndSettle();
     final input = find.byKey(const ValueKey('todo_list_group_input'));

@@ -458,9 +458,10 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     ColorScheme cs,
   ) {
     if (!_creatingList) {
+      // 与其它清单使用同一种 ChoiceChip，字号/字重/内边距完全一致。
       return Padding(
         padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
-        child: ActionChip(
+        child: ChoiceChip(
           key: const ValueKey('todo_list_group_create'),
           avatar: Icon(
             Icons.add,
@@ -468,7 +469,10 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
             color: cs.primary,
           ),
           label: Text(I18n.tr('list_group.new_chip')),
-          onPressed: _submitting ? null : _startCreateList,
+          labelStyle: Theme.of(context).textTheme.labelLarge,
+          showCheckmark: false,
+          selected: false,
+          onSelected: _submitting ? null : (_) => _startCreateList(),
         ),
       );
     }
