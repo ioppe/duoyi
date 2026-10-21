@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'提醒'**
   String get todoCreateReminder;
 
+  /// No description provided for @todoCreateTimezone.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用时区：'**
+  String get todoCreateTimezone;
+
   /// No description provided for @todoCreateNoReminder.
   ///
   /// In zh, this message translates to:
@@ -313,6 +319,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'待办已创建，提醒状态可在通知设置/待办详情检查'**
   String get todoCreateCreatedReminder;
+
+  /// No description provided for @todoCreateCreatedWebReminder.
+  ///
+  /// In zh, this message translates to:
+  /// **'待办和提醒配置已保存；Web 暂不支持本地系统通知，可在安装客户端同步后接收提醒。'**
+  String get todoCreateCreatedWebReminder;
 
   /// No description provided for @todoCreateReminderIssueTitle.
   ///

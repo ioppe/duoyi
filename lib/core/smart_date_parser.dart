@@ -57,6 +57,14 @@ class SmartDateParser {
     final base = now == null ? AppClock.now() : AppClock.toLocal(now);
     final today = DateTime(base.year, base.month, base.day);
 
+    // Parse a complete ISO timestamp before any isolated HH:mm fragment.
+    final iso = RegExp(
+      r'\b(\d{4})-(\d{2})-(\d{2})[Tt ](\d{2}):(\d{2})'
+      r'(?::(\d{2})(?:\.(\d{1,6}))?)?(Z|[+-]\d{2}:?\d{2})?',
+      caseSensitive: false,
+    ).firstMatch(input);
+    if (iso != null) return _isoDateTime(iso);
+
     final relative = _relativeDate(input, today);
     if (relative.isSuccess) return relative;
 
@@ -97,6 +105,62 @@ class SmartDateParser {
     final englishDate = _englishDatePart(input, today);
     if (englishDate.isSuccess) return englishDate;
     return SmartDateParseResult.empty;
+  }
+
+  static SmartDateParseResult _isoDateTime(RegExpMatch match) {
+    final year = int.parse(match[1]!);
+    final month = int.parse(match[2]!);
+    final day = int.parse(match[3]!);
+    final hour = int.parse(match[4]!);
+    final minute = int.parse(match[5]!);
+    final second = int.parse(match[6] ?? '0');
+    if (year < 1 ||
+        month < 1 ||
+        month > 12 ||
+        day < 1 ||
+        day > DateTime.utc(year, month + 1, 0).day ||
+        hour > 23 ||
+        minute > 59 ||
+        second > 59) {
+      return SmartDateParseResult.empty;
+    }
+    final offset = match[8];
+    DateTime date;
+    if (offset != null) {
+      final parts = offset.substring(1).replaceAll(':', '');
+      if (offset.toUpperCase() != 'Z' &&
+          (int.parse(parts.substring(0, 2)) > 23 ||
+              int.parse(parts.substring(2)) > 59)) {
+        return SmartDateParseResult.empty;
+      }
+      final instant = DateTime.tryParse(match[0]!);
+      if (instant == null) return SmartDateParseResult.empty;
+      date = AppClock.toLocal(instant);
+    } else {
+      final fraction = int.parse((match[7] ?? '').padRight(6, '0'));
+      date = AppClock.date(
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        fraction ~/ 1000,
+        fraction % 1000,
+      );
+      if (date.year != year ||
+          date.month != month ||
+          date.day != day ||
+          date.hour != hour ||
+          date.minute != minute) {
+        return SmartDateParseResult.empty;
+      }
+    }
+    return SmartDateParseResult(
+      dateTime: date,
+      matchedText: match[0]!,
+      hasTimeOfDay: true,
+    );
   }
 
   static DateTime _addDays(DateTime date, int days) =>
@@ -502,7 +566,7 @@ class SmartDateParser {
     // 支持 "下周一下午3点"、"本周三上午9点半" 等组合，weekWord 紧跟在 dayWord 之后
     // 形如 "下周一" 或独立的 "周一" 都允许。
     final pattern = RegExp(
-      r'(今天|明天|后天|大后天|下下周|下周|本周)?\s*'
+      r'(昨天|今天|明天|后天|大后天|下下周|下周|本周)?\s*'
       r'(?:(周一|周二|周三|周四|周五|周六|周日|周天)|(一|二|三|四|五|六|日|天))?\s*'
       r'(凌晨|早上|早晨|上午|中午|下午|晚上|晚)?\s*'
       '($_numberTokenPattern)\\s*(?:点|:|：)\\s*'
@@ -560,7 +624,7 @@ class SmartDateParser {
 
     // 2) "下周" + " " + "周一" 这类显式格式 / 单独的"今天/明天/后天"等
     final pattern = RegExp(
-      r'(今天|明天|后天|大后天|下下周|下周|本周)\s*(周一|周二|周三|周四|周五|周六|周日|周天)?',
+      r'(昨天|今天|明天|后天|大后天|下下周|下周|本周)\s*(周一|周二|周三|周四|周五|周六|周日|周天)?',
     );
     final match = pattern.firstMatch(input);
     if (match == null) return SmartDateParseResult.empty;
@@ -723,6 +787,8 @@ class SmartDateParser {
     }
 
     switch (dayWord) {
+      case '昨天':
+        return _addDays(today, -1);
       case '今天':
         return today;
       case '明天':

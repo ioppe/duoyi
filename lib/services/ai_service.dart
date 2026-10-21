@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import '../core/ai_todo_breakdown.dart';
+import '../core/app_clock.dart';
 import '../core/app_config.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/smart_date_parser.dart';
 import '../core/smart_todo_draft.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -159,6 +162,43 @@ class AiService extends ChangeNotifier {
         warning: 'AI 返回内容无法解析，已用本地时间解析生成草稿：$e',
       );
     }
+  }
+
+  Future<AiTodoBreakdown> breakDownTodo(
+    String input, {
+    required List<String> listGroups,
+    DateTime? now,
+  }) async {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) {
+      throw const AiException('请输入要拆解的待办内容');
+    }
+    final localNow = now == null ? AppClock.now() : AppClock.toLocal(now);
+    final out = await _chat(
+      '你是多仪的新建待办拆解助手。只返回一个严格 JSON 对象，禁止 Markdown 和其它解释。'
+          '字段格式示例：{"subtasks":["具体动作"],"list_group":"工作",'
+          '"quadrant":"Q2","date_time":"2026-10-23T15:00:00","has_time":true}。'
+          'subtasks 必须是 3 到 7 条具体可执行动作的字符串数组。'
+          'list_group 只能是用户提供的可选清单中的完整名称，无法匹配就返回 null，不创建新清单。'
+          'quadrant 只能为 Q1（紧急重要）、Q2（重要不紧急）、Q3（紧急不重要）、Q4（都不），'
+          '无法判断则为 null；不要返回独立的低、中、高 priority 标记。'
+          '日期只有用户原文有依据时才能输出；普通任务没有日期依据时 date_time 必须为 null。'
+          '相对日期按给定的当前应用墙上时间和应用时区解释。'
+          '有具体时分才 has_time=true；只有日期时 date_time 使用 YYYY-MM-DD 且 has_time=false。'
+          '无日期时 has_time=false。不要自行添加默认 9 点或任何原文未指定的时刻。'
+          '时间使用 ISO8601；不带 offset 的时间按应用时区解释，带 Z 或数值 offset 表示对应瞬间。',
+      '当前应用墙上时间：${localNow.toIso8601String()}\n'
+          '应用时区（IANA）：${LocalTimezoneResolver.currentIana}\n'
+          '可选清单（allowed listGroups）：${jsonEncode(listGroups)}\n'
+          '用户原文：$trimmed',
+      temperature: 0.2,
+      maxTokens: 900,
+    );
+    final result = AiTodoBreakdown.tryParse(out, listGroups: listGroups);
+    if (result == null) {
+      throw const AiException('AI 没有返回可用的待办拆解，请重试');
+    }
+    return result;
   }
 
   Future<List<String>> breakDownTask(String goal) async {

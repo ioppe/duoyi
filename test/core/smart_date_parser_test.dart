@@ -7,6 +7,15 @@ void main() {
   final now = DateTime(2026, 5, 15, 10, 0);
 
   group('SmartDateParser 基础日期', () {
+    test('昨天保留过去日期，不降级为今天的时间', () {
+      final day = SmartDateParser.parse('昨天整理资料', now: now);
+      expect(day.dateTime, DateTime(2026, 5, 14));
+      expect(day.hasTimeOfDay, isFalse);
+      final timed = SmartDateParser.parse('昨天下午3点会议', now: now);
+      expect(timed.dateTime, DateTime(2026, 5, 14, 15));
+      expect(timed.matchedText, '昨天下午3点');
+    });
+
     test('明天', () {
       final r = SmartDateParser.parse('明天', now: now);
       expect(r.isSuccess, isTrue);

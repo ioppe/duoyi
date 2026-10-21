@@ -87,6 +87,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreateReminder => '提醒';
 
   @override
+  String get todoCreateTimezone => '应用时区：';
+
+  @override
   String get todoCreateNoReminder => '不提醒';
 
   @override
@@ -115,6 +118,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get todoCreateCreatedReminder => '待办已创建，提醒状态可在通知设置/待办详情检查';
+
+  @override
+  String get todoCreateCreatedWebReminder =>
+      '待办和提醒配置已保存；Web 暂不支持本地系统通知，可在安装客户端同步后接收提醒。';
 
   @override
   String get todoCreateReminderIssueTitle => '待办提醒注册失败';

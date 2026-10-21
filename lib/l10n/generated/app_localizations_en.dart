@@ -96,6 +96,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreateReminder => 'Reminder';
 
   @override
+  String get todoCreateTimezone => 'App time zone:';
+
+  @override
   String get todoCreateNoReminder => 'No reminder';
 
   @override
@@ -126,6 +129,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get todoCreateCreatedReminder =>
       'Task created. Check reminder status in notification settings or task details.';
+
+  @override
+  String get todoCreateCreatedWebReminder =>
+      'Task and reminder settings saved. Web does not support local system notifications; sync with an installed client to receive reminders.';
 
   @override
   String get todoCreateReminderIssueTitle =>

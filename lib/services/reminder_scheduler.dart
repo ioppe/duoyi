@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../core/app_clock.dart';
 import '../core/brand_strings.dart';
@@ -124,7 +125,7 @@ TodoReminderPreflightResult preflightTodoReminderPlan(
           );
           continue;
         }
-        final base = _dateAtTimeForPreflight(
+        final base = _todoReminderAtTime(
           anchor,
           rule.hour ?? anchor.hour,
           rule.minute ?? anchor.minute,
@@ -160,7 +161,7 @@ TodoReminderPreflightResult preflightTodoReminderPlan(
           );
           continue;
         }
-        final base = _dateAtTimeForPreflight(
+        final base = _todoReminderAtTime(
           anchor,
           rule.hour ?? anchor.hour,
           rule.minute ?? anchor.minute,
@@ -240,7 +241,7 @@ ReminderPlan _effectiveTodoPlanForPreflight(TodoItem t) {
   }
   // ignore: deprecated_member_use_from_same_package
   if (t.hasReminder) {
-    final anchor = t.reminderAt ?? t.dueDate;
+    final anchor = _absoluteTodoReminderAnchor(t);
     if (anchor == null) return const ReminderPlan.disabled();
     return ReminderPlan(
       enabled: true,
@@ -259,14 +260,21 @@ ReminderPlan _effectiveTodoPlanForPreflight(TodoItem t) {
   return const ReminderPlan.disabled();
 }
 
-DateTime? _absoluteTodoReminderAnchor(TodoItem todo) =>
-    todo.reminderAt ?? todo.dueDate;
+DateTime? _absoluteTodoReminderAnchor(TodoItem todo) => todo.reminderAt == null
+    ? todo.localDueDate
+    : AppClock.toLocal(todo.reminderAt!);
 
 DateTime? _relativeTodoReminderAnchor(TodoItem todo) =>
-    todo.dueDate ?? todo.reminderAt;
+    todo.localDueDate ?? _absoluteTodoReminderAnchor(todo);
 
-DateTime _dateAtTimeForPreflight(DateTime date, int hour, int minute) {
-  return AppClock.date(date.year, date.month, date.day, hour, minute);
+DateTime _todoReminderAtTime(DateTime anchor, int hour, int minute) {
+  // Preserve the selected occurrence of a repeated DST wall-clock hour.
+  if (anchor is tz.TZDateTime &&
+      anchor.hour == hour &&
+      anchor.minute == minute) {
+    return anchor;
+  }
+  return AppClock.date(anchor.year, anchor.month, anchor.day, hour, minute);
 }
 
 bool _validTimeForPreflight(int? hour, int? minute) {
@@ -3598,7 +3606,7 @@ class ReminderScheduler {
     }
     // ignore: deprecated_member_use_from_same_package
     if (t.hasReminder) {
-      final anchor = t.reminderAt ?? t.dueDate;
+      final anchor = _absoluteTodoReminderAnchor(t);
       if (anchor == null) return const ReminderPlan.disabled();
       return ReminderPlan(
         enabled: true,
@@ -3631,7 +3639,7 @@ class ReminderScheduler {
         final hour = rule.hour ?? anchor.hour;
         final minute = rule.minute ?? anchor.minute;
         if (!_validTime(hour, minute)) return null;
-        final when = _dateAtTime(anchor, hour, minute);
+        final when = _todoReminderAtTime(anchor, hour, minute);
         final scheduledWhen = _resolveOneShotReminderTime(
           when,
           now,
@@ -3654,7 +3662,7 @@ class ReminderScheduler {
         final hour = rule.hour ?? anchor.hour;
         final minute = rule.minute ?? anchor.minute;
         if (!_validTime(hour, minute)) return null;
-        final base = _dateAtTime(anchor, hour, minute);
+        final base = _todoReminderAtTime(anchor, hour, minute);
         final when = base.add(Duration(minutes: rule.offsetMinutes ?? 0));
         final scheduledWhen = _resolveOneShotReminderTime(
           when,

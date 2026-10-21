@@ -1001,6 +1001,7 @@ const Map<String, String> _zh = <String, String>{
   'todo.create.quadrant': '优先级',
   'todo.create.priority': '优先级标记',
   'todo.create.reminder': '提醒',
+  'todo.create.timezone': '应用时区：',
   'todo.create.no_reminder': '不提醒',
   'todo.create.at_time': '到点提醒',
   'todo.create.pick_time': '选择提醒时间',
@@ -1011,6 +1012,8 @@ const Map<String, String> _zh = <String, String>{
   'todo.create.submit': '添加任务',
   'todo.create.created': '待办已创建',
   'todo.create.created_reminder': '待办已创建，提醒状态可在通知设置/待办详情检查',
+  'todo.create.created_web_reminder':
+      '待办和提醒配置已保存；Web 暂不支持本地系统通知，可在安装客户端同步后接收提醒。',
   'todo.create.reminder_issue_title': '待办提醒注册失败',
   'todo.matrix': '四象限',
   'todo.list': '列表',
@@ -1301,7 +1304,8 @@ const Map<String, String> _en = <String, String>{
   'auth.design.tagline': 'A little more space for every day',
   'auth.design.everyday': 'Make time. See progress.',
   'auth.design.headline': 'Make room for\nwhat matters.',
-  'auth.design.description': 'Start with one small thing today.\nGrow into the life you have in mind.',
+  'auth.design.description':
+      'Start with one small thing today.\nGrow into the life you have in mind.',
   'auth.design.tasks': 'Find your priorities and turn plans into progress',
   'auth.design.habits': 'Small steps that make a difference over time',
   'auth.design.focus': 'Set aside a quiet moment for one meaningful thing',
@@ -1309,14 +1313,18 @@ const Map<String, String> _en = <String, String>{
   'auth.design.welcome': 'Welcome back',
   'auth.design.login_subtitle': 'Sign in to pick up where you left off.',
   'auth.design.signup': 'Your everyday starts here',
-  'auth.design.signup_subtitle': 'Create an account for your plans and progress.',
+  'auth.design.signup_subtitle':
+      'Create an account for your plans and progress.',
   'admin.email_code_login.title': 'Allow email code sign-in',
-  'admin.email_code_login.subtitle': 'Also enable the email service and configure the active sending provider in email settings.',
-  'auth.email_login_unavailable': 'Email code sign-in is unavailable. Use your password to sign in.',
+  'admin.email_code_login.subtitle':
+      'Also enable the email service and configure the active sending provider in email settings.',
+  'auth.email_login_unavailable':
+      'Email code sign-in is unavailable. Use your password to sign in.',
   'auth.password.show': 'Show password',
   'auth.password.hide': 'Hide password',
   'auth.session.checking': 'Verifying your session…',
-  'auth.session.unavailable': 'The server is unavailable. Check your connection and try again.',
+  'auth.session.unavailable':
+      'The server is unavailable. Check your connection and try again.',
   'auth.session.title': 'Connect to your everyday',
   'auth.session.sign_in_again': 'Sign in again',
   'feature.unavailable': 'This feature is no longer available.',
@@ -2342,6 +2350,7 @@ const Map<String, String> _en = <String, String>{
   'todo.create.quadrant': 'Priority',
   'todo.create.priority': 'Priority flag',
   'todo.create.reminder': 'Reminder',
+  'todo.create.timezone': 'App time zone:',
   'todo.create.no_reminder': 'No reminder',
   'todo.create.at_time': 'Remind at',
   'todo.create.pick_time': 'Choose reminder time',
@@ -2354,6 +2363,8 @@ const Map<String, String> _en = <String, String>{
   'todo.create.created': 'Task created',
   'todo.create.created_reminder':
       'Task created. Check reminder status in notification settings or task details.',
+  'todo.create.created_web_reminder':
+      'Task and reminder settings saved. Web does not support local system notifications; sync with an installed client to receive reminders.',
   'todo.create.reminder_issue_title': 'Task reminder registration failed',
   'todo.matrix': 'Matrix',
   'todo.list': 'List',

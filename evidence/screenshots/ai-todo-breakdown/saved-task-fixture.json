@@ -1,0 +1,47 @@
+{
+  "title": "需要参加周老师让我找相关云计算资料的会议",
+  "listGroupName": "学习",
+  "quadrant": 0,
+  "date": "2026-10-23T15:00:00.000-0400",
+  "dueDate": "2026-10-23T19:00:00.000Z",
+  "reminderAt": "2026-10-23T19:00:00.000Z",
+  "reminderPlan": {
+    "enabled": true,
+    "rules": [
+      {
+        "id": "9fb8e2f9-342c-4da5-81dd-67cd96f82bcf",
+        "enabled": true,
+        "type": 0,
+        "kind": 0,
+        "hour": 15,
+        "minute": 0,
+        "offsetMinutes": null,
+        "weekdays": [],
+        "vibrate": true,
+        "fullScreen": false,
+        "snoozeMinutes": 0,
+        "repeatCount": 0
+      }
+    ]
+  },
+  "subtasks": [
+    {
+      "id": "0174ccf7-fc62-45f4-9a2c-fa078ea8690c",
+      "title": "确认会议地点和线上链接",
+      "isCompleted": false,
+      "sortOrder": 0
+    },
+    {
+      "id": "0927fbf6-ad25-4447-8ace-7e6ae9344bb4",
+      "title": "查找权威云计算资料",
+      "isCompleted": false,
+      "sortOrder": 1
+    },
+    {
+      "id": "333a25fd-da11-4ae9-82d3-e8078364d252",
+      "title": "整理来源与会议摘要",
+      "isCompleted": false,
+      "sortOrder": 2
+    }
+  ]
+}

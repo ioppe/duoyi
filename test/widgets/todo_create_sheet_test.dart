@@ -1,7 +1,12 @@
 import 'dart:async';
 
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/ai_todo_breakdown.dart';
+import 'package:duoyi/core/app_clock.dart';
+import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/design_tokens.dart';
+import 'package:duoyi/core/web_target.dart';
+import 'package:duoyi/core/i18n_date_format.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/l10n/generated/app_localizations.dart';
 import 'package:duoyi/models/todo.dart';
@@ -39,12 +44,59 @@ class _DelayedTodos extends TodoProvider {
   }
 }
 
+class _CapturingTodos extends TodoProvider {
+  final saved = <TodoItem>[];
+
+  @override
+  List<TodoItem> get todos => saved;
+
+  @override
+  Future<void> addTodo(
+    TodoItem todo, {
+    bool waitForReminderSync = true,
+    bool reportReminderScheduleFailure = false,
+  }) async => saved.add(todo);
+}
+
+class _ReadyNotifications extends NotificationService {
+  DateTime? scheduledTime;
+
+  @override
+  Future<bool> ensureReadyForReminder({
+    DateTime? scheduledTime,
+    String issueTitle = '提醒注册失败',
+    String? relatedId,
+  }) async {
+    this.scheduledTime = scheduledTime;
+    return true;
+  }
+}
+
+class _ReadyAi extends AiService {
+  final AiTodoBreakdown result;
+  _ReadyAi(this.result);
+
+  @override
+  bool get enabled => true;
+
+  @override
+  Future<AiTodoBreakdown> breakDownTodo(
+    String input, {
+    required List<String> listGroups,
+    DateTime? now,
+  }) async => result;
+}
+
 class _DelayedAi extends AiService {
-  final pending = Completer<List<String>>();
+  final pending = Completer<AiTodoBreakdown>();
   @override
   bool get enabled => true;
   @override
-  Future<List<String>> breakDownTask(String goal) => pending.future;
+  Future<AiTodoBreakdown> breakDownTodo(
+    String input, {
+    required List<String> listGroups,
+    DateTime? now,
+  }) => pending.future;
 }
 
 class _ReadOnlyShare extends ShareProvider {
@@ -61,6 +113,7 @@ Future<void> _open(
   double textScale = 1,
   ThemeData? theme,
   EisenhowerQuadrant? quadrant,
+  NotificationService? notifications,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -70,7 +123,9 @@ Future<void> _open(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationService()),
+        ChangeNotifierProvider<NotificationService>(
+          create: (_) => notifications ?? NotificationService(),
+        ),
         ChangeNotifierProvider<TodoProvider>(
           create: (_) => todos ?? TodoProvider(),
         ),
@@ -132,9 +187,394 @@ void main() {
         ))
         .load();
   });
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     I18n.setLocale(AppLocale.zh);
+    await LocalTimezoneResolver.setApplicationTimeZone('UTC');
+    AppClock.debugNow = () => DateTime.utc(2026, 10, 21, 2);
+  });
+
+  tearDown(() => AppClock.debugNow = null);
+
+  for (final item in [
+    (
+      name: 'ISO UTC 完整时间',
+      zone: 'Asia/Shanghai',
+      now: DateTime.utc(2026, 10, 21, 2),
+      input: '2026-10-23T02:30:00Z 开会',
+      expected: DateTime.utc(2026, 10, 23, 2, 30),
+      ai: false,
+    ),
+    (
+      name: '跨午夜同分钟顺延',
+      zone: 'UTC',
+      now: DateTime.utc(2026, 10, 21, 23, 59, 35),
+      input: '今天23:59整理资料',
+      expected: DateTime.utc(2026, 10, 22),
+      ai: false,
+    ),
+    (
+      name: '重复任务下一次时间',
+      zone: 'Asia/Shanghai',
+      now: DateTime.utc(2026, 10, 21, 2),
+      input: '每天上午9点跑步',
+      expected: DateTime.utc(2026, 10, 22, 1),
+      ai: false,
+    ),
+    (
+      name: '纽约回拨第二次01:30',
+      zone: 'America/New_York',
+      now: DateTime.utc(2026, 11, 1, 5, 45),
+      input: '整理会议资料',
+      expected: DateTime.utc(2026, 11, 1, 6, 30),
+      ai: true,
+    ),
+  ]) {
+    testWidgets('${item.name} 的预览、保存与提醒保持一致', (tester) async {
+      await LocalTimezoneResolver.setApplicationTimeZone(item.zone);
+      AppClock.debugNow = () => item.now;
+      final todos = _CapturingTodos();
+      final notifications = _ReadyNotifications();
+      final expected = AppClock.toLocal(item.expected);
+      await _open(
+        tester,
+        todos: todos,
+        notifications: notifications,
+        ai: _ReadyAi(
+          AiTodoBreakdown(
+            subtasks: const ['准备资料'],
+            dateTime: expected,
+            hasTimeOfDay: true,
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('todo_create_title')),
+        item.input,
+      );
+      if (item.ai) {
+        await tester.tap(
+          find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+        );
+      }
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          I18nDateFormat.smartDate(expected, includeTime: true),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      await _scrollToSubmit(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+      await tester.pumpAndSettle();
+      expect(todos.saved.single.date.toUtc(), item.expected);
+      expect(notifications.scheduledTime!.toUtc(), item.expected);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('Web 保存提醒配置并说明系统通知限制，不阻止任务创建', (tester) async {
+    WebTarget.debugWebBuild = true;
+    addTearDown(() => WebTarget.debugWebBuild = null);
+    final todos = _CapturingTodos();
+    await _open(tester, todos: todos);
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '后天下午3点会议',
+    );
+    await tester.pumpAndSettle();
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    expect(todos.saved.single.reminderPlan.enabled, isTrue);
+    expect(todos.saved.single.reminderPlan.rules.single.hour, 15);
+    expect(
+      find.text(I18n.tr('todo.create.created_web_reminder')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI 自动填写清单和象限，并保存有序子任务与到点提醒', (tester) async {
+    await LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai');
+    final todos = _CapturingTodos();
+    final notifications = _ReadyNotifications();
+    await _open(
+      tester,
+      todos: todos,
+      notifications: notifications,
+      ai: _ReadyAi(
+        AiTodoBreakdown(
+          subtasks: const ['确认会议地点', '查找云计算资料', '整理会议摘要'],
+          listGroupName: '学习',
+          quadrant: EisenhowerQuadrant.urgentImportant,
+          dateTime: AppClock.date(2030, 1, 1, 9),
+          hasTimeOfDay: true,
+        ),
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '后天下午3点参加周老师的云计算资料会议',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.pumpAndSettle();
+    expect(todos.saved, isEmpty, reason: '拆解只填入草稿，等待统一保存');
+    expect(
+      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '学习')).selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .state<FormFieldState<EisenhowerQuadrant>>(
+            find.byType(FormField<EisenhowerQuadrant>),
+          )
+          .value,
+      EisenhowerQuadrant.urgentImportant,
+    );
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(find.text('确认会议地点'), findsOneWidget);
+    expect(find.textContaining('Asia/Shanghai'), findsOneWidget);
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    final saved = todos.saved.single;
+    expect(saved.listGroupName, '学习');
+    expect(saved.quadrant, EisenhowerQuadrant.urgentImportant);
+    expect(saved.priority, TodoPriority.none);
+    expect(saved.subtasks.map((item) => item.title), [
+      '确认会议地点',
+      '查找云计算资料',
+      '整理会议摘要',
+    ]);
+    expect(saved.subtasks.map((item) => item.sortOrder), [0, 1, 2]);
+    expect(saved.subtasks.every((item) => !item.isCompleted), isTrue);
+    expect(saved.date, AppClock.date(2026, 10, 23, 15));
+    expect(saved.dueDate, saved.date);
+    expect(saved.reminderPlan.enabled, isTrue);
+    expect(saved.reminderPlan.rules.single.hour, 15);
+    expect(notifications.scheduledTime!.toUtc(), DateTime.utc(2026, 10, 23, 7));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI 可补充本地未识别的时间，无具体时间时不推断提醒', (tester) async {
+    for (final timed in [true, false]) {
+      final todos = _CapturingTodos();
+      final notifications = _ReadyNotifications();
+      final at = AppClock.date(2026, 10, 28, timed ? 16 : 0, timed ? 30 : 0);
+      await _open(
+        tester,
+        todos: todos,
+        notifications: notifications,
+        ai: _ReadyAi(
+          AiTodoBreakdown(
+            subtasks: const ['整理资料'],
+            listGroupName: '工作',
+            dateTime: at,
+            hasTimeOfDay: timed,
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('todo_create_title')),
+        '评审前整理资料',
+      );
+      await tester.tap(
+        find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(find.byType(Switch)).value, timed);
+      await _scrollToSubmit(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+      await tester.pumpAndSettle();
+      expect(todos.saved.single.date, at);
+      expect(todos.saved.single.reminderPlan.enabled, timed);
+      expect(notifications.scheduledTime, timed ? at : null);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
+
+  testWidgets('等待 AI 时保留手动清单、象限和关闭提醒，禁止抢先保存', (tester) async {
+    final ai = _DelayedAi();
+    final todos = _CapturingTodos();
+    await _open(tester, ai: ai, todos: todos);
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '后天下午3点会议',
+    );
+    await tester.tap(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, '个人'));
+    await tester.tap(find.widgetWithText(ChoiceChip, '个人'));
+    tester
+        .widget<AppDropdownField<EisenhowerQuadrant>>(
+          find.byKey(const ValueKey('todo_create_quadrant')),
+        )
+        .onChanged(EisenhowerQuadrant.notUrgentNotImportant);
+    await tester.pump();
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.byKey(const ValueKey('todo_create_submit')),
+          )
+          .onPressed,
+      isNull,
+    );
+    ai.pending.complete(
+      const AiTodoBreakdown(
+        subtasks: ['准备会议资料'],
+        listGroupName: '工作',
+        quadrant: EisenhowerQuadrant.urgentImportant,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '个人')).selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .state<FormFieldState<EisenhowerQuadrant>>(
+            find.byType(FormField<EisenhowerQuadrant>),
+          )
+          .value,
+      EisenhowerQuadrant.notUrgentNotImportant,
+    );
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    expect(todos.saved.single.listGroupName, '个人');
+    expect(
+      todos.saved.single.quadrant,
+      EisenhowerQuadrant.notUrgentNotImportant,
+    );
+    expect(todos.saved.single.reminderPlan.enabled, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final changeZone in [false, true]) {
+    testWidgets('旧 AI 结果在输入或时区变化后丢弃，changeZone=$changeZone', (tester) async {
+      final ai = _DelayedAi();
+      final todos = _CapturingTodos();
+      await _open(tester, ai: ai, todos: todos);
+      final title = find.byKey(const ValueKey('todo_create_title'));
+      await tester.enterText(title, '整理旧资料');
+      await tester.tap(
+        find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+      );
+      await tester.pump();
+      if (changeZone) {
+        await LocalTimezoneResolver.setApplicationTimeZone('America/New_York');
+      } else {
+        await tester.enterText(title, '整理新资料');
+      }
+      ai.pending.complete(
+        AiTodoBreakdown(
+          subtasks: const ['过期子任务'],
+          listGroupName: '工作',
+          quadrant: EisenhowerQuadrant.urgentImportant,
+          dateTime: AppClock.date(2026, 10, 28, 16),
+          hasTimeOfDay: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('过期子任务'), findsNothing);
+      expect(
+        tester
+            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '工作'))
+            .selected,
+        isFalse,
+      );
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      await _scrollToSubmit(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+      await tester.pumpAndSettle();
+      expect(todos.saved.single.subtasks, isEmpty);
+      expect(todos.saved.single.listGroupName, isNull);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final (zone, day, utcHour) in [
+    ('Asia/Shanghai', 23, 7),
+    ('America/New_York', 22, 19),
+  ]) {
+    testWidgets('$zone 相对日期预览、保存和提醒使用同一应用时区', (tester) async {
+      await LocalTimezoneResolver.setApplicationTimeZone(zone);
+      final todos = _CapturingTodos();
+      final notifications = _ReadyNotifications();
+      await _open(tester, todos: todos, notifications: notifications);
+      await tester.enterText(
+        find.byKey(const ValueKey('todo_create_title')),
+        '后天下午3点开会',
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining(zone), findsOneWidget);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      await _scrollToSubmit(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+      await tester.pumpAndSettle();
+      expect(todos.saved.single.date, AppClock.date(2026, 10, day, 15));
+      expect(
+        notifications.scheduledTime!.toUtc(),
+        DateTime.utc(2026, 10, day, utcHour),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('只有日期和明确过去的时间不会自动开启提醒', (tester) async {
+    await _open(tester);
+    for (final text in ['后天整理资料', '昨天下午3点会议']) {
+      await tester.enterText(
+        find.byKey(const ValueKey('todo_create_title')),
+        text,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('具体时间自动打开提醒，关闭后保存不再保留隐式提醒', (tester) async {
+    await LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai');
+    AppClock.debugNow = () => DateTime.utc(2026, 10, 21, 2);
+    addTearDown(() => AppClock.debugNow = null);
+    final todos = TodoProvider();
+    await _open(tester, todos: todos);
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '后天下午3点参加云计算资料会议',
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    final saved = todos.todos.single;
+    expect(saved.reminder.enabled, isFalse);
+    expect(saved.reminderPlan.enabled, isFalse);
+    // ignore: deprecated_member_use_from_same_package
+    expect(saved.hasReminder, isFalse);
+    // ignore: deprecated_member_use_from_same_package
+    expect(saved.reminderAt, isNull);
+    expect(AppClock.toLocal(saved.date).hour, 15);
+    expect(saved.date.day, 23);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('共享表单保存清单和象限，不再提供优先级标记且阻止重复提交', (tester) async {
@@ -308,7 +748,7 @@ void main() {
     await tester.pump();
     await tester.tapAt(const Offset(10, 10));
     await tester.pump(const Duration(milliseconds: 500));
-    ai.pending.complete(['稍后返回的子任务']);
+    ai.pending.complete(const AiTodoBreakdown(subtasks: ['稍后返回的子任务']));
     await tester.pumpAndSettle();
     expect(find.byType(AppModalSheet), findsNothing);
     expect(todos.todos, isEmpty);
