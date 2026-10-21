@@ -306,7 +306,7 @@ void main() {
     );
     final create = find.byKey(const ValueKey('todo_list_group_create'));
     await _revealListGroup(tester, create);
-    expect(find.text('＋ 新建清单'), findsOneWidget);
+    expect(find.text('新建清单'), findsOneWidget);
     // 新建入口排在所有清单 chip 之前。
     expect(
       tester.getTopLeft(create).dx,
@@ -345,6 +345,15 @@ void main() {
     await tester.tap(create);
     await tester.pumpAndSettle();
     final input = find.byKey(const ValueKey('todo_list_group_input'));
+    // 空输入不展示任何清单建议。
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is ActionChip &&
+            widget.key.toString().contains('todo_list_group_suggestion_'),
+      ),
+      findsNothing,
+    );
 
     // 输入片段即补全相关已有清单，点选后直接选中该清单，不会新建。
     await tester.enterText(input, '旧');
@@ -397,6 +406,12 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text(I18n.tr(key)), findsOneWidget);
+      // 提示紧贴清单输入框显示，不会被底部弹窗或 SnackBar 遮挡。
+      expect(
+        find.byKey(const ValueKey('todo_list_group_error')),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
       expect(groups.groups, hasLength(1));
     }
     expect(find.byType(AlertDialog), findsNothing);

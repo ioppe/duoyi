@@ -239,7 +239,7 @@ abstract class AppLocalizations {
   /// No description provided for @listGroupNewChip.
   ///
   /// In zh, this message translates to:
-  /// **'＋ 新建清单'**
+  /// **'新建清单'**
   String get listGroupNewChip;
 
   /// No description provided for @listGroupNew.
@@ -265,12 +265,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'1–24 个字符'**
   String get listGroupNameHint;
-
-  /// No description provided for @listGroupCreateHint.
-  ///
-  /// In zh, this message translates to:
-  /// **'输入名称，自动补全已有清单'**
-  String get listGroupCreateHint;
 
   /// No description provided for @listGroupNameRequired.
   ///

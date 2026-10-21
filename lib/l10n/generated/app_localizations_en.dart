@@ -87,7 +87,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreateListType => 'List type';
 
   @override
-  String get listGroupNewChip => '＋ New list';
+  String get listGroupNewChip => 'New list';
 
   @override
   String get listGroupNew => 'New list';
@@ -100,9 +100,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listGroupNameHint => '1–24 characters';
-
-  @override
-  String get listGroupCreateHint => 'Type a name; existing lists autocomplete';
 
   @override
   String get listGroupNameRequired => 'Enter a list name';

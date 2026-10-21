@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -100,9 +102,12 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   bool _groupManuallyChanged = false;
   bool _quadrantManuallyChanged = false;
   bool _reminderManuallyChanged = false;
+  String? _feedbackMessage;
+  Timer? _feedbackTimer;
   final _newListCtrl = TextEditingController();
   final _newListFocus = FocusNode();
   bool _creatingList = false;
+  String? _newListErrorKey;
 
   @override
   void initState() {
@@ -118,18 +123,27 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     LocalTimezoneResolver.timezoneListenable.removeListener(_onTimezoneChanged);
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
+    _feedbackTimer?.cancel();
     _newListCtrl.dispose();
     _newListFocus.dispose();
     super.dispose();
   }
 
+  /// 校验提示必须画在弹窗内部：底部弹窗会盖住页面的 SnackBar。
   void _feedback(String message) {
-    if (!widget.messenger.mounted) return;
-    // 连续校验失败时直接替换上一条提示，避免排队等待 4 秒。
-    widget.messenger.hideCurrentSnackBar();
-    widget.messenger.showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    if (!mounted) {
+      if (widget.messenger.mounted) {
+        widget.messenger.showSnackBar(
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        );
+      }
+      return;
+    }
+    _feedbackTimer?.cancel();
+    setState(() => _feedbackMessage = message);
+    _feedbackTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _feedbackMessage = null);
+    });
   }
 
   String get _sourceInput =>
@@ -303,6 +317,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   void _startCreateList() {
     setState(() {
       _creatingList = true;
+      _newListErrorKey = null;
       _newListCtrl.clear();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -315,6 +330,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     _newListFocus.unfocus();
     setState(() {
       _creatingList = false;
+      _newListErrorKey = null;
       _newListCtrl.clear();
     });
   }
@@ -332,7 +348,8 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   /// 输入时优先补全“开头匹配”，其次“包含匹配”，方便直接选中已有清单。
   List<String> _listGroupMatches(List<String> names, String query) {
     final q = ListGroupProvider.normalizedName(query);
-    if (q.isEmpty) return names.take(8).toList(growable: false);
+    // 空输入不列任何建议：列表只在用户开始输入后才出现。
+    if (q.isEmpty) return const [];
     final startsWith = <String>[];
     final contains = <String>[];
     for (final name in names) {
@@ -361,7 +378,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     }
     final error = provider.validateName(raw, otherNames: names);
     if (error != null) {
-      _feedback(I18n.tr(error));
+      _showListError(error);
       return;
     }
     try {
@@ -369,10 +386,15 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       if (!mounted) return;
       _selectListName(created.name);
     } on ListGroupNameException catch (error) {
-      if (mounted) _feedback(I18n.tr(error.messageKey));
+      if (mounted) _showListError(error.messageKey);
     } catch (_) {
-      if (mounted) _feedback(I18n.tr('list_group.save_failed'));
+      if (mounted) _showListError('list_group.save_failed');
     }
+  }
+
+  /// 清单名校验错误紧贴输入框显示，避免被弹窗滚出视野或被 SnackBar 遮住。
+  void _showListError(String key) {
+    setState(() => _newListErrorKey = key);
   }
 
   Future<void> _showListGroupMenu(
@@ -464,7 +486,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
           style: Theme.of(context).textTheme.bodyMedium,
           decoration: InputDecoration(
             isDense: true,
-            hintText: I18n.tr('list_group.create_hint'),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: DesignTokens.spaceMd,
               vertical: DesignTokens.spaceSm,
@@ -507,7 +528,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               ],
             ),
           ),
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _newListErrorKey = null),
           onSubmitted: (_) => _submitNewList(provider, names),
         ),
       ),
@@ -937,8 +958,20 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               ],
             ),
           ),
-          if (_creatingList && custom != null)
+          if (_creatingList && custom != null) ...[
             _listGroupSuggestions(custom, listGroups, cs),
+            if (_newListErrorKey != null)
+              Padding(
+                padding: const EdgeInsets.only(top: DesignTokens.spaceXs),
+                child: Text(
+                  I18n.tr(_newListErrorKey!),
+                  key: const ValueKey('todo_list_group_error'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.error),
+                ),
+              ),
+          ],
           const SizedBox(height: 20),
           Text(
             I18n.tr('todo.create.quadrant'),
@@ -1023,6 +1056,36 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
                 ),
             ],
           ),
+          if (_feedbackMessage != null) ...[
+            Container(
+              key: const ValueKey('todo_create_feedback'),
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: DesignTokens.spaceMd),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.spaceMd,
+                vertical: DesignTokens.spaceSm,
+              ),
+              decoration: BoxDecoration(
+                color: cs.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                border: Border.all(color: cs.error.withValues(alpha: 0.24)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, size: 18, color: cs.error),
+                  const SizedBox(width: DesignTokens.spaceSm),
+                  Expanded(
+                    child: Text(
+                      _feedbackMessage!,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: cs.error),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Row(
             children: [
