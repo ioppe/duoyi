@@ -38,6 +38,7 @@ class DesignTokens {
   static const double authCardHeightWide = 484;
   static const double authCardMinHeight = 420;
   static const Duration authFlipDuration = Duration(milliseconds: 480);
+  static const double authCardTextScaleFactor = 0.75;
 
   // ----- Habit heatmap -----
   static const double habitHeatmapWidthFactor = 0.8;

@@ -45,20 +45,26 @@ class AuthPageFrame extends StatelessWidget {
               final wide =
                   constraints.maxWidth >= DesignTokens.authWideBreakpoint;
               final inset = wide ? DesignTokens.space5xl : DesignTokens.spaceXl;
-              // Keyboard resizing changes the outer viewport, never the card's
-              // two-face geometry. The outer scroll view keeps it reachable.
-              final fullHeight =
-                  constraints.maxHeight +
-                  MediaQuery.viewInsetsOf(context).bottom;
-              final cardHeight = (fullHeight - DesignTokens.space5xl * 3)
-                  .clamp(
-                    DesignTokens.authCardMinHeight,
-                    (wide
-                            ? DesignTokens.authCardHeightWide
-                            : DesignTokens.authCardHeightMobile) +
-                        additionalHeight,
-                  )
-                  .toDouble();
+              // Both faces share a policy-sized card. Large text grows the
+              // entire card; only the surrounding page can scroll.
+              final baseHeight =
+                  (wide
+                      ? DesignTokens.authCardHeightWide
+                      : DesignTokens.authCardHeightMobile) +
+                  additionalHeight;
+              final textScale = math.max(
+                1.0,
+                MediaQuery.textScalerOf(
+                      context,
+                    ).scale(DesignTokens.fontSizeBody) /
+                    DesignTokens.fontSizeBody,
+              );
+              final cardHeight = math.max(
+                DesignTokens.authCardMinHeight,
+                baseHeight *
+                    (1 +
+                        (textScale - 1) * DesignTokens.authCardTextScaleFactor),
+              );
               final padding = wide
                   ? DesignTokens.space3xl
                   : DesignTokens.spaceXl;
@@ -79,10 +85,8 @@ class AuthPageFrame extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: SingleChildScrollView(
-                            key: const ValueKey('auth_page_scroll'),
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
+                          child: Padding(
+                            key: const ValueKey('auth_form_content'),
                             padding: EdgeInsets.fromLTRB(
                               padding,
                               padding,

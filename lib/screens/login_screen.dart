@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -393,7 +394,10 @@ class _LoginScreenState extends State<LoginScreen> {
     decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
   );
 
-  Widget _passwordField({bool confirm = false}) => TextField(
+  Widget _passwordField({
+    bool confirm = false,
+    bool grouped = false,
+  }) => TextField(
     key: ValueKey(confirm ? 'auth-confirm-password' : 'auth-password'),
     controller: confirm ? _confirmPwdCtrl : _pwdCtrl,
     focusNode: confirm ? null : _pwdFocus,
@@ -412,20 +416,22 @@ class _LoginScreenState extends State<LoginScreen> {
       labelText: confirm
           ? I18n.tr('auth.confirm_password')
           : I18n.tr('auth.password'),
-      prefixIcon: const Icon(Icons.lock_outline_rounded),
-      suffixIcon: IconButton(
-        tooltip: I18n.tr(
-          _obscurePassword ? 'auth.password.show' : 'auth.password.hide',
-        ),
-        onPressed: _busy || _sendingEmailCode
-            ? null
-            : () => setState(() => _obscurePassword = !_obscurePassword),
-        icon: Icon(
-          _obscurePassword
-              ? Icons.visibility_outlined
-              : Icons.visibility_off_outlined,
-        ),
-      ),
+      prefixIcon: grouped ? null : const Icon(Icons.lock_outline_rounded),
+      suffixIcon: grouped && confirm
+          ? null
+          : IconButton(
+              tooltip: I18n.tr(
+                _obscurePassword ? 'auth.password.show' : 'auth.password.hide',
+              ),
+              onPressed: _busy || _sendingEmailCode
+                  ? null
+                  : () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+              ),
+            ),
     ),
   );
 
@@ -436,7 +442,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _tokenCtrl.clear();
       _isRegister = !_isRegister;
       _emailLogin = false;
-      _registerWithEmail = false;
       _emailCodeCtrl.clear();
       _pwdCtrl.clear();
       _confirmPwdCtrl.clear();
@@ -461,11 +466,71 @@ class _LoginScreenState extends State<LoginScreen> {
         registrationEmailRequired ||
         (_registerWithEmail && auth.registrationEmailAvailable);
     final disabled = _busy || _sendingEmailCode;
+    final wide =
+        MediaQuery.sizeOf(context).width >= DesignTokens.authWideBreakpoint;
+    final pageInset = wide ? DesignTokens.space5xl : DesignTokens.spaceXl;
+    final cardPadding = wide ? DesignTokens.space3xl : DesignTokens.spaceXl;
+    final contentWidth =
+        math.min(
+          DesignTokens.authFormMaxWidth,
+          MediaQuery.sizeOf(context).width - pageInset * 2,
+        ) -
+        cardPadding * 2;
+    final pairedPasswords =
+        (shouldBindRegistrationEmail || auth.inviteCodeRequired) &&
+        _canPairPasswords(context, contentWidth);
+    final rowHeight = DesignTokens.formFieldMinHeight + DesignTokens.spaceLg;
+    var sharedExtraHeight = isWeb ? 0.0 : rowHeight;
+    if (shouldBindRegistrationEmail) sharedExtraHeight += rowHeight * 2;
+    if (auth.inviteCodeRequired) sharedExtraHeight += rowHeight;
+    if (!registrationEmailRequired && auth.registrationEmailAvailable) {
+      sharedExtraHeight += rowHeight;
+    }
+    if (pairedPasswords) sharedExtraHeight -= rowHeight;
+    final loginTitle = I18n.tr('auth.design.welcome');
+    final loginSubtitle = I18n.tr('auth.design.login_subtitle');
+    final registerTitle = I18n.tr('auth.design.signup');
+    final registerSubtitle = I18n.tr(
+      registrationEmailRequired
+          ? 'auth.email.required_helper'
+          : 'auth.design.signup_subtitle',
+    );
+    final copyHeight = math.max(
+      _authHeaderHeight(context, loginTitle, loginSubtitle, contentWidth),
+      _authHeaderHeight(context, registerTitle, registerSubtitle, contentWidth),
+    );
+    final oneLineHeaderHeight = _authHeaderHeight(
+      context,
+      'Ag',
+      'Ag',
+      contentWidth,
+    );
+    final textScale = math.max(
+      1.0,
+      MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeBody) /
+          DesignTokens.fontSizeBody,
+    );
+    final cardScale =
+        1 + (textScale - 1) * DesignTokens.authCardTextScaleFactor;
+    sharedExtraHeight +=
+        math.max(0.0, copyHeight - oneLineHeaderHeight) / cardScale;
+    for (final notice in <String?>[
+      if (auth.maintenanceMode)
+        auth.maintenanceMessage.isEmpty
+            ? I18n.tr('auth.maintenance')
+            : auth.maintenanceMessage,
+      if (!auth.registrationEnabled) I18n.tr('auth.registration_closed'),
+      _error,
+      _message,
+    ]) {
+      if (notice != null) {
+        sharedExtraHeight +=
+            _noticeHeight(context, notice, contentWidth) + DesignTokens.spaceLg;
+      }
+    }
     return AuthPageFrame(
       allowBack: !widget.asEntry,
-      additionalHeight: isWeb
-          ? 0
-          : DesignTokens.formFieldMinHeight + DesignTokens.spaceLg,
+      additionalHeight: sharedExtraHeight,
       formModeKey: _isRegister ? 'register' : 'login',
       footer: Column(
         mainAxisSize: MainAxisSize.min,
@@ -533,7 +598,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       subtitle: I18n.tr(
         _isRegister
-            ? 'auth.design.signup_subtitle'
+            ? (registrationEmailRequired
+                  ? 'auth.email.required_helper'
+                  : 'auth.design.signup_subtitle')
             : 'auth.design.login_subtitle',
       ),
       child: Column(
@@ -638,10 +705,24 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
             const SizedBox(height: DesignTokens.spaceLg),
-            if (_isRegister || !emailLogin) _passwordField(),
+            if (_isRegister && pairedPasswords)
+              Row(
+                key: const ValueKey('auth_registration_passwords'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _passwordField(grouped: true)),
+                  const SizedBox(width: DesignTokens.spaceMd),
+                  Expanded(child: _passwordField(confirm: true, grouped: true)),
+                ],
+              )
+            else ...[
+              if (_isRegister || !emailLogin) _passwordField(),
+              if (_isRegister) ...[
+                const SizedBox(height: DesignTokens.spaceLg),
+                _passwordField(confirm: true),
+              ],
+            ],
             if (_isRegister) ...[
-              const SizedBox(height: DesignTokens.spaceLg),
-              _passwordField(confirm: true),
               const SizedBox(height: DesignTokens.spaceLg),
               if (!registrationEmailRequired &&
                   auth.registrationEmailAvailable) ...[
@@ -693,15 +774,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   autofillHints: const [AutofillHints.email],
                 ),
                 const SizedBox(height: DesignTokens.spaceSm),
-                if (registrationEmailRequired) ...[
-                  Text(
-                    I18n.tr('auth.email.required_helper'),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: DesignTokens.spaceSm),
-                ],
                 _emailCodeSendField(
                   controller: _emailCodeCtrl,
                   labelText: I18n.tr('auth.email_code'),
@@ -971,4 +1043,87 @@ bool _isInvalidCredentialsError(ApiException error) {
       message.contains('账号或密码') ||
       message.contains('用户名或密码') ||
       (message.startsWith('401:') && message.contains('credentials'));
+}
+
+bool _canPairPasswords(BuildContext context, double contentWidth) {
+  final halfWidth = (contentWidth - DesignTokens.spaceMd) / 2;
+  final style = Theme.of(context).textTheme.bodyLarge?.copyWith(
+    fontSize: DesignTokens.fontSizeBody,
+    height: 1.4,
+  );
+  for (final confirm in [false, true]) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: I18n.tr(confirm ? 'auth.confirm_password' : 'auth.password'),
+        style: style,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final requiredWidth =
+        painter.width +
+        DesignTokens.spaceLg * 2 +
+        (confirm ? 0 : DesignTokens.formFieldMinHeight);
+    painter.dispose();
+    if (requiredWidth > halfWidth) return false;
+  }
+  return true;
+}
+
+double _noticeHeight(
+  BuildContext context,
+  String message,
+  double contentWidth,
+) {
+  final painter =
+      TextPainter(
+        text: TextSpan(
+          text: message,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.6),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout(
+        maxWidth: math.max(
+          1.0,
+          contentWidth -
+              DesignTokens.spaceMd * 2 -
+              DesignTokens.controlIconSize -
+              DesignTokens.spaceSm,
+        ),
+      );
+  final height =
+      math.max(painter.height, DesignTokens.controlIconSize) +
+      DesignTokens.spaceMd * 2;
+  painter.dispose();
+  return height;
+}
+
+double _authHeaderHeight(
+  BuildContext context,
+  String title,
+  String subtitle,
+  double width,
+) {
+  final theme = Theme.of(context);
+  var height = DesignTokens.spaceSm + DesignTokens.spaceXxl;
+  for (final item in [
+    (
+      title,
+      theme.textTheme.headlineSmall?.copyWith(
+        fontSize: DesignTokens.fontSizeXxl,
+        height: 1.3,
+      ),
+    ),
+    (subtitle, theme.textTheme.bodyMedium?.copyWith(height: 1.6)),
+  ]) {
+    final painter = TextPainter(
+      text: TextSpan(text: item.$1, style: item.$2),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: math.max(1.0, width));
+    height += painter.height;
+    painter.dispose();
+  }
+  return height;
 }
