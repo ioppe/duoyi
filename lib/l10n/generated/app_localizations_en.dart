@@ -102,6 +102,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listGroupNameHint => '1–24 characters';
 
   @override
+  String get listGroupCreateHint => 'Type a name; existing lists autocomplete';
+
+  @override
   String get listGroupNameRequired => 'Enter a list name';
 
   @override

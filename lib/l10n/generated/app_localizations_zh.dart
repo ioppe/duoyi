@@ -93,6 +93,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listGroupNameHint => '1–24 个字符';
 
   @override
+  String get listGroupCreateHint => '输入名称，自动补全已有清单';
+
+  @override
   String get listGroupNameRequired => '请输入清单名称';
 
   @override

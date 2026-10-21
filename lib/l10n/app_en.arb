@@ -28,6 +28,7 @@
   "listGroupRename": "Rename list",
   "listGroupName": "List name",
   "listGroupNameHint": "1–24 characters",
+  "listGroupCreateHint": "Type a name; existing lists autocomplete",
   "listGroupNameRequired": "Enter a list name",
   "listGroupNameLength": "List names must be at most 24 characters",
   "listGroupNameDuplicate": "A list with this name already exists",

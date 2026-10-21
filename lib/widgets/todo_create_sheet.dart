@@ -100,6 +100,9 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   bool _groupManuallyChanged = false;
   bool _quadrantManuallyChanged = false;
   bool _reminderManuallyChanged = false;
+  final _newListCtrl = TextEditingController();
+  final _newListFocus = FocusNode();
+  bool _creatingList = false;
 
   @override
   void initState() {
@@ -115,11 +118,15 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     LocalTimezoneResolver.timezoneListenable.removeListener(_onTimezoneChanged);
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
+    _newListCtrl.dispose();
+    _newListFocus.dispose();
     super.dispose();
   }
 
   void _feedback(String message) {
     if (!widget.messenger.mounted) return;
+    // 连续校验失败时直接替换上一条提示，避免排队等待 4 秒。
+    widget.messenger.hideCurrentSnackBar();
     widget.messenger.showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
@@ -254,12 +261,13 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     return names.values.toList();
   }
 
-  Future<void> _editListGroup([ListGroup? group]) async {
+  /// 重命名仍用对话框（低频、需要确认原文）；新建改成就地输入 + 补全。
+  Future<void> _renameListGroup(ListGroup group) async {
     final provider = context.read<ListGroupProvider?>();
     if (provider == null || _submitting) return;
     final todos = context.read<TodoProvider>();
     final shares = context.read<ShareProvider>();
-    if (!shares.canEdit(group?.workspaceId ?? 'private')) return;
+    if (!shares.canEdit(group.workspaceId)) return;
     final auth = context.read<AuthProvider>();
     final connection = (auth.baseUrl, auth.state.userId);
     final result = await showDialog<ListGroup>(
@@ -272,9 +280,8 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
             for (final template in TodoListTemplates.all) template.name,
             ...todos.listGroupNames,
           ])
-            if (group == null ||
-                ListGroupProvider.normalizedName(name) !=
-                    ListGroupProvider.normalizedName(group.name))
+            if (ListGroupProvider.normalizedName(name) !=
+                ListGroupProvider.normalizedName(group.name))
               name,
         ],
         isCurrent: () => connection == (auth.baseUrl, auth.state.userId),
@@ -286,11 +293,86 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       return;
     }
     setState(() {
-      if (group == null || _groupName == group.name) {
+      if (_groupName == group.name) {
         _groupName = result.name;
         _groupManuallyChanged = true;
       }
     });
+  }
+
+  void _startCreateList() {
+    setState(() {
+      _creatingList = true;
+      _newListCtrl.clear();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _creatingList) _newListFocus.requestFocus();
+    });
+  }
+
+  void _cancelCreateList() {
+    if (!_creatingList) return;
+    _newListFocus.unfocus();
+    setState(() {
+      _creatingList = false;
+      _newListCtrl.clear();
+    });
+  }
+
+  void _selectListName(String name) {
+    _newListFocus.unfocus();
+    setState(() {
+      _groupName = name;
+      _groupManuallyChanged = true;
+      _creatingList = false;
+      _newListCtrl.clear();
+    });
+  }
+
+  /// 输入时优先补全“开头匹配”，其次“包含匹配”，方便直接选中已有清单。
+  List<String> _listGroupMatches(List<String> names, String query) {
+    final q = ListGroupProvider.normalizedName(query);
+    if (q.isEmpty) return names.take(8).toList(growable: false);
+    final startsWith = <String>[];
+    final contains = <String>[];
+    for (final name in names) {
+      final lower = ListGroupProvider.normalizedName(name);
+      if (lower == q) continue;
+      if (lower.startsWith(q)) {
+        startsWith.add(name);
+      } else if (lower.contains(q)) {
+        contains.add(name);
+      }
+    }
+    return [...startsWith, ...contains].take(8).toList(growable: false);
+  }
+
+  Future<void> _submitNewList(
+    ListGroupProvider provider,
+    List<String> names,
+  ) async {
+    final raw = _newListCtrl.text.trim();
+    final normalized = ListGroupProvider.normalizedName(raw);
+    for (final name in names) {
+      if (ListGroupProvider.normalizedName(name) == normalized) {
+        _selectListName(name);
+        return;
+      }
+    }
+    final error = provider.validateName(raw, otherNames: names);
+    if (error != null) {
+      _feedback(I18n.tr(error));
+      return;
+    }
+    try {
+      final created = await provider.create(raw, provider.nextSortOrder);
+      if (!mounted) return;
+      _selectListName(created.name);
+    } on ListGroupNameException catch (error) {
+      if (mounted) _feedback(I18n.tr(error.messageKey));
+    } catch (_) {
+      if (mounted) _feedback(I18n.tr('list_group.save_failed'));
+    }
   }
 
   Future<void> _showListGroupMenu(
@@ -329,7 +411,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       return;
     }
     if (action == _ListGroupAction.rename) {
-      await _editListGroup(group);
+      await _renameListGroup(group);
     } else {
       try {
         await provider.delete(group.id);
@@ -345,6 +427,121 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         if (mounted) _feedback(I18n.tr('list_group.save_failed'));
       }
     }
+  }
+
+  /// 新建入口固定在最左侧：默认是一枚 chip，点击后就地变成输入框。
+  Widget _listGroupCreateEntry(
+    ListGroupProvider provider,
+    List<String> names,
+    ColorScheme cs,
+  ) {
+    if (!_creatingList) {
+      return Padding(
+        padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
+        child: ActionChip(
+          key: const ValueKey('todo_list_group_create'),
+          avatar: Icon(
+            Icons.add,
+            size: DesignTokens.spaceLg,
+            color: cs.primary,
+          ),
+          label: Text(I18n.tr('list_group.new_chip')),
+          onPressed: _submitting ? null : _startCreateList,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
+      child: SizedBox(
+        width: 232,
+        child: TextField(
+          key: const ValueKey('todo_list_group_input'),
+          controller: _newListCtrl,
+          focusNode: _newListFocus,
+          autofocus: true,
+          enabled: !_submitting,
+          textInputAction: TextInputAction.done,
+          style: Theme.of(context).textTheme.bodyMedium,
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: I18n.tr('list_group.create_hint'),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spaceMd,
+              vertical: DesignTokens.spaceSm,
+            ),
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const ValueKey('todo_list_group_create_confirm'),
+                  tooltip: I18n.tr('list_group.new'),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  iconSize: 18,
+                  icon: const Icon(Icons.check),
+                  onPressed: _submitting
+                      ? null
+                      : () => _submitNewList(provider, names),
+                ),
+                IconButton(
+                  key: const ValueKey('todo_list_group_create_cancel'),
+                  tooltip: I18n.tr('action.cancel'),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  iconSize: 18,
+                  icon: const Icon(Icons.close),
+                  onPressed: _submitting ? null : _cancelCreateList,
+                ),
+              ],
+            ),
+          ),
+          onChanged: (_) => setState(() {}),
+          onSubmitted: (_) => _submitNewList(provider, names),
+        ),
+      ),
+    );
+  }
+
+  /// 输入时就地列出最相关的已有清单，直接点选即可，不必新建重名清单。
+  Widget _listGroupSuggestions(
+    ListGroupProvider provider,
+    List<String> names,
+    ColorScheme cs,
+  ) {
+    final matches = _listGroupMatches(names, _newListCtrl.text);
+    if (matches.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.spaceSm),
+      child: Wrap(
+        spacing: DesignTokens.spaceSm,
+        runSpacing: DesignTokens.spaceXs,
+        children: [
+          for (final name in matches)
+            ActionChip(
+              key: ValueKey('todo_list_group_suggestion_$name'),
+              avatar: Icon(
+                Icons.folder_outlined,
+                size: DesignTokens.spaceLg,
+                color: cs.primary,
+              ),
+              label: Text(name),
+              onPressed: _submitting ? null : () => _selectListName(name),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _listGroupChip(
@@ -734,20 +931,14 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               key: const ValueKey('todo_list_groups'),
               scrollDirection: Axis.horizontal,
               children: [
+                if (custom != null && shares.canEdit('private'))
+                  _listGroupCreateEntry(custom, listGroups, cs),
                 for (final name in listGroups) _listGroupChip(name, custom, cs),
-                ActionChip(
-                  key: const ValueKey('todo_list_group_create'),
-                  label: Text(I18n.tr('list_group.new_chip')),
-                  onPressed:
-                      _submitting ||
-                          custom == null ||
-                          !shares.canEdit('private')
-                      ? null
-                      : _editListGroup,
-                ),
               ],
             ),
           ),
+          if (_creatingList && custom != null)
+            _listGroupSuggestions(custom, listGroups, cs),
           const SizedBox(height: 20),
           Text(
             I18n.tr('todo.create.quadrant'),
@@ -912,7 +1103,7 @@ enum _ListGroupAction { rename, delete }
 
 class _ListGroupNameDialog extends StatefulWidget {
   final ListGroupProvider provider;
-  final ListGroup? group;
+  final ListGroup group;
   final List<String> otherNames;
   final bool Function() isCurrent;
 
@@ -928,9 +1119,7 @@ class _ListGroupNameDialog extends StatefulWidget {
 }
 
 class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
-  late final _controller = TextEditingController(
-    text: widget.group?.name ?? '',
-  );
+  late final _controller = TextEditingController(text: widget.group.name);
   String? _errorKey;
   bool _saving = false;
 
@@ -945,7 +1134,7 @@ class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
     final error = widget.isCurrent()
         ? widget.provider.validateName(
             _controller.text,
-            excludingId: widget.group?.id,
+            excludingId: widget.group.id,
             otherNames: widget.otherNames,
           )
         : 'auth.connection_changed';
@@ -958,13 +1147,10 @@ class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
       _errorKey = null;
     });
     try {
-      final group = widget.group;
-      final result = group == null
-          ? await widget.provider.create(
-              _controller.text,
-              widget.provider.nextSortOrder,
-            )
-          : await widget.provider.rename(group.id, _controller.text);
+      final result = await widget.provider.rename(
+        widget.group.id,
+        _controller.text,
+      );
       if (mounted) Navigator.pop(context, result);
     } on ListGroupNameException catch (error) {
       if (mounted) setState(() => _errorKey = error.messageKey);
@@ -977,9 +1163,7 @@ class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
 
   @override
   Widget build(BuildContext context) => AppDialog(
-    title: Text(
-      I18n.tr(widget.group == null ? 'list_group.new' : 'list_group.rename'),
-    ),
+    title: Text(I18n.tr('list_group.rename')),
     contentPadding: DesignTokens.dialogContentPadding,
     content: AppFormFieldTheme(
       child: TextField(
