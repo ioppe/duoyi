@@ -2356,6 +2356,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         reportMarkdown: _digestMarkdown(digest),
       );
       if (!mounted) return;
+      if (review.trim().isEmpty) {
+        setState(() => _aiReportError = '模型未返回正文，请重试或让管理员检查 AI 配置');
+        return;
+      }
       setState(() => _aiReportReview = review);
     } on AiException catch (e) {
       if (mounted) setState(() => _aiReportError = e.message);

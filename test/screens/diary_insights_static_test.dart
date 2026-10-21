@@ -18,7 +18,7 @@ void main() {
       expect(service, contains("import '../core/diary_deep_review.dart';"));
       expect(service, contains('Future<String> deepDiaryReview('));
       expect(service, contains('DiaryDeepReviewBuilder.build('));
-      expect(service, contains('maxTokens: 900'));
+      expect(service, contains('maxTokens: 1600'));
     },
   );
 }

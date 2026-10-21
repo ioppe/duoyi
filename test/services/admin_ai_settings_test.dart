@@ -40,6 +40,11 @@ void main() {
       expect(adminScreen, isNot(contains('ai.testConnection()')));
       expect(adminScreen, contains("res['sample']"));
       expect(adminScreen, isNot(contains("res['content']")));
+      expect(adminScreen, contains("res['ok']"));
+      expect(adminScreen, contains("res['finish_reason']"));
+      expect(adminScreen, contains("res['reasoning_tokens']"));
+      expect(adminScreen, contains('_invalidateTestResult'));
+      expect(adminScreen, contains('模型未返回正文'));
       expect(adminScreen, contains('_adminAiFailureReason'));
       expect(adminScreen, contains('AI 上游服务不可达'));
       expect(adminScreen, contains('AI 代理或上游模型不可用'));

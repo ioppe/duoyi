@@ -122,6 +122,7 @@ void main() {
     expect(aiService, contains(r"summary: '统计报告 AI 解读：$periodLabel'"));
     expect(aiService, contains('_reviewHistory.insert(0, entry)'));
     expect(aiService, contains('await _saveHistory()'));
-    expect(aiService, contains('maxTokens: 900'));
+    // 推理模型先花 reasoning token，解读预算需覆盖“思考 + 正文”。
+    expect(aiService, contains('maxTokens: 2200'));
   });
 }

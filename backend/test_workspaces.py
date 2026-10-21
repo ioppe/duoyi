@@ -7368,6 +7368,151 @@ class WorkspaceApiTest(unittest.TestCase):
         )
         self.assertEqual(api._ai_chat_content_from_response({}), "")
 
+    def test_ai_response_parser_handles_parts_legacy_text_and_reasoning_only(self):
+        parts = {
+            "choices": [
+                {
+                    "message": {
+                        "content": [
+                            {"type": "text", "text": "第一段"},
+                            {"type": "text", "text": "第二段"},
+                        ]
+                    }
+                }
+            ]
+        }
+        self.assertEqual(api._ai_chat_content_from_response(parts), "第一段第二段")
+        legacy = {"choices": [{"text": "ok", "finish_reason": "stop"}]}
+        self.assertEqual(api._ai_chat_content_from_response(legacy), "ok")
+        # 推理内容永远不能当成给用户看的正文。
+        reasoning_only = {
+            "choices": [
+                {
+                    "message": {"content": "", "reasoning_content": "内心推理"},
+                    "finish_reason": "length",
+                }
+            ]
+        }
+        self.assertEqual(api._ai_chat_content_from_response(reasoning_only), "")
+
+    def test_ai_upstream_avoids_waf_blocked_default_user_agent(self):
+        """Cloudflare 会用 1010 拦截 Python-urllib 默认 UA，必须显式声明。"""
+        captured = {}
+
+        class _FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_exc):
+                return False
+
+            def read(self):
+                return b'{"choices":[{"message":{"content":"ok"}}]}'
+
+        def fake_urlopen(request, timeout=0):
+            captured["ua"] = request.get_header("User-agent")
+            captured["accept"] = request.get_header("Accept")
+            return _FakeResponse()
+
+        with patch("urllib.request.urlopen", fake_urlopen):
+            content, _ = api._call_ai_chat_upstream(
+                base_url="https://ai.example.com",
+                api_key="sk-test-only",
+                model="m",
+                messages=[{"role": "user", "content": "hi"}],
+                temperature=0,
+                max_tokens=8,
+                timeout=5,
+            )
+        self.assertEqual(content, "ok")
+        self.assertTrue(captured["ua"])
+        self.assertNotIn("Python-urllib", captured["ua"])
+        self.assertEqual(captured["accept"], "application/json")
+
+    def _enable_ai_settings(self, model="reasoning-model"):
+        db = api.get_db()
+        try:
+            for key, value in {
+                "ai_enabled": True,
+                "ai_api_key": "sk-test-only",
+                "ai_base_url": "https://ai.example.com",
+                "ai_model": model,
+            }.items():
+                api._setting_set(db, key, value)
+            db.commit()
+        finally:
+            db.close()
+
+    def test_ai_chat_rejects_reasoning_truncated_empty_reply(self):
+        user_id = self._register("ai-empty-chat")
+        self._enable_ai_settings()
+        reply = {
+            "choices": [
+                {
+                    "message": {"content": "", "reasoning_content": "思考被截断"},
+                    "finish_reason": "length",
+                }
+            ],
+            "usage": {
+                "completion_tokens": 900,
+                "completion_tokens_details": {"reasoning_tokens": 900},
+            },
+        }
+        with patch.object(api, "_call_ai_chat_upstream", return_value=("", reply)):
+            with TestClient(api.app) as client:
+                res = client.post(
+                    "/api/ai/chat",
+                    headers={"Authorization": f"Bearer {api.TOKENS[user_id]}"},
+                    json={"user": "生成解读", "max_tokens": 900},
+                )
+        self.assertEqual(res.status_code, 502)
+        detail = res.json()["detail"]
+        self.assertIn("正文为空", detail)
+        self.assertIn("finish_reason=length", detail)
+        self.assertIn("900", detail)
+
+    def test_admin_ai_test_reports_empty_reply_and_uses_real_budget(self):
+        self._enable_ai_settings()
+        admin = api.login(api.LoginRequest(username="admin", password="admin123"))
+        reply = {
+            "choices": [
+                {
+                    "message": {"content": "", "reasoning_content": "思考"},
+                    "finish_reason": "length",
+                }
+            ],
+            "usage": {
+                "completion_tokens": 256,
+                "completion_tokens_details": {"reasoning_tokens": 256},
+            },
+        }
+        calls = {}
+
+        def fake_upstream(**kwargs):
+            calls.update(kwargs)
+            return "", reply
+
+        with patch.object(api, "_call_ai_chat_upstream", side_effect=fake_upstream):
+            with TestClient(api.app) as client:
+                res = client.post(
+                    "/api/admin/ai/test",
+                    headers={"Authorization": f"Bearer {admin['token']}"},
+                    json={
+                        "ai_enabled": True,
+                        "ai_base_url": "https://ai.example.com",
+                        "ai_model": "reasoning-model",
+                    },
+                )
+        body = res.json()
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(body["ok"])
+        self.assertEqual(body["sample"], "")
+        self.assertEqual(body["finish_reason"], "length")
+        self.assertEqual(body["reasoning_tokens"], 256)
+        self.assertIn("正文为空", body["message"])
+        self.assertGreaterEqual(calls["max_tokens"], 128)
+        self.assertFalse(calls["require_content"])
+
     def test_feedback_create_validates_content_and_normalizes_category(self):
         user_id = self._register("feedback-user")
 

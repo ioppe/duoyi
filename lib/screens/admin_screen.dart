@@ -3263,16 +3263,39 @@ class _AiSettingsTabState extends State<_AiSettingsTab> {
   @override
   void initState() {
     super.initState();
+    for (final ctrl in _aiFieldControllers) {
+      ctrl.addListener(_invalidateTestResult);
+    }
     _load();
   }
 
   @override
   void dispose() {
+    for (final ctrl in _aiFieldControllers) {
+      ctrl.removeListener(_invalidateTestResult);
+    }
     _baseCtrl.dispose();
     _keyCtrl.dispose();
     _modelCtrl.dispose();
     _quotaCtrl.dispose();
     super.dispose();
+  }
+
+  List<TextEditingController> get _aiFieldControllers => [
+    _baseCtrl,
+    _keyCtrl,
+    _modelCtrl,
+    _quotaCtrl,
+  ];
+
+  /// 测试结论只对点击那一刻的表单值成立；任一字段变化后旧绿勾必须失效。
+  void _invalidateTestResult() {
+    if (_testResult == null && _testColor == Colors.grey) return;
+    if (!mounted) return;
+    setState(() {
+      _testResult = null;
+      _testColor = Colors.grey;
+    });
   }
 
   Future<void> _load() async {
@@ -3350,15 +3373,31 @@ class _AiSettingsTabState extends State<_AiSettingsTab> {
       final sample = (res['sample'] ?? '').toString().trim();
       final enabled = res['enabled'] != false;
       final skipped = res['skipped'] == true;
+      final ok = res['ok'] != false;
       final message = (res['message'] ?? '').toString().trim();
+      final finishReason = (res['finish_reason'] ?? '').toString().trim();
+      final reasoningTokens = (res['reasoning_tokens'] as num?)?.toInt() ?? 0;
       setState(() {
         final modelLabel = model.isEmpty ? '未命名模型' : model;
-        _testResult = skipped
-            ? (message.isEmpty ? 'AI 功能开关未启用，未测试上游连接。模型：$modelLabel' : message)
-            : enabled
-            ? '当前表单配置可达，模型 $modelLabel 回复: ${sample.isEmpty ? '空回复' : sample}'
-            : '当前表单配置完整，AI 功能开关未启用，未发起上游请求。模型：$modelLabel';
-        _testColor = skipped ? Colors.orange : Colors.green;
+        if (skipped) {
+          _testResult = message.isEmpty
+              ? 'AI 功能开关未启用，未测试上游连接。模型：$modelLabel'
+              : message;
+          _testColor = Colors.orange;
+        } else if (!enabled) {
+          _testResult = '当前表单配置完整，AI 功能开关未启用，未发起上游请求。模型：$modelLabel';
+          _testColor = Colors.orange;
+        } else if (!ok) {
+          _testResult = message.isNotEmpty
+              ? message
+              : '模型未返回正文（finish_reason=${finishReason.isEmpty ? '未知' : finishReason}，'
+                    '思考 $reasoningTokens tokens）';
+          _testColor = Theme.of(context).colorScheme.error;
+        } else {
+          _testResult =
+              '当前表单配置可达，模型 $modelLabel 回复: ${sample.isEmpty ? '空回复' : sample}';
+          _testColor = Colors.green;
+        }
       });
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -3395,7 +3434,10 @@ class _AiSettingsTabState extends State<_AiSettingsTab> {
               value: _enabled,
               title: '启用 AI 功能',
               subtitle: '关闭后所有用户都无法使用 AI 拆解/回顾',
-              onChanged: (v) => setState(() => _enabled = v),
+              onChanged: (v) {
+                _invalidateTestResult();
+                setState(() => _enabled = v);
+              },
             ),
             const SizedBox(height: 10),
             TextField(

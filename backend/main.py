@@ -2452,6 +2452,11 @@ def _quota_aliases_from_rewards(raw) -> dict:
     return {}
 
 
+# Cloudflare/WAF 会以 "error code: 1010" 拦截默认的 Python-urllib UA，
+# 因此 AI 上游请求必须带一个稳定的客户端标识。
+AI_UPSTREAM_USER_AGENT = "duoyi-backend/1.1"
+
+
 def _ai_chat_completions_url(base_url: str) -> str:
     base = (base_url or "https://api.openai.com").strip().rstrip("/")
     if base.endswith("/chat/completions"):
@@ -2461,15 +2466,87 @@ def _ai_chat_completions_url(base_url: str) -> str:
     return f"{base}/v1/chat/completions"
 
 
+def _ai_chat_text_from_parts(value) -> str:
+    """Normalize string / content-part responses into plain assistant text."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        chunks: list[str] = []
+        for part in value:
+            if isinstance(part, str):
+                chunks.append(part)
+                continue
+            if not isinstance(part, dict):
+                continue
+            text = part.get("text")
+            if isinstance(text, str):
+                chunks.append(text)
+            elif isinstance(text, dict) and isinstance(text.get("value"), str):
+                chunks.append(text["value"])
+        return "".join(chunks)
+    return str(value)
+
+
 def _ai_chat_content_from_response(data: dict) -> str:
+    """Return only the assistant answer; reasoning text is never user content."""
     choices = data.get("choices") or []
     if choices:
-        message = choices[0].get("message") or {}
-        return str(message.get("content") or "")
+        choice = choices[0] or {}
+        message = choice.get("message") or {}
+        text = _ai_chat_text_from_parts(message.get("content")).strip()
+        if text:
+            return text
+        # Legacy completions shape used by some compatible gateways.
+        text = _ai_chat_text_from_parts(choice.get("text")).strip()
+        if text:
+            return text
     output_text = data.get("output_text")
     if output_text is not None:
-        return str(output_text)
+        return _ai_chat_text_from_parts(output_text).strip()
     return ""
+
+
+def _ai_chat_reply_meta(data: dict) -> dict:
+    """Diagnostics needed to explain an empty reply without leaking content."""
+    choices = data.get("choices") or []
+    choice = (choices[0] or {}) if choices else {}
+    message = choice.get("message") or {}
+    usage = data.get("usage") or {}
+    details = usage.get("completion_tokens_details") or {}
+    raw_reasoning = details.get("reasoning_tokens", usage.get("reasoning_tokens"))
+    try:
+        reasoning_tokens = int(raw_reasoning or 0)
+    except (TypeError, ValueError):
+        reasoning_tokens = 0
+    try:
+        completion_tokens = int(usage.get("completion_tokens") or 0)
+    except (TypeError, ValueError):
+        completion_tokens = 0
+    reasoning_text = message.get("reasoning_content")
+    return {
+        "finish_reason": str(choice.get("finish_reason") or ""),
+        "reasoning_tokens": reasoning_tokens,
+        "completion_tokens": completion_tokens,
+        "has_reasoning_text": isinstance(reasoning_text, str)
+        and bool(reasoning_text.strip()),
+    }
+
+
+def _ai_chat_empty_content_detail(meta: dict) -> str:
+    finish_reason = meta.get("finish_reason") or "未知"
+    reasoning_tokens = int(meta.get("reasoning_tokens") or 0)
+    if reasoning_tokens > 0:
+        return (
+            "模型把输出预算全部用于思考，正文为空"
+            f"（finish_reason={finish_reason}，思考 {reasoning_tokens} tokens）。"
+            "请调大 max_tokens 或改用非推理模型。"
+        )
+    return (
+        f"上游返回空内容（finish_reason={finish_reason}），"
+        "请检查模型名称、请求参数与网关配置。"
+    )
 
 
 def _call_ai_chat_upstream(
@@ -2481,6 +2558,7 @@ def _call_ai_chat_upstream(
     temperature: float,
     max_tokens: int,
     timeout: int,
+    require_content: bool = True,
 ) -> tuple[str, dict]:
     import urllib.request
     import urllib.error
@@ -2501,6 +2579,10 @@ def _call_ai_chat_upstream(
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
+            # Some gateways sit behind Cloudflare/WAF rules that reject the
+            # default Python-urllib UA with "error code: 1010".
+            "User-Agent": AI_UPSTREAM_USER_AGENT,
+            "Accept": "application/json",
         },
         method="POST",
     )
@@ -2514,7 +2596,15 @@ def _call_ai_chat_upstream(
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"上游不可达: {e}")
 
-    return _ai_chat_content_from_response(data), data
+    content = _ai_chat_content_from_response(data)
+    if require_content and not content:
+        # Reasoning models spend the whole max_tokens budget on thinking and
+        # then return an empty answer; surface it instead of a blank reply.
+        raise HTTPException(
+            status_code=502,
+            detail=_ai_chat_empty_content_detail(_ai_chat_reply_meta(data)),
+        )
+    return content, data
 
 
 def _merge_virtual_rewards(server: dict, client: dict) -> dict:
@@ -3767,7 +3857,7 @@ def ai_chat(req: AiChatRequest, user_id: str = Depends(_verify_token)):
             messages.append({"role": "system", "content": req.system})
         messages.append({"role": "user", "content": req.user})
 
-        content, _ = _call_ai_chat_upstream(
+        content, reply = _call_ai_chat_upstream(
             base_url=base_url,
             api_key=api_key,
             model=model,
@@ -3776,6 +3866,12 @@ def ai_chat(req: AiChatRequest, user_id: str = Depends(_verify_token)):
             max_tokens=req.max_tokens,
             timeout=60,
         )
+        if not content.strip():
+            # Defensive: never hand an empty answer to clients that render it.
+            raise HTTPException(
+                status_code=502,
+                detail=_ai_chat_empty_content_detail(_ai_chat_reply_meta(reply)),
+            )
 
         # 记录额度
         today = _today_str()
@@ -3861,7 +3957,7 @@ def admin_ai_test(
         )
         if not api_key:
             raise HTTPException(status_code=503, detail="尚未配置 API Key")
-        content, _ = _call_ai_chat_upstream(
+        content, reply = _call_ai_chat_upstream(
             base_url=base_url,
             api_key=api_key,
             model=model,
@@ -3869,10 +3965,25 @@ def admin_ai_test(
                 {"role": "user", "content": "回复一个 'ok' 即可"},
             ],
             temperature=0,
-            max_tokens=8,
-            timeout=20,
+            # Reasoning models spend budget on hidden thinking first; 8 tokens
+            # can never produce an answer and used to look like a healthy test.
+            max_tokens=256,
+            timeout=30,
+            require_content=False,
         )
-        return {"ok": True, "enabled": True, "model": model, "sample": content}
+        sample = content.strip()
+        meta = _ai_chat_reply_meta(reply)
+        result = {
+            "ok": bool(sample),
+            "enabled": True,
+            "model": model,
+            "sample": content,
+            "finish_reason": meta["finish_reason"],
+            "reasoning_tokens": meta["reasoning_tokens"],
+        }
+        if not sample:
+            result["message"] = _ai_chat_empty_content_detail(meta)
+        return result
     finally:
         db.close()
 

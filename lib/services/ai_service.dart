@@ -96,7 +96,8 @@ class AiService extends ChangeNotifier {
     String systemPrompt,
     String userPrompt, {
     double temperature = 0.4,
-    int maxTokens = 512,
+    // 推理型模型会先消耗大量 reasoning token，预算需覆盖“思考 + 正文”。
+    int maxTokens = 1200,
   }) async {
     if (!_enabled) throw const AiException('AI 功能未启用，请联系管理员');
     try {
@@ -106,7 +107,10 @@ class AiService extends ChangeNotifier {
         'temperature': temperature,
         'max_tokens': maxTokens,
       }, AppConfig.aiTimeout);
-      final content = (res['content'] ?? '').toString();
+      final content = (res['content'] ?? '').toString().trim();
+      if (content.isEmpty) {
+        throw const AiException('模型未返回正文。若使用推理模型，请让管理员调大 max_tokens 或改用非推理模型。');
+      }
       return content;
     } on ApiException catch (e) {
       throw AiException(_friendlyAiError(e.message));
@@ -143,7 +147,7 @@ class AiService extends ChangeNotifier {
         '不要编造用户没有提到的地点、人名或重复规则。输出必须是严格 JSON。',
         prompt,
         temperature: 0.1,
-        maxTokens: 420,
+        maxTokens: 1200,
       );
       final parsed = _parseScheduleDraft(raw, trimmed, localNow);
       return parsed ??
@@ -194,7 +198,7 @@ class AiService extends ChangeNotifier {
           '可选清单（allowed listGroups）：${jsonEncode(listGroups)}\n'
           '用户原文：$trimmed',
       temperature: 0.2,
-      maxTokens: 900,
+      maxTokens: 2000,
     );
     final result = AiTodoBreakdown.tryParse(out, listGroups: listGroups);
     if (result == null) {
@@ -225,7 +229,7 @@ class AiService extends ChangeNotifier {
       '你是多仪的 AI 连通性测试助手。只回复 ok。',
       '请回复 ok，用于验证 /api/ai/chat 代理链路可用。',
       temperature: 0,
-      maxTokens: 16,
+      maxTokens: 256,
     );
   }
 
@@ -250,7 +254,7 @@ class AiService extends ChangeNotifier {
       '习惯连续打卡：$habitStreak 天\n'
       '请生成这次周回顾。',
       temperature: 0.45,
-      maxTokens: 260,
+      maxTokens: 1000,
     );
     final review = _normalizeWeeklyReview(
       out,
@@ -304,7 +308,7 @@ class AiService extends ChangeNotifier {
           '3) 给出未来 7 天 3 条可执行动作；4) 不要泛泛鼓励，不要重复原始数据堆砌。',
       '周期：$periodLabel\n\n$reportMarkdown',
       temperature: 0.5,
-      maxTokens: 900,
+      maxTokens: 2200,
     );
     final entry = AiReviewEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -331,7 +335,7 @@ class AiService extends ChangeNotifier {
       prompt.systemPrompt,
       prompt.userPrompt,
       temperature: 0.55,
-      maxTokens: 900,
+      maxTokens: 1600,
     );
     final entry = AiReviewEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -370,7 +374,7 @@ class AiService extends ChangeNotifier {
       '再提 1-2 个具体可执行的下周建议。不要使用 Markdown、表格、emoji、加粗或分隔线。',
       summary,
       temperature: 0.6,
-      maxTokens: 400,
+      maxTokens: 1000,
     );
     final entryTime = createdAt ?? DateTime.now();
     final entry = AiReviewEntry(
@@ -1060,6 +1064,9 @@ String _friendlyAiError(String raw) {
     return 'AI 代理或上游模型不可用，请检查后端 /api/ai/chat、Base URL 和模型名称';
   }
   if (text.contains('503')) return 'AI 服务暂不可用，请检查管理后台配置';
+  if (text.contains('正文为空') || text.contains('调大 max_tokens')) {
+    return '模型把输出预算用于思考，正文为空；请调大 max_tokens 或改用非推理模型';
+  }
   if (text.contains('上游不可达') || text.contains('502')) {
     return 'AI 上游服务不可达，请检查 Base URL、网络或模型配置';
   }
