@@ -52,6 +52,58 @@ void main() {
   });
   tearDown(() => WebTarget.debugWebBuild = null);
 
+  for (final size in [const Size(390, 844), const Size(1440, 1000)]) {
+    testWidgets('default account card is compact on both faces: $size', (
+      tester,
+    ) async {
+      WebTarget.debugWebBuild = true;
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_app(_auth({})));
+      await tester.pumpAndSettle();
+      final surface = find.byKey(const ValueKey('auth_form_surface'));
+      final rect = tester.getRect(surface);
+      expect(rect.height, lessThanOrEqualTo(size.width < 960 ? 460 : 484));
+      final submit = find.byKey(const ValueKey('auth-submit'));
+      final password = find.byKey(const ValueKey('auth-password'));
+      final loginGap =
+          tester.getTopLeft(submit).dy - tester.getBottomLeft(password).dy;
+      expect(loginGap, inInclusiveRange(12, 80));
+      await tester.tap(find.byKey(const ValueKey('auth-switch-mode')));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(surface), rect);
+      expect(find.byKey(const ValueKey('auth-display-name')), findsNothing);
+      expect(find.byKey(const ValueKey('auth-email')), findsNothing);
+      expect(find.byType(Switch), findsNothing);
+      expect(find.byType(TextField), findsNWidgets(3));
+      final confirm = find.byKey(const ValueKey('auth-confirm-password'));
+      final registerGap =
+          tester.getTopLeft(submit).dy - tester.getBottomLeft(confirm).dy;
+      expect(registerGap, inInclusiveRange(12, 80));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('optional email binding is off until the user selects it', (
+    tester,
+  ) async {
+    WebTarget.debugWebBuild = true;
+    await tester.pumpWidget(
+      _app(_auth({'registration_email_available': true})),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('auth-switch-mode')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('auth-email')), findsNothing);
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('auth-email')), findsOneWidget);
+    expect(find.byKey(const ValueKey('auth-display-name')), findsNothing);
+  });
+
   testWidgets(
     'web offers password and configured email only, with no bootstrap hint',
     (tester) async {

@@ -89,7 +89,7 @@ def build_settings_defaults(
             "REGISTRATION_INVITE_REQUIRED", default=default_invite_code_required
         ),
         "registration_enabled": default_registration_enabled,
-        "registration_email_required": env.boolean("REGISTRATION_EMAIL_REQUIRED", default=True),
+        "registration_email_required": env.boolean("REGISTRATION_EMAIL_REQUIRED", default=False),
         "email_code_login_enabled": env.boolean("EMAIL_CODE_LOGIN_ENABLED", default=False),
         "maintenance_mode": False,
         "maintenance_message": "",

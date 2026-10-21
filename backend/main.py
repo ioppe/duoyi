@@ -48,11 +48,12 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.4"
+API_CONTRACT_VERSION = "2026-06-01.5"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_code_login_gating": True,
     "email_bind": True,
+    "registration_email_availability": True,
     "avatar_upload": True,
     "avatar_read": True,
     "profile_update": True,
@@ -1874,21 +1875,6 @@ def _initialize_database(conn, fresh_database: bool):
             ("default_registration_coins", json.dumps(100)),
         )
     default_group_time_coins = max(0, min(registration_coins_value, 1000000))
-    if not _env_present("REGISTRATION_EMAIL_REQUIRED"):
-        migrated = conn.execute(
-            "SELECT value FROM settings WHERE key=?",
-            ("registration_email_required_default_on_migrated",),
-        ).fetchone()
-        if migrated is None:
-            conn.execute(
-                "INSERT INTO settings(key, value) VALUES(?, ?) "
-                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-                ("registration_email_required", json.dumps(True)),
-            )
-            conn.execute(
-                "INSERT OR IGNORE INTO settings(key, value) VALUES(?, ?)",
-                ("registration_email_required_default_on_migrated", json.dumps(True)),
-            )
     conn.execute(
         "UPDATE users SET admin_permissions=? WHERE is_admin=0",
         (json.dumps([], ensure_ascii=False),),
@@ -3671,7 +3657,8 @@ def public_config():
             "registration_invite_required": invite_required,
             "registration_enabled": registration_enabled,
             "allow_public_registration": registration_enabled,
-            "registration_email_required": _setting_get(db, "registration_email_required", True),
+            "registration_email_required": _setting_get(db, "registration_email_required", False),
+            "registration_email_available": _account_email_available(db),
             "email_code_login_enabled": _email_code_login_enabled(db),
             "maintenance_mode": _setting_get(db, "maintenance_mode", False),
             "maintenance_message": _setting_get(db, "maintenance_message", ""),
@@ -4453,9 +4440,7 @@ def _email_code_provider_configured(runtime: dict, provider: str) -> bool:
     return False
 
 
-def _email_code_login_enabled(db) -> bool:
-    if _setting_get(db, "email_code_login_enabled", False) is not True:
-        return False
+def _account_email_available(db) -> bool:
     runtime = _account_mail_runtime(db)
     if not runtime["email_service_enabled"]:
         return False
@@ -4471,6 +4456,13 @@ def _email_code_login_enabled(db) -> bool:
             "smtp",
             "hermes",
         )
+    )
+
+
+def _email_code_login_enabled(db) -> bool:
+    return (
+        _setting_get(db, "email_code_login_enabled", False) is True
+        and _account_email_available(db)
     )
 
 
@@ -5637,7 +5629,7 @@ def register(req: RegisterRequest):
             email_verified = 1
         if _setting_get(db, "registration_email_required", False) and not email_verified:
             raise HTTPException(status_code=400, detail="注册需要邮箱验证码")
-        display_name = _clean_short_text(req.display_name, 64, "昵称")
+        display_name = _clean_short_text(req.display_name, 64, "昵称") or username
         _ensure_account_unique(db, username=username, email=email)
 
         if _registration_invite_required(db):
@@ -10134,7 +10126,7 @@ def _system_settings_payload(actor: str) -> dict:
         "force_relogin_enabled": settings_map.get("force_relogin_enabled", False),
         "force_relogin_issued_at": settings_map.get("force_relogin_issued_at", ""),
         "registration_email_required": settings_map.get(
-            "registration_email_required", True
+            "registration_email_required", False
         ),
         "allow_public_registration": settings_map.get(
             "allow_public_registration",

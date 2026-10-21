@@ -95,7 +95,7 @@ void main() {
     expect(source, contains('bool get registrationEmailRequired'));
     expect(
       source,
-      contains("_serverConfig['registration_email_required'] != false"),
+      contains("_serverConfig['registration_email_required'] == true"),
     );
     final loginScreen = File(
       'lib/screens/login_screen.dart',
@@ -405,7 +405,7 @@ void main() {
     for (final field in [
       "I18n.tr('auth.account')",
       "I18n.tr('auth.verified_email')",
-      'bool _registerWithEmail = true;',
+      'bool _registerWithEmail = false;',
       'final shouldBindRegistrationEmail =',
       'Switch.adaptive(',
       "I18n.tr('profile.email.binding')",

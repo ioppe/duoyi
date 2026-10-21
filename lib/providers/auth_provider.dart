@@ -139,9 +139,11 @@ class AuthProvider extends ChangeNotifier {
       _serverConfig['registration_enabled'] != false &&
       _serverConfig['allow_public_registration'] != false;
   bool get registrationEmailRequired =>
-      _serverConfig['registration_email_required'] != false;
+      _serverConfig['registration_email_required'] == true;
   bool get emailCodeLoginEnabled =>
       _serverConfig['email_code_login_enabled'] == true;
+  bool get registrationEmailAvailable =>
+      _serverConfig['registration_email_available'] == true;
   bool get maintenanceMode => _serverConfig['maintenance_mode'] == true;
   String get maintenanceMessage =>
       (_serverConfig['maintenance_message'] ?? '').toString();

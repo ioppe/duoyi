@@ -58,7 +58,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _userCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _emailCodeCtrl = TextEditingController();
-  final _displayNameCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
   final _confirmPwdCtrl = TextEditingController();
   final _inviteCtrl = TextEditingController();
@@ -70,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _pwdFocus = FocusNode();
   bool _isRegister = false;
   bool _emailLogin = false;
-  bool _registerWithEmail = true;
+  bool _registerWithEmail = false;
   bool _busy = false;
   bool _sendingEmailCode = false;
   int _emailCooldownSeconds = 0;
@@ -104,7 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailCtrl.dispose();
     _emailCodeCtrl.dispose();
     _tokenCtrl.dispose();
-    _displayNameCtrl.dispose();
     _pwdCtrl.dispose();
     _confirmPwdCtrl.dispose();
     _inviteCtrl.dispose();
@@ -157,12 +155,15 @@ class _LoginScreenState extends State<LoginScreen> {
           token: _tokenCtrl.text,
         );
       } else if (_isRegister) {
+        final bindEmail =
+            auth.registrationEmailRequired ||
+            (_registerWithEmail && auth.registrationEmailAvailable);
         await auth.register(
           username: _userCtrl.text.trim(),
           password: _pwdCtrl.text,
-          email: _emailCtrl.text.trim(),
-          emailCode: _emailCodeCtrl.text.trim(),
-          displayName: _displayNameCtrl.text.trim(),
+          email: bindEmail ? _emailCtrl.text.trim() : '',
+          emailCode: bindEmail ? _emailCodeCtrl.text.trim() : '',
+          displayName: _userCtrl.text.trim(),
           inviteCode: auth.inviteCodeRequired ? _inviteCtrl.text.trim() : null,
         );
       } else if (_usesEmailLogin) {
@@ -261,7 +262,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (_isRegister) {
       final shouldBindEmail =
-          auth.registrationEmailRequired || _registerWithEmail;
+          auth.registrationEmailRequired ||
+          (_registerWithEmail && auth.registrationEmailAvailable);
       if (account.length < 3 || account.length > 64) {
         return I18n.tr('auth.error.username_length');
       }
@@ -434,7 +436,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _tokenCtrl.clear();
       _isRegister = !_isRegister;
       _emailLogin = false;
-      _registerWithEmail = true;
+      _registerWithEmail = false;
       _emailCodeCtrl.clear();
       _pwdCtrl.clear();
       _confirmPwdCtrl.clear();
@@ -456,10 +458,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final tokenLogin = _tokenLogin && !isWeb && !_isRegister;
     final registrationEmailRequired = auth.registrationEmailRequired;
     final shouldBindRegistrationEmail =
-        registrationEmailRequired || _registerWithEmail;
+        registrationEmailRequired ||
+        (_registerWithEmail && auth.registrationEmailAvailable);
     final disabled = _busy || _sendingEmailCode;
     return AuthPageFrame(
       allowBack: !widget.asEntry,
+      additionalHeight: isWeb
+          ? 0
+          : DesignTokens.formFieldMinHeight + DesignTokens.spaceLg,
       formModeKey: _isRegister ? 'register' : 'login',
       footer: Column(
         mainAxisSize: MainAxisSize.min,
@@ -637,15 +643,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: DesignTokens.spaceLg),
               _passwordField(confirm: true),
               const SizedBox(height: DesignTokens.spaceLg),
-              _field(
-                key: 'auth-display-name',
-                controller: _displayNameCtrl,
-                label: I18n.tr('auth.display_name.optional'),
-                icon: Icons.badge_outlined,
-                autofillHints: const [AutofillHints.nickname],
-              ),
-              const SizedBox(height: DesignTokens.spaceLg),
-              if (!registrationEmailRequired) ...[
+              if (!registrationEmailRequired &&
+                  auth.registrationEmailAvailable) ...[
                 AppSecondaryControlTheme(
                   child: Row(
                     children: [

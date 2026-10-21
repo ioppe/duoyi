@@ -137,7 +137,7 @@ sudo cat /srv/duoyi/duoyi.db.bootstrap-admin.json
 - `CORS_ORIGINS` 未单独提供时，由公开后端地址派生；空值表示不开放跨域。相同域名和 Android 原生请求不依赖额外跨域许可。
 - 密码、API Key、SMTP 密码和 WebDAV 密码只能放在后端环境或受权限保护的管理员设置中，不能写入公共 JSON 或 Dart define。
 - AI、注册策略、邮件与备份的环境参数只补齐数据库中缺失的键；已有管理员配置不会因重启或修改默认值被覆盖。
-- 历史 `REGISTRATION_EMAIL_REQUIRED` 一次性迁移和显式设置语义保持不变。
+- `REGISTRATION_EMAIL_REQUIRED` 默认 false，新库允许用户名和密码注册。环境值只补齐缺失键；保留数据库中已有的 true/false 策略，不再运行旧的强制开启邮箱验证迁移。注册未提供昵称时使用用户名，之后可修改个人资料中的昵称。
 - 既有数据库不再创建 bootstrap 账号，即使 bootstrap 用户名不存在、已改名、已删除或数据库中的用户已清空也一样；不会重置密码或把同名普通用户提升为管理员。更改 bootstrap 环境变量不会为既有安装新增管理员。公开注册始终创建普通用户。
 - **必须保留已有 `PASSWORD_HASH_SALT`。** 未设置时沿用旧算法兼容常量；已有实例若配置了自定义 salt，需要原样保留，改盐会使原密码无法校验。
 - 客户端版本优先从根目录 `pubspec.yaml` 读取；只有独立后端没有版本文件时，才回退到 `0.0.0/0`。API 契约版本仍由代码定义。

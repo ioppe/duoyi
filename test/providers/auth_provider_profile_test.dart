@@ -1895,10 +1895,11 @@ void main() {
     },
   );
 
-  test('registration email verification defaults to required', () {
+  test('registration defaults to username and password without email', () {
     final auth = AuthProvider();
 
-    expect(auth.registrationEmailRequired, isTrue);
+    expect(auth.registrationEmailRequired, isFalse);
+    expect(auth.registrationEmailAvailable, isFalse);
   });
 
   test(

@@ -57,6 +57,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(settings.initial_settings["ai_base_url"], DEFAULT_AI_BASE_URL)
         self.assertEqual(settings.initial_settings["ai_model"], DEFAULT_AI_MODEL)
         self.assertIs(settings.initial_settings["email_code_login_enabled"], False)
+        self.assertIs(settings.initial_settings["registration_email_required"], False)
         self.assertFalse((self.root / "duoyi.db").exists())
         self.assertFalse((self.root / "backups").exists())
 
@@ -140,6 +141,11 @@ class ConfigTest(unittest.TestCase):
         self.assertIs(self.load().initial_settings["email_code_login_enabled"], False)
         self.assertIs(self.load({"EMAIL_CODE_LOGIN_ENABLED": "true"}).initial_settings["email_code_login_enabled"], True)
         self.assertIs(self.load({"EMAIL_CODE_LOGIN_ENABLED": "false"}).initial_settings["email_code_login_enabled"], False)
+
+    def test_registration_email_environment_default_and_explicit_opt_in(self):
+        self.assertIs(self.load().initial_settings["registration_email_required"], False)
+        self.assertIs(self.load({"REGISTRATION_EMAIL_REQUIRED": "true"}).initial_settings["registration_email_required"], True)
+        self.assertIs(self.load({"REGISTRATION_EMAIL_REQUIRED": "false"}).initial_settings["registration_email_required"], False)
 
     def test_boolean_and_numeric_errors_are_strict_and_redacted(self):
         bad_values = {
@@ -300,6 +306,7 @@ class ConfigTest(unittest.TestCase):
         example = Path(__file__).with_name(".env.example")
         settings = self.load(env_file=example)
         self.assertEqual(settings.admin_bootstrap_password, "")
+        self.assertIs(settings.initial_settings["registration_email_required"], False)
         for key in ("ai_api_key", "email_smtp_password", "resend_api_key", "openclaw_mail_api_key", "openlist_password", "resend_from"):
             self.assertEqual(settings.initial_settings[key], "")
 
@@ -352,23 +359,44 @@ class SettingsDatabaseTest(unittest.TestCase):
             self.assertFalse(self.api._setting_get(db, "allow_public_registration", None))
             self.assertTrue(self.api._setting_get(db, "registration_invite_required", None))
 
-    def test_explicit_file_registration_flag_and_once_only_migration(self):
-        env_file = self.root / "private.env"
-        env_file.write_text("REGISTRATION_EMAIL_REQUIRED=false\n", encoding="utf-8")
-        settings = config.load_settings({}, env_file=env_file, backend_dir=self.root)
-        with patch.multiple(self.api, SETTINGS=settings, DB_PATH=str(self.root / "explicit.db"), _env_present=settings.environment.present):
-            self.api.init_db()
-            with closing(self.api.get_db()) as db, db:
-                self.assertFalse(self.api._setting_get(db, "registration_email_required", True))
-                self.assertIsNone(self.api._setting_get(db, "registration_email_required_default_on_migrated", None))
-            with patch.multiple(self.api, SETTINGS=self.settings, _env_present=self.settings.environment.present):
-                self.api.init_db()
+    def test_explicit_file_registration_policy_survives_env_removal_and_restart(self):
+        for required in (False, True):
+            with self.subTest(required=required):
+                env_file = self.root / f"registration-{required}.env"
+                env_file.write_text(f"REGISTRATION_EMAIL_REQUIRED={str(required).lower()}\n", encoding="utf-8")
+                settings = config.load_settings({}, env_file=env_file, backend_dir=self.root)
+                with patch.multiple(self.api, SETTINGS=settings, DB_PATH=str(self.root / f"explicit-{required}.db"), _env_present=settings.environment.present):
+                    self.api.init_db()
+                    with closing(self.api.get_db()) as db:
+                        self.assertIs(self.api._setting_get(db, "registration_email_required"), required)
+                        self.assertIsNone(self.api._setting_get(db, "registration_email_required_default_on_migrated"))
+                    with patch.multiple(self.api, SETTINGS=self.settings, _env_present=self.settings.environment.present):
+                        self.api.init_db()
+                        self.api.init_db()
+                        with closing(self.api.get_db()) as db:
+                            self.assertIs(self.api._setting_get(db, "registration_email_required"), required)
+                            self.assertIsNone(self.api._setting_get(db, "registration_email_required_default_on_migrated"))
+
+    def test_stored_registration_email_policy_overrides_environment_and_legacy_marker(self):
+        for required in (False, True):
+            for marker in (None, True):
                 with closing(self.api.get_db()) as db, db:
-                    self.assertTrue(self.api._setting_get(db, "registration_email_required", False))
-                    self.api._setting_set(db, "registration_email_required", False)
-                self.api.init_db()
-                with closing(self.api.get_db()) as db, db:
-                    self.assertFalse(self.api._setting_get(db, "registration_email_required", True))
+                    self.api._setting_set(db, "registration_email_required", required)
+                    db.execute("DELETE FROM settings WHERE key='registration_email_required_default_on_migrated'")
+                    if marker is not None:
+                        self.api._setting_set(db, "registration_email_required_default_on_migrated", marker)
+                for environment_value in (None, "false", "true"):
+                    with self.subTest(required=required, marker=marker, environment=environment_value):
+                        environment = {"DUOYI_ENV_FILE": "", "DUOYI_DB_PATH": self.api.DB_PATH}
+                        if environment_value is not None:
+                            environment["REGISTRATION_EMAIL_REQUIRED"] = environment_value
+                        settings = config.load_settings(environment, backend_dir=self.root)
+                        with patch.multiple(self.api, SETTINGS=settings, _env_present=settings.environment.present):
+                            self.api.init_db()
+                            with closing(self.api.get_db()) as db:
+                                self.assertIs(self.api._setting_get(db, "registration_email_required"), required)
+                                self.assertIs(self.api._setting_get(db, "registration_email_required_default_on_migrated"), marker)
+                            self.assertIs(self.api.public_config()["registration_email_required"], required)
 
     def test_explicit_bootstrap_password_hash_is_preserved_on_restart(self):
         with patch.object(self.api, "ADMIN_BOOTSTRAP_PASSWORD", ""):

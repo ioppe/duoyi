@@ -228,6 +228,72 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertIn("avatar", cols)
         self.assertEqual(avatar, "")
 
+    def test_fresh_registration_accepts_username_password_and_defaults_nickname(self):
+        db = api.get_db()
+        try:
+            self.assertIs(api._setting_get(db, "registration_email_required"), False)
+        finally:
+            db.close()
+        with TestClient(api.app) as client:
+            for index, nickname in enumerate(({}, {"display_name": None}, {"display_name": ""}, {"display_name": "  "})):
+                username = f"username-only-{index}"
+                registered = client.post("/api/auth/register", json={
+                    "username": f"  {username}  ", "password": "pass123456", **nickname,
+                })
+                self.assertEqual(registered.status_code, 200, registered.text)
+                payload = registered.json()
+                self.assertEqual(payload["username"], username)
+                self.assertEqual(payload["display_name"], username)
+                self.assertEqual(payload["user"]["display_name"], username)
+                self.assertEqual(payload["email"], "")
+                self.assertFalse(payload["email_verified"])
+                self.assertFalse(payload["is_admin"])
+                headers = {"Authorization": f"Bearer {payload['token']}"}
+                profile = client.get("/api/auth/me", headers=headers)
+                self.assertEqual(profile.status_code, 200)
+                self.assertEqual(profile.json()["display_name"], username)
+                edited = client.patch("/api/me/profile", headers=headers, json={"display_name": "新昵称"})
+                self.assertEqual(edited.status_code, 200, edited.text)
+                self.assertEqual(edited.json()["display_name"], "新昵称")
+                self.assertEqual(edited.json()["username"], username)
+                logged_in = client.post("/api/auth/login", json={"username": username, "password": "pass123456"})
+                self.assertEqual(logged_in.status_code, 200)
+                self.assertEqual(logged_in.json()["display_name"], "新昵称")
+
+    def test_username_password_registration_preserves_custom_nickname(self):
+        with TestClient(api.app) as client:
+            response = client.post("/api/auth/register", json={
+                "username": "custom-nickname-user", "password": "pass123456", "display_name": "  自选昵称  ",
+            })
+            self.assertEqual(response.status_code, 200, response.text)
+            registered = response.json()
+            self.assertEqual(registered["display_name"], "自选昵称")
+            edited = client.patch("/api/me/profile", headers={"Authorization": f"Bearer {registered['token']}"}, json={"display_name": "另一个昵称"})
+            self.assertEqual(edited.status_code, 200, edited.text)
+            self.assertEqual(edited.json()["display_name"], "另一个昵称")
+            self.assertEqual(edited.json()["username"], "custom-nickname-user")
+
+    def test_missing_registration_email_policy_defaults_false_in_public_and_system_config(self):
+        admin = api.login(api.LoginRequest(username="admin", password="admin123"))
+        db = api.get_db()
+        try:
+            db.execute("DELETE FROM settings WHERE key='registration_email_required'")
+            db.commit()
+        finally:
+            db.close()
+        with TestClient(api.app) as client:
+            for route in ("/api/config", "/api/bootstrap"):
+                self.assertIs(client.get(route).json()["registration_email_required"], False)
+            system = client.get("/api/admin/system-settings", headers={"Authorization": f"Bearer {admin['token']}"})
+            self.assertEqual(system.status_code, 200, system.text)
+            self.assertIs(system.json()["runtime_status"]["registration_email_required"], False)
+        api.init_db()
+        db = api.get_db()
+        try:
+            self.assertIs(api._setting_get(db, "registration_email_required"), False)
+        finally:
+            db.close()
+
     def test_registration_preserves_default_configuration_without_granting_coins(self):
         db = api.get_db()
         try:
@@ -510,7 +576,7 @@ class WorkspaceApiTest(unittest.TestCase):
             runtime = api._account_mail_runtime(db)
             self.assertEqual(runtime["email_code_primary_provider"], "claw163")
             self.assertEqual(runtime["email_code_backup_provider"], "resend")
-            self.assertTrue(api._setting_get(db, "registration_email_required", None))
+            self.assertIs(api._setting_get(db, "registration_email_required", None), False)
             api._setting_set(db, "registration_email_required", True)
             code_result = api._create_email_code(
                 db,
@@ -520,6 +586,9 @@ class WorkspaceApiTest(unittest.TestCase):
             db.commit()
         finally:
             db.close()
+        config = api.public_config()
+        self.assertIs(config["registration_email_required"], True)
+        self.assertIs(config["registration_email_available"], False)
 
         with self.assertRaises(HTTPException) as no_email:
             api.register(
@@ -539,6 +608,12 @@ class WorkspaceApiTest(unittest.TestCase):
                 )
             )
         self.assertEqual(no_code.exception.status_code, 400)
+        with self.assertRaises(HTTPException) as invalid_code:
+            api.register(api.RegisterRequest(
+                username="required-invalid-code", password="pass123456",
+                email="required-invalid-code@example.com", email_code="000000",
+            ))
+        self.assertEqual(invalid_code.exception.status_code, 400)
 
         registered = api.register(
             api.RegisterRequest(
@@ -3714,6 +3789,12 @@ class WorkspaceApiTest(unittest.TestCase):
         resend = {"resend_api_key": " resend-secret ", "resend_from": " sender@example.test "}
         claw = {"openclaw_mail_enabled": True, "openclaw_mail_user": " test-user ", "openclaw_mail_api_key": " claw-secret "}
         cases = [
+            ({}, "none", None, "primary"),
+            ({**smtp, "email_service_enabled": False}, "none", None, "primary"),
+            ({**smtp, "email_smtp_password": "  "}, "none", None, "primary"),
+            ({**resend, "resend_from": "  ", "email_code_primary_provider": "resend"}, "none", None, "primary"),
+            ({**claw, "openclaw_mail_enabled": False, "email_code_primary_provider": "claw163"}, "none", None, "primary"),
+            ({"hermes_base_url": "https://hermes.example.test", "hermes_api_key": "  "}, "none", None, "primary"),
             ({**smtp, "email_code_primary_provider": "smtp"}, "smtp", "primary", "primary"),
             ({**resend, "email_code_backup_provider": "resend"}, "resend", "backup", "primary"),
             ({**resend, "email_code_backup_provider": "resend", "email_auto_switch_enabled": True}, "resend", "backup", "backup"),
@@ -3739,7 +3820,15 @@ class WorkspaceApiTest(unittest.TestCase):
                         for key, value in {**defaults, **updates}.items():
                             api._setting_set(db, key, value)
                         db.commit()
-                        self.assertIs(api.public_config()["email_code_login_enabled"], provider != "none")
+                        for login_enabled in (None, False, True):
+                            if login_enabled is None:
+                                db.execute("DELETE FROM settings WHERE key='email_code_login_enabled'")
+                            else:
+                                api._setting_set(db, "email_code_login_enabled", login_enabled)
+                            db.commit()
+                            for payload in (api.public_config(), api.bootstrap_config()):
+                                self.assertIs(payload["registration_email_available"], provider != "none")
+                                self.assertIs(payload["email_code_login_enabled"], login_enabled is True and provider != "none")
                         result = api._send_account_email(db, to_addr="recipient@example.test", subject="test", body="test")
                         self.assertEqual(result["provider"], provider)
                         self.assertIs(result["sent"], provider != "none")
@@ -3839,6 +3928,7 @@ class WorkspaceApiTest(unittest.TestCase):
                 response = client.get(route)
                 self.assertEqual(response.status_code, 200)
                 self.assertIs(response.json()["email_code_login_enabled"], True)
+                self.assertIs(response.json()["registration_email_available"], True)
                 for key, value in private_settings.items():
                     if key != "email_code_login_enabled":
                         self.assertNotIn(key, response.json())

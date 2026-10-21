@@ -17,6 +17,7 @@ class AuthPageFrame extends StatelessWidget {
   final Widget? footer;
   final bool allowBack;
   final Object formModeKey;
+  final double additionalHeight;
 
   const AuthPageFrame({
     super.key,
@@ -26,6 +27,7 @@ class AuthPageFrame extends StatelessWidget {
     this.footer,
     this.allowBack = true,
     this.formModeKey = 'login',
+    this.additionalHeight = 0,
   });
 
   @override
@@ -51,9 +53,10 @@ class AuthPageFrame extends StatelessWidget {
               final cardHeight = (fullHeight - DesignTokens.space5xl * 3)
                   .clamp(
                     DesignTokens.authCardMinHeight,
-                    wide
-                        ? DesignTokens.authCardHeightWide
-                        : DesignTokens.authCardHeightMobile,
+                    (wide
+                            ? DesignTokens.authCardHeightWide
+                            : DesignTokens.authCardHeightMobile) +
+                        additionalHeight,
                   )
                   .toDouble();
               final padding = wide

@@ -184,6 +184,7 @@ void main() {
           final body = jsonDecode(request.body) as Map;
           expect(body['username'], 'new-user');
           expect(body['email'], anyOf(isNull, isEmpty));
+          expect(body['display_name'], 'new-user');
           expect(body.containsKey('is_admin'), isFalse);
           requests++;
           return response.future;
@@ -193,7 +194,9 @@ void main() {
       await tester.pumpAndSettle();
       await _tap(tester, find.byKey(const ValueKey('auth-switch-mode')));
       await tester.pumpAndSettle();
-      await _tap(tester, find.byType(Switch));
+      expect(find.byType(Switch), findsNothing);
+      expect(find.byKey(const ValueKey('auth-display-name')), findsNothing);
+      expect(find.byKey(const ValueKey('auth-email')), findsNothing);
       await tester.enterText(
         find.byKey(const ValueKey('auth-account')),
         'new-user',
