@@ -10,7 +10,9 @@ import 'package:duoyi/core/i18n_date_format.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/l10n/generated/app_localizations.dart';
 import 'package:duoyi/models/todo.dart';
+import 'package:duoyi/models/list_group.dart';
 import 'package:duoyi/providers/auth_provider.dart';
+import 'package:duoyi/providers/list_group_provider.dart';
 import 'package:duoyi/providers/notification_service.dart';
 import 'package:duoyi/providers/share_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
@@ -75,6 +77,7 @@ class _ReadyNotifications extends NotificationService {
 
 class _ReadyAi extends AiService {
   final AiTodoBreakdown result;
+  List<String>? receivedListGroups;
   _ReadyAi(this.result);
 
   @override
@@ -85,7 +88,10 @@ class _ReadyAi extends AiService {
     String input, {
     required List<String> listGroups,
     DateTime? now,
-  }) async => result;
+  }) async {
+    receivedListGroups = List.of(listGroups);
+    return result;
+  }
 }
 
 class _DelayedAi extends AiService {
@@ -105,6 +111,21 @@ class _ReadOnlyShare extends ShareProvider {
   bool canEdit(String? workspaceId) => false;
 }
 
+class _RestrictedShare extends ShareProvider {
+  @override
+  bool canEdit(String? workspaceId) => workspaceId != 'read-only';
+}
+
+class _ListGroupTodos extends _CapturingTodos {
+  @override
+  String? workspaceForListGroup(String groupName) {
+    for (final todo in saved) {
+      if (todo.listGroupName == groupName) return todo.workspaceId;
+    }
+    return null;
+  }
+}
+
 Future<void> _open(
   WidgetTester tester, {
   TodoProvider? todos,
@@ -115,6 +136,7 @@ Future<void> _open(
   ThemeData? theme,
   EisenhowerQuadrant? quadrant,
   NotificationService? notifications,
+  ListGroupProvider? listGroups,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -134,6 +156,9 @@ Future<void> _open(
           create: (_) => shares ?? ShareProvider(),
         ),
         ChangeNotifierProvider<AiService>(create: (_) => ai ?? AiService()),
+        ChangeNotifierProvider<ListGroupProvider>(
+          create: (_) => listGroups ?? ListGroupProvider(),
+        ),
       ],
       child: MaterialApp(
         theme: theme ?? AppBrands.defaultBrand.theme,
@@ -180,6 +205,17 @@ Future<void> _scrollToSubmit(WidgetTester tester) async {
   );
 }
 
+Future<void> _revealListGroup(WidgetTester tester, Finder target) async {
+  final list = find.byKey(const ValueKey('todo_list_groups'));
+  await tester.ensureVisible(list);
+  await tester.pumpAndSettle();
+  for (var i = 0; i < 8 && target.hitTestable().evaluate().isEmpty; i++) {
+    await tester.drag(list, const Offset(-250, 0));
+    await tester.pumpAndSettle();
+  }
+  expect(target.hitTestable(), findsOneWidget);
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -196,6 +232,156 @@ void main() {
   });
 
   tearDown(() => AppClock.debugNow = null);
+
+  testWidgets('chips 和 AI 白名单共用内置、自定义与历史清单并过滤只读空间', (tester) async {
+    final groups = ListGroupProvider();
+    await groups.create('旅行', 0);
+    final now = DateTime.now();
+    await groups.mergeRemote([
+      ListGroup(
+        id: 'shared-empty',
+        name: '只读自定义',
+        sortOrder: 1,
+        workspaceId: 'read-only',
+        createdAt: now,
+        updatedAt: now,
+      ).toJson(),
+    ]);
+    final todos = _ListGroupTodos()
+      ..saved.addAll([
+        TodoItem(title: '旧任务', listGroupName: '旧项目'),
+        TodoItem(
+          title: '共享任务',
+          listGroupName: '只读项目',
+          workspaceId: 'read-only',
+        ),
+        TodoItem(title: '共享工作', listGroupName: '工作', workspaceId: 'read-only'),
+      ]);
+    final ai = _ReadyAi(
+      const AiTodoBreakdown(subtasks: ['准备行李'], listGroupName: '旅行'),
+    );
+    await _open(
+      tester,
+      listGroups: groups,
+      todos: todos,
+      shares: _RestrictedShare(),
+      ai: ai,
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '准备假期',
+    );
+    await tester.tap(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      ai.receivedListGroups,
+      containsAll(['个人', '学习', '购物', '阅读清单', '健身', '旅行', '旧项目']),
+    );
+    expect(ai.receivedListGroups, isNot(contains('工作')));
+    expect(ai.receivedListGroups, isNot(contains('只读自定义')));
+    expect(ai.receivedListGroups, isNot(contains('只读项目')));
+    final travel = find.widgetWithText(ChoiceChip, '旅行');
+    await _revealListGroup(tester, travel);
+    expect(tester.widget<ChoiceChip>(travel).selected, isTrue);
+    await _revealListGroup(tester, find.widgetWithText(ChoiceChip, '旧项目'));
+    expect(find.widgetWithText(ChoiceChip, '只读自定义'), findsNothing);
+    expect(find.widgetWithText(ChoiceChip, '只读项目'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('新建清单 chip 创建后立即选中并随待办保存 id 和名称', (tester) async {
+    final groups = ListGroupProvider();
+    final todos = _CapturingTodos();
+    await _open(tester, listGroups: groups, todos: todos);
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '准备旅行',
+    );
+    final create = find.byKey(const ValueKey('todo_list_group_create'));
+    await _revealListGroup(tester, create);
+    expect(find.text('＋ 新建清单'), findsOneWidget);
+    await tester.tap(create);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('list_group_name')),
+      '  旅行  ',
+    );
+    await tester.tap(find.byKey(const ValueKey('list_group_confirm')));
+    await tester.pumpAndSettle();
+    final travel = find.widgetWithText(ChoiceChip, '旅行');
+    await _revealListGroup(tester, travel);
+    expect(tester.widget<ChoiceChip>(travel).selected, isTrue);
+    expect(groups.groups.single.name, '旅行');
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    expect(todos.saved.single.listGroupName, '旅行');
+    expect(todos.saved.single.listGroupId, groups.groups.single.id);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('新建清单空值、超长和归一化重名在对话框内报错', (tester) async {
+    final groups = ListGroupProvider();
+    await groups.create('Travel', 0);
+    final todos = _CapturingTodos()
+      ..saved.add(TodoItem(title: '旧任务', listGroupName: '旧项目'));
+    await _open(tester, listGroups: groups, todos: todos);
+    final create = find.byKey(const ValueKey('todo_list_group_create'));
+    await _revealListGroup(tester, create);
+    await tester.tap(create);
+    await tester.pumpAndSettle();
+    for (final (name, key) in [
+      ('   ', 'list_group.name_required'),
+      (' travel ', 'list_group.name_duplicate'),
+      ('工作', 'list_group.name_duplicate'),
+      ('旧项目', 'list_group.name_duplicate'),
+      (List.filled(25, '旅').join(), 'list_group.name_length'),
+    ]) {
+      await tester.enterText(
+        find.byKey(const ValueKey('list_group_name')),
+        name,
+      );
+      await tester.tap(find.byKey(const ValueKey('list_group_confirm')));
+      await tester.pumpAndSettle();
+      expect(find.text(I18n.tr(key)), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(groups.groups, hasLength(1));
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('自定义清单长按可重命名和删除，内置清单保持只读', (tester) async {
+    final groups = ListGroupProvider();
+    final initial = await groups.create('旅行', 0);
+    await _open(tester, listGroups: groups);
+    await tester.longPress(find.widgetWithText(ChoiceChip, '工作'));
+    await tester.pumpAndSettle();
+    expect(find.text(I18n.tr('list_group.rename')), findsNothing);
+    final travel = find.widgetWithText(ChoiceChip, '旅行');
+    await _revealListGroup(tester, travel);
+    await tester.tap(travel);
+    await tester.longPress(travel);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(I18n.tr('list_group.rename')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('list_group_name')), '假期');
+    await tester.tap(find.byKey(const ValueKey('list_group_confirm')));
+    await tester.pumpAndSettle();
+    final renamed = find.widgetWithText(ChoiceChip, '假期');
+    await _revealListGroup(tester, renamed);
+    expect(tester.widget<ChoiceChip>(renamed).selected, isTrue);
+    expect(groups.groups.single.id, initial.id);
+    await tester.longPress(renamed);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(I18n.tr('action.delete')));
+    await tester.pumpAndSettle();
+    expect(groups.groups, isEmpty);
+    expect(groups.allGroups.single.isDeleted, isTrue);
+    expect(find.widgetWithText(ChoiceChip, '假期'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('主输入在手机长文本时自动换行并增高', (tester) async {
     await _open(tester, size: const Size(320, 900));

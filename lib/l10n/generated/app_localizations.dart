@@ -236,6 +236,60 @@ abstract class AppLocalizations {
   /// **'清单类型'**
   String get todoCreateListType;
 
+  /// No description provided for @listGroupNewChip.
+  ///
+  /// In zh, this message translates to:
+  /// **'＋ 新建清单'**
+  String get listGroupNewChip;
+
+  /// No description provided for @listGroupNew.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建清单'**
+  String get listGroupNew;
+
+  /// No description provided for @listGroupRename.
+  ///
+  /// In zh, this message translates to:
+  /// **'重命名清单'**
+  String get listGroupRename;
+
+  /// No description provided for @listGroupName.
+  ///
+  /// In zh, this message translates to:
+  /// **'清单名称'**
+  String get listGroupName;
+
+  /// No description provided for @listGroupNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'1–24 个字符'**
+  String get listGroupNameHint;
+
+  /// No description provided for @listGroupNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入清单名称'**
+  String get listGroupNameRequired;
+
+  /// No description provided for @listGroupNameLength.
+  ///
+  /// In zh, this message translates to:
+  /// **'清单名称不能超过 24 个字符'**
+  String get listGroupNameLength;
+
+  /// No description provided for @listGroupNameDuplicate.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有同名清单，请换一个名称'**
+  String get listGroupNameDuplicate;
+
+  /// No description provided for @listGroupSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清单保存失败，请重试'**
+  String get listGroupSaveFailed;
+
   /// No description provided for @todoCreateQuadrant.
   ///
   /// In zh, this message translates to:

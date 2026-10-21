@@ -18,7 +18,9 @@ import '../models/goal.dart'
         ReminderRule,
         ReminderRuleType;
 import '../models/todo.dart';
+import '../models/list_group.dart';
 import '../providers/auth_provider.dart';
+import '../providers/list_group_provider.dart';
 import '../providers/notification_service.dart';
 import '../providers/share_provider.dart';
 import '../providers/theme_provider.dart';
@@ -35,6 +37,8 @@ Future<void> showTodoCreateSheet(
   BuildContext context, {
   EisenhowerQuadrant? initialQuadrant,
 }) async {
+  await context.read<ListGroupProvider?>()?.loadFromStorage();
+  if (!context.mounted) return;
   final result = await showAppModalSheet<_TodoCreateResult>(
     context: context,
     builder: (_) => _TodoCreateSheet(
@@ -210,6 +214,187 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     });
   }
 
+  ListGroup? _customGroupFor(String name, ListGroupProvider? provider) {
+    for (final group in provider?.groups ?? const <ListGroup>[]) {
+      if (ListGroupProvider.normalizedName(group.name) ==
+          ListGroupProvider.normalizedName(name)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  String _workspaceForListGroup(
+    String name,
+    TodoProvider todos,
+    ListGroupProvider? custom,
+  ) =>
+      todos.workspaceForListGroup(name) ??
+      _customGroupFor(name, custom)?.workspaceId ??
+      'private';
+
+  List<String> _editableListGroups(
+    TodoProvider todos,
+    ShareProvider shares,
+    ListGroupProvider? custom,
+  ) {
+    final names = <String, String>{};
+    for (final name in [
+      for (final template in TodoListTemplates.all) template.name,
+      for (final group in custom?.groups ?? const <ListGroup>[]) group.name,
+      ...todos.listGroupNames,
+    ]) {
+      final clean = name.trim();
+      if (clean.isEmpty ||
+          !shares.canEdit(_workspaceForListGroup(clean, todos, custom))) {
+        continue;
+      }
+      names.putIfAbsent(ListGroupProvider.normalizedName(clean), () => clean);
+    }
+    return names.values.toList();
+  }
+
+  Future<void> _editListGroup([ListGroup? group]) async {
+    final provider = context.read<ListGroupProvider?>();
+    if (provider == null || _submitting) return;
+    final todos = context.read<TodoProvider>();
+    final shares = context.read<ShareProvider>();
+    if (!shares.canEdit(group?.workspaceId ?? 'private')) return;
+    final auth = context.read<AuthProvider>();
+    final connection = (auth.baseUrl, auth.state.userId);
+    final result = await showDialog<ListGroup>(
+      context: context,
+      builder: (_) => _ListGroupNameDialog(
+        provider: provider,
+        group: group,
+        otherNames: [
+          for (final name in [
+            for (final template in TodoListTemplates.all) template.name,
+            ...todos.listGroupNames,
+          ])
+            if (group == null ||
+                ListGroupProvider.normalizedName(name) !=
+                    ListGroupProvider.normalizedName(group.name))
+              name,
+        ],
+        isCurrent: () => connection == (auth.baseUrl, auth.state.userId),
+      ),
+    );
+    if (!mounted ||
+        result == null ||
+        connection != (auth.baseUrl, auth.state.userId)) {
+      return;
+    }
+    setState(() {
+      if (group == null || _groupName == group.name) {
+        _groupName = result.name;
+        _groupManuallyChanged = true;
+      }
+    });
+  }
+
+  Future<void> _showListGroupMenu(
+    ListGroup group,
+    LongPressStartDetails details,
+  ) async {
+    final auth = context.read<AuthProvider>();
+    final connection = (auth.baseUrl, auth.state.userId);
+    final provider = context.read<ListGroupProvider?>();
+    final shares = context.read<ShareProvider>();
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final position = overlay.globalToLocal(details.globalPosition);
+    final action = await showMenu<_ListGroupAction>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem(
+          value: _ListGroupAction.rename,
+          child: Text(I18n.tr('list_group.rename')),
+        ),
+        PopupMenuItem(
+          value: _ListGroupAction.delete,
+          child: Text(I18n.tr('action.delete')),
+        ),
+      ],
+    );
+    if (!mounted ||
+        action == null ||
+        provider == null ||
+        connection != (auth.baseUrl, auth.state.userId) ||
+        !shares.canEdit(group.workspaceId)) {
+      return;
+    }
+    if (action == _ListGroupAction.rename) {
+      await _editListGroup(group);
+    } else {
+      try {
+        await provider.delete(group.id);
+        if (mounted && connection == (auth.baseUrl, auth.state.userId)) {
+          setState(() {
+            if (_groupName == group.name) {
+              _groupName = '';
+              _groupManuallyChanged = true;
+            }
+          });
+        }
+      } catch (_) {
+        if (mounted) _feedback(I18n.tr('list_group.save_failed'));
+      }
+    }
+  }
+
+  Widget _listGroupChip(
+    String name,
+    ListGroupProvider? custom,
+    ColorScheme cs,
+  ) {
+    TodoListTemplate? builtIn;
+    for (final item in TodoListTemplates.all) {
+      if (item.name == name) builtIn = item;
+    }
+    final template =
+        builtIn ??
+        TodoListTemplate(
+          name: name,
+          icon: Icons.folder_outlined,
+          color: cs.primary,
+        );
+    final group = _customGroupFor(name, custom);
+    return Padding(
+      padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
+      child: GestureDetector(
+        onLongPressStart: group != null && builtIn == null && !_submitting
+            ? (details) => _showListGroupMenu(group, details)
+            : null,
+        child: ChoiceChip(
+          key: ValueKey('todo_list_group_$name'),
+          avatar: Icon(
+            template.icon,
+            size: DesignTokens.spaceLg,
+            color: template.color,
+          ),
+          label: Text(name),
+          selected: _groupName == name,
+          selectedColor: template.color.withValues(alpha: 0.12),
+          checkmarkColor: template.color,
+          labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: _groupName == name ? template.color : null,
+          ),
+          onSelected: _submitting
+              ? null
+              : (selected) => setState(() {
+                  _groupManuallyChanged = true;
+                  _groupName = selected ? name : '';
+                }),
+        ),
+      ),
+    );
+  }
+
   Future<void> _breakDownTask() async {
     final originalInput = _sourceInput;
     final title = originalInput.trim();
@@ -222,13 +407,11 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     final connection = (auth.baseUrl, auth.state.userId);
     final todos = context.read<TodoProvider>();
     final shares = context.read<ShareProvider>();
-    final listGroups = [
-      for (final template in TodoListTemplates.all)
-        if (shares.canEdit(
-          todos.workspaceForListGroup(template.name) ?? 'private',
-        ))
-          template.name,
-    ];
+    final listGroups = _editableListGroups(
+      todos,
+      shares,
+      context.read<ListGroupProvider?>(),
+    );
     bool isCurrent() =>
         mounted &&
         revision == _inputRevision &&
@@ -262,7 +445,11 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
           ];
         }
         if (!_groupManuallyChanged &&
-            listGroups.contains(result.listGroupName)) {
+            _editableListGroups(
+              todos,
+              shares,
+              context.read<ListGroupProvider?>(),
+            ).contains(result.listGroupName)) {
           _groupName = result.listGroupName!;
         }
         if (!_quadrantManuallyChanged && result.quadrant != null) {
@@ -297,7 +484,11 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       final notifications = context.read<NotificationService?>();
       final workspaceId = _groupName.isEmpty
           ? 'private'
-          : todos.workspaceForListGroup(_groupName) ?? 'private';
+          : _workspaceForListGroup(
+              _groupName,
+              todos,
+              context.read<ListGroupProvider?>(),
+            );
       if (!shares.canEdit(workspaceId)) {
         _feedback(I18n.tr('todo.create.read_only'));
         return;
@@ -320,6 +511,12 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         ],
       );
       // The visible switch is authoritative, including explicit opt-out.
+      todo = todo.copyWith(
+        listGroupId: _customGroupFor(
+          _groupName,
+          context.read<ListGroupProvider?>(),
+        )?.id,
+      );
       todo = todo.copyWith(
         notes: _aiApplied ? _descriptionCtrl.text : '',
         reminder: const ReminderConfig.disabled(),
@@ -439,6 +636,10 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     final aiEnabled = context.watch<AiService>().enabled;
     final cs = Theme.of(context).colorScheme;
     final parsed = _effectiveParsed;
+    final todos = context.watch<TodoProvider>();
+    final shares = context.watch<ShareProvider>();
+    final custom = context.watch<ListGroupProvider?>();
+    final listGroups = _editableListGroups(todos, shares, custom);
     return AppModalSheet(
       key: const ValueKey('todo_create_sheet'),
       title: strings.todoCreateTitle,
@@ -528,36 +729,22 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 40,
+            height: DesignTokens.controlMinHeight,
             child: ListView(
+              key: const ValueKey('todo_list_groups'),
               scrollDirection: Axis.horizontal,
               children: [
-                for (final template in TodoListTemplates.all)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      avatar: Icon(
-                        template.icon,
-                        size: 16,
-                        color: template.color,
-                      ),
-                      label: Text(template.name),
-                      selected: _groupName == template.name,
-                      selectedColor: template.color.withValues(alpha: 0.12),
-                      checkmarkColor: template.color,
-                      labelStyle: TextStyle(
-                        color: _groupName == template.name
-                            ? template.color
-                            : null,
-                      ),
-                      onSelected: _submitting
-                          ? null
-                          : (selected) => setState(() {
-                              _groupManuallyChanged = true;
-                              _groupName = selected ? template.name : '';
-                            }),
-                    ),
-                  ),
+                for (final name in listGroups) _listGroupChip(name, custom, cs),
+                ActionChip(
+                  key: const ValueKey('todo_list_group_create'),
+                  label: Text(I18n.tr('list_group.new_chip')),
+                  onPressed:
+                      _submitting ||
+                          custom == null ||
+                          !shares.canEdit('private')
+                      ? null
+                      : _editListGroup,
+                ),
               ],
             ),
           ),
@@ -719,4 +906,108 @@ class _SmartDatePreview extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _ListGroupAction { rename, delete }
+
+class _ListGroupNameDialog extends StatefulWidget {
+  final ListGroupProvider provider;
+  final ListGroup? group;
+  final List<String> otherNames;
+  final bool Function() isCurrent;
+
+  const _ListGroupNameDialog({
+    required this.provider,
+    required this.group,
+    required this.otherNames,
+    required this.isCurrent,
+  });
+
+  @override
+  State<_ListGroupNameDialog> createState() => _ListGroupNameDialogState();
+}
+
+class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
+  late final _controller = TextEditingController(
+    text: widget.group?.name ?? '',
+  );
+  String? _errorKey;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_saving) return;
+    final error = widget.isCurrent()
+        ? widget.provider.validateName(
+            _controller.text,
+            excludingId: widget.group?.id,
+            otherNames: widget.otherNames,
+          )
+        : 'auth.connection_changed';
+    if (error != null) {
+      setState(() => _errorKey = error);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _errorKey = null;
+    });
+    try {
+      final group = widget.group;
+      final result = group == null
+          ? await widget.provider.create(
+              _controller.text,
+              widget.provider.nextSortOrder,
+            )
+          : await widget.provider.rename(group.id, _controller.text);
+      if (mounted) Navigator.pop(context, result);
+    } on ListGroupNameException catch (error) {
+      if (mounted) setState(() => _errorKey = error.messageKey);
+    } catch (_) {
+      if (mounted) setState(() => _errorKey = 'list_group.save_failed');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AppDialog(
+    title: Text(
+      I18n.tr(widget.group == null ? 'list_group.new' : 'list_group.rename'),
+    ),
+    contentPadding: DesignTokens.dialogContentPadding,
+    content: AppFormFieldTheme(
+      child: TextField(
+        key: const ValueKey('list_group_name'),
+        controller: _controller,
+        autofocus: true,
+        enabled: !_saving,
+        textInputAction: TextInputAction.done,
+        decoration: InputDecoration(
+          labelText: I18n.tr('list_group.name'),
+          helperText: I18n.tr('list_group.name_hint'),
+          errorText: _errorKey == null ? null : I18n.tr(_errorKey!),
+          errorMaxLines: 3,
+        ),
+        onChanged: (_) => setState(() => _errorKey = null),
+        onSubmitted: (_) => _submit(),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _saving ? null : () => Navigator.pop(context),
+        child: Text(I18n.tr('action.cancel')),
+      ),
+      FilledButton(
+        key: const ValueKey('list_group_confirm'),
+        onPressed: _saving ? null : _submit,
+        child: Text(I18n.tr('action.confirm')),
+      ),
+    ],
+  );
 }

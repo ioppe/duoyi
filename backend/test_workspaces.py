@@ -5300,6 +5300,77 @@ class WorkspaceApiTest(unittest.TestCase):
         self.assertEqual(synced["habits"][0]["id"], "habit-restore")
         self.assertNotIn("habits", synced["deleted_items"])
 
+    def test_sync_round_trips_custom_list_groups_with_lww_and_tombstone(self):
+        user_id = self._register("sync-list-groups")
+        other_id = self._register("sync-list-groups-other")
+
+        first = api.sync(
+            api.SyncRequest(
+                list_groups=[
+                    {
+                        "id": "lg-travel",
+                        "name": "旅行",
+                        "sortOrder": 0,
+                        "workspaceId": "private",
+                        "isDeleted": False,
+                        "updatedAt": "2026-06-02T10:00:00Z",
+                    },
+                    {
+                        "id": "lg-read",
+                        "name": "读书",
+                        "sortOrder": 1,
+                        "workspaceId": "private",
+                        "isDeleted": False,
+                        "updatedAt": "2026-06-02T10:00:00Z",
+                    },
+                ]
+            ),
+            user_id=user_id,
+        )
+        self.assertEqual(
+            [g["id"] for g in first["list_groups"]], ["lg-travel", "lg-read"]
+        )
+
+        # 旧时间戳的重命名必须输给服务端已有版本。
+        stale = api.sync(
+            api.SyncRequest(
+                list_groups=[
+                    {
+                        "id": "lg-travel",
+                        "name": "旧名字",
+                        "sortOrder": 0,
+                        "workspaceId": "private",
+                        "isDeleted": False,
+                        "updatedAt": "2026-06-02T09:00:00Z",
+                    },
+                    {
+                        "id": "lg-read",
+                        "name": "已读书单",
+                        "sortOrder": 1,
+                        "workspaceId": "private",
+                        "isDeleted": True,
+                        "updatedAt": "2026-06-02T11:00:00Z",
+                    },
+                ]
+            ),
+            user_id=user_id,
+        )
+        by_id = {g["id"]: g for g in stale["list_groups"]}
+        self.assertEqual(by_id["lg-travel"]["name"], "旅行")
+        self.assertTrue(by_id["lg-read"]["isDeleted"])
+        self.assertEqual(by_id["lg-read"]["name"], "已读书单")
+
+        # 另一个账号拿不到别人的清单。
+        other = api.sync(api.SyncRequest(), user_id=other_id)
+        self.assertEqual(other["list_groups"], [])
+
+        # 进程重启后（重新读库）仍然存在。
+        round_trip = api.sync(api.SyncRequest(), user_id=user_id)
+        self.assertEqual(
+            sorted(g["id"] for g in round_trip["list_groups"]),
+            ["lg-read", "lg-travel"],
+        )
+
     def test_sync_habit_undo_uses_completion_updated_at(self):
         user_id = self._register("sync-habit-undo")
 

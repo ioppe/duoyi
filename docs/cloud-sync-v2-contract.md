@@ -60,6 +60,29 @@
 
 追加字段（相对旧版）：`reminder / focusLink / timeTargetSeconds / postponeHistory / autoToggleByChildren / isArchivedAfterRollover`。schema 与 `lib/models/todo.dart.toJson()` 的输出 1:1。
 
+## 自定义清单（`list_groups`） / POST /api/sync
+
+清单类型不再固定为六个内置模板：用户可在新建表单里新增、重命名、删除清单。集合走统一的 `/api/sync` 整包合并，`API_CONTRACT_VERSION` 随之为 `2026-06-01.6`，`API_CONTRACT_FEATURES.list_groups = true`。
+
+```jsonc
+"list_groups": [
+  {
+    "id": "8f1c…",                 // 客户端生成的 uuid
+    "name": "旅行",                 // 去空白、1–24 字符、同账号内归一化后唯一
+    "sortOrder": 6,                // 递增整数，决定 chips 顺序
+    "workspaceId": "private",      // 与 TodoItem.workspaceId 同一套空间语义
+    "isDeleted": false,            // 墓碑：服务端保留，客户端隐藏
+    "createdAt": "2026-06-02T10:00:00.000",
+    "updatedAt": "2026-06-02T10:00:00.000"
+  }
+]
+```
+
+- 合并：按 `id` 取并集，逐条 `updatedAt` 较新者胜；`isDeleted` 与普通修改同权，旧时间戳不能复活墓碑。
+- 隔离：每个账号独立存储；`/api/sync/pull` 只返回本账号数据。
+- 备份：服务端备份直接快照 SQLite，`sync_data.list_groups` 随库一起进出；管理员清空用户数据时会一并重置。
+- 客户端：`ListGroupProvider` 负责本地持久化与校验，`CloudSyncProvider` 将其纳入集合/条目哈希与增量上传；清单名同时参与新建表单 chips 与 AI 拆解白名单（内置模板 ∪ 自定义清单 ∪ 已有任务清单名，按写权限过滤）。
+
 ## 时间规范
 
 - 请求体的所有 `DateTime` 字段使用 **客户端本地 ISO** 并附 `tz`；

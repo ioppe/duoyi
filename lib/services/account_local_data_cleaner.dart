@@ -64,6 +64,7 @@ class AccountLocalDataCleaner {
     'theme_unlocked_brands',
     'theme_shop_state',
     'duoyi_quick_capture_templates_v1',
+    'duoyi_list_groups_v1',
     'ai_review_history',
     'duoyi_notif_history',
     'duoyi_notif_history_seen_at',

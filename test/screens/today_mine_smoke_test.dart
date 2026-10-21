@@ -19,6 +19,7 @@ import 'package:duoyi/providers/diary_provider.dart';
 import 'package:duoyi/providers/goal_provider.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/location_reminder_provider.dart';
+import 'package:duoyi/providers/list_group_provider.dart';
 import 'package:duoyi/providers/note_provider.dart';
 import 'package:duoyi/providers/notification_service.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
@@ -61,6 +62,7 @@ Widget _wrap(
   TodoProvider? todoProvider,
   GoalProvider? goalProvider,
   PreferencesProvider? preferencesProvider,
+  ListGroupProvider? listGroupProvider,
   ThemeData? theme,
   double textScale = 1,
 }) {
@@ -95,6 +97,10 @@ Widget _wrap(
       ChangeNotifierProvider(create: (_) => AchievementProvider()),
       ChangeNotifierProvider(create: (_) => ShareProvider()),
       ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
+      if (listGroupProvider != null)
+        ChangeNotifierProvider<ListGroupProvider>.value(
+          value: listGroupProvider,
+        ),
       ChangeNotifierProvider(create: (_) => NotificationService()),
       if (authProvider == null)
         ChangeNotifierProvider(create: (_) => AuthProvider())
@@ -312,6 +318,52 @@ void main() {
     expect(find.text('清单类型'), findsOneWidget);
     expect(find.text('优先级标记'), findsNothing);
     expect(tester.getSize(find.byType(AppModalSheet)), homeSheet);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('首页快速创建首次打开即载入持久化自定义清单并选中保存', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final previous = ListGroupProvider();
+    final travel = await previous.create('旅行', 0);
+    previous.dispose();
+    final groups = ListGroupProvider();
+    final todos = TodoProvider();
+    addTearDown(groups.dispose);
+    addTearDown(todos.dispose);
+    expect(groups.groups, isEmpty);
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(showCaptureFab: true),
+        theme: AppBrands.defaultBrand.theme,
+        todoProvider: todos,
+        listGroupProvider: groups,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(groups.groups.single.id, travel.id);
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '行程准备',
+    );
+    final list = find.byKey(const ValueKey('todo_list_groups'));
+    await tester.ensureVisible(list);
+    await tester.drag(list, const Offset(-2000, 0));
+    await tester.pumpAndSettle();
+    final chip = find.widgetWithText(ChoiceChip, '旅行');
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+    final submit = find.byKey(const ValueKey('todo_create_submit'));
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(todos.todos.single.listGroupName, '旅行');
+    expect(todos.todos.single.listGroupId, travel.id);
     expect(tester.takeException(), isNull);
   });
 

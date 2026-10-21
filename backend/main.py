@@ -48,7 +48,7 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.5"
+API_CONTRACT_VERSION = "2026-06-01.6"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_code_login_gating": True,
@@ -67,6 +67,7 @@ API_CONTRACT_FEATURES = {
     "focus_rooms": True,
     "focus_room_realtime": True,
     "theme_shop": True,
+    "list_groups": True,
 }
 API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/config",
@@ -1183,7 +1184,7 @@ _BACKUP_BYTES_SQL = """
  + length(sd.course_settings)
  + length(sd.achievement_states) + length(sd.virtual_rewards)
  + length(sd.focus_rooms) + length(sd.theme_shop_state)
- + length(sd.preferences) + length(sd.quick_capture_templates))
+ + length(sd.preferences) + length(sd.quick_capture_templates) + length(sd.list_groups))
 """
 
 
@@ -1412,6 +1413,7 @@ def _initialize_database(conn, fresh_database: bool):
             theme_shop_state TEXT DEFAULT '{}',
             preferences TEXT DEFAULT '{}',
             quick_capture_templates TEXT DEFAULT '{}',
+            list_groups TEXT DEFAULT '[]',
             deleted_items TEXT DEFAULT '{}',
             sync_version INTEGER DEFAULT 0,
             updated_at TEXT DEFAULT (datetime('now')),
@@ -1695,6 +1697,7 @@ def _initialize_database(conn, fresh_database: bool):
         ("sync_data", "theme_shop_state", "'{}'"),
         ("sync_data", "preferences", "'{}'"),
         ("sync_data", "quick_capture_templates", "'{}'"),
+        ("sync_data", "list_groups", "'[]'"),
         ("sync_data", "deleted_items", "'{}'"),
         ("sync_data", "sync_version", "0"),
         ("workspace_data", "calendar_events", "'[]'"),
@@ -3156,6 +3159,7 @@ class SyncRequest(BaseModel):
     theme_shop_state: dict = {}
     preferences: dict = {}
     quick_capture_templates: dict = {}
+    list_groups: list = []
     deleted_items: dict = {}
     workspace_payloads: dict = {}
 
@@ -4223,7 +4227,7 @@ def admin_backup_wipe(user_id: str, actor: str = Depends(_require_admin)):
             "courses='[]', time_entries='[]', course_settings='{}', achievement_states='{}', "
             "location_reminders='[]', "
             "virtual_rewards='{}', focus_rooms='{}', theme_shop_state='{}', "
-            "preferences='{}', quick_capture_templates='{}', deleted_items='{}', "
+            "preferences='{}', quick_capture_templates='{}', list_groups='[]', deleted_items='{}', "
             "updated_at=datetime('now') WHERE user_id=?",
             (user_id,),
         )
@@ -7904,6 +7908,7 @@ TOMBSTONE_COLLECTIONS = {
     "time_entries",
     "location_reminders",
     "quick_capture_templates",
+    "list_groups",
 }
 
 
@@ -7954,6 +7959,7 @@ SYNC_PULL_COLLECTIONS = {
     "theme_shop_state",
     "preferences",
     "quick_capture_templates",
+    "list_groups",
     "deleted_items",
     "workspace_payloads",
 }
@@ -8931,6 +8937,7 @@ def _sync_payload_from_row(db, user_id: str, row: Optional[sqlite3.Row]) -> dict
         "theme_shop_state": _normalize_theme_shop_state(_obj("theme_shop_state")),
         "preferences": _obj("preferences"),
         "quick_capture_templates": _obj("quick_capture_templates"),
+        "list_groups": _list("list_groups"),
         "deleted_items": _obj("deleted_items"),
         "workspace_payloads": _merge_workspace_payloads(db, user_id, {}),
     }
@@ -8984,7 +8991,7 @@ def _sync_impl(
             "SELECT todos, habits, pomodoro_sessions, pomodoro_config, user_profile, "
             "notes, countdowns, anniversaries, diaries, goals, calendar_events, "
             "courses, time_entries, location_reminders, course_settings, achievement_states, virtual_rewards, focus_rooms, "
-            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, "
+            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, list_groups, "
             "deleted_items, sync_version "
             "FROM sync_data WHERE user_id=?",
             (user_id,),
@@ -9028,6 +9035,7 @@ def _sync_impl(
         server_theme_shop_state = _obj("theme_shop_state")
         server_preferences = _obj("preferences")
         server_quick_capture_templates = _obj("quick_capture_templates")
+        server_list_groups = _list("list_groups")
         server_deleted_items = _obj("deleted_items")
         merged_deleted_items = _merge_deleted_items(
             server_deleted_items, req.deleted_items
@@ -9130,6 +9138,12 @@ def _sync_impl(
             req.quick_capture_templates,
             deleted_items=merged_deleted_items,
         )
+        merged_list_groups = _merge_by_timestamp(
+            server_list_groups,
+            req.list_groups,
+            collection="list_groups",
+            deleted_items=merged_deleted_items,
+        )
         merged_workspace_payloads = _merge_workspace_payloads(
             db, user_id, req.workspace_payloads
         )
@@ -9150,6 +9164,7 @@ def _sync_impl(
                 "time_entries": merged_time_entries,
                 "location_reminders": merged_location_reminders,
                 "quick_capture_templates": merged_quick_capture_templates,
+                "list_groups": merged_list_groups,
             },
         )
 
@@ -9161,8 +9176,8 @@ def _sync_impl(
              courses, time_entries, location_reminders,
              course_settings, achievement_states, virtual_rewards, focus_rooms,
              focus_penalties, theme_shop_state, preferences, quick_capture_templates,
-             deleted_items, sync_version, updated_at)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             list_groups, deleted_items, sync_version, updated_at)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 user_id,
@@ -9188,6 +9203,7 @@ def _sync_impl(
                 json.dumps(merged_theme_shop_state, ensure_ascii=False),
                 json.dumps(merged_preferences, ensure_ascii=False),
                 json.dumps(merged_quick_capture_templates, ensure_ascii=False),
+                json.dumps(merged_list_groups, ensure_ascii=False),
                 json.dumps(merged_deleted_items, ensure_ascii=False),
                 next_sync_version,
                 sync_updated_at,
@@ -9221,6 +9237,7 @@ def _sync_impl(
                 "theme_shop_state": merged_theme_shop_state,
                 "preferences": merged_preferences,
                 "quick_capture_templates": merged_quick_capture_templates,
+                "list_groups": merged_list_groups,
                 "deleted_items": merged_deleted_items,
                 "workspace_payloads": merged_workspace_payloads,
             },
@@ -9244,7 +9261,7 @@ def sync_delta(req: SyncDeltaRequest, user_id: str = Depends(_verify_token)):
             "SELECT todos, habits, pomodoro_sessions, pomodoro_config, user_profile, "
             "notes, countdowns, anniversaries, diaries, goals, calendar_events, "
             "courses, time_entries, location_reminders, course_settings, achievement_states, virtual_rewards, focus_rooms, "
-            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, "
+            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, list_groups, "
             "deleted_items, sync_version "
             "FROM sync_data WHERE user_id=?",
             (user_id,),
@@ -9273,7 +9290,7 @@ def sync_item_delta(req: SyncItemDeltaRequest, user_id: str = Depends(_verify_to
             "SELECT todos, habits, pomodoro_sessions, pomodoro_config, user_profile, "
             "notes, countdowns, anniversaries, diaries, goals, calendar_events, "
             "courses, time_entries, location_reminders, course_settings, achievement_states, virtual_rewards, focus_rooms, "
-            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, "
+            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, list_groups, "
             "deleted_items, sync_version "
             "FROM sync_data WHERE user_id=?",
             (user_id,),
@@ -9303,7 +9320,7 @@ def sync_pull(req: SyncPullRequest, user_id: str = Depends(_verify_token)):
             "SELECT todos, habits, pomodoro_sessions, pomodoro_config, user_profile, "
             "notes, countdowns, anniversaries, diaries, goals, calendar_events, "
             "courses, time_entries, location_reminders, course_settings, achievement_states, virtual_rewards, focus_rooms, "
-            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, "
+            "focus_penalties, theme_shop_state, preferences, quick_capture_templates, list_groups, "
             "deleted_items, sync_version, updated_at "
             "FROM sync_data WHERE user_id=?",
             (user_id,),

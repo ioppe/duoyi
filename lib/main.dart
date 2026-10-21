@@ -38,6 +38,7 @@ import 'providers/course_provider.dart';
 import 'providers/app_lock_provider.dart';
 import 'providers/preferences_provider.dart';
 import 'providers/quick_capture_template_provider.dart';
+import 'providers/list_group_provider.dart';
 import 'providers/time_audit_provider.dart';
 import 'providers/achievement_provider.dart';
 import 'providers/custom_focus_sound_provider.dart';
@@ -280,6 +281,7 @@ void main() async {
   final appLockProvider = AppLockProvider();
   final preferencesProvider = PreferencesProvider();
   final quickCaptureTemplateProvider = QuickCaptureTemplateProvider();
+  final listGroupProvider = ListGroupProvider();
   final timeAuditProvider = TimeAuditProvider();
   final achievementProvider = AchievementProvider();
   final customFocusSoundProvider = CustomFocusSoundProvider();
@@ -409,6 +411,7 @@ void main() async {
         'quick capture templates',
         quickCaptureTemplateProvider.resetLocalState,
       );
+      guardedSync('list groups', listGroupProvider.resetLocalState);
       guardedSync(
         'custom focus sounds',
         customFocusSoundProvider.resetLocalState,
@@ -621,6 +624,10 @@ void main() async {
             () => _startupGuard(
               'quick capture templates storage',
               () => quickCaptureTemplateProvider.loadFromStorage(),
+            ),
+            () => _startupGuard(
+              'list groups storage',
+              () => listGroupProvider.loadFromStorage(),
             ),
             () => _startupGuard(
               'time audit storage',
@@ -931,6 +938,7 @@ void main() async {
   quickCaptureTemplateProvider.addListener(
     cloudSyncProvider.markQuickCaptureTemplatesChanged,
   );
+  listGroupProvider.onLocalChanged = markDirty;
 
   void refreshUserStats() {
     userProvider.recalc(
@@ -1502,6 +1510,9 @@ void main() async {
       if (changedCollections.contains('quick_capture_templates')) {
         reloadTasks.add(quickCaptureTemplateProvider.loadFromStorage);
       }
+      if (changedCollections.contains('list_groups')) {
+        reloadTasks.add(listGroupProvider.loadFromStorage);
+      }
 
       await _runSyncReloadTasksInBatches(reloadTasks);
       if (shouldRefreshAchievementsSilently) {
@@ -1914,6 +1925,7 @@ void main() async {
         ChangeNotifierProvider.value(value: appLockProvider),
         ChangeNotifierProvider.value(value: preferencesProvider),
         ChangeNotifierProvider.value(value: quickCaptureTemplateProvider),
+        ChangeNotifierProvider.value(value: listGroupProvider),
         ChangeNotifierProvider.value(value: timeAuditProvider),
         ChangeNotifierProvider.value(value: achievementProvider),
         ChangeNotifierProvider.value(value: customFocusSoundProvider),

@@ -87,6 +87,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreateListType => 'List type';
 
   @override
+  String get listGroupNewChip => '＋ New list';
+
+  @override
+  String get listGroupNew => 'New list';
+
+  @override
+  String get listGroupRename => 'Rename list';
+
+  @override
+  String get listGroupName => 'List name';
+
+  @override
+  String get listGroupNameHint => '1–24 characters';
+
+  @override
+  String get listGroupNameRequired => 'Enter a list name';
+
+  @override
+  String get listGroupNameLength => 'List names must be at most 24 characters';
+
+  @override
+  String get listGroupNameDuplicate => 'A list with this name already exists';
+
+  @override
+  String get listGroupSaveFailed =>
+      'Unable to save the list. Please try again.';
+
+  @override
   String get todoCreateQuadrant => 'Priority';
 
   @override

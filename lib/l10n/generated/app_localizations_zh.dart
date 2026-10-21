@@ -78,6 +78,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreateListType => '清单类型';
 
   @override
+  String get listGroupNewChip => '＋ 新建清单';
+
+  @override
+  String get listGroupNew => '新建清单';
+
+  @override
+  String get listGroupRename => '重命名清单';
+
+  @override
+  String get listGroupName => '清单名称';
+
+  @override
+  String get listGroupNameHint => '1–24 个字符';
+
+  @override
+  String get listGroupNameRequired => '请输入清单名称';
+
+  @override
+  String get listGroupNameLength => '清单名称不能超过 24 个字符';
+
+  @override
+  String get listGroupNameDuplicate => '已有同名清单，请换一个名称';
+
+  @override
+  String get listGroupSaveFailed => '清单保存失败，请重试';
+
+  @override
   String get todoCreateQuadrant => '优先级';
 
   @override

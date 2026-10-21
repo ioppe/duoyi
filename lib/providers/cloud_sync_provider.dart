@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/feature_flags.dart';
 import '../services/api_client.dart';
+import 'list_group_provider.dart';
 
 class SyncConfig {
   final DateTime lastSync;
@@ -764,6 +765,7 @@ class CloudSyncProvider extends ChangeNotifier {
     'theme_shop_state',
     'preferences',
     'quick_capture_templates',
+    'list_groups',
     'deleted_items',
     'workspace_payloads',
   };
@@ -782,6 +784,7 @@ class CloudSyncProvider extends ChangeNotifier {
     'time_entries',
     'courses',
     'location_reminders',
+    'list_groups',
   };
 
   static const _objectDeltaCollections = <String>{
@@ -1433,6 +1436,12 @@ class CloudSyncProvider extends ChangeNotifier {
       'quick_capture_templates',
       payload['quick_capture_templates'],
     );
+    payload['list_groups'] = _buildListGroupsPayload(prefs);
+    collectionsHash['list_groups'] = _collectionHashForKey(
+      'list_groups',
+      payload['list_groups'],
+    );
+    _fillItemHashBucket(itemHashes, 'list_groups', payload['list_groups']);
     payload['deleted_items'] = _decodeDeletedItems(
       prefs.getString(deletedItemsStorageKey),
     );
@@ -1634,6 +1643,33 @@ class CloudSyncProvider extends ChangeNotifier {
           '',
       'items': items,
     };
+  }
+
+  List<Map<String, dynamic>> _buildListGroupsPayload(SharedPreferences prefs) =>
+      ListGroupProvider.decodeStoredGroups(
+        prefs.getString(ListGroupProvider.storageKey),
+      ).map((group) => group.toJson()).toList();
+
+  Future<bool> _writeListGroupsPayload(
+    SharedPreferences prefs,
+    List<dynamic> payload,
+  ) async {
+    // Each record carries its own updatedAt, including isDeleted tombstones.
+    // Merge against current storage so edits made during the request survive.
+    final remote = ListGroupProvider.decodeGroups(payload);
+    final merged = ListGroupProvider.mergeGroups(
+      ListGroupProvider.decodeStoredGroups(
+        prefs.getString(ListGroupProvider.storageKey),
+      ),
+      remote,
+    );
+    final items = merged.map((group) => group.toJson()).toList();
+    final encoded = json.encode(items);
+    if (prefs.getString(ListGroupProvider.storageKey) != encoded) {
+      await prefs.setString(ListGroupProvider.storageKey, encoded);
+    }
+    return _syncPayloadHash(items) !=
+        _syncPayloadHash(remote.map((group) => group.toJson()).toList());
   }
 
   /// 存储字符串总量超过该长度时，负载构建与哈希移入后台 isolate
@@ -1875,6 +1911,16 @@ class CloudSyncProvider extends ChangeNotifier {
         throwIfAccountChanged();
       }
     }
+    final listGroups = response['list_groups'];
+    if (listGroups is List) {
+      throwIfAccountChanged();
+      final hasNewerLocalGroups = await _writeListGroupsPayload(
+        prefs,
+        listGroups,
+      );
+      throwIfAccountChanged();
+      if (hasNewerLocalGroups) skippedCollections.add('list_groups');
+    }
 
     final workspacePayloads = response['workspace_payloads'];
     if (workspacePayloads is Map) {
@@ -1951,7 +1997,10 @@ class CloudSyncProvider extends ChangeNotifier {
       return (prefs.getString(localKey) ?? '') == snapshot;
     }
     if (snapshot is List<String>) {
-      return _stringListEquals(prefs.getStringList(localKey), snapshot);
+      return _stringListEquals(
+        prefs.getStringList(localKey) ?? const <String>[],
+        snapshot,
+      );
     }
     return true;
   }
