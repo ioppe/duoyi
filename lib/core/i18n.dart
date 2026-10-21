@@ -1159,6 +1159,8 @@ const Map<String, String> _zh = <String, String>{
   // 今日页补充
   'today.no_due': '无截止',
   'today.no_due_date': '无截止日期',
+  'today.subtask.read_only': '共享空间只读，不能完成子任务',
+  'today.subtask.update_failed': '子任务更新失败，请重试',
   'today.todos.empty': '今天暂无待办，点击查看或添加任务',
   'todo.status.overdue': '逾期',
   'todo.status.due_soon': '临期',
@@ -2544,6 +2546,10 @@ const Map<String, String> _en = <String, String>{
   // Today page additions
   'today.no_due': 'No due',
   'today.no_due_date': 'No due date',
+  'today.subtask.read_only':
+      'This shared space is read-only, so subtasks cannot be completed',
+  'today.subtask.update_failed':
+      'Could not update the subtask. Please try again.',
   'today.todos.empty': 'No tasks today. Tap to view or add one',
   'todo.status.overdue': 'Overdue',
   'todo.status.due_soon': 'Due soon',

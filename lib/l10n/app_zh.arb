@@ -1086,6 +1086,8 @@
   "greetingSeparator": "，",
   "todayNoDue": "无截止",
   "todayNoDueDate": "无截止日期",
+  "todaySubtaskReadOnly": "共享空间只读，不能完成子任务",
+  "todaySubtaskUpdateFailed": "子任务更新失败，请重试",
   "todayTodosEmpty": "今天暂无待办，点击查看或添加任务",
   "todoStatusOverdue": "逾期",
   "todoStatusDueSoon": "临期",

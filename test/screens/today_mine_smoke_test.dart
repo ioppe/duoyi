@@ -63,6 +63,7 @@ Widget _wrap(
   GoalProvider? goalProvider,
   PreferencesProvider? preferencesProvider,
   ListGroupProvider? listGroupProvider,
+  ShareProvider? shareProvider,
   ThemeData? theme,
   double textScale = 1,
 }) {
@@ -95,7 +96,10 @@ Widget _wrap(
           value: preferencesProvider,
         ),
       ChangeNotifierProvider(create: (_) => AchievementProvider()),
-      ChangeNotifierProvider(create: (_) => ShareProvider()),
+      if (shareProvider == null)
+        ChangeNotifierProvider(create: (_) => ShareProvider())
+      else
+        ChangeNotifierProvider<ShareProvider>.value(value: shareProvider),
       ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
       if (listGroupProvider != null)
         ChangeNotifierProvider<ListGroupProvider>.value(
@@ -364,6 +368,70 @@ void main() {
     await tester.pumpAndSettle();
     expect(todos.todos.single.listGroupName, '旅行');
     expect(todos.todos.single.listGroupId, travel.id);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('首页可直接勾选子任务并在全部完成时聚合父任务', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final todos = TodoProvider();
+    await todos.addTodo(
+      TodoItem(
+        title: '首页子任务',
+        subtasks: [
+          Subtask(id: 's1', title: '第一步', sortOrder: 0),
+          Subtask(id: 's2', title: '第二步', sortOrder: 1),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(),
+        todoProvider: todos,
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final first = find.byKey(const ValueKey('today_subtask_toggle_s1'));
+    expect(first, findsOneWidget);
+    await tester.tap(first);
+    await tester.pumpAndSettle();
+    expect(todos.todos.single.subtasks.first.isCompleted, isTrue);
+    expect(todos.todos.single.isCompleted, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('today_subtask_toggle_s2')));
+    await tester.pumpAndSettle();
+    expect(todos.todos.single.subtasks.last.isCompleted, isTrue);
+    // 全部子任务完成后按 autoToggle 规则自动完成父任务。
+    expect(todos.todos.single.isCompleted, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('只读共享空间的子任务不能勾选', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final todos = TodoProvider();
+    await todos.addTodo(
+      TodoItem(
+        title: '共享子任务',
+        subtasks: [Subtask(id: 'ro1', title: '只读步骤', sortOrder: 0)],
+      ),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        const TodayScreen(),
+        todoProvider: todos,
+        shareProvider: _ReadOnlyShareProvider(),
+        theme: AppBrands.defaultBrand.theme,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('today_subtask_toggle_ro1')));
+    await tester.pumpAndSettle();
+    expect(todos.todos.single.subtasks.single.isCompleted, isFalse);
+    expect(find.text(I18n.tr('today.subtask.read_only')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -1938,4 +2006,9 @@ void main() {
 Future<void> _pumpTodayLayoutFrame(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 250));
+}
+
+class _ReadOnlyShareProvider extends ShareProvider {
+  @override
+  bool canEdit(String? workspaceId) => false;
 }

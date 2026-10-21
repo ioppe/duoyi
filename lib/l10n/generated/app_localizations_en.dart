@@ -3443,6 +3443,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayNoDueDate => 'No due date';
 
   @override
+  String get todaySubtaskReadOnly =>
+      'This shared space is read-only, so subtasks cannot be completed';
+
+  @override
+  String get todaySubtaskUpdateFailed =>
+      'Could not update the subtask. Please try again.';
+
+  @override
   String get todayTodosEmpty => 'No tasks today. Tap to view or add one';
 
   @override

@@ -1081,6 +1081,8 @@
   "greetingSeparator": ", ",
   "todayNoDue": "No due",
   "todayNoDueDate": "No due date",
+  "todaySubtaskReadOnly": "This shared space is read-only, so subtasks cannot be completed",
+  "todaySubtaskUpdateFailed": "Could not update the subtask. Please try again.",
   "todayTodosEmpty": "No tasks today. Tap to view or add one",
   "todoStatusOverdue": "Overdue",
   "todoStatusDueSoon": "Due soon",

@@ -1423,7 +1423,6 @@ class _TodoTodaySubtitle extends StatelessWidget {
         !hasNoDueDate) {
       return const SizedBox.shrink();
     }
-    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.only(
         top: textOnly ? DesignTokens.spaceXs + 1 : DesignTokens.spaceXxs,
@@ -1454,27 +1453,133 @@ class _TodoTodaySubtitle extends StatelessWidget {
           ),
           if (subtasks.isNotEmpty) const SizedBox(height: DesignTokens.spaceXs),
           for (final subtask in subtasks)
-            Row(
-              children: [
-                Icon(
-                  subtask.isCompleted
-                      ? Icons.check_circle_outline
-                      : Icons.subdirectory_arrow_right,
-                  size: 12,
-                  color: cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    subtask.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            _TodaySubtaskRow(todo: todo, subtask: subtask),
+        ],
+      ),
+    );
+  }
+}
+
+/// 今日页子任务行：整行可点，勾选后立即写回，父任务按 autoToggle 规则聚合。
+class _TodaySubtaskRow extends StatefulWidget {
+  final TodoItem todo;
+  final Subtask subtask;
+
+  const _TodaySubtaskRow({required this.todo, required this.subtask});
+
+  @override
+  State<_TodaySubtaskRow> createState() => _TodaySubtaskRowState();
+}
+
+class _TodaySubtaskRowState extends State<_TodaySubtaskRow> {
+  /// 12px 文字 + 18px 勾选圈 + 纵向留白，整行宽度都可点。
+  static const double _minRowHeight = 36;
+
+  bool _busy = false;
+
+  Future<void> _toggle() async {
+    if (_busy) return;
+    final shares = context.read<ShareProvider?>();
+    if (!(shares?.canEdit(widget.todo.workspaceId) ?? true)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(I18n.tr('today.subtask.read_only')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final provider = context.read<TodoProvider>();
+      final current = provider.todos.firstWhere(
+        (item) => item.id == widget.todo.id,
+        orElse: () => widget.todo,
+      );
+      final next = current.copyWith(
+        subtasks: [
+          for (final item in current.subtasks)
+            item.id == widget.subtask.id
+                ? Subtask(
+                    id: item.id,
+                    title: item.title,
+                    isCompleted: !item.isCompleted,
+                    sortOrder: item.sortOrder,
+                  )
+                : item,
+        ],
+      );
+      // 沿用默认的提醒同步：今日页不允许跳过同步（静态 guard 亦强制）。
+      await provider.updateTodo(current.id, next);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(I18n.tr('today.subtask.update_failed')),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final completed = widget.subtask.isCompleted;
+    return Semantics(
+      button: true,
+      checked: completed,
+      label: widget.subtask.title,
+      excludeSemantics: true,
+      child: InkWell(
+        key: ValueKey('today_subtask_toggle_${widget.subtask.id}'),
+        onTap: _busy ? null : _toggle,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _minRowHeight),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: _busy
+                    ? const Padding(
+                        padding: EdgeInsets.all(2),
+                        child: CircularProgressIndicator(strokeWidth: 1.6),
+                      )
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 160),
+                        child: Icon(
+                          completed
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          key: ValueKey('today_subtask_icon_$completed'),
+                          size: 16,
+                          color: completed ? cs.primary : cs.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: DesignTokens.spaceSm),
+              Expanded(
+                child: Text(
+                  widget.subtask.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: completed
+                        ? cs.onSurfaceVariant.withValues(alpha: 0.55)
+                        : cs.onSurfaceVariant,
+                    decoration: completed ? TextDecoration.lineThrough : null,
+                    decorationColor: cs.onSurfaceVariant,
                   ),
                 ),
-              ],
-            ),
-        ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

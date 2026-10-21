@@ -3282,6 +3282,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todayNoDueDate => '无截止日期';
 
   @override
+  String get todaySubtaskReadOnly => '共享空间只读，不能完成子任务';
+
+  @override
+  String get todaySubtaskUpdateFailed => '子任务更新失败，请重试';
+
+  @override
   String get todayTodosEmpty => '今天暂无待办，点击查看或添加任务';
 
   @override

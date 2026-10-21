@@ -6584,6 +6584,18 @@ abstract class AppLocalizations {
   /// **'无截止日期'**
   String get todayNoDueDate;
 
+  /// No description provided for @todaySubtaskReadOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'共享空间只读，不能完成子任务'**
+  String get todaySubtaskReadOnly;
+
+  /// No description provided for @todaySubtaskUpdateFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'子任务更新失败，请重试'**
+  String get todaySubtaskUpdateFailed;
+
   /// No description provided for @todayTodosEmpty.
   ///
   /// In zh, this message translates to:
