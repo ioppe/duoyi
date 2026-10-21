@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>多仪 · 认证表单间距与控件统一</title>
+<style>
+@font-face{font-family:Rounded;src:url('../../../assets/fonts/ResourceHanRoundedCN-Bold.ttf');font-weight:700;font-display:swap}
+*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#1f2933;font:700 15px/1.65 Rounded,sans-serif}main{max-width:1120px;margin:auto;padding:32px 24px 64px}h1{margin:0;font-size:28px}p{margin:8px 0 24px;color:#667085}h2{margin:32px 0 12px;font-size:19px}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:820px;margin:auto}figure{margin:0}figcaption{margin:0 0 8px}img{display:block;width:100%;height:auto;border:1px solid #d9e0e8;border-radius:12px}.wide{max-width:1100px}summary{cursor:pointer;color:#c85656;padding:16px 0}a{color:#c85656}small{color:#667085}code{overflow-wrap:anywhere}@media(max-width:600px){main{padding:20px 14px}.pair{gap:10px}h1{font-size:23px}figcaption{font-size:13px}}
+</style>
+</head>
+<body><main>
+<h1>认证表单：统一间距与控件</h1>
+<p>以下均为实际 Flutter 页面截图。输入框常规 56px，字段间距 16px，主按钮前 24px；登录与注册继续等高翻转，卡片内部没有纵向滚动。</p>
+<div class="pair">
+<figure><figcaption>登录 · 强制邮箱注册策略</figcaption><img src="01-login-email-policy-390.png" alt="连续排版的登录卡片，密码输入后紧接登录按钮"></figure>
+<figure><figcaption>注册 · 统一高度与间距</figcaption><img src="02-register-email-390.png" alt="密码与确认密码等高，邮箱和验证码间距统一"></figure>
+</div>
+<details><summary>查看相同尺寸的修改前后对比</summary>
+<h2>登录卡片</h2><div class="pair">
+<figure><figcaption>修改前 · 按钮固定在底部</figcaption><img src="../auth-static-form/01-login-email-policy-390.png" alt="旧登录卡片的密码框下方有较大空白"></figure>
+<figure><figcaption>修改后 · 表单连续居中</figcaption><img src="01-login-email-policy-390.png" alt="新登录卡片使用24px按钮间距"></figure>
+</div>
+<h2>注册卡片</h2><div class="pair">
+<figure><figcaption>修改前 · 控件与间距不一致</figcaption><img src="../auth-static-form/02-register-email-390.png" alt="旧注册卡片的确认密码框高度不一致"></figure>
+<figure><figcaption>修改后 · 共用尺寸与主题</figcaption><img src="02-register-email-390.png" alt="新注册卡片的各输入框和发送按钮等高"></figure>
+</div></details>
+<h2>默认注册</h2><div class="pair">
+<figure><figcaption>登录</figcaption><img src="07-login-default-390.png" alt="默认登录页面"></figure>
+<figure><figcaption>用户名、密码、确认密码</figcaption><img src="08-register-default-390.png" alt="默认注册只有三个字段"></figure>
+</div>
+<h2>Android 平台样式 · 真实资源圆体</h2><div class="pair" id="native">
+<figure><figcaption>邮箱注册</figcaption><img src="12-android-register-email-390.png" alt="Android平台的邮箱注册页"></figure>
+<figure><figcaption>深色主题</figcaption><img src="13-android-register-dark-390.png" alt="深色主题的邮箱注册页"></figure>
+</div>
+<small>组件渲染用于检查布局和字体，不等同 APK 或真机验收。</small>
+<h2>桌面</h2><figure class="wide"><figcaption>实际 Web 发布构建 · 1440×1000</figcaption><img src="04-register-email-1440.png" alt="桌面邮箱注册页面"></figure>
+<p><a href="README.md">验证记录</a> · <a href="native-metrics.json">真实字体尺寸记录</a> · <a href="05-register-email-320.png">320px 窄屏</a> · <a href="15-android-register-email-320-scale2.png">2倍字体完整长页渲染</a></p>
+</main></body></html>

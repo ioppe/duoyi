@@ -479,7 +479,7 @@ void main() {
     for (final field in [
       'class _LoginActionField',
       'final actionWidth = constraints.maxWidth < 360 ? 64.0 : 72.0',
-      'height: DesignTokens.formFieldMinHeight',
+      'height: AuthFormFieldTheme.heightOf(context)',
       '_userCtrl.addListener(_refreshControls)',
       '_emailCtrl.addListener(_refreshControls)',
       'if (_busy || _sendingEmailCode) return;',
@@ -503,6 +503,13 @@ void main() {
     }
 
     expect(login, isNot(contains('class _LoginInlineActionField')));
+    final frame = File('lib/widgets/auth_page_frame.dart').readAsStringSync();
+    expect(frame, contains('class AuthFormFieldTheme'));
+    expect(
+      frame,
+      contains('constraints: BoxConstraints.tightFor(height: height)'),
+      reason: '认证输入框和验证码动作共用随文字缩放的固定行高',
+    );
   });
 
   test('App startup refreshes account profile into local profile cache', () {

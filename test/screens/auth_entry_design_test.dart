@@ -204,9 +204,9 @@ void main() {
       final original = tester.getRect(
         find.byKey(const ValueKey('auth_form_surface')),
       );
-      final accountTop = tester
-          .getTopLeft(find.byKey(const ValueKey('auth-account')))
-          .dy;
+      final accountSize = tester.getSize(
+        find.byKey(const ValueKey('auth-account')),
+      );
       final selectorHeight = tester
           .getSize(find.byKey(const ValueKey('auth_method_selector')))
           .height;
@@ -238,16 +238,20 @@ void main() {
         if (method == 'token') {
           expect(find.byKey(const ValueKey('access-token')), findsOneWidget);
           expect(find.byKey(const ValueKey('auth-account')), findsNothing);
-          expect(
-            tester.getTopLeft(find.byKey(const ValueKey('access-token'))).dy,
-            accountTop,
-          );
-        } else {
-          expect(
-            tester.getTopLeft(find.byKey(const ValueKey('auth-account'))).dy,
-            accountTop,
-          );
         }
+        final field = find.byKey(
+          ValueKey(method == 'token' ? 'access-token' : 'auth-account'),
+        );
+        final server = find.byKey(
+          ValueKey(
+            method == 'token' ? 'token-server-url' : 'password-server-url',
+          ),
+        );
+        expect(tester.getSize(field), accountSize);
+        expect(
+          tester.getTopLeft(field).dy - tester.getBottomLeft(server).dy,
+          closeTo(16, 0.1),
+        );
       }
       expect(tester.takeException(), isNull);
     },

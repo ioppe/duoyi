@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/design_tokens.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/providers/auth_provider.dart';
@@ -8,6 +9,7 @@ import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/screens/login_screen.dart';
 import 'package:duoyi/services/api_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -32,24 +34,28 @@ AuthProvider _auth(
   );
 }
 
-Widget _app(AuthProvider auth, {double scale = 1, double keyboard = 0}) =>
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AuthProvider>.value(value: auth),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: MaterialApp(
-        theme: AppBrands.defaultBrand.theme,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(scale),
-            viewInsets: EdgeInsets.only(bottom: keyboard),
-          ),
-          child: child!,
-        ),
-        home: const LoginScreen(asEntry: true),
+Widget _app(
+  AuthProvider auth, {
+  double scale = 1,
+  double keyboard = 0,
+  VisualDensity density = VisualDensity.standard,
+}) => MultiProvider(
+  providers: [
+    ChangeNotifierProvider<AuthProvider>.value(value: auth),
+    ChangeNotifierProvider(create: (_) => ThemeProvider()),
+  ],
+  child: MaterialApp(
+    theme: AppBrands.defaultBrand.theme.copyWith(visualDensity: density),
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(scale),
+        viewInsets: EdgeInsets.only(bottom: keyboard),
       ),
-    );
+      child: child!,
+    ),
+    home: const LoginScreen(asEntry: true),
+  ),
+);
 
 void _expectStaticCard(WidgetTester tester) {
   final surface = find.byKey(const ValueKey('auth_form_surface'));
@@ -85,6 +91,14 @@ Future<void> _register(WidgetTester tester) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     I18n.setLocale(AppLocale.zh);
@@ -127,6 +141,136 @@ void main() {
       expect(find.text(I18n.tr('auth.email_code')), findsOneWidget);
     },
   );
+
+  for (final requiredEmail in [false, true]) {
+    testWidgets(
+      'login submit follows the password with one gap, email=$requiredEmail',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          _app(_auth({'registration_email_required': requiredEmail})),
+        );
+        await tester.pumpAndSettle();
+        final password = tester.getRect(
+          find.byKey(const ValueKey('auth-password')),
+        );
+        final submit = tester.getRect(
+          find.byKey(const ValueKey('auth-submit')),
+        );
+        expect(
+          submit.top - password.bottom,
+          closeTo(24, 0.1),
+          reason: '等高卡片不应把短登录表单的末项与按钮分隔成大段空白',
+        );
+        _expectStaticCard(tester);
+      },
+    );
+  }
+
+  for (final density in [VisualDensity.standard, VisualDensity.compact]) {
+    for (final scale in [1.0, 1.5, 2.0]) {
+      testWidgets(
+        'email signup uses one field height and rhythm at scale=$scale, density=$density',
+        (tester) async {
+          tester.view.physicalSize = const Size(390, 844);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await tester.pumpWidget(
+            _app(
+              _auth({'registration_email_required': true}),
+              scale: scale,
+              density: density,
+            ),
+          );
+          await tester.pumpAndSettle();
+          await _register(tester);
+
+          void expectUniformFields() {
+            final fields = find.byType(TextField);
+            final account = tester.getRect(
+              find.byKey(const ValueKey('auth-account')),
+            );
+            for (final element in fields.evaluate()) {
+              final rect = tester.getRect(find.byWidget(element.widget));
+              expect(rect.height, closeTo(account.height, 0.1));
+              final container = InputDecorator.containerOf(
+                tester.element(
+                  find.descendant(
+                    of: find.byWidget(element.widget),
+                    matching: find.byType(EditableText),
+                  ),
+                ),
+              )!;
+              expect(
+                container.size.height,
+                closeTo(rect.height, 0.1),
+                reason: '可见输入边框必须填满共同的行高，不能只让外层占位等高',
+              );
+              expect(
+                container.localToGlobal(Offset.zero).dy,
+                closeTo(rect.top, 0.1),
+              );
+              final decoration = tester
+                  .widget<InputDecorator>(
+                    find.descendant(
+                      of: find.byWidget(element.widget),
+                      matching: find.byType(InputDecorator),
+                    ),
+                  )
+                  .decoration;
+              expect(decoration.contentPadding, const EdgeInsets.all(16));
+              expect(decoration.filled, isTrue);
+              expect(
+                decoration.fillColor,
+                Theme.of(element).colorScheme.surface,
+              );
+            }
+            final password = tester.getRect(
+              find.byKey(const ValueKey('auth-password')),
+            );
+            final confirm = tester.getRect(
+              find.byKey(const ValueKey('auth-confirm-password')),
+            );
+            final email = tester.getRect(
+              find.byKey(const ValueKey('auth-email')),
+            );
+            final code = tester.getRect(
+              find.widgetWithText(TextField, I18n.tr('auth.email_code')),
+            );
+            final send = tester.getRect(
+              find.widgetWithText(FilledButton, I18n.tr('auth.send')),
+            );
+            expect(password.top - account.bottom, closeTo(16, 0.1));
+            expect(email.top - confirm.bottom, closeTo(16, 0.1));
+            expect(code.top - email.bottom, closeTo(16, 0.1));
+            expect(send.top, closeTo(code.top, 0.1));
+            expect(send.bottom, closeTo(code.bottom, 0.1));
+            final submit = tester.getRect(
+              find.byKey(const ValueKey('auth-submit')),
+            );
+            expect(submit.top - code.bottom, closeTo(24, 0.1));
+            _expectStaticCard(tester);
+          }
+
+          expectUniformFields();
+          await tester.enterText(
+            find.byKey(const ValueKey('auth-confirm-password')),
+            'test-password',
+          );
+          await tester.pumpAndSettle();
+          expectUniformFields();
+          await tester.enterText(
+            find.byKey(const ValueKey('auth-email')),
+            'signup@example.test',
+          );
+          await tester.pumpAndSettle();
+          expectUniformFields();
+        },
+      );
+    }
+  }
 
   for (final native in [false, true]) {
     for (final scale in [1.0, 1.5, 2.0]) {

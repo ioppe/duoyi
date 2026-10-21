@@ -1,0 +1,118 @@
+[
+  {
+    "image": "12-android-register-email-390.png",
+    "card_height": 604.0,
+    "fields": {
+      "password-server-url": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-account": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-confirm-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-email": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-email-code": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      }
+    },
+    "scale": 1.0
+  },
+  {
+    "image": "13-android-register-dark-390.png",
+    "card_height": 604.0,
+    "fields": {
+      "password-server-url": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-account": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-confirm-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-email": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-email-code": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      }
+    },
+    "scale": 1.0
+  },
+  {
+    "image": "14-android-register-default-390.png",
+    "card_height": 532.0,
+    "fields": {
+      "password-server-url": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-account": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      },
+      "auth-confirm-password": {
+        "layout_height": 56.0,
+        "visible_height": 56.0
+      }
+    },
+    "scale": 1.0
+  },
+  {
+    "image": "15-android-register-email-320-scale2.png",
+    "card_height": 1301.0,
+    "fields": {
+      "password-server-url": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      },
+      "auth-account": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      },
+      "auth-password": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      },
+      "auth-confirm-password": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      },
+      "auth-email": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      },
+      "auth-email-code": {
+        "layout_height": 80.0,
+        "visible_height": 80.0
+      }
+    },
+    "scale": 2.0
+  }
+]

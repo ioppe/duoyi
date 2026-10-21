@@ -42,10 +42,10 @@ class _LoginActionField extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: field),
-            const SizedBox(width: 8),
+            const SizedBox(width: DesignTokens.spaceSm),
             SizedBox(
               width: actionWidth,
-              height: DesignTokens.formFieldMinHeight,
+              height: AuthFormFieldTheme.heightOf(context),
               child: action,
             ),
           ],
@@ -322,7 +322,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final canSend = _canSendEmailCode;
     return FilledButton(
       onPressed: canSend ? _sendEmailCode : null,
-      style: appSecondaryFilledButtonStyle(context),
+      style: appSecondaryFilledButtonStyle(context).copyWith(
+        shape: const WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(DesignTokens.radiusControl),
+            ),
+          ),
+        ),
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
       child: _sendingEmailCode
           ? const SizedBox(
               width: 16,
@@ -347,18 +357,17 @@ class _LoginScreenState extends State<LoginScreen> {
     required TextEditingController controller,
     required String labelText,
   }) {
-    return AppFormFieldTheme(
-      child: TextField(
-        controller: controller,
-        enabled: !_busy && !_sendingEmailCode,
-        keyboardType: TextInputType.number,
-        autofillHints: const [AutofillHints.oneTimeCode],
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => _submit(),
-        decoration: InputDecoration(
-          labelText: labelText,
-          prefixIcon: const Icon(Icons.pin_outlined),
-        ),
+    return TextField(
+      key: const ValueKey('auth-email-code'),
+      controller: controller,
+      enabled: !_busy && !_sendingEmailCode,
+      keyboardType: TextInputType.number,
+      autofillHints: const [AutofillHints.oneTimeCode],
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _submit(),
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: const Icon(Icons.pin_outlined),
       ),
     );
   }
@@ -539,7 +548,9 @@ class _LoginScreenState extends State<LoginScreen> {
           FilledButton(
             key: const ValueKey('auth-submit'),
             style: FilledButton.styleFrom(
-              minimumSize: const Size(0, DesignTokens.formFieldMinHeight),
+              minimumSize: Size(0, AuthFormFieldTheme.heightOf(context)),
+              visualDensity: VisualDensity.standard,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               padding: const EdgeInsets.all(DesignTokens.spaceLg),
               shape: const RoundedRectangleBorder(
                 borderRadius: DesignTokens.borderRadiusLg,
@@ -604,17 +615,17 @@ class _LoginScreenState extends State<LoginScreen> {
             : 'auth.design.login_subtitle',
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: DesignTokens.spaceLg,
         children: [
-          if (auth.maintenanceMode) ...[
+          if (auth.maintenanceMode)
             AuthNotice(
               message: auth.maintenanceMessage.isEmpty
                   ? I18n.tr('auth.maintenance')
                   : auth.maintenanceMessage,
             ),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ],
-          if (!_isRegister) ...[
+          if (!_isRegister)
             AuthMethodSelector(
               selected: tokenLogin
                   ? AuthMethod.token
@@ -634,9 +645,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       _message = null;
                     }),
             ),
-            const SizedBox(height: DesignTokens.spaceXl),
-          ],
-          if (!isWeb) ...[
+          if (!isWeb)
             _field(
               key: tokenLogin ? 'token-server-url' : 'password-server-url',
               controller: _serverCtrl,
@@ -644,8 +653,6 @@ class _LoginScreenState extends State<LoginScreen> {
               icon: Icons.dns_outlined,
               keyboard: TextInputType.url,
             ),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ],
           if (tokenLogin) ...[
             TextField(
               key: const ValueKey('access-token'),
@@ -674,7 +681,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: DesignTokens.spaceLg),
             Text(
               I18n.tr('auth.token.help'),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -682,7 +688,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 1.6,
               ),
             ),
-            const SizedBox(height: DesignTokens.spaceLg),
           ] else ...[
             _field(
               key: 'auth-account',
@@ -704,7 +709,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     : AutofillHints.username,
               ],
             ),
-            const SizedBox(height: DesignTokens.spaceLg),
             if (_isRegister && pairedPasswords)
               Row(
                 key: const ValueKey('auth_registration_passwords'),
@@ -717,15 +721,10 @@ class _LoginScreenState extends State<LoginScreen> {
               )
             else ...[
               if (_isRegister || !emailLogin) _passwordField(),
-              if (_isRegister) ...[
-                const SizedBox(height: DesignTokens.spaceLg),
-                _passwordField(confirm: true),
-              ],
+              if (_isRegister) _passwordField(confirm: true),
             ],
             if (_isRegister) ...[
-              const SizedBox(height: DesignTokens.spaceLg),
-              if (!registrationEmailRequired &&
-                  auth.registrationEmailAvailable) ...[
+              if (!registrationEmailRequired && auth.registrationEmailAvailable)
                 AppSecondaryControlTheme(
                   child: Row(
                     children: [
@@ -760,8 +759,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: DesignTokens.spaceLg),
-              ],
               if (shouldBindRegistrationEmail) ...[
                 _field(
                   key: 'auth-email',
@@ -773,42 +770,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboard: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                 ),
-                const SizedBox(height: DesignTokens.spaceSm),
                 _emailCodeSendField(
                   controller: _emailCodeCtrl,
                   labelText: I18n.tr('auth.email_code'),
                 ),
-                const SizedBox(height: DesignTokens.spaceLg),
               ],
-              if (auth.inviteCodeRequired) ...[
+              if (auth.inviteCodeRequired)
                 _field(
                   key: 'auth-invite-code',
                   controller: _inviteCtrl,
                   label: I18n.tr('auth.invite_code'),
                   icon: Icons.confirmation_number_outlined,
                 ),
-                const SizedBox(height: DesignTokens.spaceLg),
-              ],
-            ] else if (emailLogin) ...[
+            ] else if (emailLogin)
               _emailCodeSendField(
                 controller: _emailCodeCtrl,
                 labelText: I18n.tr('auth.email_code'),
               ),
-              const SizedBox(height: DesignTokens.spaceLg),
-            ],
           ],
-          if (_isRegister && !auth.registrationEnabled) ...[
+          if (_isRegister && !auth.registrationEnabled)
             AuthNotice(message: I18n.tr('auth.registration_closed')),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ],
-          if (_error != null) ...[
-            AuthNotice(message: _error!, isError: true),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ],
-          if (_message != null) ...[
-            AuthNotice(message: _message!),
-            const SizedBox(height: DesignTokens.spaceLg),
-          ],
+          if (_error != null) AuthNotice(message: _error!, isError: true),
+          if (_message != null) AuthNotice(message: _message!),
         ],
       ),
     );

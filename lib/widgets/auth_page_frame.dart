@@ -80,57 +80,41 @@ class AuthPageFrame extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
-                  child: AppFormFieldTheme(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Padding(
+                  child: AuthFormFieldTheme(
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Center(
+                        child: AutofillGroup(
+                          child: Column(
                             key: const ValueKey('auth_form_content'),
-                            padding: EdgeInsets.fromLTRB(
-                              padding,
-                              padding,
-                              padding,
-                              DesignTokens.spaceLg,
-                            ),
-                            child: AutofillGroup(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                          fontSize: DesignTokens.fontSizeXxl,
-                                          height: 1.3,
-                                        ),
-                                  ),
-                                  const SizedBox(height: DesignTokens.spaceSm),
-                                  Text(
-                                    subtitle,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                      height: 1.6,
-                                    ),
-                                  ),
-                                  const SizedBox(height: DesignTokens.spaceXxl),
-                                  child,
-                                ],
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                title,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontSize: DesignTokens.fontSizeXxl,
+                                  height: 1.3,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: DesignTokens.spaceSm),
+                              Text(
+                                subtitle,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                  height: 1.6,
+                                ),
+                              ),
+                              const SizedBox(height: DesignTokens.spaceXxl),
+                              child,
+                              if (footer != null) ...[
+                                const SizedBox(height: DesignTokens.spaceXxl),
+                                footer!,
+                              ],
+                            ],
                           ),
                         ),
-                        if (footer != null)
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              padding,
-                              DesignTokens.spaceXs,
-                              padding,
-                              DesignTokens.spaceLg,
-                            ),
-                            child: footer,
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -247,6 +231,52 @@ class AuthPageFrame extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Single-line auth inputs share a fixed, text-scale-aware row extent.
+/// Icon-free confirmation fields and code actions use the same geometry.
+class AuthFormFieldTheme extends StatelessWidget {
+  final Widget child;
+
+  const AuthFormFieldTheme({super.key, required this.child});
+
+  static double heightOf(BuildContext context) => math.max(
+    DesignTokens.formFieldMinHeight,
+    MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeMd) * 1.5 +
+        DesignTokens.spaceLg * 2,
+  );
+
+  @override
+  Widget build(BuildContext context) => AppFormFieldTheme(
+    child: Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final height = heightOf(context);
+        return Theme(
+          data: theme.copyWith(
+            inputDecorationTheme: theme.inputDecorationTheme.copyWith(
+              constraints: BoxConstraints.tightFor(height: height),
+              // Compact desktop density otherwise shortens icon-free borders.
+              visualDensity: VisualDensity.standard,
+              filled: true,
+              fillColor: theme.colorScheme.surface,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+              prefixIconConstraints: BoxConstraints.tightFor(
+                width: DesignTokens.formFieldMinHeight,
+                height: height,
+              ),
+              suffixIconConstraints: BoxConstraints.tightFor(
+                width: DesignTokens.formFieldMinHeight,
+                height: height,
+              ),
+            ),
+          ),
+          child: child,
+        );
+      },
+    ),
+  );
 }
 
 /// Only one face is mounted at a time: controllers, focus and autofill never
