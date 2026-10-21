@@ -15,6 +15,7 @@ Future<void> pumpDetail(
   required Size size,
   ThemeData? theme,
   double textScale = 1,
+  String title = '工作',
   String notes = '',
 }) async {
   tester.view.physicalSize = size;
@@ -25,7 +26,7 @@ Future<void> pumpDetail(
   await provider.addTodo(
     TodoItem(
       id: 'layout-task',
-      title: '工作',
+      title: title,
       notes: notes,
       tags: ['一条很长的标签用于验证窄屏不会撑破页面边界'],
       attachments: const [
@@ -34,7 +35,9 @@ Future<void> pumpDetail(
           uri: 'https://example.com/document.pdf',
         ),
       ],
-      subtasks: [Subtask(title: '一条足够长的子任务标题用于验证文字换行与删除按钮位置')],
+      subtasks: [
+        Subtask(id: 'layout-child', title: '一条足够长的子任务标题用于验证文字换行与删除按钮位置'),
+      ],
     ),
   );
   await tester.pumpWidget(
@@ -67,6 +70,8 @@ Finder descriptionCard() => find
 void main() {
   testWidgets('描述工具栏与卡片等宽，输入区域不叠加边框', (tester) async {
     await pumpDetail(tester, size: const Size(720, 960));
+    await tester.ensureVisible(descriptionField());
+    await tester.pumpAndSettle();
     final toolbar = find
         .ancestor(
           of: find.byTooltip('标题'),
@@ -106,12 +111,62 @@ void main() {
     await pumpDetail(tester, size: const Size(720, 1200));
     for (final label in ['任务描述', '附件', '优先级', '截止日期', '重复']) {
       final finder = find.text(label);
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
       final text = tester.widget<Text>(finder);
       final style = DefaultTextStyle.of(
         tester.element(finder),
       ).style.merge(text.style);
       expect(style.fontSize, DesignTokens.fontSizeBody, reason: label);
     }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('子任务卡片位于多行任务名称与描述之间', (tester) async {
+    const title = '第一行任务名称\n第二行任务名称';
+    await pumpDetail(tester, size: const Size(720, 1400), title: title);
+    final titleFinder = find.widgetWithText(TextField, '任务名称');
+    final field = tester.widget<TextField>(titleFinder);
+    expect(field.minLines, 1);
+    expect(field.maxLines, isNull);
+    expect(field.keyboardType, TextInputType.multiline);
+    expect(field.textInputAction, TextInputAction.newline);
+    final subtasks = find.byKey(const ValueKey('todo_detail_subtasks'));
+    expect(tester.widget(subtasks), isA<AppSurfaceCard>());
+    expect(
+      tester.getRect(titleFinder).bottom,
+      lessThan(tester.getRect(subtasks).top),
+    );
+    expect(
+      tester.getRect(subtasks).bottom,
+      lessThan(tester.getRect(descriptionCard()).top),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('320 窄屏与两倍字体下任务名称和子任务完整换行', (tester) async {
+    const title = '第一行很长的任务名称需要自动换行并显示完整内容\n第二行仍然保留换行';
+    await pumpDetail(
+      tester,
+      size: const Size(320, 844),
+      textScale: 2,
+      title: title,
+    );
+    final titleFinder = find.widgetWithText(TextField, '任务名称');
+    final field = tester.widget<TextField>(titleFinder);
+    expect(field.controller!.text, title);
+    expect(field.maxLines, isNull);
+    expect(tester.getSize(titleFinder).height, greaterThan(160));
+    expect(tester.getRect(titleFinder).right, lessThanOrEqualTo(320));
+    final childFinder = find.byKey(
+      const ValueKey('todo_subtask_text_layout-child'),
+    );
+    await tester.ensureVisible(childFinder);
+    await tester.pumpAndSettle();
+    final childField = tester.widget<TextField>(childFinder);
+    expect(childField.minLines, 1);
+    expect(childField.maxLines, isNull);
+    expect(tester.getRect(childFinder).right, lessThanOrEqualTo(320));
     expect(tester.takeException(), isNull);
   });
 
@@ -147,6 +202,8 @@ void main() {
       theme: theme,
       notes: '正文 [链接](https://example.com) 与 `代码`',
     );
+    await tester.ensureVisible(find.byTooltip('预览描述'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('预览描述'));
     await tester.pumpAndSettle();
     final richText = tester.widget<RichText>(
@@ -184,17 +241,23 @@ void main() {
 
   testWidgets('工具栏插入格式后可预览并切回编辑，正文不丢失', (tester) async {
     await pumpDetail(tester, size: const Size(390, 844), notes: '工作说明');
+    await tester.ensureVisible(find.byTooltip('加粗'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('加粗'));
     await tester.pump();
     final field = tester.widget<TextField>(descriptionField());
     expect(field.controller!.text, contains('**'));
     final draft = field.controller!.text;
+    await tester.ensureVisible(find.byTooltip('预览描述'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('预览描述'));
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('todo-description-preview')),
       findsOneWidget,
     );
+    await tester.ensureVisible(find.byTooltip('编辑描述'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('编辑描述'));
     await tester.pumpAndSettle();
     expect(

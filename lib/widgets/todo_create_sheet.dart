@@ -28,6 +28,7 @@ import '../services/ai_service.dart';
 import '../services/api_client.dart';
 import '../services/reminder_scheduler.dart' show preflightTodoReminderPlan;
 import 'surface_components.dart';
+import 'todo_subtask_editor.dart';
 
 /// The same full creation form is used by Today, the todo page and its quadrants.
 Future<void> showTodoCreateSheet(
@@ -75,12 +76,16 @@ class _TodoCreateSheet extends StatefulWidget {
 
 class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   final _titleCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
+  bool _aiApplied = false;
+  bool _titleManuallyChanged = false;
+  int _subtasksRevision = 0;
   SmartDateParseResult _parsed = SmartDateParseResult.empty;
   late EisenhowerQuadrant _quadrant;
   String _groupName = '';
   bool _aiBusy = false;
   bool _submitting = false;
-  List<String> _aiSubtasks = [];
+  List<Subtask> _subtasks = [];
   String? _aiError;
   bool _enableReminder = false;
   TimeOfDay? _reminderTime;
@@ -105,6 +110,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   void dispose() {
     LocalTimezoneResolver.timezoneListenable.removeListener(_onTimezoneChanged);
     _titleCtrl.dispose();
+    _descriptionCtrl.dispose();
     super.dispose();
   }
 
@@ -114,6 +120,9 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
+
+  String get _sourceInput =>
+      _aiApplied ? _descriptionCtrl.text : _titleCtrl.text;
 
   SmartDateParseResult get _effectiveParsed {
     final draft = _buildDraft();
@@ -132,17 +141,22 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
 
   SmartTodoDraft _buildDraft() {
     final draft = SmartTodoDraftBuilder.fromText(
-      _titleCtrl.text.trim(),
+      _sourceInput,
       now: _referenceNow,
       defaultReminderKind: ReminderKind.push,
     );
-    if (_parsed.isSuccess || _aiDateTime == null) return draft;
+    final useAiDate =
+        !_parsed.isSuccess && !draft.recurrence.isActive && _aiDateTime != null;
     return SmartTodoDraft(
-      title: draft.title,
-      date: _aiDateTime!,
-      dueDate: _aiHasTimeOfDay ? _aiDateTime : null,
-      reminder: const ReminderConfig.disabled(),
-      reminderPlan: const ReminderPlan.disabled(),
+      title: _aiApplied ? _titleCtrl.text.trim() : draft.title,
+      date: useAiDate ? _aiDateTime! : draft.date,
+      dueDate: useAiDate
+          ? (_aiHasTimeOfDay ? _aiDateTime : null)
+          : draft.dueDate,
+      reminder: useAiDate ? const ReminderConfig.disabled() : draft.reminder,
+      reminderPlan: useAiDate
+          ? const ReminderPlan.disabled()
+          : draft.reminderPlan,
       recurrence: draft.recurrence,
     );
   }
@@ -158,11 +172,27 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   void _onTitleChanged(String text) {
     setState(() {
       _inputRevision++;
+      _aiError = null;
+      if (_aiApplied) {
+        _titleManuallyChanged = true;
+      } else {
+        _referenceNow = AppClock.now();
+        _parsed = SmartDateParser.parse(text, now: _referenceNow);
+        _aiDateTime = null;
+        _aiHasTimeOfDay = false;
+        if (_subtasksRevision == 0) _subtasks = [];
+        _syncAutomaticReminder();
+      }
+    });
+  }
+
+  void _onDescriptionChanged(String text) {
+    setState(() {
+      _inputRevision++;
       _referenceNow = AppClock.now();
       _parsed = SmartDateParser.parse(text, now: _referenceNow);
       _aiDateTime = null;
       _aiHasTimeOfDay = false;
-      _aiSubtasks = [];
       _aiError = null;
       _syncAutomaticReminder();
     });
@@ -173,7 +203,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     setState(() {
       _inputRevision++;
       _referenceNow = AppClock.now();
-      _parsed = SmartDateParser.parse(_titleCtrl.text, now: _referenceNow);
+      _parsed = SmartDateParser.parse(_sourceInput, now: _referenceNow);
       _aiDateTime = null;
       _aiHasTimeOfDay = false;
       _syncAutomaticReminder();
@@ -181,10 +211,12 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   }
 
   Future<void> _breakDownTask() async {
-    final title = _titleCtrl.text.trim();
+    final originalInput = _sourceInput;
+    final title = originalInput.trim();
     if (title.isEmpty || _aiBusy || _submitting) return;
     final ai = context.read<AiService>();
     final revision = _inputRevision;
+    final subtasksRevision = _subtasksRevision;
     final zone = LocalTimezoneResolver.currentIana;
     final auth = context.read<AuthProvider>();
     final connection = (auth.baseUrl, auth.state.userId);
@@ -214,7 +246,21 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       );
       if (!isCurrent()) return;
       setState(() {
-        _aiSubtasks = result.subtasks;
+        if (!_aiApplied) _descriptionCtrl.text = originalInput;
+        if (!_titleManuallyChanged) {
+          final suggestedTitle = result.title ?? _buildDraft().title;
+          _titleCtrl.value = TextEditingValue(
+            text: suggestedTitle,
+            selection: TextSelection.collapsed(offset: suggestedTitle.length),
+          );
+        }
+        _aiApplied = true;
+        if (subtasksRevision == 0 && subtasksRevision == _subtasksRevision) {
+          _subtasks = [
+            for (final (index, title) in result.subtasks.indexed)
+              Subtask(title: title, sortOrder: index),
+          ];
+        }
         if (!_groupManuallyChanged &&
             listGroups.contains(result.listGroupName)) {
           _groupName = result.listGroupName!;
@@ -239,6 +285,10 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
 
   Future<void> _save() async {
     if (_submitting || _aiBusy || _titleCtrl.text.trim().isEmpty) return;
+    if (_subtasks.any((task) => task.title.trim().isEmpty)) {
+      _feedback(I18n.tr('todo.subtask.empty'));
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final todos = context.read<TodoProvider>();
@@ -260,12 +310,18 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         createdBy: auth.userId,
         updatedBy: auth.userId,
         subtasks: [
-          for (final (index, title) in _aiSubtasks.indexed)
-            Subtask(title: title, sortOrder: index),
+          for (final (index, task) in _subtasks.indexed)
+            Subtask(
+              id: task.id,
+              title: task.title.trim(),
+              isCompleted: task.isCompleted,
+              sortOrder: index,
+            ),
         ],
       );
       // The visible switch is authoritative, including explicit opt-out.
       todo = todo.copyWith(
+        notes: _aiApplied ? _descriptionCtrl.text : '',
         reminder: const ReminderConfig.disabled(),
         reminderPlan: const ReminderPlan.disabled(),
         hasReminder: false,
@@ -394,8 +450,13 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
             child: TextField(
               key: const ValueKey('todo_create_title'),
               controller: _titleCtrl,
+              minLines: 1,
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
               decoration: InputDecoration(
                 hintText: I18n.tr('todo.create.hint'),
+                labelText: _aiApplied ? I18n.tr('todo.create.name') : null,
               ),
               autofocus: true,
               enabled: !_submitting,
@@ -429,23 +490,36 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               ).textTheme.bodySmall?.copyWith(color: cs.error),
             ),
           ],
-          if (_aiSubtasks.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            for (final title in _aiSubtasks)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.subdirectory_arrow_right,
-                      size: 14,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(title)),
-                  ],
+          const SizedBox(height: DesignTokens.spaceLg),
+          AppFormFieldTheme(
+            child: TodoSubtaskEditor(
+              key: const ValueKey('todo_create_subtasks'),
+              subtasks: _subtasks,
+              enabled: !_submitting,
+              showCompletion: false,
+              onChanged: (items) => setState(() {
+                _subtasks = items;
+                _subtasksRevision++;
+              }),
+            ),
+          ),
+          if (_aiApplied) ...[
+            const SizedBox(height: DesignTokens.spaceLg),
+            AppFormFieldTheme(
+              child: TextField(
+                key: const ValueKey('todo_create_description'),
+                controller: _descriptionCtrl,
+                enabled: !_submitting,
+                minLines: 3,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                decoration: InputDecoration(
+                  labelText: I18n.tr('todo.create.description'),
+                  helperText: I18n.tr('todo.create.description_hint'),
                 ),
+                onChanged: _onDescriptionChanged,
               ),
+            ),
           ],
           const SizedBox(height: 20),
           Text(

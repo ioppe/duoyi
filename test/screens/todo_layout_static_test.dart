@@ -61,9 +61,19 @@ void main() {
       'lib/screens/todo_detail_screen.dart',
     ).readAsStringSync();
 
-    expect(source, contains('maxLines: 2'));
-    expect(source, contains('overflow: TextOverflow.ellipsis'));
+    expect(source, contains('child: TodoSubtaskEditor('));
+    final editor = File(
+      'lib/widgets/todo_subtask_editor.dart',
+    ).readAsStringSync();
+    final row = editor.substring(editor.indexOf('class _SubtaskDraftRowState'));
+    expect(row, contains('Expanded('));
+    expect(row, contains('child: TextField('));
+    expect(row, contains('minLines: 1'));
+    expect(row, contains('maxLines: null'));
+    expect(row, contains('keyboardType: TextInputType.multiline'));
+    expect(row, isNot(contains('TextOverflow.ellipsis')));
     expect(source, contains('BoxConstraints(maxWidth: 180)'));
+    expect(source, contains('overflow: TextOverflow.ellipsis'));
     expect(source, contains("'#\$t'"));
   });
 

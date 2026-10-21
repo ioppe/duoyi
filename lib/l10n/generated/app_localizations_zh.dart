@@ -90,6 +90,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreateTimezone => '应用时区：';
 
   @override
+  String get todoCreateName => '任务名称';
+
+  @override
+  String get todoCreateDescription => '任务描述';
+
+  @override
+  String get todoCreateDescriptionHint => '已保留完整输入，可继续补充';
+
+  @override
+  String get todoSubtasks => '子任务';
+
+  @override
+  String get todoSubtaskNew => '新增子任务';
+
+  @override
+  String get todoSubtaskContent => '子任务内容';
+
+  @override
+  String get todoSubtaskAdd => '添加子任务';
+
+  @override
+  String get todoSubtaskDelete => '删除子任务';
+
+  @override
+  String get todoSubtaskReorder => '拖动调整顺序';
+
+  @override
+  String get todoSubtaskEmpty => '子任务内容不能为空，请填写或删除该项';
+
+  @override
+  String get todoSubtaskSaveHint => '子任务修改将随任务一起保存';
+
+  @override
   String get todoCreateNoReminder => '不提醒';
 
   @override

@@ -292,7 +292,11 @@ void main() {
     expect(find.text('清单类型'), findsOneWidget);
     expect(find.text('优先级标记'), findsNothing);
     expect(find.byType(AppModalSheet), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byKey(const ValueKey('todo_create_title')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todo_subtask_add_input')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
     final homeSheet = tester.getSize(find.byType(AppModalSheet));
     await tester.tapAt(const Offset(10, 10));
@@ -327,7 +331,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('home_create_button')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '验收任务');
+    await tester.enterText(
+      find.byKey(const ValueKey('todo_create_title')),
+      '验收任务',
+    );
     final submit = find.byKey(const ValueKey('todo_create_submit'));
     await tester.ensureVisible(submit);
     await tester.pumpAndSettle();
@@ -388,7 +395,11 @@ void main() {
     expect(find.text('新建待办'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('home_create_button')));
     await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byKey(const ValueKey('todo_create_title')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('todo_subtask_add_input')),
+      findsOneWidget,
+    );
     await tester.ensureVisible(
       find.widgetWithText(TextButton, I18n.tr('action.cancel')),
     );

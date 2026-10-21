@@ -1,0 +1,48 @@
+{
+  "id": "a4118969-c1e6-4726-802c-eb238a5302b5",
+  "title": "云计算项目评审准备",
+  "notes": "明天下午3点到3楼B15房间参加云计算项目评审，要先准备评审问题，评审问题必须真实且尖锐。\n会前核实方案、测试证据和关键风险。",
+  "listGroupName": "工作",
+  "quadrant": 0,
+  "date": "2026-10-22T15:00:00.000+0800",
+  "reminderAt": "2026-10-22T07:00:00.000Z",
+  "reminderPlan": {
+    "enabled": true,
+    "rules": [
+      {
+        "id": "f368a977-670d-48eb-8e74-7854e0e40fc3",
+        "enabled": true,
+        "type": 0,
+        "kind": 0,
+        "hour": 15,
+        "minute": 0,
+        "offsetMinutes": null,
+        "weekdays": [],
+        "vibrate": true,
+        "fullScreen": false,
+        "snoozeMinutes": 0,
+        "repeatCount": 0
+      }
+    ]
+  },
+  "subtasks": [
+    {
+      "id": "a5cec47e-2f8f-4476-8423-6577dabb97f0",
+      "title": "核实全部方案与测试证据",
+      "isCompleted": false,
+      "sortOrder": 0
+    },
+    {
+      "id": "3865d005-045a-473b-a305-120d6aeec85f",
+      "title": "确认评审材料来源",
+      "isCompleted": false,
+      "sortOrder": 1
+    },
+    {
+      "id": "e0bdf677-10a3-466e-adb8-150cbe860b9d",
+      "title": "补充成本与可靠性追问",
+      "isCompleted": false,
+      "sortOrder": 2
+    }
+  ]
+}

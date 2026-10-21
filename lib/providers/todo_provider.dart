@@ -603,6 +603,20 @@ class TodoProvider extends ChangeNotifier {
       var next = updated.isCompleted && updated.completedAt == null
           ? updated.copyWith(completedAt: DateTime.now())
           : updated;
+      // Commit edited children and their aggregate as one persisted task.
+      final childrenChanged =
+          jsonEncode(prev.subtasks.map((task) => task.toJson()).toList()) !=
+          jsonEncode(next.subtasks.map((task) => task.toJson()).toList());
+      if (childrenChanged &&
+          next.autoToggleByChildren &&
+          next.subtasks.isNotEmpty) {
+        final allDone = next.subtasks.every((task) => task.isCompleted);
+        if (allDone && !next.isCompleted) {
+          next = next.copyWith(isCompleted: true, completedAt: DateTime.now());
+        } else if (!allDone && next.isCompleted) {
+          next = next.copyWith(isCompleted: false, completedAt: null);
+        }
+      }
       if (!prev.isCompleted && next.isCompleted) {
         next = next.copyWith(kanbanColumnId: defaultKanbanDoneColumnId);
       } else if (prev.isCompleted &&

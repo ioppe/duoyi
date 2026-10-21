@@ -260,6 +260,72 @@ abstract class AppLocalizations {
   /// **'应用时区：'**
   String get todoCreateTimezone;
 
+  /// No description provided for @todoCreateName.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务名称'**
+  String get todoCreateName;
+
+  /// No description provided for @todoCreateDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务描述'**
+  String get todoCreateDescription;
+
+  /// No description provided for @todoCreateDescriptionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已保留完整输入，可继续补充'**
+  String get todoCreateDescriptionHint;
+
+  /// No description provided for @todoSubtasks.
+  ///
+  /// In zh, this message translates to:
+  /// **'子任务'**
+  String get todoSubtasks;
+
+  /// No description provided for @todoSubtaskNew.
+  ///
+  /// In zh, this message translates to:
+  /// **'新增子任务'**
+  String get todoSubtaskNew;
+
+  /// No description provided for @todoSubtaskContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'子任务内容'**
+  String get todoSubtaskContent;
+
+  /// No description provided for @todoSubtaskAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加子任务'**
+  String get todoSubtaskAdd;
+
+  /// No description provided for @todoSubtaskDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除子任务'**
+  String get todoSubtaskDelete;
+
+  /// No description provided for @todoSubtaskReorder.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动调整顺序'**
+  String get todoSubtaskReorder;
+
+  /// No description provided for @todoSubtaskEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'子任务内容不能为空，请填写或删除该项'**
+  String get todoSubtaskEmpty;
+
+  /// No description provided for @todoSubtaskSaveHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'子任务修改将随任务一起保存'**
+  String get todoSubtaskSaveHint;
+
   /// No description provided for @todoCreateNoReminder.
   ///
   /// In zh, this message translates to:

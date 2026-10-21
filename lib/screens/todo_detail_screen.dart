@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import 'dart:convert';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ import '../widgets/reminder_health_hint.dart';
 import '../widgets/app_date_picker.dart';
 import '../widgets/reminder_plan_editor.dart';
 import '../widgets/surface_components.dart';
+import '../widgets/todo_subtask_editor.dart';
 
 /// Todo 详情页 / 编辑页。
 ///
@@ -63,14 +65,11 @@ enum _EditState { clean, editing, saving, confirmDiscard }
 class _TodoDetailScreenState extends State<TodoDetailScreen> {
   final _titleCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
-  final _subtaskCtrl = TextEditingController();
   final _tagCtrl = TextEditingController();
   final _timeTargetCtrl = TextEditingController();
   late TodoItem _todo;
   bool _missingTodo = false;
   bool _notesPreview = false;
-  bool _subtaskAdding = false;
-  final Set<String> _busySubtaskIds = <String>{};
   String? _commentsLoadedForWorkspaceId;
 
   /// "保存不返回"状态机当前状态。
@@ -79,6 +78,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   /// 基线快照：`_load()` 与成功保存后都会刷新。任何与基线偏离的改动
   /// 都会把状态抬升到 `editing`。用 JSON 化的字符串表示，避免深比较。
   late String _baseline;
+  late String _baselineSubtasks;
 
   @override
   void initState() {
@@ -88,9 +88,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
 
   /// 把当前 `_todo` + 文本控制器中的可编辑字段序列化为快照字符串。
   ///
-  /// 这里只关心"UI 可编辑"的字段，不包括 `createdAt / id / sortOrder` 等
-  /// 由系统维护的元字段，也不包括 `subtasks` 的完成状态（子任务勾选会直接
-  /// 调 provider，不走本页的 save 路径）。
+  /// 只记录 UI 可编辑字段，包括子任务内容、完成状态及排列顺序。
   String _snapshot(TodoItem t) {
     final tags = [...t.tags]..sort();
     return <String, dynamic>{
@@ -106,11 +104,15 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       'timeTargetSeconds': t.timeTargetSeconds,
       'recurrence': t.recurrence.toJson(),
       'autoToggleByChildren': t.autoToggleByChildren,
+      'subtasks': _subtaskSnapshot(t),
       'workspaceId': t.workspaceId,
       'assigneeId': t.assigneeId,
       'attachments': t.attachments.map((a) => a.toJson()).toList(),
     }.toString();
   }
+
+  String _subtaskSnapshot(TodoItem todo) =>
+      jsonEncode(todo.subtasks.map((subtask) => subtask.toJson()).toList());
 
   bool _reminderSchedulingFieldsChanged(TodoItem before, TodoItem after) {
     // ignore: deprecated_member_use_from_same_package
@@ -138,6 +140,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     if (matches.isEmpty) {
       _todo = TodoItem(id: widget.todoId, title: '');
       _baseline = '';
+      _baselineSubtasks = '';
       _missingTodo = true;
       _state = _EditState.clean;
       return;
@@ -146,11 +149,22 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     _missingTodo = false;
     _syncDraftFromProvider(todo);
     _baseline = _snapshot(_todo);
+    _baselineSubtasks = _subtaskSnapshot(_todo);
     _state = _EditState.clean;
   }
 
   void _syncDraftFromProvider(TodoItem todo) {
-    _todo = todo;
+    _todo = todo.copyWith(
+      subtasks: [
+        for (final subtask in todo.subtasks)
+          Subtask(
+            id: subtask.id,
+            title: subtask.title,
+            isCompleted: subtask.isCompleted,
+            sortOrder: subtask.sortOrder,
+          ),
+      ],
+    );
     if (_titleCtrl.text != todo.title) {
       _titleCtrl.text = todo.title;
     }
@@ -196,6 +210,17 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       return;
     }
 
+    if (_todo.subtasks.any((subtask) => subtask.title.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(I18n.tr('todo.subtask.empty')),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
     // 同步基线检查：用户点了 check 但什么也没改 → 轻量反馈、不打扰。
     if (_state == _EditState.clean) {
       Navigator.of(context).maybePop();
@@ -221,6 +246,18 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       title: title,
       notes: _notesCtrl.text.trim(),
     );
+    final subtasksChanged = _subtaskSnapshot(_todo) != _baselineSubtasks;
+    if (subtasksChanged) {
+      nextTodo.subtasks = [
+        for (final subtask in _todo.subtasks)
+          Subtask(
+            id: subtask.id,
+            title: subtask.title.trim(),
+            isCompleted: subtask.isCompleted,
+            sortOrder: subtask.sortOrder,
+          ),
+      ];
+    }
     setState(() => _state = _EditState.saving);
 
     try {
@@ -244,12 +281,15 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       await provider.updateTodo(widget.todoId, nextTodo);
       if (!mounted) return;
 
-      // 刷新本地 _todo 引用与基线，便于继续编辑。
-      _todo = provider.todos.firstWhere(
-        (t) => t.id == widget.todoId,
-        orElse: () => _todo,
+      // 以 provider 聚合后的最终对象刷新草稿和基线。
+      _syncDraftFromProvider(
+        provider.todos.firstWhere(
+          (t) => t.id == widget.todoId,
+          orElse: () => _todo,
+        ),
       );
       _baseline = _snapshot(_todo);
+      _baselineSubtasks = _subtaskSnapshot(_todo);
       setState(() => _state = _EditState.clean);
 
       Navigator.of(context).maybePop(true);
@@ -315,68 +355,13 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     return false;
   }
 
-  Future<void> _addSubtask() async {
-    if (_subtaskAdding) return;
-    if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
+  void _updateSubtasks(List<Subtask> items) {
+    if (_state == _EditState.saving ||
+        !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
       return;
     }
-    final title = _subtaskCtrl.text.trim();
-    if (title.isEmpty) return;
-    setState(() => _subtaskAdding = true);
-    try {
-      await context.read<TodoProvider>().addSubtask(widget.todoId, title);
-      if (!mounted) return;
-      _subtaskCtrl.clear();
-      _refreshTodoBaseline();
-    } finally {
-      if (mounted) {
-        setState(() => _subtaskAdding = false);
-      }
-    }
-  }
-
-  void _refreshTodoBaseline() {
-    setState(() {
-      _todo = context.read<TodoProvider>().todos.firstWhere(
-        (t) => t.id == widget.todoId,
-        orElse: () => _todo,
-      );
-      _baseline = _snapshot(_todo);
-    });
-  }
-
-  Future<void> _toggleSubtask(String subtaskId) async {
-    if (!_busySubtaskIds.add(subtaskId)) return;
-    setState(() {});
-    try {
-      await context.read<TodoProvider>().toggleSubtask(
-        widget.todoId,
-        subtaskId,
-      );
-      if (!mounted) return;
-      _refreshTodoBaseline();
-    } finally {
-      if (mounted) {
-        setState(() => _busySubtaskIds.remove(subtaskId));
-      }
-    }
-  }
-
-  Future<void> _deleteSubtask(String subtaskId) async {
-    if (!_busySubtaskIds.add(subtaskId)) return;
-    setState(() {});
-    try {
-      await context.read<TodoProvider>().deleteSubtask(
-        widget.todoId,
-        subtaskId,
-      );
-      if (!mounted) return;
-      _refreshTodoBaseline();
-    } finally {
-      if (mounted) {
-        setState(() => _busySubtaskIds.remove(subtaskId));
-      }
-    }
+    setState(() => _todo = _todo.copyWith(subtasks: items));
+    _markEditing();
   }
 
   void _addTag(String v) {
@@ -625,7 +610,6 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   void dispose() {
     _titleCtrl.dispose();
     _notesCtrl.dispose();
-    _subtaskCtrl.dispose();
     _tagCtrl.dispose();
     _timeTargetCtrl.dispose();
     super.dispose();
@@ -675,6 +659,8 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     );
     if (_state == _EditState.clean) {
       _syncDraftFromProvider(providerTodo);
+      _baseline = _snapshot(_todo);
+      _baselineSubtasks = _subtaskSnapshot(_todo);
     }
     final canEdit =
         context.watch<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true;
@@ -695,7 +681,6 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
         context.read<ShareProvider>().loadWorkspaceCollaboration(workspace.id);
       });
     }
-    final cs = Theme.of(context).colorScheme;
 
     // canPop 反映当前状态机是否允许直接 pop：
     // - clean：没有未保存改动，系统返回键 / AppBar 返回键直接放行；
@@ -754,13 +739,27 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                   children: [
                     TextField(
                       controller: _titleCtrl,
-                      enabled: canEdit,
+                      enabled: canEdit && _state != _EditState.saving,
+                      minLines: 1,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                       decoration: const InputDecoration(labelText: '任务名称'),
                       style: const TextStyle(
                         fontSize: DesignTokens.fontSizeMd,
                         fontWeight: DesignTokens.fontWeightStrong,
                       ),
                       onChanged: (_) => _markEditing(),
+                    ),
+                    const SizedBox(height: DesignTokens.spaceLg),
+                    AppSurfaceCard(
+                      key: const ValueKey('todo_detail_subtasks'),
+                      child: TodoSubtaskEditor(
+                        subtasks: _todo.subtasks,
+                        onChanged: _updateSubtasks,
+                        enabled: canEdit && _state != _EditState.saving,
+                        helperText: I18n.tr('todo.subtask.save_hint'),
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.spaceLg),
                     _TodoMarkdownDescriptionEditor(
@@ -1006,128 +1005,6 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                             controller: _tagCtrl,
                             onAdd: _addTag,
                             onRemove: _removeTag,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // ---- 子任务 --------------------------------------------------
-                    const SizedBox(height: DesignTokens.spaceLg),
-                    AppSurfaceCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              const _SectionLabel(text: '子任务'),
-                              const Spacer(),
-                              Text(
-                                '${_todo.subtasks.where((s) => s.isCompleted).length}/${_todo.subtasks.length}',
-                                style: TextStyle(
-                                  color: cs.onSurfaceVariant,
-                                  fontSize: DesignTokens.fontSizeSecondary,
-                                  fontWeight: DesignTokens.fontWeightStrong,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: DesignTokens.spaceSm),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _subtaskCtrl,
-                                  enabled: canEdit && !_subtaskAdding,
-                                  decoration: const InputDecoration(
-                                    labelText: '新增子任务',
-                                    isDense: false,
-                                  ),
-                                  onSubmitted: (_) {
-                                    _addSubtask();
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: DesignTokens.spaceSm),
-                              IconButton(
-                                onPressed: canEdit && !_subtaskAdding
-                                    ? _addSubtask
-                                    : null,
-                                icon: _subtaskAdding
-                                    ? SizedBox.square(
-                                        dimension: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: cs.primary,
-                                        ),
-                                      )
-                                    : Icon(Icons.add_circle, color: cs.primary),
-                              ),
-                            ],
-                          ),
-                          ReorderableListView(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            // ignore: deprecated_member_use
-                            onReorder: (oldI, newI) {
-                              if (!canEdit) return;
-                              if (newI > oldI) newI -= 1;
-                              final ids = _todo.subtasks
-                                  .map((e) => e.id)
-                                  .toList();
-                              final id = ids.removeAt(oldI);
-                              ids.insert(newI, id);
-                              context.read<TodoProvider>().reorderSubtasks(
-                                widget.todoId,
-                                ids,
-                              );
-                            },
-                            children: [
-                              for (final s in _todo.subtasks)
-                                Builder(
-                                  key: ValueKey(s.id),
-                                  builder: (context) {
-                                    final busy = _busySubtaskIds.contains(s.id);
-                                    return ListTile(
-                                      dense: true,
-                                      leading: Checkbox(
-                                        value: s.isCompleted,
-                                        onChanged: canEdit && !busy
-                                            ? (_) {
-                                                _toggleSubtask(s.id);
-                                              }
-                                            : null,
-                                      ),
-                                      title: Text(
-                                        s.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: DesignTokens.fontSizeBase,
-                                          decoration: s.isCompleted
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                        ),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: busy
-                                            ? const SizedBox.square(
-                                                dimension: 16,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                              )
-                                            : const Icon(Icons.close, size: 16),
-                                        onPressed: canEdit && !busy
-                                            ? () {
-                                                _deleteSubtask(s.id);
-                                              }
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                ),
-                            ],
                           ),
                         ],
                       ),

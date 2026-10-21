@@ -135,6 +135,40 @@ void main() {
       expect(provider.todos.single.title, '等待提醒同步');
     });
 
+    testWidgets('子任务保存等待父完成聚合后的提醒同步再返回', (tester) async {
+      final provider = TodoProvider();
+      final item = TodoItem(
+        title: '等待子任务聚合',
+        subtasks: [Subtask(id: 'child', title: '最后一个步骤')],
+      );
+      await provider.addTodo(item);
+      final scheduler = _GatedAggregationScheduler();
+      provider.scheduler = scheduler;
+      await tester.pumpWidget(buildApp(provider: provider, todoId: item.id));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('open-detail'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('todo_subtask_complete_child')),
+      );
+      await tester.pump();
+      expect(provider.todos.single.subtasks.single.isCompleted, isFalse);
+
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.check));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(scheduler.todoSyncs, hasLength(1));
+      expect(provider.todos.single.isCompleted, isTrue);
+      expect(find.byType(TodoDetailScreen), findsOneWidget);
+      expect(find.text('home-root'), findsNothing);
+
+      scheduler.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(TodoDetailScreen), findsNothing);
+      expect(find.text('home-root'), findsOneWidget);
+      expect(provider.todos.single.completedAt, isNotNull);
+    });
+
     testWidgets('clean 状态点保存：直接返回 home', (tester) async {
       final (provider, item) = await buildProviderWithOne();
 
@@ -308,5 +342,20 @@ class _GatedTodoScheduler extends RecordingReminderScheduler {
   }) async {
     todoSyncs.add(todos.map((todo) => todo.id).toList(growable: false));
     await _gate.future;
+  }
+}
+
+class _GatedAggregationScheduler extends RecordingReminderScheduler {
+  final Completer<void> _aggregationGate = Completer<void>();
+
+  void complete() => _aggregationGate.complete();
+
+  @override
+  Future<void> syncTodos(
+    Iterable<TodoItem> todos, {
+    bool allowJustMissedOneShotReminders = true,
+  }) async {
+    todoSyncs.add(todos.map((todo) => todo.id).toList(growable: false));
+    await _aggregationGate.future;
   }
 }

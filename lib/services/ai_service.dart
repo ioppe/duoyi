@@ -176,9 +176,11 @@ class AiService extends ChangeNotifier {
     final localNow = now == null ? AppClock.now() : AppClock.toLocal(now);
     final out = await _chat(
       '你是多仪的新建待办拆解助手。只返回一个严格 JSON 对象，禁止 Markdown 和其它解释。'
-          '字段格式示例：{"subtasks":["具体动作"],"list_group":"工作",'
+          '字段格式示例：{"title":"准备云计算项目评审问题","subtasks":["具体动作"],"list_group":"工作",'
           '"quadrant":"Q2","date_time":"2026-10-23T15:00:00","has_time":true}。'
           'subtasks 必须是 3 到 7 条具体可执行动作的字符串数组。'
+          'title 是精简明确的任务名，突出动作和对象，约12到24个中文字或等效简短短语；'
+          '时间、地点、具体要求保留在原始描述中，不要把完整用户原话重复为标题，不要编造新事实。'
           'list_group 只能是用户提供的可选清单中的完整名称，无法匹配就返回 null，不创建新清单。'
           'quadrant 只能为 Q1（紧急重要）、Q2（重要不紧急）、Q3（紧急不重要）、Q4（都不），'
           '无法判断则为 null；不要返回独立的低、中、高 priority 标记。'

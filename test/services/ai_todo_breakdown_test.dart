@@ -66,6 +66,27 @@ void main() {
     AppClock.debugNow = null;
   });
 
+  test(
+    'optional concise title is normalized without breaking legacy replies',
+    () {
+      expect(_parse({'title': '  准备云计算\n评审问题  '})!.title, '准备云计算 评审问题');
+      for (final value in <Object?>[
+        null,
+        '',
+        '   ',
+        123,
+        {'name': '无效'},
+        List.filled(81, '长').join(),
+      ]) {
+        expect(_parse({'title': value})!.title, isNull);
+      }
+      expect(
+        AiTodoBreakdown.tryParse(_response(), listGroups: ['工作'])!.title,
+        isNull,
+      );
+    },
+  );
+
   test('const constructor supports caller-created suggestions', () {
     const minimal = AiTodoBreakdown(subtasks: ['收集资料']);
     expect(minimal.subtasks, ['收集资料']);

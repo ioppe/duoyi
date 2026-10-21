@@ -99,6 +99,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreateTimezone => 'App time zone:';
 
   @override
+  String get todoCreateName => 'Task name';
+
+  @override
+  String get todoCreateDescription => 'Task description';
+
+  @override
+  String get todoCreateDescriptionHint =>
+      'Your full input is preserved here. Add details as needed.';
+
+  @override
+  String get todoSubtasks => 'Subtasks';
+
+  @override
+  String get todoSubtaskNew => 'New subtask';
+
+  @override
+  String get todoSubtaskContent => 'Subtask content';
+
+  @override
+  String get todoSubtaskAdd => 'Add subtask';
+
+  @override
+  String get todoSubtaskDelete => 'Delete subtask';
+
+  @override
+  String get todoSubtaskReorder => 'Drag to reorder';
+
+  @override
+  String get todoSubtaskEmpty =>
+      'Subtasks cannot be empty. Enter content or remove the item.';
+
+  @override
+  String get todoSubtaskSaveHint => 'Subtask changes are saved with the task.';
+
+  @override
   String get todoCreateNoReminder => 'No reminder';
 
   @override

@@ -18,6 +18,7 @@ import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/widgets/surface_components.dart';
 import 'package:duoyi/widgets/todo_create_sheet.dart';
+import 'package:duoyi/widgets/todo_subtask_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -195,6 +196,108 @@ void main() {
   });
 
   tearDown(() => AppClock.debugNow = null);
+
+  testWidgets('主输入在手机长文本时自动换行并增高', (tester) async {
+    await _open(tester, size: const Size(320, 900));
+    final title = find.byKey(const ValueKey('todo_create_title'));
+    await tester.enterText(title, '短任务');
+    await tester.pumpAndSettle();
+    final short = tester.getSize(title).height;
+    await tester.enterText(
+      title,
+      List.filled(5, '明天下午3点到3楼B15参加云计算项目评审并准备真实尖锐的问题。').join(),
+    );
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(title);
+    expect(field.maxLines, isNull);
+    expect(field.keyboardType, TextInputType.multiline);
+    expect(tester.getSize(title).height, greaterThan(short + 20));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI精简名称、完整描述和编辑后的子任务一同保存且不丢时间', (tester) async {
+    const original =
+        '明天下午3点到3楼B15房间参加云计算项目评审，要先准备评审问题，评审问题必须真实且尖锐。\n保留完整地点和要求。';
+    final todos = _CapturingTodos();
+    final notifications = _ReadyNotifications();
+    await _open(
+      tester,
+      todos: todos,
+      notifications: notifications,
+      ai: _ReadyAi(
+        const AiTodoBreakdown(
+          title: '准备问题并参加云计算评审',
+          subtasks: ['收集资料', '核实证据', '整理问题'],
+        ),
+      ),
+    );
+    final title = find.byKey(const ValueKey('todo_create_title'));
+    await tester.enterText(title, original);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.tap(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(title).controller!.text, '准备问题并参加云计算评审');
+    final description = find.byKey(const ValueKey('todo_create_description'));
+    expect(tester.widget<TextField>(description).controller!.text, original);
+    final editor = find.byType(TodoSubtaskEditor);
+    var items = tester.widget<TodoSubtaskEditor>(editor).subtasks;
+    final firstId = items.first.id;
+    await tester.ensureVisible(
+      find.byKey(ValueKey('todo_subtask_text_$firstId')),
+    );
+    await tester.enterText(
+      find.byKey(ValueKey('todo_subtask_text_$firstId')),
+      '收集方案和测试报告',
+    );
+    await tester.pumpAndSettle();
+    final deletedId = items[1].id;
+    await tester.ensureVisible(
+      find.byKey(ValueKey('todo_subtask_delete_$deletedId')),
+    );
+    await tester.tap(find.byKey(ValueKey('todo_subtask_delete_$deletedId')));
+    await tester.pumpAndSettle();
+    final add = find.byKey(const ValueKey('todo_subtask_add_input'));
+    await tester.ensureVisible(add);
+    await tester.enterText(add, '补充追问');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('todo_subtask_add')));
+    await tester.tap(find.byKey(const ValueKey('todo_subtask_add')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(title);
+    await tester.enterText(title, '云计算评审准备');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.tap(
+      find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(title).controller!.text, '云计算评审准备');
+    expect(tester.widget<TextField>(description).controller!.text, original);
+    expect(tester.widget<TodoSubtaskEditor>(editor).subtasks.first.id, firstId);
+    await _scrollToSubmit(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+    await tester.pumpAndSettle();
+    final saved = todos.saved.single;
+    expect(saved.title, '云计算评审准备');
+    expect(saved.notes, original);
+    expect(saved.subtasks.map((item) => item.title), [
+      '收集方案和测试报告',
+      '整理问题',
+      '补充追问',
+    ]);
+    expect(saved.subtasks.first.id, firstId);
+    expect(saved.subtasks.map((item) => item.sortOrder), [0, 1, 2]);
+    expect(saved.date, AppClock.date(2026, 10, 22, 15));
+    expect(notifications.scheduledTime, saved.date);
+    expect(tester.takeException(), isNull);
+  });
 
   for (final item in [
     (

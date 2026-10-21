@@ -7,6 +7,7 @@ import 'app_clock.dart';
 class AiTodoBreakdown {
   const AiTodoBreakdown({
     required this.subtasks,
+    this.title,
     this.listGroupName,
     this.quadrant,
     this.dateTime,
@@ -14,6 +15,7 @@ class AiTodoBreakdown {
   });
 
   final List<String> subtasks;
+  final String? title;
   final String? listGroupName;
   final EisenhowerQuadrant? quadrant;
   final DateTime? dateTime;
@@ -58,8 +60,15 @@ class AiTodoBreakdown {
 
     final group = decoded['list_group'];
     final parsedDate = _parseDateTime(decoded['date_time']);
+    final rawTitle = decoded['title'];
+    final title = rawTitle is String
+        ? rawTitle.trim().replaceAll(RegExp(r'\s+'), ' ')
+        : null;
     return AiTodoBreakdown(
       subtasks: List.unmodifiable(subtasks),
+      title: title != null && title.isNotEmpty && title.runes.length <= 80
+          ? title
+          : null,
       listGroupName: group is String && listGroups.contains(group)
           ? group
           : null,
