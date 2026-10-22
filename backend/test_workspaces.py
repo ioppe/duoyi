@@ -3441,8 +3441,8 @@ class WorkspaceApiTest(unittest.TestCase):
 
     def test_stale_force_update_versions_are_floored_to_current_version(self):
         admin_id = self._make_admin("force-update-stale-version", ["settings"])
-        self.assertEqual(api.APP_CURRENT_VERSION, "1.1.43")
-        self.assertEqual(api.APP_CURRENT_VERSION_CODE, 140009)
+        self.assertEqual(api.APP_CURRENT_VERSION, "1.1.44")
+        self.assertEqual(api.APP_CURRENT_VERSION_CODE, 140010)
         old_repository = api.APP_UPDATE_REPOSITORY
         old_mobile_apk_dir = api.MOBILE_APK_DIR
         api.APP_UPDATE_REPOSITORY = ""
@@ -3463,39 +3463,39 @@ class WorkspaceApiTest(unittest.TestCase):
                 db.close()
 
             settings = api.admin_get_settings(admin_id)
-            self.assertEqual(settings["current_version"], "1.1.43")
-            self.assertEqual(settings["current_version_code"], 140009)
-            self.assertEqual(settings["latest_version"], "1.1.43")
-            self.assertEqual(settings["latest_version_name"], "1.1.43")
-            self.assertEqual(settings["latest_version_code"], 140009)
-            self.assertEqual(settings["minimum_supported_version"], "1.1.43")
+            self.assertEqual(settings["current_version"], "1.1.44")
+            self.assertEqual(settings["current_version_code"], 140010)
+            self.assertEqual(settings["latest_version"], "1.1.44")
+            self.assertEqual(settings["latest_version_name"], "1.1.44")
+            self.assertEqual(settings["latest_version_code"], 140010)
+            self.assertEqual(settings["minimum_supported_version"], "1.1.44")
             self.assertNotIn(
                 "1.1.20",
                 json.dumps(settings["version_options"], ensure_ascii=False),
             )
 
             config = api.public_config()["app_update"]
-            self.assertEqual(config["latest_version"], "1.1.43")
-            self.assertEqual(config["latest_version_name"], "1.1.43")
-            self.assertEqual(config["latest_version_code"], 140009)
-            self.assertEqual(config["minimum_supported_version"], "1.1.43")
+            self.assertEqual(config["latest_version"], "1.1.44")
+            self.assertEqual(config["latest_version_name"], "1.1.44")
+            self.assertEqual(config["latest_version_code"], 140010)
+            self.assertEqual(config["minimum_supported_version"], "1.1.44")
 
             with TestClient(api.app) as client:
                 response = client.get(
                     "/api/mobile/apps/duoyi/update",
                     params={
-                        "current_version": "1.1.43",
-                        "current_version_code": "140009",
+                        "current_version": "1.1.44",
+                        "current_version_code": "140010",
                     },
                 )
             self.assertEqual(response.status_code, 200)
             mobile = response.json()
             self.assertFalse(mobile["available"])
             self.assertFalse(mobile["force_update"])
-            self.assertEqual(mobile["latest_version_name"], "1.1.43")
-            self.assertEqual(mobile["latest_version_code"], 140009)
-            self.assertEqual(mobile["minimum_supported_version"], "1.1.43")
-            self.assertEqual(mobile["minimum_supported_version_code"], 140009)
+            self.assertEqual(mobile["latest_version_name"], "1.1.44")
+            self.assertEqual(mobile["latest_version_code"], 140010)
+            self.assertEqual(mobile["minimum_supported_version"], "1.1.44")
+            self.assertEqual(mobile["minimum_supported_version_code"], 140010)
 
             updated = api.admin_update_settings(
                 api.SettingsUpdate(
@@ -3504,11 +3504,11 @@ class WorkspaceApiTest(unittest.TestCase):
                 ),
                 actor=admin_id,
             )
-            self.assertEqual(updated["changed"]["latest_version"], "1.1.43")
-            self.assertEqual(updated["changed"]["latest_version_name"], "1.1.43")
+            self.assertEqual(updated["changed"]["latest_version"], "1.1.44")
+            self.assertEqual(updated["changed"]["latest_version_name"], "1.1.44")
             self.assertEqual(
                 updated["changed"]["minimum_supported_version"],
-                "1.1.43",
+                "1.1.44",
             )
         finally:
             api.APP_UPDATE_REPOSITORY = old_repository
