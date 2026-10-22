@@ -1850,6 +1850,35 @@ class _TodayTodoLeading extends StatelessWidget {
   }
 }
 
+class _TodayTodoQuadrantDot extends StatelessWidget {
+  final TodoItem todo;
+
+  const _TodayTodoQuadrantDot({required this.todo});
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.watch<ThemeProvider>().brand.strings;
+    final label = switch (todo.quadrant) {
+      EisenhowerQuadrant.urgentImportant => strings.quadrantQ1Label,
+      EisenhowerQuadrant.notUrgentImportant => strings.quadrantQ2Label,
+      EisenhowerQuadrant.urgentNotImportant => strings.quadrantQ3Label,
+      EisenhowerQuadrant.notUrgentNotImportant => strings.quadrantQ4Label,
+    };
+    return Tooltip(
+      message: '$label (Q${todo.quadrant.index + 1})',
+      child: Container(
+        key: ValueKey('today_todo_quadrant_dot_${todo.id}'),
+        width: DesignTokens.spaceSm,
+        height: DesignTokens.spaceSm,
+        decoration: BoxDecoration(
+          color: _todoQuadrantColor(todo.quadrant),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
 class _TodayTodoTitleLine extends StatelessWidget {
   final TodoItem todo;
   final String title;
@@ -1884,6 +1913,8 @@ class _TodayTodoTitleLine extends StatelessWidget {
           ),
           const SizedBox(width: DesignTokens.spaceSm),
         ],
+        _TodayTodoQuadrantDot(todo: todo),
+        const SizedBox(width: DesignTokens.spaceSm),
         Expanded(
           child: Text(
             title,
@@ -2212,15 +2243,28 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        widget.title ?? todo.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: home.typography(
-                          Theme.of(context),
-                          size: DesignTokens.homeTaskTitleSize,
-                          color: effectiveTitleColor ?? home.text,
-                        ),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Text(
+                            widget.title ?? todo.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: home.typography(
+                              Theme.of(context),
+                              size: DesignTokens.homeTaskTitleSize,
+                              color: effectiveTitleColor ?? home.text,
+                            ),
+                          ),
+                          Positioned(
+                            left: -DesignTokens.spaceMd,
+                            top: 0,
+                            bottom: 0,
+                            child: Center(
+                              child: _TodayTodoQuadrantDot(todo: todo),
+                            ),
+                          ),
+                        ],
                       ),
                       widget.subtitle ??
                           _TodoTodaySubtitle(todo: todo, textOnly: true),

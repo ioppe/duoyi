@@ -371,6 +371,70 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final (size, textScale) in [
+    (const Size(320, 844), 1.6),
+    (const Size(1440, 1000), 1.0),
+  ]) {
+    testWidgets('今日任务标题圆点与待办四象限配色一致 $size ×$textScale', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const palette = [
+        (EisenhowerQuadrant.urgentImportant, Color(0xFFE53935)),
+        (EisenhowerQuadrant.notUrgentImportant, Color(0xFFF6A339)),
+        (EisenhowerQuadrant.urgentNotImportant, Color(0xFF42A5F5)),
+        (EisenhowerQuadrant.notUrgentNotImportant, Color(0xFF8E8E8E)),
+      ];
+      final todos = TodoProvider();
+      for (final (quadrant, _) in palette) {
+        await todos.addTodo(
+          TodoItem(
+            id: 'quadrant-dot-${quadrant.index}',
+            title: '四象限任务${quadrant.index + 1}',
+            quadrant: quadrant,
+            // 清单颜色不能覆盖象限颜色。
+            listGroupName: '工作',
+            subtasks: [
+              if (quadrant.index.isEven) Subtask(title: '子任务', sortOrder: 0),
+            ],
+          ),
+        );
+      }
+      await tester.pumpWidget(
+        _wrap(
+          const TodayScreen(),
+          todoProvider: todos,
+          theme: AppBrands.defaultBrand.theme,
+          textScale: textScale,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final vertical = find.byWidgetPredicate(
+        (widget) =>
+            widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      );
+      for (final (quadrant, color) in palette) {
+        final dot = find.byKey(
+          ValueKey('today_todo_quadrant_dot_quadrant-dot-${quadrant.index}'),
+        );
+        await tester.scrollUntilVisible(dot, 160, scrollable: vertical.first);
+        await tester.pumpAndSettle();
+        final decoration =
+            tester.widget<Container>(dot).decoration! as BoxDecoration;
+        expect(decoration.shape, BoxShape.circle);
+        expect(decoration.color, color);
+        expect(tester.getSize(dot), const Size.square(DesignTokens.spaceSm));
+        expect(
+          tester.getCenter(dot).dx,
+          lessThan(
+            tester.getTopLeft(find.text('四象限任务${quadrant.index + 1}')).dx,
+          ),
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('首页可直接勾选子任务并在全部完成时聚合父任务', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
