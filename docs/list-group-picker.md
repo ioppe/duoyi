@@ -14,6 +14,8 @@
 
 沿用已有 `ResourceHanRounded` 粗体、主题颜色和 `DesignTokens`。设计基准是浅灰页面（#F5F6F8）、白色表面（#FFFFFF）、深色正文（#242C38）、次级灰（#78808B）与品牌红（#B84F54）；实际组件继承当前主题的 ColorScheme。选中行使用低透明度主题色背景、主题色文字和勾选反馈。控件在 320px 窄屏、放大文字和键盘弹出时仍通过外层表单滚动访问。
 
+收起摘要的清单名称与任务名、子任务输入统一为 `DesignTokens.fontSizeMd`（16px）、1.5 行高，继承资源圆体粗字。框体保留 56px 最小高度；搜索和结果项仍使用原有紧凑层级。字号调整的实际对比见 [截图与验证](../evidence/screenshots/list-group-picker/typography/README.md)。
+
 ## 数据与权限
 
 本次仅替换 UI，复用现有 `ListGroupProvider`、`list_groups` 同步集合和后端契约，不新增接口或数据库字段。载荷、合并与备份规则见 [同步契约：自定义清单](cloud-sync-v2-contract.md#自定义清单list_groups--post-apisync)。

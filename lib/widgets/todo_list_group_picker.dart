@@ -641,7 +641,11 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
                           key: const ValueKey('todo_list_group_selected_name'),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelLarge,
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                fontSize: DesignTokens.fontSizeMd,
+                                height: 1.5,
+                              ),
                         ),
                       ),
                       const SizedBox(width: DesignTokens.spaceSm),
