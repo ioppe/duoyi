@@ -91,10 +91,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 | 触发 | 作业 | 产物 |
 |---|---|---|
-| 每次 push / PR | `analyze` | `flutter analyze` + `dart format` + 可选 `flutter test` |
-| 每次 push / PR | `android` | 通用 APK + 分 ABI APK (armeabi-v7a / arm64-v8a / x86_64) |
-| 推 tag / 手动触发指定 | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
+| 推送到 `main` / `self-hosted-skydrow`，或向这两个分支提交 PR | `analyze` | `flutter analyze`、完整 Flutter 测试和后端测试 |
+| 同上，通过检查后 | `android` | 正式签名通用 APK + 分 ABI APK (armeabi-v7a / arm64-v8a / x86_64) |
+| 推送 `main` / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
 | 推 `v*` tag | `release` | 汇总 APK + AAB + web 打包，自动建 GitHub Release |
+
+日常推送无需打 tag：进入仓库 **Actions → build → 对应运行 → Artifacts**，下载 `duoyi-android`。手机通常安装其中以 `-arm64-v8a.apk` 结尾的包，通用包为 `duoyi-<日期>-<提交>.apk`；产物保留 30 天。手动构建时在 **Run workflow** 中选择对应分支。同一分支连续推送时，新推送会取消仍在运行的旧构建。
 
 #### 需要的仓库 Secrets
 - `DUOYI_KEYSTORE_BASE64` — keystore 文件的 base64，用于正式签名。**不设置时发布构建会直接失败，不会降级为 debug 签名**。

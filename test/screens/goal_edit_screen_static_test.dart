@@ -155,7 +155,7 @@ void main() {
       'class _DateField',
     );
 
-    expect(sectionCard, contains('AppSecondaryControlTheme('));
+    expect(sectionCard, contains('AppFormFieldTheme('));
     expect(
       sectionCard,
       contains('crossAxisAlignment: CrossAxisAlignment.stretch'),
@@ -332,6 +332,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('空间归属'), findsOneWidget);
+    await tester.ensureVisible(find.text('空间归属'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('空间归属'));
     await tester.pumpAndSettle();
 

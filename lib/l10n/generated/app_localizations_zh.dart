@@ -9,6 +9,126 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get stateError => '出错了';
+
+  @override
+  String get stateLoadFailed => '加载失败';
+
+  @override
+  String get calendarProjectEmpty => '这个项目暂无任务';
+
+  @override
+  String get focusTasksPickerHint => '先选择待办，也可展开选择子任务';
+
+  @override
+  String get focusTasksSearch => '搜索任务或子任务';
+
+  @override
+  String get focusTasksEmpty => '暂无未完成待办，可先添加待办或手动输入';
+
+  @override
+  String get focusTasksNoMatches => '没有匹配的任务或子任务';
+
+  @override
+  String get focusTasksManual => '手动输入';
+
+  @override
+  String get focusTasksClear => '清除选择';
+
+  @override
+  String get focusTasksSubtasks => '展开或收起子任务';
+
+  @override
+  String get focusTasksPresets => '其他专注内容';
+
+  @override
+  String get focusTasksPresetDeepWork => '深度工作';
+
+  @override
+  String get focusTasksPresetReading => '阅读';
+
+  @override
+  String get focusTasksPresetWriting => '写作';
+
+  @override
+  String get focusTasksPresetReview => '复盘';
+
+  @override
+  String get focusTasksPresetExercise => '运动';
+
+  @override
+  String get focusTasksPresetStudy => '学习';
+
+  @override
+  String get focusTasksResults => '任务专注';
+
+  @override
+  String get focusTasksResultsHint => '当前周期的专注时长与次数，可展开查看子任务';
+
+  @override
+  String get focusTasksResultsEmpty => '本周期还没有专注记录，选择待办开始一次专注吧';
+
+  @override
+  String get focusTasksUnassigned => '未关联任务';
+
+  @override
+  String get focusTasksWholeTask => '直接专注父任务';
+
+  @override
+  String get focusTasksMinutes => '分钟';
+
+  @override
+  String get focusTasksSeconds => '秒';
+
+  @override
+  String get focusTasksSessions => '次专注';
+
+  @override
+  String get habitWorkspaceEmptyHint => '从一件容易坚持的小事开始，每一次打卡都会留下记录。';
+
+  @override
+  String get habitWorkspaceRestTitle => '今天没有安排打卡';
+
+  @override
+  String get habitWorkspaceRestHint => '已有习惯仍然保留，可以查看记录或调整生效日期。';
+
+  @override
+  String get habitWorkspaceViewAll => '查看全部习惯';
+
+  @override
+  String get habitWorkspaceFilterAll => '全部';
+
+  @override
+  String get habitWorkspaceFilterPending => '待完成';
+
+  @override
+  String get habitWorkspaceFilterCompleted => '已达标';
+
+  @override
+  String get habitWorkspacePendingEmptyTitle => '今天的目标都完成了';
+
+  @override
+  String get habitWorkspacePendingEmptyHint => '这一天的坚持已经记下，明天继续。';
+
+  @override
+  String get habitWorkspaceCompletedEmptyTitle => '还没有达标记录';
+
+  @override
+  String get habitWorkspaceCompletedEmptyHint => '完成一次打卡，进展就会显示在这里。';
+
+  @override
+  String get habitWorkspaceResetFilter => '显示全部';
+
+  @override
+  String get habitWorkspaceHistoryEmptyTitle => '让坚持留下痕迹';
+
+  @override
+  String get habitWorkspaceHistoryEmptyHint => '添加习惯后，每次打卡都会汇成这里的热度记录。';
+
+  @override
+  String get habitWorkspaceReviewHint => '最近12周的记录，按天汇总打卡次数。';
+
+  @override
   String get authDesignTagline => '把每一天，过得从容一点';
 
   @override

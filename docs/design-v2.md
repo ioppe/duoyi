@@ -66,6 +66,54 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 10. TodoProvider/GoalProvider 已可注入 ReminderScheduler 并在关键写路径直接重同步；常规路径仍保留 main.dart listener 兜底。
 11. deprecated AudioService shim 仍保留以兼容旧调用，后续确认无引用后可移除。
 
+### 2.3 一级导航与专注入口
+
+- Web 与原生客户端默认一级入口统一为「今日 / 待办 / 习惯 / 专注 / 我的」；宽屏使用侧栏，窄屏使用底栏。
+- 专注复用 `MainShell` 中的 `PomodoroScreen`（tab 4）、`BrandStrings.navFocus` 和计时图标，页面切换沿用已访问页面保留机制。
+- 默认入口最多五项；原生客户端的小组件可从「我的 → 更多应用」进入，仍可在导航设置中自定义显示与排序。
+- `pref_focus_navigation_v1` 一次性将旧默认四项或包含小组件的旧默认五项升级为专注五项；保留原有排序及其他自定义组合，迁移后手动隐藏专注的选择可持久化。Web 原有导航迁移与小组件过滤继续生效。
+
+### 2.4 Web 待办页面布局
+
+- Web 待办页按「今日概要与提醒 → 自定义视图筛选 → 四象限 / 列表 / 看板页签 → 任务内容」上下排列，所有视图共享顶部筛选，不使用右侧筛选栏。
+- 自定义视图始终保留清空按钮；无筛选时禁用，选中条件后启用，避免标题行和任务区域随选择状态改变高度。
+- 快捷筛选与下拉筛选共用圆角、边框、文字和内边距，最小高度为 `DesignTokens.controlMinHeight`；选中态只改变配色，字号放大时内容可自然增高。
+- 原生端保持现有页面分区，Web 宽屏继续沿用四象限四列、主导航和内容限宽规则。
+
+### 2.5 习惯打卡与回顾
+
+- 所有窗口尺寸使用同一组 `AppPageTabs`，将今日打卡与热度图分开，取消宽屏左右并列的双页面；内容最大宽度为 `habitWorkspaceMaxWidth`，宽屏今日卡片保留双列懒构建。
+- 创建入口固定在页面右下角，桌面与手机共用 `AppCreateFab`，按钮带品牌文案，不再切换到宽屏标题栏。习惯空态只说明当前状态，不重复添加按钮或嵌套空白卡片。
+- 今日页以本周概览、已有洞察、全部 / 待完成 / 已达标筛选和打卡卡片组织内容；筛选计数按当天生效与完成状态更新，继续复用原有打卡、撤回及侧滑编辑 / 结束 / 删除逻辑。
+- 区分尚未建立习惯、今日无安排、当前筛选无结果三种状态；今日无安排时可直接转到热度图中的全部习惯分组与详情，不丢失历史或非生效日习惯。
+- 热度图按需构建，保留十二周汇总与分类分组，说明性文案通过中英文 ARB 与 `I18n.tr` 提供；图格比例、主题字体与分组管理交互沿用现有契约。
+
+### 2.6 目标与待办创建表单
+
+- 目标编辑页与新建待办共用 `AppFormFieldTheme`：输入文字为资源圆体粗体 16px、标签 14px、输入区域至少 56px 高，使用相同内边距、圆角和焦点边框；名称与描述按内容自动增高。
+- 两种表单共用 `creationFormMaxWidth`（720px）；新建目标通过 `showGoalCreateSheet` 从底部弹出，已有目标仍可进入编辑页，分组标题、提示及选择控件采用共享二级控件字号。
+- 日期选择保持窄屏双列和短日期格式，控件最小高度与输入框一致；目标数值输入不再单独套紧凑装饰。
+- 新建目标底部提供与待办相同样式的取消和主操作按钮，保存继续执行既有校验、权限判断与提交逻辑；新建弹窗不再包含独立页面 AppBar，编辑模式保留顶部保存和删除入口。
+
+### 2.7 统一创建弹窗交互
+
+- 页面级主创建入口统一位于右下角，并使用带文字的 `AppCreateFab`；待办、习惯、目标、笔记、日历、课程、纪念日、倒数日、时间足迹、反馈和共享空间共用该组件。今日页使用相同的页面右下角定位，保留当前子页对应的新建行为和长按快捷菜单。列表空态可保留居中引导；成员、邀请码等局部操作位于对应内容区，权限和批量模式继续决定按钮是否显示。
+- 实体新建表单统一经 `showAppModalSheet` 与 `AppModalSheet` 呈现：初始为可用高度的 1/2 至 2/3、宽度最多 720px、底部贴合安全区；浏览内容可展开至可用全高，回到内容顶部后再向下拉收回。
+- 共享容器唯一负责标题、拖柄、卡片、滚动与键盘避让；创建表单不嵌套 `Scaffold`、`Dialog`、独立分数高度或第二个外层滚动区。长编辑器使用受约束的内部视口。
+- 点击遮罩、系统返回或取消关闭弹窗；确认保存前不创建实体，原有权限、字段校验、模板转换、提醒预检和服务端错误处理保持在各业务实现中。
+- 今日页、目标管理的新建目标共用同一入口；通知 / 小组件快捷待办复用完整任务表单，快速笔记复用笔记创建编辑器。日程、位置提醒、共享空间、自习室 / 邀请码、模板及管理员创建表单沿用相同容器规则。
+- 删除确认、提示信息、选择器、登录和独立 AI 工作流程保留各自语义，日记退役兼容入口不恢复创建能力。
+
+### 2.8 共享视觉状态与动态效果
+
+- 全主题沿用资源圆体粗体、设计 token 的字阶与间距；主题色、背景图与品牌文案继续由 `AppBrand` / `BrandStrings` 提供。
+- 视觉动画经 `AppMotion` 取值：轻量反馈 160ms、内容和 Web/桌面路由过渡 240ms，进入使用 `easeOutCubic`、退出使用 `easeInCubic`。Web/桌面路由采用淡入与最多 12px 的短位移；原生 iOS/macOS 与 Android 委托 Flutter 的原生切换器，保留原生时长、边缘返回与预测返回支持。
+- 系统启用「减少动态效果」后，本轮共享路由、弹层、折叠、快捷创建、日期/时间反馈及接入的页面动画即时显示；时间滚轮直接定位，原生 iOS/macOS 仍保留返回手势容器。计时、通知、网络超时与提示停留时长不受视觉策略影响。
+- 页签指示线始终采用线性移动；`AppPageSwitcher` 在动态效果设置变化后保留选择。
+- `EmptyState` 以图标、主说明、可选补充说明和次级引导动作构成，不额外嵌套卡片；页面与区块拥有自己的表面。`ErrorState` 复用相同布局，以主题错误色标识，默认标题和重试支持中英文；管理员概览加载失败可原地重试。
+- `LoadingState` 骨架取当前主题的表面色；系统减少动画或页面 `TickerMode` 不可见时停止持续动画，再次可见且允许动画时恢复。空态、错误态和加载说明在短屏与大字号下可滚动浏览。
+- 目标、日历、时间足迹、共享空间和倒数日的主列表使用 `pageFabBottomPadding` 为右下角创建按钮保留末项空间；次级透明页面与页签保持品牌背景连续，避免重复背景层和滚动染色。
+
 ## 3. 目标架构（v2）
 
 ```
@@ -353,39 +401,14 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
 
 #### 4.4.1 PomodoroProvider 自动写入
 
-PomodoroProvider 已持有 `TimeAuditProvider? _timeAudit`，在 `_completeSession()` 中：
+`PomodoroProvider` 完成专注后由 `_persistCompletedSession()` 调用
+`TimeAuditProvider.recordPomodoroSession()` 自动写入；编辑和删除会话同步更新
+对应的时间记录，`pomodoro:<sessionId>` 为去重键。
 
-```dart
-void _completeSession() {
-  // ... 现有逻辑 ...
-  // 自动写入 TimeEntry
-  final session = _currentSession; // 刚完成的 session
-  if (session != null && _timeAudit != null) {
-    _timeAudit!.addFromPomodoro(session);
-  }
-}
-```
-
-TimeAuditProvider 新增：
-
-```dart
-/// 从番茄钟会话自动创建时间记录（幂等：按 dedupeKey 去重）。
-Future<void> addFromPomodoro(PomodoroSession session) async {
-  final key = 'pomodoro:${session.id}';
-  if (_entries.any((e) => e.dedupeKey == key)) return;
-  await add(TimeEntry(
-    title: session.taskName ?? '专注 ${session.durationSeconds ~/ 60} 分钟',
-    startAt: session.startTime,
-    endAt: session.endTime ?? session.startTime.add(
-      Duration(seconds: session.durationSeconds),
-    ),
-    category: TimeEntryCategory.focus,
-    source: TimeEntrySource.pomodoro,
-    sourceId: session.id,
-    dedupeKey: key,
-  ));
-}
-```
+- 任务选择优先展示当前账号的未完成待办，可搜索任务或子任务，展开后直接选择子任务；选择只关联专注，不改变待办完成状态。预设和手动输入保留为补充入口。
+- `PomodoroState` 与 `PomodoroSession` 保存可选 `todoId`、`subtaskId`、`todoTitle`（父名称快照）；`taskName` 为选中对象名称。运行快照、完成结算和 JSON 往返均保留关联。旧记录缺字段继续按自由名称展示，不按同名猜测待办关联。
+- 子任务的历史展示及自动时间记录使用“父任务 / 子任务”。手动重命名历史会话会解除原 ID 关联；任务改名按稳定 ID 汇总，任务删除后仍以快照展示。
+- 时光足迹的“任务专注”卡随周／月／年选定周期过滤 `PomodoroSession.endTime`，仅计专注会话；按父任务 ID 汇总时长与次数，展开查看子任务及直接专注父任务的部分。每次会话只计入总量一次，先累加秒数再格式化。休息会话不计入，手动名称和未关联记录独立分组。
 
 #### 4.4.2 待办完成可选记录
 

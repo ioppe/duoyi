@@ -14,7 +14,7 @@ class ClientDeploymentConfig {
     String webTarget = 'responsive',
     int httpTimeoutSeconds = 12,
     int fileTimeoutSeconds = 30,
-    int aiTimeoutSeconds = 75,
+    int aiTimeoutSeconds = 180,
     int updateTimeoutSeconds = 8,
   }) : serverUrl = _serverUrl(serverUrl),
        updateRepository = _repository(updateRepository),
@@ -34,7 +34,7 @@ class ClientDeploymentConfig {
       webTarget: values['DUOYI_WEB_TARGET'] ?? 'responsive',
       httpTimeoutSeconds: _seconds(values, 'DUOYI_HTTP_TIMEOUT_SECONDS', 12),
       fileTimeoutSeconds: _seconds(values, 'DUOYI_FILE_TIMEOUT_SECONDS', 30),
-      aiTimeoutSeconds: _seconds(values, 'DUOYI_AI_TIMEOUT_SECONDS', 75),
+      aiTimeoutSeconds: _seconds(values, 'DUOYI_AI_TIMEOUT_SECONDS', 180),
       updateTimeoutSeconds: _seconds(values, 'DUOYI_UPDATE_TIMEOUT_SECONDS', 8),
     );
   }

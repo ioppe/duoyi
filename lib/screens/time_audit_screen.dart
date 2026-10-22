@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -69,13 +70,17 @@ class _TimeAuditScreenState extends State<TimeAuditScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('time_audit.add_manual'),
         onPressed: () => _showEditor(context),
-        icon: const Icon(Icons.add),
-        label: Text(I18n.tr('time_audit.add_manual')),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(
+          12,
+          12,
+          12,
+          DesignTokens.pageFabBottomPadding,
+        ),
         children: [
           _SummaryCard(
             rangeLabel: _rangeLabel(_range),

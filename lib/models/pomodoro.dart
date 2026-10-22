@@ -261,6 +261,15 @@ class PomodoroSession {
   final int durationSeconds;
   final PomodoroType type;
   final String? taskName;
+
+  /// 关联待办的父任务 id；未关联待办时为 null。
+  final String? todoId;
+
+  /// 关联待办的子任务 id；仅当选择的是子任务时非空。
+  final String? subtaskId;
+
+  /// 父任务名称快照：[taskName] 是子任务名时仍能显示父任务。
+  final String? todoTitle;
   final String whiteNoiseSound;
   final String? tag;
   final String? focusRoomId;
@@ -273,6 +282,9 @@ class PomodoroSession {
     required this.durationSeconds,
     required this.type,
     this.taskName,
+    this.todoId,
+    this.subtaskId,
+    this.todoTitle,
     this.whiteNoiseSound = 'none',
     this.tag,
     this.focusRoomId,
@@ -291,6 +303,10 @@ class PomodoroSession {
     bool clearTag = false,
     String? focusRoomId,
     bool clearFocusRoomId = false,
+    String? todoId,
+    String? subtaskId,
+    String? todoTitle,
+    bool clearTaskLink = false,
     DateTime? updatedAt,
   }) {
     return PomodoroSession(
@@ -303,8 +319,23 @@ class PomodoroSession {
       whiteNoiseSound: whiteNoiseSound ?? this.whiteNoiseSound,
       tag: clearTag ? null : (tag ?? this.tag),
       focusRoomId: clearFocusRoomId ? null : (focusRoomId ?? this.focusRoomId),
+      todoId: clearTaskLink ? null : (todoId ?? this.todoId),
+      subtaskId: clearTaskLink ? null : (subtaskId ?? this.subtaskId),
+      todoTitle: clearTaskLink ? null : (todoTitle ?? this.todoTitle),
       updatedAt: updatedAt ?? DateTime.now(),
     );
+  }
+
+  /// 展示用名称：选择子任务且父任务名已知时返回
+  /// `父任务 / 子任务`（`subtaskId` + 非空 `todoTitle` 才成立），
+  /// 其余情况（含旧数据、父任务选择、手动任务名）退化为 [taskName]。
+  String? get taskLabel {
+    final parent = todoTitle?.trim();
+    if (subtaskId != null && parent != null && parent.isNotEmpty) {
+      final name = taskName?.trim();
+      return name == null || name.isEmpty ? parent : '$parent / $name';
+    }
+    return taskName;
   }
 
   Map<String, dynamic> toJson() => {
@@ -314,6 +345,9 @@ class PomodoroSession {
     'durationSeconds': durationSeconds,
     'type': type.index,
     'taskName': taskName,
+    'todoId': todoId,
+    'subtaskId': subtaskId,
+    'todoTitle': todoTitle,
     'whiteNoiseSound': whiteNoiseSound,
     'tag': tag,
     'focusRoomId': focusRoomId,
@@ -335,6 +369,9 @@ class PomodoroSession {
       durationSeconds: json['durationSeconds'],
       type: PomodoroType.values[json['type']],
       taskName: json['taskName'],
+      todoId: json['todoId']?.toString(),
+      subtaskId: json['subtaskId']?.toString(),
+      todoTitle: json['todoTitle']?.toString(),
       whiteNoiseSound: _normalizeStoredFocusSound(sound),
       tag: json['tag']?.toString(),
       focusRoomId: json['focusRoomId']?.toString(),
@@ -354,6 +391,15 @@ class PomodoroState {
   final PomodoroType type;
   final int completedSessions;
   final String? taskName;
+
+  /// 关联待办的父任务 id；未关联待办时为 null。
+  final String? todoId;
+
+  /// 关联待办的子任务 id；仅当选择的是子任务时非空。
+  final String? subtaskId;
+
+  /// 父任务名称快照：子任务后续被删除/改名，会话仍能显示父任务。
+  final String? todoTitle;
   final String whiteNoiseSound;
   final String? tag;
   final String? focusRoomId;
@@ -366,6 +412,9 @@ class PomodoroState {
     required this.type,
     required this.completedSessions,
     this.taskName,
+    this.todoId,
+    this.subtaskId,
+    this.todoTitle,
     this.whiteNoiseSound = 'none',
     this.tag,
     this.focusRoomId,
@@ -386,9 +435,13 @@ class PomodoroState {
     String? whiteNoiseSound,
     String? tag,
     String? focusRoomId,
+    String? todoId,
+    String? subtaskId,
+    String? todoTitle,
     bool clearTaskName = false,
     bool clearTag = false,
     bool clearFocusRoom = false,
+    bool clearTaskLink = false,
   }) => PomodoroState(
     remainingSeconds: remainingSeconds ?? this.remainingSeconds,
     totalSeconds: totalSeconds ?? this.totalSeconds,
@@ -400,7 +453,22 @@ class PomodoroState {
     whiteNoiseSound: whiteNoiseSound ?? this.whiteNoiseSound,
     tag: clearTag ? null : (tag ?? this.tag),
     focusRoomId: clearFocusRoom ? null : (focusRoomId ?? this.focusRoomId),
+    todoId: clearTaskLink ? null : (todoId ?? this.todoId),
+    subtaskId: clearTaskLink ? null : (subtaskId ?? this.subtaskId),
+    todoTitle: clearTaskLink ? null : (todoTitle ?? this.todoTitle),
   );
+
+  /// 展示用名称：选择子任务且父任务名已知时返回
+  /// `父任务 / 子任务`（`subtaskId` + 非空 `todoTitle` 才成立），
+  /// 其余情况（含旧数据、父任务选择、手动任务名）退化为 [taskName]。
+  String? get taskLabel {
+    final parent = todoTitle?.trim();
+    if (subtaskId != null && parent != null && parent.isNotEmpty) {
+      final name = taskName?.trim();
+      return name == null || name.isEmpty ? parent : '$parent / $name';
+    }
+    return taskName;
+  }
 }
 
 String _normalizeStoredFocusSound(String sound) {

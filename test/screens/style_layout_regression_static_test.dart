@@ -1108,7 +1108,9 @@ void main() {
       contains("key: const ValueKey('habit_today_checkin_sliver')"),
     );
     expect(habit, contains('SliverList.builder('));
-    expect(habit, contains('itemCount: activeHabits.length'));
+    expect(habit, contains('itemCount: visibleHabits.length'));
+    expect(habit, contains('final visibleHabits = activeHabits'));
+    expect(habit, contains('_HabitStatusFilter.pending'));
     expect(habit, contains('_HabitTodaySummaryCard('));
     expect(habit, contains('const double _habitCheckinCardBodyHeight = 38'));
     expect(habit, contains('const double _habitTitleStatusHeight = 15'));

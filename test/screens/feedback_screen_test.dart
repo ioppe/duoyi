@@ -309,7 +309,11 @@ void main() {
         source,
         contains("for (final category in const ['feature', 'bug', 'wish'])"),
       );
-      expect(source, contains('FloatingActionButton.extended'));
+      expect(source, contains('floatingActionButton: AppCreateFab('));
+      expect(
+        File('lib/widgets/app_create_fab.dart').readAsStringSync(),
+        contains('return FloatingActionButton.extended('),
+      );
       expect(source, contains('Navigator.push<bool>'));
       expect(
         source,

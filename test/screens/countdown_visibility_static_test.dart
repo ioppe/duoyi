@@ -193,10 +193,18 @@ void main() {
     final leadingStart = editSheet.indexOf(
       'leadingActions: widget.editing == null',
     );
-    final leadingDelete = editSheet.substring(
+    expect(
       leadingStart,
-      editSheet.indexOf('          actions: [', leadingStart),
+      greaterThanOrEqualTo(0),
+      reason: '纪念日编辑器的删除入口应留在 leadingActions。',
     );
+    final actionsStart = editSheet.indexOf('actions: [', leadingStart);
+    expect(
+      actionsStart,
+      greaterThan(leadingStart),
+      reason: '删除入口必须位于底部 actions 之前，缩进随 dart format 变化，不写死空格数。',
+    );
+    final leadingDelete = editSheet.substring(leadingStart, actionsStart);
 
     expect(editSheet, contains('Future<void> _delete() async'));
     expect(editSheet, contains('showDialog<bool>'));

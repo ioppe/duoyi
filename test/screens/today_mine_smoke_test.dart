@@ -1052,6 +1052,23 @@ void main() {
     }
   });
 
+  testWidgets('宽屏首页创建入口与其他页面一致位于页面右下角', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_wrap(const TodayScreen(showCaptureFab: true)));
+    await tester.pumpAndSettle();
+    final rect = tester.getRect(
+      find.byKey(const ValueKey('home_create_button')),
+    );
+    expect(rect.right, closeTo(1584, 1));
+    expect(rect.bottom, closeTo(984, 1));
+    await tester.tap(find.byKey(const ValueKey('home_create_button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todo_create_sheet')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('今日目标标题按钮和空状态都能打开新建目标', (tester) async {
     tester.view.physicalSize = const Size(720, 1400);
     tester.view.devicePixelRatio = 1;
@@ -1068,7 +1085,8 @@ void main() {
       await tester.tap(entry);
       await tester.pumpAndSettle();
       expect(find.byType(GoalEditScreen), findsOneWidget);
-      await tester.pageBack();
+      expect(find.byType(AppModalSheet), findsOneWidget);
+      Navigator.of(tester.element(find.byType(GoalEditScreen))).pop();
       await tester.pumpAndSettle();
     }
     expect(tester.takeException(), isNull);

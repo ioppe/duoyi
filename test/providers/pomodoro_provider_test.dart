@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:duoyi/models/pomodoro.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
+import 'package:duoyi/providers/time_audit_provider.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -487,6 +488,9 @@ void main() {
       bool isCountUp = false,
       int completedSessions = 0,
       String? taskName,
+      String? todoId,
+      String? subtaskId,
+      String? todoTitle,
     }) => <String, dynamic>{
       'isRunning': true,
       'type': type.index,
@@ -495,6 +499,9 @@ void main() {
       'endsAtMs': endsAtMs,
       'completedSessions': completedSessions,
       'taskName': ?taskName,
+      'todoId': ?todoId,
+      'subtaskId': ?subtaskId,
+      'todoTitle': ?todoTitle,
     };
 
     test('计时启动即落盘运行快照，暂停后清除', () async {
@@ -914,5 +921,284 @@ void main() {
         provider.dispose();
       });
     });
+    test('运行中选择子任务即时改写快照，切父任务后快照不再残留旧 subtaskId', () async {
+      final provider = PomodoroProvider();
+      await provider.setConfig(PomodoroConfig(focusDuration: 60));
+
+      fakeAsync((async) {
+        provider.startIfIdle();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        provider.setTaskTarget(
+          todoId: ' todo-1 ',
+          todoTitle: ' 周报整理 ',
+          taskName: ' 写总结 ',
+          subtaskId: ' sub-1 ',
+        );
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        expect(provider.state.todoId, 'todo-1', reason: 'todoId 应 trim');
+        expect(provider.state.todoTitle, '周报整理', reason: 'todoTitle 应 trim');
+        expect(provider.state.taskName, '写总结', reason: 'taskName 应 trim');
+        expect(provider.state.subtaskId, 'sub-1', reason: 'subtaskId 应 trim');
+
+        var snapshot = readRunningSnapshot(async);
+        expect(snapshot, isNotNull, reason: '运行中应有快照');
+        expect(snapshot?['todoId'], 'todo-1');
+        expect(snapshot?['subtaskId'], 'sub-1');
+        expect(snapshot?['todoTitle'], '周报整理');
+        expect(snapshot?['taskName'], '写总结');
+
+        // 切到父任务：运行中的快照必须同步丢弃旧 subtaskId。
+        provider.setTaskTarget(
+          todoId: 'todo-1',
+          todoTitle: '周报整理',
+          taskName: '周报整理',
+        );
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        expect(provider.state.subtaskId, isNull);
+        expect(provider.state.taskLabel, '周报整理');
+        snapshot = readRunningSnapshot(async);
+        expect(snapshot?['subtaskId'], isNull, reason: '切父任务后快照不得残留旧子任务');
+        expect(snapshot?['todoId'], 'todo-1');
+        expect(snapshot?['todoTitle'], '周报整理');
+
+        provider.dispose();
+      });
+    });
+
+    test('重启恢复保留待办/子任务关联，完成结算带入会话与时间足迹标题', () async {
+      final endsAtMs = DateTime.now()
+          .add(const Duration(seconds: 30))
+          .millisecondsSinceEpoch;
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        PomodoroProvider.runningSnapshotKey: jsonEncode(
+          snapshotPayload(
+            endsAtMs: endsAtMs,
+            completedSessions: 1,
+            taskName: '写总结',
+            todoId: 'todo-1',
+            subtaskId: 'sub-1',
+            todoTitle: '周报整理',
+          ),
+        ),
+      });
+
+      final audit = TimeAuditProvider();
+      final provider = PomodoroProvider()..attachTimeAudit(audit);
+      fakeAsync((async) {
+        unawaited(provider.loadFromStorage());
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        expect(provider.state.isRunning, isTrue, reason: '未逾期应恢复运行');
+        expect(provider.state.todoId, 'todo-1');
+        expect(provider.state.subtaskId, 'sub-1');
+        expect(provider.state.todoTitle, '周报整理');
+        expect(provider.state.taskName, '写总结');
+        expect(provider.state.taskLabel, '周报整理 / 写总结');
+
+        provider.finishCurrentSession();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        final session = provider.sessions.single;
+        expect(session.todoId, 'todo-1');
+        expect(session.subtaskId, 'sub-1');
+        expect(session.todoTitle, '周报整理');
+        expect(session.taskName, '写总结');
+        expect(session.taskLabel, '周报整理 / 写总结');
+        expect(
+          audit.entries.single.title,
+          '周报整理 / 写总结',
+          reason: '时间足迹标题改用 session.taskLabel，父任务名可见',
+        );
+
+        provider.dispose();
+      });
+    });
   });
+
+  group('番茄专注与待办/子任务关联', () {
+    test('setTaskTarget 选子任务后切父任务清旧 subtaskId，setTaskName 清全部关联', () {
+      final provider = PomodoroProvider();
+
+      provider.setTaskTarget(
+        todoId: 'todo-1',
+        todoTitle: '周报整理',
+        taskName: '写总结',
+        subtaskId: 'sub-1',
+      );
+      expect(provider.state.todoId, 'todo-1');
+      expect(provider.state.subtaskId, 'sub-1');
+      expect(provider.state.todoTitle, '周报整理');
+      expect(provider.state.taskName, '写总结');
+      expect(provider.state.taskLabel, '周报整理 / 写总结');
+
+      // 切到父任务本身：旧子任务必须清掉，父任务名仍是快照。
+      provider.setTaskTarget(
+        todoId: 'todo-2',
+        todoTitle: '季度复盘',
+        taskName: '季度复盘',
+      );
+      expect(provider.state.todoId, 'todo-2');
+      expect(provider.state.subtaskId, isNull, reason: '无子任务目标必须清旧 subtaskId');
+      expect(provider.state.todoTitle, '季度复盘');
+      expect(provider.state.taskLabel, '季度复盘');
+
+      // 手动/预设任务名入口：清全部关联并 trim。
+      provider.setTaskName('  自定义任务  ');
+      expect(provider.state.taskName, '自定义任务');
+      expect(provider.state.todoId, isNull);
+      expect(provider.state.subtaskId, isNull);
+      expect(provider.state.todoTitle, isNull);
+      expect(provider.state.taskLabel, '自定义任务');
+
+      provider.setTaskName('   ');
+      expect(provider.state.taskName, isNull, reason: 'trim 空串归 null');
+
+      provider.dispose();
+    });
+
+    test('正计时完成把关联写入会话与时间足迹，标题用 taskLabel', () async {
+      final audit = TimeAuditProvider();
+      final provider = PomodoroProvider()..attachTimeAudit(audit);
+      await provider.setConfig(PomodoroConfig(focusDuration: 1500));
+
+      fakeAsync((async) {
+        provider.setCountUpMode(true);
+        provider.setTaskTarget(
+          todoId: ' todo-9 ',
+          todoTitle: ' 胶囊计划 ',
+          taskName: ' 写第一节 ',
+          subtaskId: ' sub-9 ',
+        );
+        provider.startIfIdle();
+        async.elapse(const Duration(seconds: 3));
+        async.flushMicrotasks();
+
+        provider.finishCurrentSession();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        final session = provider.sessions.single;
+        expect(session.type, PomodoroType.focus);
+        expect(session.durationSeconds, greaterThanOrEqualTo(1));
+        expect(session.todoId, 'todo-9');
+        expect(session.subtaskId, 'sub-9');
+        expect(session.todoTitle, '胶囊计划');
+        expect(session.taskName, '写第一节');
+        expect(session.taskLabel, '胶囊计划 / 写第一节');
+        expect(
+          audit.entries.single.title,
+          '胶囊计划 / 写第一节',
+          reason: '时间足迹标题改用 session.taskLabel',
+        );
+        expect(
+          audit.entries.single.dedupeKey,
+          TimeAuditProvider.pomodoroDedupeKey(session.id),
+        );
+
+        provider.dispose();
+      });
+    });
+
+    test('resetLocalState 清空关联字段并删除含关联的运行快照', () async {
+      final provider = PomodoroProvider();
+      await provider.setConfig(PomodoroConfig(focusDuration: 60));
+
+      fakeAsync((async) {
+        provider.setTaskTarget(
+          todoId: 'todo-1',
+          todoTitle: '周报整理',
+          taskName: '写总结',
+          subtaskId: 'sub-1',
+        );
+        provider.startIfIdle();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        expect(provider.state.todoId, 'todo-1');
+        expect(
+          readRunningSnapshot(async)?['todoId'],
+          'todo-1',
+          reason: '运行快照应带关联',
+        );
+
+        provider.resetLocalState();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        expect(provider.state.todoId, isNull);
+        expect(provider.state.subtaskId, isNull);
+        expect(provider.state.todoTitle, isNull);
+        expect(provider.state.taskName, isNull);
+        expect(provider.state.taskLabel, isNull);
+        expect(
+          readRunningSnapshot(async),
+          isNull,
+          reason: 'resetLocalState 仍应删除运行快照',
+        );
+
+        provider.dispose();
+      });
+    });
+    test('逾期补结算的快照同样保留关联，补写会话 taskLabel 可见', () async {
+      final endsAtMs = DateTime.now()
+          .subtract(const Duration(seconds: 5))
+          .millisecondsSinceEpoch;
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        PomodoroProvider.runningSnapshotKey: jsonEncode(<String, dynamic>{
+          'isRunning': true,
+          'type': PomodoroType.focus.index,
+          'isCountUp': false,
+          'totalSeconds': 1500,
+          'endsAtMs': endsAtMs,
+          'completedSessions': 0,
+          'taskName': '写总结',
+          'todoId': 'todo-1',
+          'subtaskId': 'sub-1',
+          'todoTitle': '周报整理',
+        }),
+      });
+
+      final provider = PomodoroProvider();
+      fakeAsync((async) {
+        unawaited(provider.loadFromStorage());
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+        async.flushMicrotasks();
+
+        final session = provider.sessions.single;
+        expect(session.type, PomodoroType.focus);
+        expect(session.todoId, 'todo-1', reason: '逾期结算不得丢弃待办关联');
+        expect(session.subtaskId, 'sub-1');
+        expect(session.todoTitle, '周报整理');
+        expect(session.taskLabel, '周报整理 / 写总结');
+        expect(provider.sessionCountToday, 1, reason: '仍只结算一次');
+
+        provider.dispose();
+      });
+    });
+  });
+}
+
+/// 读取运行态快照（崩溃恢复路径的落盘内容）。
+Map<String, dynamic>? readRunningSnapshot(FakeAsync async) {
+  Map<String, dynamic>? snapshot;
+  SharedPreferences.getInstance().then((prefs) {
+    final raw = prefs.getString(PomodoroProvider.runningSnapshotKey);
+    if (raw != null) snapshot = jsonDecode(raw) as Map<String, dynamic>;
+  });
+  async.flushMicrotasks();
+  async.flushMicrotasks();
+  return snapshot;
 }

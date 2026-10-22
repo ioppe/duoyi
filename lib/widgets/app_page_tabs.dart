@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/design_tokens.dart';
+import '../core/app_motion.dart';
 import '../core/page_tab_style.dart';
 
 /// One treatment for page navigation; filters and form choices remain controls.
@@ -50,6 +51,7 @@ class AppPageTabs extends StatelessWidget implements PreferredSizeWidget {
         dividerColor: style.dividerColor,
         indicatorSize: style.indicatorSize,
         indicator: style.indicator,
+        indicatorAnimation: TabIndicatorAnimation.linear,
         labelColor: style.labelColor,
         unselectedLabelColor: style.unselectedLabelColor,
         labelStyle: style.labelStyle,
@@ -101,16 +103,22 @@ class AppPageSwitcher<T> extends StatefulWidget {
 class _AppPageSwitcherState<T> extends State<AppPageSwitcher<T>>
     with TickerProviderStateMixin {
   late TabController _controller;
+  bool? _reducedMotion;
 
   int get _index =>
       widget.options.indexWhere((item) => item.value == widget.value);
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = AppMotion.reduced(context);
+    if (_reducedMotion == reduced) return;
+    if (_reducedMotion != null) _controller.dispose();
+    _reducedMotion = reduced;
     _controller = TabController(
       length: widget.options.length,
       initialIndex: _index,
+      animationDuration: AppMotion.transition(context),
       vsync: this,
     );
   }
@@ -123,6 +131,7 @@ class _AppPageSwitcherState<T> extends State<AppPageSwitcher<T>>
       _controller = TabController(
         length: widget.options.length,
         initialIndex: _index,
+        animationDuration: AppMotion.transition(context),
         vsync: this,
       );
     } else if (_controller.index != _index) {

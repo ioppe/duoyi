@@ -2,6 +2,7 @@ import 'package:duoyi/providers/location_reminder_provider.dart';
 import 'package:duoyi/providers/notification_service.dart';
 import 'package:duoyi/screens/integrations_screen.dart';
 import 'package:duoyi/services/calendar_sync_service.dart';
+import 'package:duoyi/widgets/surface_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -65,10 +66,13 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.add));
       await tester.pumpAndSettle();
+      expect(find.byType(AppModalSheet), findsOneWidget);
       await tester.enterText(find.widgetWithText(TextField, '标题'), '到办公室');
       await tester.enterText(find.widgetWithText(TextField, '纬度'), '39.9042');
       await tester.enterText(find.widgetWithText(TextField, '经度'), '116.4074');
       await tester.enterText(find.widgetWithText(TextField, '半径（米）'), '500');
+      await tester.ensureVisible(actionText('保存', 'Save').first);
+      await tester.pumpAndSettle();
       await tester.tap(actionText('保存', 'Save').first);
       await tester.pumpAndSettle();
 

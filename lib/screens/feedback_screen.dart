@@ -1,6 +1,8 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/auth_provider.dart';
@@ -205,11 +207,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppCreateFab(
         key: const ValueKey('feedback_submit_fab'),
+        label: I18n.tr('feedback.submit.button'),
+        icon: Icons.add_comment_outlined,
         onPressed: () => _openSubmit(widget.initialCategory),
-        icon: const Icon(Icons.add_comment_outlined),
-        label: Text(I18n.tr('feedback.submit.button')),
       ),
       body: AppSecondaryControlTheme(
         child: RefreshIndicator(
@@ -834,8 +836,8 @@ class _FeedbackRecordSwipeActionsState
                 ),
               ),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOutCubic,
+              duration: AppMotion.feedback(context),
+              curve: AppMotion.enterCurve,
               transform: Matrix4.translationValues(
                 _open ? -_actionRailWidth : 0,
                 0,

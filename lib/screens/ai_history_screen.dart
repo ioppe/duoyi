@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -179,8 +180,8 @@ class _AiHistoryScreenState extends State<AiHistoryScreen> {
                         ClipRect(
                           key: ValueKey('ai_history_content_${e.id}'),
                           child: AnimatedSize(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
+                            duration: AppMotion.transition(context),
+                            curve: AppMotion.enterCurve,
                             child: expanded
                                 ? Padding(
                                     padding: const EdgeInsets.only(top: 8),

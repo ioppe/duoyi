@@ -22,7 +22,9 @@ void main() {
     expect(source, contains('class ErrorState extends StatelessWidget'));
     expect(source, contains('AnimationController'));
     expect(source, contains('ShaderMask'));
-    expect(source, contains('FilledButton.tonalIcon'));
+    expect(emptyState, contains('FilledButton.tonalIcon'));
+    expect(source, contains('return EmptyState('));
+    expect(source, contains('actionIcon: Icons.refresh'));
     expect(source, contains("title = '出错了'"));
 
     expect(emptyState, contains('class EmptyState extends StatelessWidget'));

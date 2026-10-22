@@ -1,3 +1,4 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
 import '../core/app_clock.dart';
@@ -35,6 +36,7 @@ import '../widgets/calendar_event_sheet.dart';
 import '../widgets/app_date_picker.dart';
 import '../widgets/app_time_picker.dart';
 import '../widgets/brand_background.dart';
+import '../widgets/result_states.dart';
 import '../widgets/surface_components.dart';
 import 'ai_schedule_screen.dart';
 import 'todo_screen.dart';
@@ -884,7 +886,7 @@ class _CalendarScreenState extends State<CalendarScreen>
             onPickDate: _pickDate,
           ),
           Material(
-            color: cs.surface,
+            color: Colors.transparent,
             child: AppPageTabs(
               controller: _tabController,
               height: AppPageTabs.heightFor(context),
@@ -927,7 +929,12 @@ class _CalendarScreenState extends State<CalendarScreen>
                           'calendar_month_global_scroll_view',
                         ),
                         primary: false,
-                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                        padding: const EdgeInsets.fromLTRB(
+                          8,
+                          8,
+                          8,
+                          DesignTokens.pageFabBottomPadding,
+                        ),
                         children: [
                           AppSurfaceCard(
                             key: const ValueKey(
@@ -992,7 +999,12 @@ class _CalendarScreenState extends State<CalendarScreen>
                 ),
                 // Day
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                  padding: const EdgeInsets.fromLTRB(
+                    8,
+                    8,
+                    8,
+                    DesignTokens.pageFabBottomPadding,
+                  ),
                   child: AppSurfaceCard(
                     key: const ValueKey('calendar_day_agenda_skin_card'),
                     padding: EdgeInsets.zero,
@@ -1035,9 +1047,9 @@ class _CalendarScreenState extends State<CalendarScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('action.create'),
         onPressed: () => _showQuickAddMenu(context),
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -1243,7 +1255,7 @@ class _CalendarScreenState extends State<CalendarScreen>
                   const SizedBox(height: 12),
                   Expanded(
                     child: todos.isEmpty
-                        ? const Center(child: Text('这个项目暂无任务'))
+                        ? EmptyHint(message: I18n.tr('calendar.project.empty'))
                         : Scrollbar(
                             child: ListView.separated(
                               key: const ValueKey(

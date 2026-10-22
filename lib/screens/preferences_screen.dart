@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/surface_components.dart';
@@ -153,8 +154,8 @@ class _PersonalizationSettingsScreenState
   void _scrollToContext(BuildContext target) {
     Scrollable.ensureVisible(
       target,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
+      duration: AppMotion.transition(context),
+      curve: AppMotion.enterCurve,
       alignment: 0.04,
     );
   }

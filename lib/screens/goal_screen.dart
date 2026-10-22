@@ -1,3 +1,4 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/design_tokens.dart';
@@ -50,19 +51,27 @@ class GoalScreen extends StatelessWidget {
               onAction: () => _openEdit(context),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                DesignTokens.pageFabBottomPadding,
+              ),
               itemCount: goals.length,
               itemBuilder: (_, i) => _GoalCard(goal: goals[i]),
             ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('goal.new'),
         onPressed: () => _openEdit(context),
-        icon: const Icon(Icons.add),
-        label: Text(I18n.tr('goal.new')),
       ),
     );
   }
 
   void _openEdit(BuildContext context, {GoalItem? goal}) {
+    if (goal == null) {
+      showGoalCreateSheet(context);
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => GoalEditScreen(goal: goal)),

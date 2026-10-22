@@ -155,7 +155,7 @@ void main() {
 
     expect(
       source,
-      contains('static const _fallbackVisibleTabs = <int>[0, 1, 2, 6]'),
+      contains('static const _fallbackVisibleTabs = <int>[0, 1, 2, 4, 6]'),
     );
     expect(source, contains('List<int> _visibleBottomNavTabs'));
     expect(source, contains('prefs.visibleBottomNavTabs'));

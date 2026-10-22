@@ -4,6 +4,7 @@ import '../widgets/app_page_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../models/pomodoro.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/design_tokens.dart';
@@ -363,20 +364,14 @@ class TodayScreen extends StatelessWidget {
             ? I18n.tr('goal.new')
             : I18n.tr('today.all_goals'),
         onMore: () => activeGoals.isEmpty
-            ? Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GoalEditScreen()),
-              )
+            ? showGoalCreateSheet(context)
             : TodayDetailRouter.open(context, TodaySectionKind.goals),
         child: activeGoals.isEmpty
             ? _TodaySectionEmptyState(
                 icon: Icons.flag_circle_outlined,
                 title: I18n.tr('goal.new'),
                 subtitle: I18n.tr('today.goal.create.subtitle'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const GoalEditScreen()),
-                ),
+                onTap: () => showGoalCreateSheet(context),
               )
             : Column(
                 children: activeGoals.map((g) {
@@ -637,7 +632,7 @@ class TodayScreen extends StatelessWidget {
             homePage(id: 'today_goals_list', children: [goalsSection()]),
           ],
         ),
-        floatingActionButtonLocation: const HomeFabLocation(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         floatingActionButton: showCaptureFab
             ? Builder(
                 builder: (context) {
@@ -653,14 +648,7 @@ class TodayScreen extends StatelessWidget {
                           : I18n.tr('today.new_goal'),
                       onCreate: controller.index == 0
                           ? null
-                          : () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BrandRouteSurface(
-                                  child: GoalEditScreen(),
-                                ),
-                              ),
-                            ),
+                          : () => showGoalCreateSheet(context),
                     ),
                   );
                 },
@@ -1552,7 +1540,9 @@ class _TodaySubtaskRowState extends State<_TodaySubtaskRow> {
                         child: CircularProgressIndicator(strokeWidth: 1.6),
                       )
                     : AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 160),
+                        duration: AppMotion.feedback(context),
+                        switchInCurve: AppMotion.enterCurve,
+                        switchOutCurve: AppMotion.exitCurve,
                         child: Icon(
                           completed
                               ? Icons.check_circle
@@ -2379,10 +2369,8 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: RepaintBoundary(child: tile),
           ),

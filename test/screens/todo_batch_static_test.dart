@@ -121,8 +121,10 @@ void main() {
 
     expect(
       source,
-      contains(
-        '_TodoViewMode.list =>\n                            NotificationListener<ScrollNotification>',
+      matches(
+        RegExp(
+          r'_TodoViewMode\.list\s*=>\s*NotificationListener<ScrollNotification>',
+        ),
       ),
     );
     expect(source, contains('cacheExtent: 640'));

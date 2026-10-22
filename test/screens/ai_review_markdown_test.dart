@@ -113,7 +113,11 @@ void main() {
         isNotEmpty,
         reason: _renderedText(find.byType(StatisticsScreen)),
       );
-      expect(ai.reviewHistory.single.content, _review);
+      expect(
+        ai.reviewHistory.single.content,
+        _review.trim(),
+        reason: 'AiService 会 trim 新回复，历史记录保存的是去除首尾空白后的正文。',
+      );
       expect(find.text('云端个性化解读'), findsOneWidget);
       _expectMarkdownRendered(find.byType(StatisticsScreen));
       await tester.ensureVisible(find.text('AI 历史'));

@@ -25,8 +25,12 @@ class DesignTokens {
   // ----- Account form fields -----
   static const double formFieldMinHeight = 56;
   static const double formContentMaxWidth = 840;
+  static const double creationFormMaxWidth = 720;
   static const double controlMinHeight = 44;
   static const double controlIconSize = 20;
+
+  // Keeps the last scrollable item clear of the lower-right creation action.
+  static const double pageFabBottomPadding = 88;
 
   // ----- Shared authentication pages -----
   static const double authPageMaxWidth = 1120;
@@ -42,6 +46,7 @@ class DesignTokens {
 
   // ----- Habit heatmap -----
   static const double habitHeatmapWidthFactor = 0.8;
+  static const double habitWorkspaceMaxWidth = 960;
 
   // ----- Home preview specification -----
   static const double homeContentMaxWidth = 720;

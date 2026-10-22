@@ -14,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 import '../core/app_clock.dart';
 import '../core/desktop_tokens.dart';
 import '../core/design_tokens.dart';
+import '../core/focus_task_stats.dart';
+import '../widgets/focus_task_stats_card.dart';
 import '../core/focus_tag_stats.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -160,6 +162,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         .toList();
     final focusMinutes =
         focusSessions.fold<int>(0, (sum, s) => sum + s.durationSeconds) ~/ 60;
+    final focusTaskStats = FocusTaskStats.build(
+      sessions: focusSessions,
+      todos: todoProv.todos,
+    );
     final focusTagStats = FocusTagStats.build(sessions: focusSessions);
     final focusTagTrend = FocusTagStats.buildTrend(
       sessions: focusSessions,
@@ -412,6 +418,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 auditCategorySeconds: auditCategorySeconds,
                 auditEntries: auditEntries,
               ),
+            ),
+            const SizedBox(height: 10),
+            FocusTaskStatsCard(
+              key: ValueKey('statistics_task_focus_${_range.name}'),
+              stats: focusTaskStats,
             ),
             const SizedBox(height: 10),
             _ProductivityComparisonCard(

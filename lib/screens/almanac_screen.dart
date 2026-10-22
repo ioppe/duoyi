@@ -990,15 +990,29 @@ class _AlmanacDetailPageState extends State<_AlmanacDetailPage> {
     return day;
   }
 
-  int get _pageCount =>
-      _lastSupportedDate.difference(_firstSupportedDate).inDays + 1;
+  int get _pageCount => _pageForDate(_lastSupportedDate) + 1;
 
-  int _pageForDate(DateTime date) =>
-      _clampDate(date).difference(_firstSupportedDate).inDays;
-
-  DateTime _dateForPage(int page) {
-    return _clampDate(_firstSupportedDate.add(Duration(days: page)));
+  int _pageForDate(DateTime date) {
+    final day = _clampDate(date);
+    // Calendar pages count civil dates, independent of local DST offsets.
+    return DateTime.utc(day.year, day.month, day.day)
+        .difference(
+          DateTime.utc(
+            _firstSupportedDate.year,
+            _firstSupportedDate.month,
+            _firstSupportedDate.day,
+          ),
+        )
+        .inDays;
   }
+
+  DateTime _dateForPage(int page) => _clampDate(
+    DateTime(
+      _firstSupportedDate.year,
+      _firstSupportedDate.month,
+      _firstSupportedDate.day + page,
+    ),
+  );
 
   LunarAlmanacDetail _detailFor(DateTime date) {
     final day = _dateOnly(date);

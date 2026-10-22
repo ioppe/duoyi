@@ -100,12 +100,20 @@ class AiService extends ChangeNotifier {
     int maxTokens = 1200,
   }) async {
     if (!_enabled) throw const AiException('AI 功能未启用，请联系管理员');
+    // MiniMax M3.1 的 reasoning_content 与正文共用输出预算，网关未必单列计数。
+    final modelId = _model.toLowerCase().split('/').last;
+    final requestMaxTokens =
+        modelId == 'minimax-m3.1-flash-free' &&
+            maxTokens > 256 &&
+            maxTokens < 8192
+        ? 8192
+        : maxTokens;
     try {
       final res = await _client.post('/api/ai/chat', {
         'system': systemPrompt,
         'user': userPrompt,
         'temperature': temperature,
-        'max_tokens': maxTokens,
+        'max_tokens': requestMaxTokens,
       }, AppConfig.aiTimeout);
       final content = (res['content'] ?? '').toString().trim();
       if (content.isEmpty) {
@@ -1065,10 +1073,15 @@ String _friendlyAiError(String raw) {
   }
   if (text.contains('503')) return 'AI 服务暂不可用，请检查管理后台配置';
   if (text.contains('正文为空') || text.contains('调大 max_tokens')) {
-    return '模型把输出预算用于思考，正文为空；请调大 max_tokens 或改用非推理模型';
+    return text.replaceFirst(RegExp(r'^502:\s*'), '');
   }
-  if (text.contains('上游不可达') || text.contains('502')) {
-    return 'AI 上游服务不可达，请检查 Base URL、网络或模型配置';
+  if (text.contains('上游不可达')) {
+    final detail = text.replaceFirst(RegExp(r'^(502:\s*)?上游不可达[:：]\s*'), '');
+    return 'AI 上游服务不可达：$detail';
+  }
+  if (text.contains('502')) {
+    final detail = text.replaceFirst(RegExp(r'^502:\s*'), '');
+    return 'AI 代理处理失败：$detail';
   }
   if (text.contains('401') || text.contains('403')) return 'AI 密钥无效或没有模型权限';
   return text;

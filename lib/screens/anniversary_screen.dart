@@ -1,6 +1,8 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -198,10 +200,9 @@ class _AnniversaryScreenState extends State<AnniversaryScreen>
         ),
       ),
       floatingActionButton: canAdd
-          ? FloatingActionButton.extended(
+          ? AppCreateFab(
+              label: I18n.tr('action.add'),
               onPressed: () => _showAddDialog(context),
-              icon: const Icon(Icons.add),
-              label: Text(I18n.tr('action.add')),
               backgroundColor: cs.primary,
             )
           : null,
@@ -472,9 +473,10 @@ class _AnniversarySummaryStat extends StatelessWidget {
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: appSecondaryRouteTitleTextStyle(
-            context,
-          ).copyWith(fontWeight: DesignTokens.fontWeightStrong, color: cs.onSurface),
+          style: appSecondaryRouteTitleTextStyle(context).copyWith(
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: cs.onSurface,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
@@ -775,10 +777,8 @@ class _AnniversaryCardState extends State<_AnniversaryCard> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: content,
           ),
@@ -1255,278 +1255,273 @@ class _AnniversaryEditSheetState extends State<_AnniversaryEditSheet> {
     final titleHint = _titleHintForType(_type);
 
     return AppModalSheet(
-          title: editorTitle,
-          leadingActions: widget.editing == null
-              ? const []
-              : [
-                  TextButton(
-                    onPressed: _delete,
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    child: Text(I18n.tr('action.delete')),
-                  ),
-                ],
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(I18n.tr('action.cancel')),
+      title: editorTitle,
+      leadingActions: widget.editing == null
+          ? const []
+          : [
+              TextButton(
+                onPressed: _delete,
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text(I18n.tr('action.delete')),
+              ),
+            ],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(I18n.tr('action.cancel')),
+        ),
+        FilledButton(
+          key: const ValueKey('anniversary_editor_save_button'),
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  widget.editing == null
+                      ? I18n.tr('action.add')
+                      : I18n.tr('action.save'),
+                ),
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _title,
+            autofocus: widget.editing == null,
+            decoration: InputDecoration(
+              labelText: I18n.tr('anniversary.field.title'),
+              hintText: titleHint,
             ),
-            FilledButton(
-              key: const ValueKey('anniversary_editor_save_button'),
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      widget.editing == null
-                          ? I18n.tr('action.add')
-                          : I18n.tr('action.save'),
-                    ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _desc,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: I18n.tr('anniversary.field.description'),
             ),
+          ),
+          const SizedBox(height: 16),
+          if (!isTypeLocked) ...[
+            Text(I18n.tr('anniversary.field.type'), style: fieldLabelStyle),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              children: AnniversaryType.values
+                  .where((t) {
+                    return widget.editing != null ||
+                        t != AnniversaryType.normal;
+                  })
+                  .map((t) {
+                    final label = _typeLabelFor(t);
+                    return ChoiceChip(
+                      label: Text(label),
+                      selected: _type == t,
+                      onSelected: (_) => setState(() => _type = t),
+                    );
+                  })
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
           ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _title,
-                autofocus: widget.editing == null,
-                decoration: InputDecoration(
-                  labelText: I18n.tr('anniversary.field.title'),
-                  hintText: titleHint,
+          Text(I18n.tr('anniversary.field.date_type'), style: fieldLabelStyle),
+          const SizedBox(height: 6),
+          _AnniversaryHorizontalScroller(
+            child: SegmentedButton<AnniversaryCalendarType>(
+              key: const ValueKey('anniversary_calendar_type_segments'),
+              segments: [
+                ButtonSegment(
+                  value: AnniversaryCalendarType.solar,
+                  icon: const Icon(Icons.wb_sunny_outlined),
+                  label: Text(I18n.tr('calendar.solar')),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _desc,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  labelText: I18n.tr('anniversary.field.description'),
+                ButtonSegment(
+                  value: AnniversaryCalendarType.lunar,
+                  icon: const Icon(Icons.nightlight_round),
+                  label: Text(I18n.tr('calendar.lunar')),
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (!isTypeLocked) ...[
-                Text(I18n.tr('anniversary.field.type'), style: fieldLabelStyle),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  children: AnniversaryType.values
-                      .where((t) {
-                        return widget.editing != null ||
-                            t != AnniversaryType.normal;
-                      })
-                      .map((t) {
-                        final label = _typeLabelFor(t);
-                        return ChoiceChip(
-                          label: Text(label),
-                          selected: _type == t,
-                          onSelected: (_) => setState(() => _type = t),
-                        );
-                      })
-                      .toList(),
-                ),
-                const SizedBox(height: 16),
               ],
-              Text(
-                I18n.tr('anniversary.field.date_type'),
-                style: fieldLabelStyle,
-              ),
-              const SizedBox(height: 6),
-              _AnniversaryHorizontalScroller(
-                child: SegmentedButton<AnniversaryCalendarType>(
-                  key: const ValueKey('anniversary_calendar_type_segments'),
+              selected: {_cal},
+              onSelectionChanged: (value) => setState(() => _cal = value.first),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            key: const ValueKey('anniversary_editor_date_tile'),
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              _cal == AnniversaryCalendarType.solar
+                  ? Icons.calendar_today_outlined
+                  : Icons.nightlight_outlined,
+            ),
+            title: Text(
+              _cal == AnniversaryCalendarType.solar
+                  ? '${I18n.tr('calendar.solar')} ${I18nDateFormat.date(_date)}'
+                  : '${I18n.tr('calendar.chinese_lunar_calendar')} ${_formatLunarDate(lunar)}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              _cal == AnniversaryCalendarType.solar
+                  ? '${I18n.tr('calendar.corresponding_lunar')}: ${lunar.toString()}'
+                  : '${I18n.tr('calendar.corresponding_solar')}: ${I18nDateFormat.date(_date)}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final result = await AppDatePicker.show(
+                context,
+                initialDate: _date,
+                firstDate: DateTime(1900),
+                lastDate: DateTime(2099, 12, 31),
+                title: I18n.tr('anniversary.field.date_picker_title'),
+                subtitle: I18n.tr('anniversary.field.date_picker_subtitle'),
+                initialMode: _cal == AnniversaryCalendarType.solar
+                    ? AppDatePickerMode.solar
+                    : AppDatePickerMode.lunar,
+                allowIgnoreYear: _type == AnniversaryType.birthday,
+                initialIgnoreYear: _ignoreYear,
+              );
+              if (!mounted) return;
+              if (result != null) {
+                setState(() {
+                  _date = result.date;
+                  _ignoreYear = result.ignoreYear;
+                  _cal = result.mode == AppDatePickerMode.solar
+                      ? AnniversaryCalendarType.solar
+                      : AnniversaryCalendarType.lunar;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(I18n.tr('anniversary.field.color'), style: fieldLabelStyle),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            children: _presetColors.map((v) {
+              final selected = v == _colorValue;
+              return GestureDetector(
+                onTap: () => setState(() => _colorValue = v),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Color(v),
+                    shape: BoxShape.circle,
+                    border: selected
+                        ? Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.34),
+                            width: 0.45,
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _remind,
+            title: Text(
+              I18n.tr('countdown.field.due_reminder'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: _remind
+                ? Text(
+                    '${I18n.tr('countdown.reminder.before_prefix')}$_remindDays${I18n.tr('countdown.reminder.before_suffix')} · $remindTimeText',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Text(
+                    I18n.tr('countdown.reminder.closed'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+            onChanged: (v) => setState(() => _remind = v),
+          ),
+          if (_remind) ...[
+            AppSecondaryControlTheme(
+              child: _AnniversaryHorizontalScroller(
+                child: SegmentedButton<ReminderKind>(
+                  key: const ValueKey('anniversary_reminder_kind_segments'),
                   segments: [
                     ButtonSegment(
-                      value: AnniversaryCalendarType.solar,
-                      icon: const Icon(Icons.wb_sunny_outlined),
-                      label: Text(I18n.tr('calendar.solar')),
+                      value: ReminderKind.push,
+                      icon: const Icon(Icons.notifications_outlined),
+                      label: Text(I18n.tr('reminder.kind.push')),
                     ),
                     ButtonSegment(
-                      value: AnniversaryCalendarType.lunar,
-                      icon: const Icon(Icons.nightlight_round),
-                      label: Text(I18n.tr('calendar.lunar')),
+                      value: ReminderKind.popup,
+                      icon: const Icon(Icons.open_in_new_outlined),
+                      label: Text(I18n.tr('reminder.kind.popup')),
+                    ),
+                    ButtonSegment(
+                      value: ReminderKind.alarm,
+                      icon: const Icon(Icons.alarm_outlined),
+                      label: Text(I18n.tr('reminder.kind.alarm')),
+                    ),
+                    ButtonSegment(
+                      value: ReminderKind.off,
+                      icon: const Icon(Icons.notifications_off_outlined),
+                      label: Text(I18n.tr('reminder.kind.off')),
                     ),
                   ],
-                  selected: {_cal},
-                  onSelectionChanged: (value) =>
-                      setState(() => _cal = value.first),
+                  selected: {_reminderKind},
+                  onSelectionChanged: (selected) => setState(() {
+                    _reminderKind = selected.first;
+                    if (_reminderKind == ReminderKind.off) {
+                      _remind = false;
+                    }
+                  }),
                 ),
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                key: const ValueKey('anniversary_editor_date_tile'),
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  _cal == AnniversaryCalendarType.solar
-                      ? Icons.calendar_today_outlined
-                      : Icons.nightlight_outlined,
-                ),
-                title: Text(
-                  _cal == AnniversaryCalendarType.solar
-                      ? '${I18n.tr('calendar.solar')} ${I18nDateFormat.date(_date)}'
-                      : '${I18n.tr('calendar.chinese_lunar_calendar')} ${_formatLunarDate(lunar)}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  _cal == AnniversaryCalendarType.solar
-                      ? '${I18n.tr('calendar.corresponding_lunar')}: ${lunar.toString()}'
-                      : '${I18n.tr('calendar.corresponding_solar')}: ${I18nDateFormat.date(_date)}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () async {
-                  final result = await AppDatePicker.show(
-                    context,
-                    initialDate: _date,
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime(2099, 12, 31),
-                    title: I18n.tr('anniversary.field.date_picker_title'),
-                    subtitle: I18n.tr('anniversary.field.date_picker_subtitle'),
-                    initialMode: _cal == AnniversaryCalendarType.solar
-                        ? AppDatePickerMode.solar
-                        : AppDatePickerMode.lunar,
-                    allowIgnoreYear: _type == AnniversaryType.birthday,
-                    initialIgnoreYear: _ignoreYear,
-                  );
-                  if (!mounted) return;
-                  if (result != null) {
-                    setState(() {
-                      _date = result.date;
-                      _ignoreYear = result.ignoreYear;
-                      _cal = result.mode == AppDatePickerMode.solar
-                          ? AnniversaryCalendarType.solar
-                          : AnniversaryCalendarType.lunar;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
-              Text(I18n.tr('anniversary.field.color'), style: fieldLabelStyle),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                children: _presetColors.map((v) {
-                  final selected = v == _colorValue;
-                  return GestureDetector(
-                    onTap: () => setState(() => _colorValue = v),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Color(v),
-                        shape: BoxShape.circle,
-                        border: selected
-                            ? Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.34),
-                                width: 0.45,
-                              )
-                            : null,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _remind,
-                title: Text(
-                  I18n.tr('countdown.field.due_reminder'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: _remind
-                    ? Text(
-                        '${I18n.tr('countdown.reminder.before_prefix')}$_remindDays${I18n.tr('countdown.reminder.before_suffix')} · $remindTimeText',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    : Text(
-                        I18n.tr('countdown.reminder.closed'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                onChanged: (v) => setState(() => _remind = v),
-              ),
-              if (_remind) ...[
-                AppSecondaryControlTheme(
-                  child: _AnniversaryHorizontalScroller(
-                    child: SegmentedButton<ReminderKind>(
-                      key: const ValueKey('anniversary_reminder_kind_segments'),
-                      segments: [
-                        ButtonSegment(
-                          value: ReminderKind.push,
-                          icon: const Icon(Icons.notifications_outlined),
-                          label: Text(I18n.tr('reminder.kind.push')),
-                        ),
-                        ButtonSegment(
-                          value: ReminderKind.popup,
-                          icon: const Icon(Icons.open_in_new_outlined),
-                          label: Text(I18n.tr('reminder.kind.popup')),
-                        ),
-                        ButtonSegment(
-                          value: ReminderKind.alarm,
-                          icon: const Icon(Icons.alarm_outlined),
-                          label: Text(I18n.tr('reminder.kind.alarm')),
-                        ),
-                        ButtonSegment(
-                          value: ReminderKind.off,
-                          icon: const Icon(Icons.notifications_off_outlined),
-                          label: Text(I18n.tr('reminder.kind.off')),
-                        ),
-                      ],
-                      selected: {_reminderKind},
-                      onSelectionChanged: (selected) => setState(() {
-                        _reminderKind = selected.first;
-                        if (_reminderKind == ReminderKind.off) {
-                          _remind = false;
-                        }
-                      }),
-                    ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const SizedBox(width: 16),
+                Text('${I18n.tr('countdown.field.remind_days')}:'),
+                Expanded(
+                  child: Slider(
+                    value: _remindDays.toDouble(),
+                    min: 0,
+                    max: 30,
+                    divisions: 30,
+                    label: '$_remindDays',
+                    onChanged: (v) => setState(() => _remindDays = v.toInt()),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    Text('${I18n.tr('countdown.field.remind_days')}:'),
-                    Expanded(
-                      child: Slider(
-                        value: _remindDays.toDouble(),
-                        min: 0,
-                        max: 30,
-                        divisions: 30,
-                        label: '$_remindDays',
-                        onChanged: (v) =>
-                            setState(() => _remindDays = v.toInt()),
-                      ),
-                    ),
-                  ],
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.schedule),
-                  title: Text(I18n.tr('countdown.field.remind_time')),
-                  subtitle: Text(remindTimeText),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    final picked = await AppTimePicker.show(
-                      context,
-                      initialTime: _remindTime,
-                      title: I18n.tr('countdown.field.remind_time'),
-                      minuteStep: 5,
-                    );
-                    if (!mounted) return;
-                    if (picked != null) setState(() => _remindTime = picked);
-                  },
-                ),
               ],
-            ],
-          ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.schedule),
+              title: Text(I18n.tr('countdown.field.remind_time')),
+              subtitle: Text(remindTimeText),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final picked = await AppTimePicker.show(
+                  context,
+                  initialTime: _remindTime,
+                  title: I18n.tr('countdown.field.remind_time'),
+                  minuteStep: 5,
+                );
+                if (!mounted) return;
+                if (picked != null) setState(() => _remindTime = picked);
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 

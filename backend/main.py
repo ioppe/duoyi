@@ -2458,6 +2458,7 @@ def _quota_aliases_from_rewards(raw) -> dict:
 # Cloudflare/WAF 会以 "error code: 1010" 拦截默认的 Python-urllib UA，
 # 因此 AI 上游请求必须带一个稳定的客户端标识。
 AI_UPSTREAM_USER_AGENT = "duoyi-backend/1.1"
+AI_CHAT_TIMEOUT_SECONDS = 150  # Long reports can include hidden reasoning first.
 
 
 def _ai_chat_completions_url(base_url: str) -> str:
@@ -2483,6 +2484,8 @@ def _ai_chat_text_from_parts(value) -> str:
                 continue
             if not isinstance(part, dict):
                 continue
+            if part.get("type") not in {None, "text", "output_text"}:
+                continue
             text = part.get("text")
             if isinstance(text, str):
                 chunks.append(text)
@@ -2492,19 +2495,138 @@ def _ai_chat_text_from_parts(value) -> str:
     return str(value)
 
 
+def _ai_chat_response_from_sse(body: str) -> Optional[dict]:
+    """Buffer a completed OpenAI/Anthropic stream without exposing reasoning."""
+    payloads: list[dict] = []
+    data_lines: list[str] = []
+    event_name = ""
+    saw_sse = False
+    completed = False
+
+    def flush_data() -> None:
+        nonlocal completed
+        if not data_lines:
+            return
+        raw = "\n".join(data_lines).strip()
+        data_lines.clear()
+        if raw == "[DONE]":
+            completed = True
+            return
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            raise ValueError("SSE 数据帧不是有效 JSON") from None
+        if not isinstance(value, dict):
+            raise ValueError("SSE 数据帧不是 JSON 对象")
+        if event_name:
+            value.setdefault("type", event_name)
+        payloads.append(value)
+
+    for line in body.lstrip("\ufeff").splitlines():
+        if not line.strip():
+            flush_data()
+            event_name = ""
+        elif line.startswith(":"):
+            saw_sse = True
+        elif line.startswith("event:"):
+            saw_sse = True
+            event_name = line[len("event:") :].strip()
+        elif line.startswith("data:"):
+            saw_sse = True
+            data_lines.append(line[len("data:") :].lstrip())
+    flush_data()
+    if not saw_sse:
+        return None
+
+    chunks: list[str] = []
+    finish_reason = ""
+    usage: dict = {}
+    for event in payloads:
+        event_type = event.get("type")
+        if event_type == "error" or event.get("error"):
+            return {"error": event.get("error") or {"message": "上游流返回错误"}}
+        if event_type == "message_stop":
+            completed = True
+        elif event_type == "message_start":
+            message = event.get("message") or {}
+            if isinstance(message, dict):
+                text = _ai_chat_content_from_response(message)
+                if text:
+                    chunks.append(text)
+                if isinstance(message.get("usage"), dict):
+                    usage.update(message["usage"])
+        elif event_type == "content_block_start":
+            block = event.get("content_block") or {}
+            if isinstance(block, dict) and block.get("type") == "text":
+                chunks.append(_ai_chat_text_from_parts([block]))
+        elif event_type == "content_block_delta":
+            delta = event.get("delta") or {}
+            if isinstance(delta, dict) and delta.get("type") == "text_delta":
+                text = delta.get("text")
+                if isinstance(text, str):
+                    chunks.append(text)
+        elif event_type == "message_delta":
+            delta = event.get("delta") or {}
+            if isinstance(delta, dict) and delta.get("stop_reason"):
+                finish_reason = str(delta["stop_reason"])
+
+        choices = event.get("choices") or []
+        if not isinstance(choices, list):
+            raise ValueError("SSE choices 不是列表")
+        for choice in choices:
+            if not isinstance(choice, dict) or choice.get("index", 0) != 0:
+                continue
+            delta = choice.get("delta") or {}
+            text = ""
+            if isinstance(delta, dict):
+                text = _ai_chat_text_from_parts(delta.get("content"))
+            if not text:
+                text = _ai_chat_content_from_response({"choices": [choice]})
+            if text:
+                chunks.append(text)
+            if choice.get("finish_reason"):
+                finish_reason = str(choice["finish_reason"])
+        if isinstance(event.get("usage"), dict):
+            usage.update(event["usage"])
+
+    if not completed and not finish_reason:
+        raise ValueError("SSE 流未完整结束，请重试")
+    return {
+        "choices": [
+            {
+                "message": {"content": "".join(chunks)},
+                "finish_reason": finish_reason,
+            }
+        ],
+        "usage": usage,
+    }
+
+
 def _ai_chat_content_from_response(data: dict) -> str:
     """Return only the assistant answer; reasoning text is never user content."""
     choices = data.get("choices") or []
     if choices:
-        choice = choices[0] or {}
+        choice = choices[0] if isinstance(choices[0], dict) else {}
         message = choice.get("message") or {}
-        text = _ai_chat_text_from_parts(message.get("content")).strip()
-        if text:
-            return text
+        if isinstance(message, dict):
+            text = _ai_chat_text_from_parts(message.get("content")).strip()
+            if text:
+                return text
         # Legacy completions shape used by some compatible gateways.
         text = _ai_chat_text_from_parts(choice.get("text")).strip()
         if text:
             return text
+
+    # Anthropic Messages responses put visible text at the top level.
+    text = _ai_chat_text_from_parts(data.get("content")).strip()
+    if text:
+        return text
+    message = data.get("message")
+    if isinstance(message, dict):
+        text = _ai_chat_text_from_parts(message.get("content")).strip()
+        if text:
+            return text
+
     output_text = data.get("output_text")
     if output_text is not None:
         return _ai_chat_text_from_parts(output_text).strip()
@@ -2514,22 +2636,37 @@ def _ai_chat_content_from_response(data: dict) -> str:
 def _ai_chat_reply_meta(data: dict) -> dict:
     """Diagnostics needed to explain an empty reply without leaking content."""
     choices = data.get("choices") or []
-    choice = (choices[0] or {}) if choices else {}
+    choice = choices[0] if choices and isinstance(choices[0], dict) else {}
     message = choice.get("message") or {}
-    usage = data.get("usage") or {}
-    details = usage.get("completion_tokens_details") or {}
-    raw_reasoning = details.get("reasoning_tokens", usage.get("reasoning_tokens"))
+    if not isinstance(message, dict):
+        message = {}
+    usage = data.get("usage")
+    if not isinstance(usage, dict):
+        usage = {}
+    details = usage.get("completion_tokens_details")
+    if not isinstance(details, dict):
+        details = {}
+    raw_reasoning = details.get(
+        "reasoning_tokens",
+        usage.get("reasoning_tokens", usage.get("thinking_tokens")),
+    )
     try:
         reasoning_tokens = int(raw_reasoning or 0)
     except (TypeError, ValueError):
         reasoning_tokens = 0
+    raw_completion = usage.get("completion_tokens", usage.get("output_tokens"))
     try:
-        completion_tokens = int(usage.get("completion_tokens") or 0)
+        completion_tokens = int(raw_completion or 0)
     except (TypeError, ValueError):
         completion_tokens = 0
     reasoning_text = message.get("reasoning_content")
     return {
-        "finish_reason": str(choice.get("finish_reason") or ""),
+        "finish_reason": str(
+            choice.get("finish_reason")
+            or data.get("stop_reason")
+            or data.get("finish_reason")
+            or ""
+        ),
         "reasoning_tokens": reasoning_tokens,
         "completion_tokens": completion_tokens,
         "has_reasoning_text": isinstance(reasoning_text, str)
@@ -2540,11 +2677,22 @@ def _ai_chat_reply_meta(data: dict) -> dict:
 def _ai_chat_empty_content_detail(meta: dict) -> str:
     finish_reason = meta.get("finish_reason") or "未知"
     reasoning_tokens = int(meta.get("reasoning_tokens") or 0)
-    if reasoning_tokens > 0:
+    completion_tokens = int(meta.get("completion_tokens") or 0)
+    reasoning_detail = (
+        f"，思考 {reasoning_tokens} tokens"
+        if reasoning_tokens > 0
+        else "，检测到思考内容" if meta.get("has_reasoning_text") else ""
+    )
+    if finish_reason in {"length", "max_tokens"}:
         return (
-            "模型把输出预算全部用于思考，正文为空"
-            f"（finish_reason={finish_reason}，思考 {reasoning_tokens} tokens）。"
+            "模型已达到输出上限，正文为空"
+            f"（finish_reason={finish_reason}，输出 {completion_tokens} tokens{reasoning_detail}）。"
             "请调大 max_tokens 或改用非推理模型。"
+        )
+    if reasoning_detail:
+        return (
+            f"模型仅返回思考，正文为空（finish_reason={finish_reason}{reasoning_detail}），"
+            "请检查模型与网关的正文输出配置。"
         )
     return (
         f"上游返回空内容（finish_reason={finish_reason}），"
@@ -2572,6 +2720,7 @@ def _call_ai_chat_upstream(
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "stream": False,
         },
         ensure_ascii=False,
     ).encode("utf-8")
@@ -2592,14 +2741,39 @@ def _call_ai_chat_upstream(
     try:
         with urllib.request.urlopen(upstream, timeout=timeout) as resp:
             body = resp.read().decode("utf-8", errors="replace")
-            data = json.loads(body)
     except urllib.error.HTTPError as e:
         text = e.read().decode("utf-8", errors="replace")
         raise HTTPException(status_code=e.code, detail=f"上游错误: {text[:200]}")
+    except urllib.error.URLError as e:
+        if isinstance(e.reason, TimeoutError):
+            raise HTTPException(status_code=504, detail=f"AI 上游响应超时（等待 {timeout} 秒），请稍后重试")
+        raise HTTPException(status_code=502, detail=f"上游不可达: {e}")
+    except TimeoutError:
+        raise HTTPException(status_code=504, detail=f"AI 上游响应超时（等待 {timeout} 秒），请稍后重试")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"上游不可达: {e}")
 
-    content = _ai_chat_content_from_response(data)
+    try:
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            data = _ai_chat_response_from_sse(body)
+            if data is None:
+                raise
+        if not isinstance(data, dict):
+            raise ValueError("上游响应不是 JSON 对象")
+        content = _ai_chat_content_from_response(data)
+    except (ValueError, TypeError, AttributeError) as e:
+        raise HTTPException(status_code=502, detail=f"上游响应格式错误（预期 JSON 或 SSE）：{e}")
+
+    upstream_error = data.get("error")
+    if upstream_error:
+        if isinstance(upstream_error, dict):
+            detail = str(upstream_error.get("message") or upstream_error.get("type") or "未知错误")
+        else:
+            detail = str(upstream_error)
+        raise HTTPException(status_code=502, detail=f"上游错误: {detail[:200]}")
+
     if require_content and not content:
         # Reasoning models spend the whole max_tokens budget on thinking and
         # then return an empty answer; surface it instead of a blank reply.
@@ -3868,7 +4042,7 @@ def ai_chat(req: AiChatRequest, user_id: str = Depends(_verify_token)):
             messages=messages,
             temperature=req.temperature,
             max_tokens=req.max_tokens,
-            timeout=60,
+            timeout=AI_CHAT_TIMEOUT_SECONDS,
         )
         if not content.strip():
             # Defensive: never hand an empty answer to clients that render it.

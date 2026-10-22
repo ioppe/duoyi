@@ -333,6 +333,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     'endsAtMs': _activeAnchorMs,
     'completedSessions': _state.completedSessions,
     'taskName': _state.taskName,
+    'todoId': _state.todoId,
+    'subtaskId': _state.subtaskId,
+    'todoTitle': _state.todoTitle,
     'tag': _state.tag,
   };
 
@@ -397,6 +400,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     final completedSessions = (data['completedSessions'] as num?)?.toInt() ?? 0;
     final taskName = data['taskName']?.toString();
     final tag = data['tag']?.toString();
+    final todoId = data['todoId']?.toString();
+    final subtaskId = data['subtaskId']?.toString();
+    final todoTitle = data['todoTitle']?.toString();
     final nowMs = DateTime.now().millisecondsSinceEpoch;
 
     if (!isCountUp) {
@@ -416,6 +422,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
           type: type,
           completedSessions: completedSessions,
           taskName: taskName,
+          todoId: todoId,
+          subtaskId: subtaskId,
+          todoTitle: todoTitle,
           whiteNoiseSound: _config.whiteNoiseSound,
           tag: tag,
           focusRoomId: _config.focusRoomId,
@@ -439,6 +448,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         type: type,
         completedSessions: completedSessions,
         taskName: taskName,
+        todoId: todoId,
+        subtaskId: subtaskId,
+        todoTitle: todoTitle,
         whiteNoiseSound: _config.whiteNoiseSound,
         tag: tag,
         focusRoomId: _config.focusRoomId,
@@ -464,6 +476,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       type: type,
       completedSessions: completedSessions,
       taskName: taskName,
+      todoId: todoId,
+      subtaskId: subtaskId,
+      todoTitle: todoTitle,
       whiteNoiseSound: _config.whiteNoiseSound,
       tag: tag,
       focusRoomId: _config.focusRoomId,
@@ -508,8 +523,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (updated.type == PomodoroType.focus) {
       await _timeAudit?.recordPomodoroSession(
         sessionId: updated.id,
-        title: updated.taskName?.isNotEmpty == true
-            ? updated.taskName!
+        // 子任务父名可见：时间足迹标题用 taskLabel（父任务 / 子任务）。
+        title: updated.taskLabel?.isNotEmpty == true
+            ? updated.taskLabel!
             : '番茄专注',
         startAt: updated.startTime,
         endAt: updated.endTime,
@@ -682,6 +698,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       durationSeconds: durationSeconds,
       type: completedType,
       taskName: completedState.taskName,
+      todoId: completedState.todoId,
+      subtaskId: completedState.subtaskId,
+      todoTitle: completedState.todoTitle,
       whiteNoiseSound: completedState.whiteNoiseSound,
       tag: completedState.tag,
       focusRoomId: completedState.focusRoomId,
@@ -764,8 +783,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (completedType == PomodoroType.focus) {
       await _timeAudit?.recordPomodoroSession(
         sessionId: session.id,
-        title: session.taskName?.isNotEmpty == true
-            ? session.taskName!
+        // 子任务父名可见：时间足迹标题用 taskLabel（父任务 / 子任务）。
+        title: session.taskLabel?.isNotEmpty == true
+            ? session.taskLabel!
             : '番茄专注',
         startAt: session.startTime,
         endAt: session.endTime,
@@ -984,9 +1004,49 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// 手动 / 预设任务名入口：改名字即视为不再指向具体待办或子任务，
+  /// 因此同时清空关联字段（要保留关联请走 [setTaskTarget]）。
   void setTaskName(String? name) {
-    _state = _state.copyWith(taskName: name, clearTaskName: name == null);
+    final clean = name?.trim();
+    final next = clean == null || clean.isEmpty ? null : clean;
+    _state = _state.copyWith(
+      taskName: next,
+      clearTaskName: next == null,
+      clearTaskLink: true,
+    );
     notifyListeners();
+    // 运行中改任务名必须同步快照，否则重启后恢复出旧任务名。
+    _persistRunningSnapshot();
+  }
+
+  /// 待办 / 子任务选择入口：一次性写入父任务 id、父任务名称快照与
+  /// （可选的）子任务 id；`taskName` 仍是被选择对象本身的名称
+  /// （选子任务时是子任务名，父任务名进 `todoTitle`）。
+  ///
+  /// 先 `clearTaskLink` 全清再赋值：`copyWith` 的 `subtaskId ?? this.subtaskId`
+  /// 会保留旧值，从子任务切回父任务时必须显式丢弃旧 `subtaskId`。
+  void setTaskTarget({
+    required String todoId,
+    required String todoTitle,
+    required String taskName,
+    String? subtaskId,
+  }) {
+    final parentId = todoId.trim();
+    final parentTitle = todoTitle.trim();
+    final target = taskName.trim();
+    final childId = subtaskId?.trim();
+    _state = _state
+        .copyWith(clearTaskLink: true)
+        .copyWith(
+          taskName: target.isEmpty ? null : target,
+          clearTaskName: target.isEmpty,
+          todoId: parentId.isEmpty ? null : parentId,
+          todoTitle: parentTitle.isEmpty ? null : parentTitle,
+          subtaskId: childId == null || childId.isEmpty ? null : childId,
+        );
+    notifyListeners();
+    // 运行中选择任务需要立刻落盘，保证崩溃重启后恢复出同一关联。
+    _persistRunningSnapshot();
   }
 
   void setTag(String? tag) {

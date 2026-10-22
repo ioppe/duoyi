@@ -91,7 +91,7 @@ void main() {
     expect(assignment, contains('overflow: TextOverflow.ellipsis'));
 
     final locationDialog = source.substring(
-      source.indexOf("title: const Text('添加位置提醒')"),
+      source.indexOf("title: '添加位置提醒'"),
       source.indexOf('if (ok != true) return;'),
     );
     expect(locationDialog, contains('LayoutBuilder('));

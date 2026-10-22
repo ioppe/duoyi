@@ -9,6 +9,136 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get stateError => 'Something went wrong';
+
+  @override
+  String get stateLoadFailed => 'Unable to load';
+
+  @override
+  String get calendarProjectEmpty => 'No tasks in this project yet';
+
+  @override
+  String get focusTasksPickerHint =>
+      'Choose a task first, or expand it to choose a subtask';
+
+  @override
+  String get focusTasksSearch => 'Search tasks or subtasks';
+
+  @override
+  String get focusTasksEmpty =>
+      'No unfinished tasks. Add a task or enter a focus name.';
+
+  @override
+  String get focusTasksNoMatches => 'No matching tasks or subtasks';
+
+  @override
+  String get focusTasksManual => 'Enter manually';
+
+  @override
+  String get focusTasksClear => 'Clear selection';
+
+  @override
+  String get focusTasksSubtasks => 'Expand or collapse subtasks';
+
+  @override
+  String get focusTasksPresets => 'Other focus activities';
+
+  @override
+  String get focusTasksPresetDeepWork => 'Deep work';
+
+  @override
+  String get focusTasksPresetReading => 'Reading';
+
+  @override
+  String get focusTasksPresetWriting => 'Writing';
+
+  @override
+  String get focusTasksPresetReview => 'Review';
+
+  @override
+  String get focusTasksPresetExercise => 'Exercise';
+
+  @override
+  String get focusTasksPresetStudy => 'Study';
+
+  @override
+  String get focusTasksResults => 'Task focus';
+
+  @override
+  String get focusTasksResultsHint =>
+      'Focus time and sessions in this period; expand to see subtasks';
+
+  @override
+  String get focusTasksResultsEmpty =>
+      'No focus sessions in this period. Choose a task to begin.';
+
+  @override
+  String get focusTasksUnassigned => 'Unassigned focus';
+
+  @override
+  String get focusTasksWholeTask => 'Direct focus on parent task';
+
+  @override
+  String get focusTasksMinutes => 'min';
+
+  @override
+  String get focusTasksSeconds => 'sec';
+
+  @override
+  String get focusTasksSessions => 'focus sessions';
+
+  @override
+  String get habitWorkspaceEmptyHint =>
+      'Start with one small habit. Every check-in leaves a record.';
+
+  @override
+  String get habitWorkspaceRestTitle => 'No check-ins scheduled today';
+
+  @override
+  String get habitWorkspaceRestHint =>
+      'Your habits are still here. Review their history or adjust their schedule.';
+
+  @override
+  String get habitWorkspaceViewAll => 'View all habits';
+
+  @override
+  String get habitWorkspaceFilterAll => 'All';
+
+  @override
+  String get habitWorkspaceFilterPending => 'To do';
+
+  @override
+  String get habitWorkspaceFilterCompleted => 'Achieved';
+
+  @override
+  String get habitWorkspacePendingEmptyTitle => 'Today is complete';
+
+  @override
+  String get habitWorkspacePendingEmptyHint =>
+      'Your effort is recorded. Keep going tomorrow.';
+
+  @override
+  String get habitWorkspaceCompletedEmptyTitle => 'No goals achieved yet';
+
+  @override
+  String get habitWorkspaceCompletedEmptyHint =>
+      'Check in to see your progress here.';
+
+  @override
+  String get habitWorkspaceResetFilter => 'Show all';
+
+  @override
+  String get habitWorkspaceHistoryEmptyTitle => 'Make your progress visible';
+
+  @override
+  String get habitWorkspaceHistoryEmptyHint =>
+      'Add a habit and each check-in will build up this history.';
+
+  @override
+  String get habitWorkspaceReviewHint =>
+      'Daily check-in totals over the last 12 weeks.';
+
+  @override
   String get authDesignTagline => 'A little more space for every day';
 
   @override

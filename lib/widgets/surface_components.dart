@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/design_tokens.dart';
+import '../core/app_motion.dart';
 import '../providers/theme_provider.dart';
 
 /// 当前主题的表面观感档位。
@@ -1377,6 +1378,7 @@ Future<T?> showAppModalSheet<T>({
 }) {
   return showModalBottomSheet<T>(
     context: context,
+    sheetAnimationStyle: AppMotion.overlayStyle(context),
     isScrollControlled: isScrollControlled,
     useRootNavigator: useRootNavigator,
     isDismissible: isDismissible,
@@ -1518,8 +1520,8 @@ class AppDialog extends StatelessWidget {
     if (!shiftForKeyboard) return scopedDialog;
 
     return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: AppMotion.feedback(context),
+      curve: AppMotion.enterCurve,
       padding: EdgeInsets.only(bottom: keyboardLift),
       child: Align(
         alignment: viewInsets.bottom > 0
@@ -1555,7 +1557,7 @@ class AppModalSheet extends StatefulWidget {
     this.scrollable = true,
     this.showDragHandle = true,
     this.padding = const EdgeInsets.fromLTRB(16, 14, 16, 18),
-    this.maxWidth = 720,
+    this.maxWidth = DesignTokens.creationFormMaxWidth,
     this.shiftForKeyboard = true,
   });
 
@@ -1828,8 +1830,8 @@ class _AppModalSheetState extends State<AppModalSheet> {
       top: false,
       bottom: false,
       child: AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
+        duration: AppMotion.feedback(context),
+        curve: AppMotion.enterCurve,
         padding: EdgeInsets.only(bottom: viewInsets.bottom),
         child: Align(
           alignment: Alignment.bottomCenter,
@@ -1837,8 +1839,8 @@ class _AppModalSheetState extends State<AppModalSheet> {
           heightFactor: 1,
           widthFactor: 1,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
+            duration: AppMotion.transition(context),
+            curve: AppMotion.enterCurve,
             constraints:
                 (_expanded
                         ? BoxConstraints.tightFor(height: availableHeight)

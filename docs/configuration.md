@@ -39,7 +39,7 @@ Python 公共配置模块 `backend/deployment_config.py` 没有数据库或应�
 | `DUOYI_UPDATE_REPOSITORY` | APK 更新源 `owner/repository`；空字符串停用 GitHub 更新源 |
 | `DUOYI_HTTP_TIMEOUT_SECONDS` | 一般请求超时，默认 12 秒 |
 | `DUOYI_FILE_TIMEOUT_SECONDS` | 文件传输请求超时，默认 30 秒 |
-| `DUOYI_AI_TIMEOUT_SECONDS` | AI 代理请求超时，默认 75 秒 |
+| `DUOYI_AI_TIMEOUT_SECONDS` | AI 代理请求超时，默认 180 秒 |
 | `DUOYI_UPDATE_TIMEOUT_SECONDS` | 更新检查超时，默认 8 秒 |
 | `DUOYI_WEB_TARGET` | `responsive`、`desktop` 或 `mobile` |
 | `DUOYI_WEB_BASE_HREF` | Web 部署路径，必须以 `/` 开始、结束 |
@@ -143,6 +143,14 @@ sudo cat /srv/duoyi/duoyi.db.bootstrap-admin.json
 - 客户端版本优先从根目录 `pubspec.yaml` 读取；只有独立后端没有版本文件时，才回退到 `0.0.0/0`。API 契约版本仍由代码定义。
 
 配置校验错误只指出字段名和要求，不回显密码、Key 或原始配置内容。配置对象隐藏私密字段的字符串表示。
+
+## AI 网关响应与错误诊断
+
+AI 请求统一经后端 `/api/ai/chat` 发往配置的 OpenAI 兼容 `chat/completions` 地址，并显式发送 `stream: false`。如果网关仍返回 SSE，后端会聚合 OpenAI `choices[].delta.content` 或 Anthropic `content_block_delta` 的文本，再给客户端返回普通 JSON；也兼容 Anthropic Messages 形状的 JSON 响应。thinking/reasoning 不作为报告正文。
+
+网关的 HTTP 200 只表示该段请求有响应，不能代替完整的报告正文。后端分别报告网络连接失败、响应格式错误、流中错误和空正文；周报与管理后台测试保留具体错误详情，不把所有 502 都解释成“上游不可达”。空正文可根据 `finish_reason` 和实际 reasoning token 用量诊断，避免把正常 `stop` 的响应一概当成输出预算不足。管理员测试与周报共用解析逻辑，只有真实返回非空正文才判定成功。
+
+`minimax-m3.1-flash-free` 的内容生成请求预留至少 8192 个输出 token，覆盖共享预算的推理与正文；256-token 连通性测试保持短请求。长报告的后端上游等待上限为 150 秒，客户端默认等待 180 秒，仍可通过公开配置覆盖客户端值。部分网关不单列 reasoning token 数，此时结合 `finish_reason=length` 与 `reasoning_content` 是否存在判断空正文截断；超时单独返回 504，不再归类为网络不可达。
 
 ## CI 与运维脚本
 

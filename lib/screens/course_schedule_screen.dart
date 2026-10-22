@@ -1,3 +1,4 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
@@ -139,9 +140,9 @@ class _CourseScheduleScreenState extends State<CourseScheduleScreen> {
               onAction: () => _addCourse(context),
             )
           : _ScheduleGrid(settings: settings, courses: courses, week: week),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('course.add'),
         onPressed: () => _addCourse(context),
-        child: const Icon(Icons.add),
       ),
     );
   }

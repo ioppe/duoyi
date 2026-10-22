@@ -1,8 +1,10 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/desktop_tokens.dart';
@@ -13,6 +15,7 @@ import '../core/i18n.dart';
 import '../core/todo_filters.dart';
 import '../core/todo_kanban.dart';
 import '../core/todo_quadrant_style.dart';
+import '../core/web_target.dart';
 import '../models/goal.dart' show ReminderKind;
 import '../models/habit.dart';
 import '../models/todo.dart';
@@ -381,11 +384,10 @@ class _TodoScreenState extends State<TodoScreen> {
     final allVisibleSelected =
         editableVisibleIds.isNotEmpty &&
         editableVisibleIds.every(_selectedTodoIds.contains);
-    // 宽屏桌面档（与 today 桌面仪表盘同款纯宽度判定，不依赖编译期 web
-    // 档位）：左侧视图内容 + 右侧固定侧栏（今日概要 + 自定义视图筛选），
-    // 消除 1280 限宽内仍通栏拉伸的"手机感"；批量模式退回通栏列表，
-    // 便于横向扫选与底部批量操作条。
+    // Web 将概要与筛选放在视图上方；原生宽屏保留侧栏布局。
+    final isWeb = WebTarget.isWebBuild;
     final isWidescreen =
+        !isWeb &&
         MediaQuery.widthOf(context) >= DesktopTokens.breakpointTwoColumn;
     // 最宽桌面档（调研锚点 1400 = DesktopTokens.breakpointThreeColumn，即
     // docs/desktop-layout-optimization.md 的三栏布局档）：四象限单行 4 列
@@ -590,7 +592,7 @@ class _TodoScreenState extends State<TodoScreen> {
           ? widescreenBody
           : Column(
               children: [
-                if (!_batchMode)
+                if (!_batchMode && !isWeb)
                   _TodoViewSwitcher(
                     selected: _viewMode,
                     onChanged: (mode) => setState(() => _viewMode = mode),
@@ -611,6 +613,11 @@ class _TodoScreenState extends State<TodoScreen> {
                   onChanged: _setFilter,
                   onClear: _clearFilter,
                 ),
+                if (!_batchMode && isWeb)
+                  _TodoViewSwitcher(
+                    selected: _viewMode,
+                    onChanged: (mode) => setState(() => _viewMode = mode),
+                  ),
                 Expanded(child: viewContent),
               ],
             ),
@@ -637,10 +644,7 @@ class _TodoScreenState extends State<TodoScreen> {
           : null,
       floatingActionButton: _batchMode
           ? null
-          : FloatingActionButton(
-              onPressed: _showAddDialog,
-              child: const Icon(Icons.add),
-            ),
+          : AppCreateFab(label: s.todoAddAction, onPressed: _showAddDialog),
     );
   }
 }
@@ -654,6 +658,7 @@ class _TodoViewSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
+      key: const ValueKey('todo_view_switcher'),
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: AppPageSwitcher<_TodoViewMode>(
         options: const [
@@ -901,6 +906,7 @@ class _TodoFilterBar extends StatelessWidget {
     final active = filter.hasActiveFilters;
 
     return Padding(
+      key: const ValueKey('todo_filter_bar'),
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -924,12 +930,20 @@ class _TodoFilterBar extends StatelessWidget {
                   ),
                 ),
               ),
-              if (active)
-                TextButton.icon(
-                  onPressed: onClear,
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('清空'),
+              TextButton.icon(
+                key: const ValueKey('todo_clear_filters'),
+                onPressed: active ? onClear : null,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, DesignTokens.controlMinHeight),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.spaceMd,
+                  ),
+                  visualDensity: VisualDensity.standard,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                icon: const Icon(Icons.close, size: 16),
+                label: const Text('清空'),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1115,12 +1129,86 @@ class _TodoQuickFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilterChip(
+    final radius = BorderRadius.circular(DesignTokens.radiusPill);
+    return Semantics(
+      button: true,
       selected: selected,
-      showCheckmark: false,
-      avatar: Icon(icon, size: 16),
-      label: Text(label),
-      onSelected: (_) => onPressed(),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: radius,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onPressed,
+          child: _TodoFilterControl(
+            icon: icon,
+            label: label,
+            selected: selected,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TodoFilterControl extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool hasMenu;
+
+  const _TodoFilterControl({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    this.hasMenu = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final color = selected ? cs.primary : cs.onSurfaceVariant;
+    return Container(
+      constraints: const BoxConstraints(
+        minHeight: DesignTokens.controlMinHeight,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceMd,
+        vertical: DesignTokens.spaceSm,
+      ),
+      decoration: BoxDecoration(
+        color: selected
+            ? cs.primary.withValues(alpha: 0.1)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
+        border: Border.all(
+          color: selected
+              ? cs.primary.withValues(alpha: 0.35)
+              : cs.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: DesignTokens.spaceSm),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 132),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontSize: DesignTokens.fontSizeButton,
+                color: color,
+              ),
+            ),
+          ),
+          if (hasMenu) ...[
+            const SizedBox(width: DesignTokens.spaceXxs),
+            Icon(Icons.arrow_drop_down, size: 18, color: color),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1145,8 +1233,6 @@ class _TodoFilterMenu<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final color = selected ? cs.primary : cs.onSurfaceVariant;
-
     return PopupMenuButton<_TodoFilterOption<T>>(
       tooltip: label,
       position: PopupMenuPosition.under,
@@ -1170,38 +1256,11 @@ class _TodoFilterMenu<T> extends StatelessWidget {
             ),
           ),
       ],
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? cs.primary.withValues(alpha: 0.1)
-              : cs.surfaceContainerHighest.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected
-                ? cs.primary.withValues(alpha: 0.35)
-                : cs.outlineVariant.withValues(alpha: 0.45),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 132),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: color),
-              ),
-            ),
-            const SizedBox(width: 2),
-            Icon(Icons.arrow_drop_down, size: 18, color: color),
-          ],
-        ),
+      child: _TodoFilterControl(
+        icon: icon,
+        label: label,
+        selected: selected,
+        hasMenu: true,
       ),
     );
   }
@@ -2186,10 +2245,8 @@ class _KanbanTodoCardState extends State<_KanbanTodoCard> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: RepaintBoundary(child: card),
           ),
@@ -3051,10 +3108,8 @@ class _TodoTileState extends State<_TodoTile> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: RepaintBoundary(child: content),
           ),
@@ -3856,10 +3911,12 @@ class _QuadrantListScreenState extends State<QuadrantListScreen> {
           : null,
       floatingActionButton: _batchMode || widget.onCreateTodo == null
           ? null
-          : FloatingActionButton(
-              // 在本象限新建：把当前象限带回主屏的新建入口。
+          : AppCreateFab(
+              label:
+                  context.read<ThemeProvider?>()?.brand.strings.todoAddAction ??
+                  I18n.tr('today.new_todo'),
+              // 保留当前象限作为创建表单的默认值。
               onPressed: () => widget.onCreateTodo!(widget.quadrant),
-              child: const Icon(Icons.add),
             ),
     );
   }

@@ -9,6 +9,7 @@ import '../core/focus_sound_catalog.dart';
 import '../core/goal_icons.dart';
 import '../core/goal_validation.dart';
 import '../core/i18n_date_format.dart';
+import '../core/i18n.dart';
 import '../models/goal.dart';
 import '../models/recurrence.dart';
 import '../models/workspace.dart';
@@ -38,6 +39,13 @@ const List<int> _presetColors = <int>[
 const List<String> _weekdayNames = <String>['一', '二', '三', '四', '五', '六', '日'];
 
 const List<int> _focusMinutePresets = <int>[15, 25, 30, 45, 60, 90];
+
+Future<void> showGoalCreateSheet(BuildContext context) async {
+  await showAppModalSheet<void>(
+    context: context,
+    builder: (_) => const GoalEditScreen(),
+  );
+}
 
 class GoalEditScreen extends StatefulWidget {
   final GoalItem? goal;
@@ -314,9 +322,263 @@ class _GoalEditScreenState extends State<GoalEditScreen> {
     final shareProvider = context.watch<ShareProvider?>();
     final canEditCurrentWorkspace =
         shareProvider?.canEdit(_workspaceId) ?? true;
+    final formChildren = <Widget>[
+      _BasicSection(
+        titleCtrl: _titleCtrl,
+        descCtrl: _descCtrl,
+        startDate: _startDate,
+        targetDate: _targetDate,
+        status: _status,
+        colorValue: _colorValue,
+        iconName: _iconName,
+        onPickStart: (d) => setState(() => _startDate = d),
+        onPickTarget: (d) => setState(() => _targetDate = d),
+        onStatus: (s) => setState(() => _status = s),
+        onColor: (v) => setState(() => _colorValue = v),
+        onIcon: (v) => setState(() => _iconName = v),
+        onSave: () => _persist(pop: false),
+      ),
+      _WorkspaceSection(
+        workspaceId: _workspaceId,
+        shareProvider: shareProvider,
+        onChanged: (value) => setState(() {
+          _workspaceId = _normalizeWorkspaceId(value);
+        }),
+        onSave: () => _persist(pop: false),
+      ),
+      _RecurrenceSection(
+        rule: _recurrence,
+        nextDispatchLabel: _nextDispatchLabel(),
+        onPick: () async {
+          final r = await RecurrencePicker.show(
+            context,
+            initial: _recurrence,
+            supportMaxOccurrences: false,
+          );
+          if (r != null) setState(() => _recurrence = r);
+        },
+        onSave: () => _persist(pop: false),
+      ),
+      _SchedulingSection(
+        scheduling: _scheduling,
+        recurrence: _recurrence,
+        minGapCtrl: _minGapCtrl,
+        maxPerWeekCtrl: _maxPerWeekCtrl,
+        maxPerMonthCtrl: _maxPerMonthCtrl,
+        onModeChange: (mode) => setState(() {
+          _scheduling = _scheduling.copyWith(mode: mode);
+        }),
+        onWeekdaysChange: (days) => setState(() {
+          _scheduling = GoalScheduling(
+            mode: _scheduling.mode,
+            fixedWeekdays: days.isEmpty ? null : List<int>.unmodifiable(days),
+            fixedMonthDays: _scheduling.fixedMonthDays,
+            randomMinGapDays: _scheduling.randomMinGapDays,
+            randomMaxPerWeek: _scheduling.randomMaxPerWeek,
+            randomMaxPerMonth: _scheduling.randomMaxPerMonth,
+          );
+        }),
+        onMonthDaysChange: (days) => setState(() {
+          _scheduling = GoalScheduling(
+            mode: _scheduling.mode,
+            fixedWeekdays: _scheduling.fixedWeekdays,
+            fixedMonthDays: days.isEmpty ? null : List<int>.unmodifiable(days),
+            randomMinGapDays: _scheduling.randomMinGapDays,
+            randomMaxPerWeek: _scheduling.randomMaxPerWeek,
+            randomMaxPerMonth: _scheduling.randomMaxPerMonth,
+          );
+        }),
+        onRandomChange: () => setState(() {
+          _scheduling = GoalScheduling(
+            mode: SchedulingMode.random,
+            fixedWeekdays: _scheduling.fixedWeekdays,
+            fixedMonthDays: _scheduling.fixedMonthDays,
+            randomMinGapDays: _parsePositiveInt(_minGapCtrl.text),
+            randomMaxPerWeek: _parsePositiveInt(_maxPerWeekCtrl.text),
+            randomMaxPerMonth: _parsePositiveInt(_maxPerMonthCtrl.text),
+          );
+        }),
+        onSave: () {
+          // 随机模式下,输入框的改动尚未提交到 _scheduling,先同步一次。
+          if (_scheduling.mode == SchedulingMode.random) {
+            _scheduling = GoalScheduling(
+              mode: SchedulingMode.random,
+              fixedWeekdays: _scheduling.fixedWeekdays,
+              fixedMonthDays: _scheduling.fixedMonthDays,
+              randomMinGapDays: _parsePositiveInt(_minGapCtrl.text),
+              randomMaxPerWeek: _parsePositiveInt(_maxPerWeekCtrl.text),
+              randomMaxPerMonth: _parsePositiveInt(_maxPerMonthCtrl.text),
+            );
+          }
+          _persist(pop: false);
+        },
+      ),
+      _SkipHolidaysSection(
+        enabled: _skipHolidays,
+        onChange: (v) => setState(() => _skipHolidays = v),
+        onSave: () => _persist(pop: false),
+      ),
+      _FocusSection(
+        focus: _focus,
+        minutesCtrl: _focusMinutesCtrl,
+        onToggle: (v) => setState(() {
+          _focus = _focus.copyWith(enabled: v);
+        }),
+        onPickPreset: (min) => setState(() {
+          _focusMinutesCtrl.text = min.toString();
+          _focus = _focus.copyWith(focusSeconds: min * 60);
+        }),
+        onMinutesChange: (v) {
+          final min = _parsePositiveInt(v);
+          setState(() {
+            _focus = FocusLink(
+              enabled: _focus.enabled,
+              presetId: _focus.presetId,
+              focusSeconds: min == null ? null : min * 60,
+              whiteNoise: _focus.whiteNoise,
+            );
+          });
+        },
+        onPickNoise: _pickFocusNoise,
+        onSave: () => _persist(pop: false),
+      ),
+      _SectionCard(
+        title: '提醒',
+        icon: Icons.notifications_active_outlined,
+        subtitle: reminderPlanSummary(_reminderPlan),
+        onSave: () => _persist(pop: false),
+        children: [
+          ReminderPlanEditor(
+            plan: _reminderPlan,
+            showHeader: false,
+            allowAlarm: true,
+            allowRelativeToDue: true,
+            allowWeekly: true,
+            hasAnchorDate: _targetDate != null,
+            defaultKind: ReminderKind.push,
+            onChanged: (plan) => setState(() {
+              _reminderPlan = plan;
+              _reminder = plan.toLegacyReminderConfig(fallback: _reminder);
+            }),
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          Builder(
+            builder: (context) {
+              final notif = context.watch<NotificationService?>();
+              if (notif == null) return const SizedBox.shrink();
+              final kind = _reminderPlan.primaryRule?.kind ?? _reminder.kind;
+              return ReminderHealthHint(
+                reminderKind: kind,
+                onOpenSystemSettings: () => openAppSettings(),
+                onRequestNotificationPermission: () async {
+                  await context.read<NotificationService>().requestPermission();
+                },
+                onRequestExactAlarmPermission: () async {
+                  await AlarmService.instance.requestExactAlarmPermission();
+                },
+                onRequestFullScreenIntentPermission: () async {
+                  await AlarmService.instance
+                      .requestFullScreenIntentPermission();
+                },
+              );
+            },
+          ),
+        ],
+      ),
+      _TimeTargetSection(
+        controller: _timeTargetCtrl,
+        onClear: () {
+          setState(() {
+            _timeTargetCtrl.clear();
+          });
+        },
+        onSave: () => _persist(pop: false),
+      ),
+      _DailyCountSection(
+        controller: _dailyCountCtrl,
+        onInc: () {
+          final v = _parsePositiveInt(_dailyCountCtrl.text) ?? 0;
+          setState(() {
+            _dailyCountCtrl.text = (v + 1).toString();
+          });
+        },
+        onDec: () {
+          final v = _parsePositiveInt(_dailyCountCtrl.text) ?? 0;
+          final next = v - 1;
+          setState(() {
+            _dailyCountCtrl.text = next <= 0 ? '' : next.toString();
+          });
+        },
+        onChanged: (_) => setState(() {}),
+        onSave: () => _persist(pop: false),
+      ),
+      _MilestonesSection(
+        milestones: _milestones,
+        controller: _milestoneCtrl,
+        autoProgress: _autoProgress,
+        manualProgress: _manualProgress,
+        onToggle: (m, v) => setState(() {
+          m.isCompleted = v;
+          m.completedAt = v ? DateTime.now() : null;
+        }),
+        onRemove: (i) => setState(() {
+          _milestones.removeAt(i);
+        }),
+        onAdd: (title) => setState(() {
+          _milestones.add(GoalMilestone(title: title));
+          _milestoneCtrl.clear();
+        }),
+        onAutoChange: (v) => setState(() {
+          if (!v) {
+            _manualProgress = _currentAutoProgress();
+          }
+          _autoProgress = v;
+        }),
+        onManualChange: (v) => setState(() => _manualProgress = v),
+      ),
+      const SizedBox(height: DesignTokens.spaceMd),
+      Row(
+        children: [
+          TextButton(
+            key: const ValueKey('goal_form_cancel'),
+            onPressed: _persisting ? null : () => Navigator.pop(context),
+            child: Text(I18n.tr('action.cancel')),
+          ),
+          const SizedBox(width: DesignTokens.spaceMd),
+          Expanded(
+            child: FilledButton(
+              key: const ValueKey('goal_form_submit'),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 42)),
+              onPressed: canEditCurrentWorkspace && !_persisting
+                  ? () => _persist(pop: true)
+                  : null,
+              child: _persisting
+                  ? const SizedBox.square(
+                      dimension: DesignTokens.controlIconSize,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(I18n.tr('action.save')),
+            ),
+          ),
+        ],
+      ),
+    ];
+    if (widget.goal == null) {
+      return AppModalSheet(
+        key: const ValueKey('goal_create_sheet'),
+        title: I18n.tr('goal.create'),
+        child: Column(
+          key: const ValueKey('goal_form_content'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: formChildren,
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isExisting ? '编辑目标' : '新建目标'),
+        title: const Text('编辑目标'),
+        titleTextStyle: appSecondaryRouteTitleTextStyle(context),
         actions: [
           if (_isExisting)
             IconButton(
@@ -327,9 +589,8 @@ class _GoalEditScreenState extends State<GoalEditScreen> {
           IconButton(
             tooltip: '保存并返回',
             icon: _persisting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
+                ? const SizedBox.square(
+                    dimension: DesignTokens.controlIconSize,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.check),
@@ -339,235 +600,26 @@ class _GoalEditScreenState extends State<GoalEditScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          DesignTokens.spaceLg,
-          DesignTokens.spaceMd,
-          DesignTokens.spaceLg,
-          DesignTokens.space3xl,
+      body: AppSecondaryControlTheme(
+        child: Center(
+          child: ConstrainedBox(
+            key: const ValueKey('goal_form_content'),
+            constraints: const BoxConstraints(
+              maxWidth: DesignTokens.creationFormMaxWidth,
+            ),
+            child: ListView(
+              key: const ValueKey('goal_form_scroll'),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.spaceLg,
+                DesignTokens.spaceMd,
+                DesignTokens.spaceLg,
+                DesignTokens.space3xl,
+              ),
+              children: formChildren,
+            ),
+          ),
         ),
-        children: [
-          _BasicSection(
-            titleCtrl: _titleCtrl,
-            descCtrl: _descCtrl,
-            startDate: _startDate,
-            targetDate: _targetDate,
-            status: _status,
-            colorValue: _colorValue,
-            iconName: _iconName,
-            onPickStart: (d) => setState(() => _startDate = d),
-            onPickTarget: (d) => setState(() => _targetDate = d),
-            onStatus: (s) => setState(() => _status = s),
-            onColor: (v) => setState(() => _colorValue = v),
-            onIcon: (v) => setState(() => _iconName = v),
-            onSave: () => _persist(pop: false),
-          ),
-          _WorkspaceSection(
-            workspaceId: _workspaceId,
-            shareProvider: shareProvider,
-            onChanged: (value) => setState(() {
-              _workspaceId = _normalizeWorkspaceId(value);
-            }),
-            onSave: () => _persist(pop: false),
-          ),
-          _RecurrenceSection(
-            rule: _recurrence,
-            nextDispatchLabel: _nextDispatchLabel(),
-            onPick: () async {
-              final r = await RecurrencePicker.show(
-                context,
-                initial: _recurrence,
-                supportMaxOccurrences: false,
-              );
-              if (r != null) setState(() => _recurrence = r);
-            },
-            onSave: () => _persist(pop: false),
-          ),
-          _SchedulingSection(
-            scheduling: _scheduling,
-            recurrence: _recurrence,
-            minGapCtrl: _minGapCtrl,
-            maxPerWeekCtrl: _maxPerWeekCtrl,
-            maxPerMonthCtrl: _maxPerMonthCtrl,
-            onModeChange: (mode) => setState(() {
-              _scheduling = _scheduling.copyWith(mode: mode);
-            }),
-            onWeekdaysChange: (days) => setState(() {
-              _scheduling = GoalScheduling(
-                mode: _scheduling.mode,
-                fixedWeekdays: days.isEmpty
-                    ? null
-                    : List<int>.unmodifiable(days),
-                fixedMonthDays: _scheduling.fixedMonthDays,
-                randomMinGapDays: _scheduling.randomMinGapDays,
-                randomMaxPerWeek: _scheduling.randomMaxPerWeek,
-                randomMaxPerMonth: _scheduling.randomMaxPerMonth,
-              );
-            }),
-            onMonthDaysChange: (days) => setState(() {
-              _scheduling = GoalScheduling(
-                mode: _scheduling.mode,
-                fixedWeekdays: _scheduling.fixedWeekdays,
-                fixedMonthDays: days.isEmpty
-                    ? null
-                    : List<int>.unmodifiable(days),
-                randomMinGapDays: _scheduling.randomMinGapDays,
-                randomMaxPerWeek: _scheduling.randomMaxPerWeek,
-                randomMaxPerMonth: _scheduling.randomMaxPerMonth,
-              );
-            }),
-            onRandomChange: () => setState(() {
-              _scheduling = GoalScheduling(
-                mode: SchedulingMode.random,
-                fixedWeekdays: _scheduling.fixedWeekdays,
-                fixedMonthDays: _scheduling.fixedMonthDays,
-                randomMinGapDays: _parsePositiveInt(_minGapCtrl.text),
-                randomMaxPerWeek: _parsePositiveInt(_maxPerWeekCtrl.text),
-                randomMaxPerMonth: _parsePositiveInt(_maxPerMonthCtrl.text),
-              );
-            }),
-            onSave: () {
-              // 随机模式下,输入框的改动尚未提交到 _scheduling,先同步一次。
-              if (_scheduling.mode == SchedulingMode.random) {
-                _scheduling = GoalScheduling(
-                  mode: SchedulingMode.random,
-                  fixedWeekdays: _scheduling.fixedWeekdays,
-                  fixedMonthDays: _scheduling.fixedMonthDays,
-                  randomMinGapDays: _parsePositiveInt(_minGapCtrl.text),
-                  randomMaxPerWeek: _parsePositiveInt(_maxPerWeekCtrl.text),
-                  randomMaxPerMonth: _parsePositiveInt(_maxPerMonthCtrl.text),
-                );
-              }
-              _persist(pop: false);
-            },
-          ),
-          _SkipHolidaysSection(
-            enabled: _skipHolidays,
-            onChange: (v) => setState(() => _skipHolidays = v),
-            onSave: () => _persist(pop: false),
-          ),
-          _FocusSection(
-            focus: _focus,
-            minutesCtrl: _focusMinutesCtrl,
-            onToggle: (v) => setState(() {
-              _focus = _focus.copyWith(enabled: v);
-            }),
-            onPickPreset: (min) => setState(() {
-              _focusMinutesCtrl.text = min.toString();
-              _focus = _focus.copyWith(focusSeconds: min * 60);
-            }),
-            onMinutesChange: (v) {
-              final min = _parsePositiveInt(v);
-              setState(() {
-                _focus = FocusLink(
-                  enabled: _focus.enabled,
-                  presetId: _focus.presetId,
-                  focusSeconds: min == null ? null : min * 60,
-                  whiteNoise: _focus.whiteNoise,
-                );
-              });
-            },
-            onPickNoise: _pickFocusNoise,
-            onSave: () => _persist(pop: false),
-          ),
-          _SectionCard(
-            title: '提醒',
-            icon: Icons.notifications_active_outlined,
-            subtitle: reminderPlanSummary(_reminderPlan),
-            onSave: () => _persist(pop: false),
-            children: [
-              ReminderPlanEditor(
-                plan: _reminderPlan,
-                showHeader: false,
-                allowAlarm: true,
-                allowRelativeToDue: true,
-                allowWeekly: true,
-                hasAnchorDate: _targetDate != null,
-                defaultKind: ReminderKind.push,
-                onChanged: (plan) => setState(() {
-                  _reminderPlan = plan;
-                  _reminder = plan.toLegacyReminderConfig(fallback: _reminder);
-                }),
-              ),
-              const SizedBox(height: DesignTokens.spaceSm),
-              Builder(
-                builder: (context) {
-                  final notif = context.watch<NotificationService?>();
-                  if (notif == null) return const SizedBox.shrink();
-                  final kind =
-                      _reminderPlan.primaryRule?.kind ?? _reminder.kind;
-                  return ReminderHealthHint(
-                    reminderKind: kind,
-                    onOpenSystemSettings: () => openAppSettings(),
-                    onRequestNotificationPermission: () async {
-                      await context
-                          .read<NotificationService>()
-                          .requestPermission();
-                    },
-                    onRequestExactAlarmPermission: () async {
-                      await AlarmService.instance.requestExactAlarmPermission();
-                    },
-                    onRequestFullScreenIntentPermission: () async {
-                      await AlarmService.instance
-                          .requestFullScreenIntentPermission();
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-          _TimeTargetSection(
-            controller: _timeTargetCtrl,
-            onClear: () {
-              setState(() {
-                _timeTargetCtrl.clear();
-              });
-            },
-            onSave: () => _persist(pop: false),
-          ),
-          _DailyCountSection(
-            controller: _dailyCountCtrl,
-            onInc: () {
-              final v = _parsePositiveInt(_dailyCountCtrl.text) ?? 0;
-              setState(() {
-                _dailyCountCtrl.text = (v + 1).toString();
-              });
-            },
-            onDec: () {
-              final v = _parsePositiveInt(_dailyCountCtrl.text) ?? 0;
-              final next = v - 1;
-              setState(() {
-                _dailyCountCtrl.text = next <= 0 ? '' : next.toString();
-              });
-            },
-            onChanged: (_) => setState(() {}),
-            onSave: () => _persist(pop: false),
-          ),
-          _MilestonesSection(
-            milestones: _milestones,
-            controller: _milestoneCtrl,
-            autoProgress: _autoProgress,
-            manualProgress: _manualProgress,
-            onToggle: (m, v) => setState(() {
-              m.isCompleted = v;
-              m.completedAt = v ? DateTime.now() : null;
-            }),
-            onRemove: (i) => setState(() {
-              _milestones.removeAt(i);
-            }),
-            onAdd: (title) => setState(() {
-              _milestones.add(GoalMilestone(title: title));
-              _milestoneCtrl.clear();
-            }),
-            onAutoChange: (v) => setState(() {
-              if (!v) {
-                _manualProgress = _currentAutoProgress();
-              }
-              _autoProgress = v;
-            }),
-            onManualChange: (v) => setState(() => _manualProgress = v),
-          ),
-        ],
       ),
     );
   }
@@ -647,16 +699,24 @@ class _BasicSection extends StatelessWidget {
       onSave: onSave,
       children: [
         TextField(
+          key: const ValueKey('goal_form_title'),
           controller: titleCtrl,
+          minLines: 1,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
           decoration: const InputDecoration(
             labelText: '目标',
             hintText: '如：今年读 24 本书',
           ),
         ),
-        const SizedBox(height: DesignTokens.spaceMd),
+        const SizedBox(height: DesignTokens.spaceLg),
         TextField(
+          key: const ValueKey('goal_form_description'),
           controller: descCtrl,
-          maxLines: 3,
+          minLines: 3,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
           decoration: const InputDecoration(
             labelText: '描述 (可选)',
             alignLabelWithHint: true,
@@ -674,6 +734,7 @@ class _BasicSection extends StatelessWidget {
         const SizedBox(height: DesignTokens.spaceXs),
         Wrap(
           spacing: DesignTokens.spaceSm,
+          runSpacing: DesignTokens.spaceSm,
           children: _presetColors.map((v) {
             final selected = v == colorValue;
             return GestureDetector(
@@ -710,6 +771,7 @@ class _BasicSection extends StatelessWidget {
         const SizedBox(height: DesignTokens.spaceXs),
         Wrap(
           spacing: DesignTokens.spaceXs,
+          runSpacing: DesignTokens.spaceSm,
           children: GoalStatus.values.map((s) {
             final label = switch (s) {
               GoalStatus.active => '进行中',
@@ -760,14 +822,12 @@ class _WorkspaceSection extends StatelessWidget {
       subtitle: subtitle,
       onSave: canEdit ? onSave : null,
       children: [
-        AppSecondaryControlTheme(
+        AppFormFieldTheme(
           child: AppDropdownField<String>(
             initialValue: current,
             decoration: const InputDecoration(
               labelText: '保存到',
               floatingLabelBehavior: FloatingLabelBehavior.always,
-              isDense: true,
-              contentPadding: EdgeInsets.fromLTRB(12, 16, 8, 10),
             ),
             items: options.map((option) {
               final optionRole = option.id == 'private'
@@ -887,9 +947,9 @@ class _GoalIconField extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest.withValues(alpha: 0.42),
-            borderRadius: DesignTokens.borderRadiusSm,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
             border: Border.all(
-              color: cs.outline.withValues(alpha: 0.22),
+              color: cs.outlineVariant.withValues(alpha: 0.55),
               width: 0.45,
             ),
           ),
@@ -917,17 +977,14 @@ class _GoalIconField extends StatelessWidget {
                     children: [
                       Text(
                         goalIconLabel(iconName),
-                        style: const TextStyle(
-                          fontWeight: DesignTokens.fontWeightStrong,
-                        ),
+                        style: appSecondaryControlTextStyle(context),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '点击更换',
-                        style: TextStyle(
-                          fontSize: DesignTokens.fontSizeSm,
-                          color: cs.onSurface.withValues(alpha: 0.62),
-                        ),
+                        style: appSecondaryControlLabelStyle(
+                          context,
+                        ).copyWith(color: cs.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -1406,7 +1463,7 @@ class _RandomRow extends StatelessWidget {
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(isDense: true, hintText: hint),
+            decoration: InputDecoration(hintText: hint),
             onChanged: (_) => onChanged(),
           ),
         ),
@@ -1529,10 +1586,7 @@ class _FocusSection extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: '留空 = 未设定',
-                  ),
+                  decoration: const InputDecoration(hintText: '留空 = 未设定'),
                   onChanged: onMinutesChange,
                 ),
               ),
@@ -1605,10 +1659,7 @@ class _TimeTargetSection extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  isDense: true,
-                  hintText: '0 或留空 = 清除',
-                ),
+                decoration: const InputDecoration(hintText: '0 或留空 = 清除'),
               ),
             ),
             IconButton(
@@ -1669,7 +1720,7 @@ class _DailyCountSection extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(isDense: true, hintText: '0'),
+                decoration: const InputDecoration(hintText: '0'),
                 onChanged: onChanged,
               ),
             ),
@@ -1824,17 +1875,9 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
+    return AppSurfaceCard(
       margin: const EdgeInsets.only(bottom: DesignTokens.spaceMd),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: DesignTokens.borderRadiusLg,
-        border: Border.all(
-          color: cs.outline.withValues(alpha: 0.15),
-          width: 0.45,
-        ),
-        boxShadow: DesignTokens.shadowXs,
-      ),
+      padding: EdgeInsets.zero,
       child: Material(
         color: Colors.transparent,
         borderRadius: DesignTokens.borderRadiusLg,
@@ -1846,6 +1889,7 @@ class _SectionCard extends StatelessWidget {
             highlightColor: Colors.transparent,
           ),
           child: ExpansionTile(
+            minTileHeight: DesignTokens.formFieldMinHeight,
             initiallyExpanded: initiallyExpanded,
             tilePadding: const EdgeInsets.symmetric(
               horizontal: DesignTokens.spaceLg,
@@ -1856,27 +1900,24 @@ class _SectionCard extends StatelessWidget {
               DesignTokens.spaceLg,
               DesignTokens.spaceLg,
             ),
-            leading: Icon(icon, color: cs.primary),
-            title: Text(
-              title,
-              style: const TextStyle(
-                fontSize: DesignTokens.fontSizeMd,
-                fontWeight: DesignTokens.fontWeightStrong,
-              ),
+            leading: Icon(
+              icon,
+              color: cs.primary,
+              size: DesignTokens.controlIconSize,
             ),
+            title: Text(title, style: appSecondaryMenuItemTextStyle(context)),
             subtitle: subtitle == null
                 ? null
                 : Text(
                     subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: DesignTokens.fontSizeSm,
-                      color: cs.onSurface.withValues(alpha: 0.65),
-                    ),
+                    style: appSecondaryControlLabelStyle(
+                      context,
+                    ).copyWith(color: cs.onSurfaceVariant),
                   ),
             children: [
-              AppSecondaryControlTheme(
+              AppFormFieldTheme(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: children,
@@ -1928,15 +1969,17 @@ class _DateField extends StatelessWidget {
         if (picked != null) onPick(picked);
       },
       child: Container(
-        constraints: BoxConstraints(minHeight: compact ? 42 : 52),
+        constraints: const BoxConstraints(
+          minHeight: DesignTokens.formFieldMinHeight,
+        ),
         padding: compact
             ? const EdgeInsets.fromLTRB(6, 7, 4, 7)
             : const EdgeInsets.fromLTRB(10, 8, 8, 8),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest.withValues(alpha: 0.34),
-          borderRadius: DesignTokens.borderRadiusMd,
+          borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
           border: Border.all(
-            color: cs.outline.withValues(alpha: 0.16),
+            color: cs.outlineVariant.withValues(alpha: 0.55),
             width: 0.45,
           ),
         ),
@@ -1966,29 +2009,24 @@ class _DateField extends StatelessWidget {
               ),
             SizedBox(width: compact ? 3 : DesignTokens.spaceXs),
             Expanded(
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     labelText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: compact ? 11 : DesignTokens.fontSizeXs,
-                      color: cs.onSurface.withValues(alpha: 0.55),
-                    ),
+                    style: appSecondaryControlLabelStyle(
+                      context,
+                    ).copyWith(color: cs.onSurfaceVariant),
                   ),
-                  SizedBox(width: compact ? 2 : DesignTokens.spaceXs),
-                  Expanded(
-                    child: Text(
-                      valueText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        fontSize: compact ? 11 : DesignTokens.fontSizeSm,
-                        fontWeight: DesignTokens.fontWeightStrong,
-                      ),
-                    ),
+                  const SizedBox(height: DesignTokens.spaceXxs),
+                  Text(
+                    valueText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: appSecondaryControlTextStyle(context),
                   ),
                 ],
               ),
@@ -2015,10 +2053,8 @@ class _DateField extends StatelessWidget {
 // Helpers
 // ---------------------------------------------------------------------------
 
-TextStyle _subtleLabel(BuildContext context) => TextStyle(
-  fontSize: DesignTokens.fontSizeSm,
-  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-);
+TextStyle _subtleLabel(BuildContext context) =>
+    appSecondaryControlLabelStyle(context);
 
 String _formatDate(DateTime d) => I18nDateFormat.date(d);
 

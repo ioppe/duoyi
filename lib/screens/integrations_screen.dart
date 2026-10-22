@@ -418,34 +418,12 @@ class _CalendarSubscriptionsTabState extends State<_CalendarSubscriptionsTab> {
     final urlCtrl = TextEditingController();
     String? nameError;
     String? urlError;
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AppDialog(
-          title: const Text('添加日历订阅'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: InputDecoration(
-                  labelText: '名称',
-                  errorText: nameError,
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: urlCtrl,
-                decoration: InputDecoration(
-                  labelText: 'ICS URL',
-                  hintText: 'https://...',
-                  errorText: urlError,
-                ),
-                keyboardType: TextInputType.url,
-              ),
-            ],
-          ),
+        builder: (ctx, setState) => AppModalSheet(
+          key: const ValueKey('calendar_subscription_create_sheet'),
+          title: '添加日历订阅',
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -473,6 +451,31 @@ class _CalendarSubscriptionsTabState extends State<_CalendarSubscriptionsTab> {
               child: Text(I18n.tr('action.add')),
             ),
           ],
+          child: AppFormFieldTheme(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: '名称',
+                    errorText: nameError,
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: urlCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'ICS URL',
+                    hintText: 'https://...',
+                    errorText: urlError,
+                  ),
+                  keyboardType: TextInputType.url,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -638,178 +641,14 @@ class _OAuthCalendarCard extends StatelessWidget {
       await Clipboard.setData(ClipboardData(text: authUri.toString()));
     }
 
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogContext, setState) {
           final authUri = buildAuthUri();
-          return AppDialog(
-            title: const Text('添加 OAuth 日历'),
-            maxWidth: 560,
-            content: SizedBox(
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: AppSecondaryControlTheme(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppDropdownField<OAuthCalendarProvider>(
-                        initialValue: selectedProvider,
-                        decoration: const InputDecoration(labelText: '服务商'),
-                        items: [
-                          for (final p in OAuthCalendarProvider.values)
-                            DropdownMenuItem(value: p, child: Text(p.label)),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            selectedProvider = value;
-                            if (nameCtrl.text.trim().isEmpty ||
-                                OAuthCalendarProvider.values.any(
-                                  (p) => p.label == nameCtrl.text.trim(),
-                                )) {
-                              nameCtrl.text = value.label;
-                            }
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: nameCtrl,
-                        decoration: const InputDecoration(labelText: '显示名称'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: clientIdCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Client ID',
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: clientSecretCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Client Secret（可选）',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: redirectCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Redirect URI',
-                          hintText: 'duoyi://oauth/calendar',
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: calendarIdCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Calendar ID',
-                          hintText: 'primary',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '授权链接',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: DesignTokens.fontWeightStrong,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            SelectableText(
-                              authUri?.toString() ?? '填写 Client ID 后生成',
-                              style: const TextStyle(fontSize: 11),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: authUri == null
-                                      ? null
-                                      : () async {
-                                          await savePendingAuthorization(
-                                            authUri,
-                                          );
-                                          if (!dialogContext.mounted) return;
-                                          ScaffoldMessenger.of(
-                                            dialogContext,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('授权链接已复制'),
-                                            ),
-                                          );
-                                        },
-                                  style: _integrationOutlinedButtonStyle(
-                                    context,
-                                  ),
-                                  icon: const Icon(Icons.copy, size: 16),
-                                  label: const Text('复制'),
-                                ),
-                                FilledButton.tonalIcon(
-                                  onPressed: authUri == null
-                                      ? null
-                                      : () async {
-                                          await savePendingAuthorization(
-                                            authUri,
-                                          );
-                                          final opened = await launchUrl(
-                                            authUri,
-                                            mode:
-                                                LaunchMode.externalApplication,
-                                          );
-                                          if (!dialogContext.mounted) return;
-                                          if (!opened) {
-                                            ScaffoldMessenger.of(
-                                              dialogContext,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('无法打开授权页，已保留链接'),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                  style: _integrationFilledButtonStyle(context),
-                                  icon: const Icon(Icons.open_in_new, size: 16),
-                                  label: const Text('打开'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: codeCtrl,
-                        minLines: 2,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: '授权码或回调 URL',
-                          hintText: '粘贴 code，或粘贴带 ?code= 的回调 URL',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          return AppModalSheet(
+            key: const ValueKey('oauth_calendar_create_sheet'),
+            title: '添加 OAuth 日历',
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -820,6 +659,156 @@ class _OAuthCalendarCard extends StatelessWidget {
                 child: const Text('保存并同步'),
               ),
             ],
+            child: AppFormFieldTheme(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppDropdownField<OAuthCalendarProvider>(
+                    initialValue: selectedProvider,
+                    decoration: const InputDecoration(labelText: '服务商'),
+                    items: [
+                      for (final p in OAuthCalendarProvider.values)
+                        DropdownMenuItem(value: p, child: Text(p.label)),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        selectedProvider = value;
+                        if (nameCtrl.text.trim().isEmpty ||
+                            OAuthCalendarProvider.values.any(
+                              (p) => p.label == nameCtrl.text.trim(),
+                            )) {
+                          nameCtrl.text = value.label;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: '显示名称'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: clientIdCtrl,
+                    decoration: const InputDecoration(labelText: 'Client ID'),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: clientSecretCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Client Secret（可选）',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: redirectCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Redirect URI',
+                      hintText: 'duoyi://oauth/calendar',
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: calendarIdCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Calendar ID',
+                      hintText: 'primary',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '授权链接',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: DesignTokens.fontWeightStrong,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SelectableText(
+                          authUri?.toString() ?? '填写 Client ID 后生成',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: authUri == null
+                                  ? null
+                                  : () async {
+                                      await savePendingAuthorization(authUri);
+                                      if (!dialogContext.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        dialogContext,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('授权链接已复制'),
+                                        ),
+                                      );
+                                    },
+                              style: _integrationOutlinedButtonStyle(context),
+                              icon: const Icon(Icons.copy, size: 16),
+                              label: const Text('复制'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed: authUri == null
+                                  ? null
+                                  : () async {
+                                      await savePendingAuthorization(authUri);
+                                      final opened = await launchUrl(
+                                        authUri,
+                                        mode: LaunchMode.externalApplication,
+                                      );
+                                      if (!dialogContext.mounted) return;
+                                      if (!opened) {
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('无法打开授权页，已保留链接'),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              style: _integrationFilledButtonStyle(context),
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              label: const Text('打开'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: codeCtrl,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: '授权码或回调 URL',
+                      hintText: '粘贴 code，或粘贴带 ?code= 的回调 URL',
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -1414,85 +1403,12 @@ class _LocationRemindersTab extends StatelessWidget {
     String? latError;
     String? lngError;
     String? radiusError;
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: const Text('新建位置提醒'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: InputDecoration(
-                  labelText: '标题',
-                  errorText: titleError,
-                ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: latCtrl,
-                      decoration: InputDecoration(
-                        labelText: '纬度',
-                        errorText: latError,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        signed: true,
-                        decimal: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: lngCtrl,
-                      decoration: InputDecoration(
-                        labelText: '经度',
-                        errorText: lngError,
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        signed: true,
-                        decimal: true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: radiusCtrl,
-                decoration: InputDecoration(
-                  labelText: '半径（米）',
-                  errorText: radiusError,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('触发方向'),
-                  const Spacer(),
-                  ChoiceChip(
-                    label: const Text('进入'),
-                    selected: trigger == LocationTrigger.enter,
-                    onSelected: (_) =>
-                        setSt(() => trigger = LocationTrigger.enter),
-                  ),
-                  const SizedBox(width: 4),
-                  ChoiceChip(
-                    label: const Text('离开'),
-                    selected: trigger == LocationTrigger.leave,
-                    onSelected: (_) =>
-                        setSt(() => trigger = LocationTrigger.leave),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        builder: (ctx, setSt) => AppModalSheet(
+          key: const ValueKey('location_reminder_create_sheet'),
+          title: '新建位置提醒',
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -1522,6 +1438,82 @@ class _LocationRemindersTab extends StatelessWidget {
               child: Text(I18n.tr('action.save')),
             ),
           ],
+          child: AppFormFieldTheme(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: InputDecoration(
+                    labelText: '标题',
+                    errorText: titleError,
+                  ),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: latCtrl,
+                        decoration: InputDecoration(
+                          labelText: '纬度',
+                          errorText: latError,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: lngCtrl,
+                        decoration: InputDecoration(
+                          labelText: '经度',
+                          errorText: lngError,
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          signed: true,
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: radiusCtrl,
+                  decoration: InputDecoration(
+                    labelText: '半径（米）',
+                    errorText: radiusError,
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text('触发方向'),
+                    const Spacer(),
+                    ChoiceChip(
+                      label: const Text('进入'),
+                      selected: trigger == LocationTrigger.enter,
+                      onSelected: (_) =>
+                          setSt(() => trigger = LocationTrigger.enter),
+                    ),
+                    const SizedBox(width: 4),
+                    ChoiceChip(
+                      label: const Text('离开'),
+                      selected: trigger == LocationTrigger.leave,
+                      onSelected: (_) =>
+                          setSt(() => trigger = LocationTrigger.leave),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

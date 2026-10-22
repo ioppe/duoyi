@@ -57,7 +57,7 @@ class PomodoroSessionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    session.taskName ?? '$dur分钟${isFocus ? "专注" : "休息"}',
+                    session.taskLabel ?? '$dur分钟${isFocus ? "专注" : "休息"}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

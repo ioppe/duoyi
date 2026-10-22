@@ -34,15 +34,19 @@ void main() {
     expect(config.updateRepository, isEmpty);
   });
 
-  test('unconfigured builds have neutral defaults and original timeouts', () {
+  test('unconfigured builds keep a longer AI timeout and neutral defaults', () {
     final config = ClientDeploymentConfig();
     expect(config.serverUrl, isEmpty);
     expect(config.updateRepository, isEmpty);
     expect(config.webTarget, 'responsive');
     expect(config.httpTimeout, const Duration(seconds: 12));
     expect(config.fileTimeout, const Duration(seconds: 30));
-    expect(config.aiTimeout, const Duration(seconds: 75));
+    expect(config.aiTimeout, const Duration(seconds: 180));
     expect(config.updateTimeout, const Duration(seconds: 8));
+    expect(
+      ClientDeploymentConfig.fromValues({}).aiTimeout,
+      const Duration(seconds: 180),
+    );
   });
 
   test('invalid URLs fail without revealing credentials', () {

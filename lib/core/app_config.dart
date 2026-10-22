@@ -27,7 +27,7 @@ class AppConfig {
   );
   static const String _aiTimeout = String.fromEnvironment(
     'DUOYI_AI_TIMEOUT_SECONDS',
-    defaultValue: '75',
+    defaultValue: '180',
   );
   static const String _updateTimeout = String.fromEnvironment(
     'DUOYI_UPDATE_TIMEOUT_SECONDS',

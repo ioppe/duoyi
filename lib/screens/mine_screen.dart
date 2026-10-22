@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import 'dart:io' show Directory, File;
 import 'package:flutter/material.dart';
 import 'package:file_selector/file_selector.dart';
@@ -2182,8 +2183,8 @@ class _AiWeeklyReviewCardState extends State<_AiWeeklyReviewCard> {
                   ClipRect(
                     key: const ValueKey('mine_ai_review_content'),
                     child: AnimatedSize(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
+                      duration: AppMotion.transition(context),
+                      curve: AppMotion.enterCurve,
                       child: _reviewExpanded
                           ? Text(
                               _result!,

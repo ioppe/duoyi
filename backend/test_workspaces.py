@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import io
 import json
 import os
 import tempfile
@@ -7513,6 +7514,200 @@ class WorkspaceApiTest(unittest.TestCase):
             db.commit()
         finally:
             db.close()
+
+    def _call_ai_with_body(self, body, *, require_content=True):
+        if isinstance(body, dict):
+            body = json.dumps(body, ensure_ascii=False)
+        with patch("urllib.request.urlopen", return_value=io.BytesIO(body.encode("utf-8"))):
+            return api._call_ai_chat_upstream(
+                base_url="https://ai.example.com/v1",
+                api_key="sk-test-only",
+                model="minimax-m3.1-flash-free",
+                messages=[{"role": "user", "content": "请解读本周报告"}],
+                temperature=0.4,
+                max_tokens=2200,
+                timeout=5,
+                require_content=require_content,
+            )
+
+    def test_ai_upstream_accepts_anthropic_json_without_exposing_thinking(self):
+        reply = {
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {"type": "thinking", "thinking": "私有思考", "text": "不能显示"},
+                {"type": "text", "text": "本周记录偏少。\n"},
+                {"type": "text", "text": "明天先完成一个小任务。"},
+            ],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 209, "output_tokens": 22},
+        }
+        content, parsed = self._call_ai_with_body(reply)
+        self.assertEqual(content, "本周记录偏少。\n明天先完成一个小任务。")
+        meta = api._ai_chat_reply_meta(parsed)
+        self.assertEqual(meta["finish_reason"], "end_turn")
+        self.assertEqual(meta["completion_tokens"], 22)
+
+    def test_ai_chat_and_admin_test_accept_anthropic_sse_and_count_only_chat(self):
+        user_id = self._register("ai-stream-report")
+        self._enable_ai_settings(model="minimax-m3.1-flash-free")
+        admin = api.login(api.LoginRequest(username="admin", password="admin123"))
+        stream = (
+            'event: message_start\ndata: {"type":"message_start","message":'
+            '{"content":[],"usage":{"input_tokens":209,"output_tokens":0}}}\n\n'
+            'event: content_block_start\ndata: {"type":"content_block_start",'
+            '"content_block":{"type":"thinking","thinking":"私有思考"}}\n\n'
+            'event: content_block_delta\ndata: {"type":"content_block_delta",'
+            '"delta":{"type":"thinking_delta","thinking":"不能显示"}}\n\n'
+            'event: content_block_start\ndata: {"type":"content_block_start",'
+            '"content_block":{"type":"text","text":"本周"}}\n\n'
+            'event: content_block_delta\ndata: {"type":"content_block_delta",'
+            '"delta":{"type":"text_delta","text":"记录偏少。\\n"}}\n\n'
+            'event: content_block_delta\ndata: {"type":"content_block_delta",'
+            '"delta":{"type":"text_delta","text":"先完成一个小任务。"}}\n\n'
+            'event: message_delta\ndata: {"type":"message_delta",'
+            '"delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":22}}\n\n'
+            'event: message_stop\ndata: {"type":"message_stop"}\n\n'
+        )
+        expected = "本周记录偏少。\n先完成一个小任务。"
+
+        def response(*_args, **_kwargs):
+            return io.BytesIO(stream.encode("utf-8"))
+
+        with patch("urllib.request.urlopen", side_effect=response) as upstream:
+            with TestClient(api.app) as client:
+                headers = {"Authorization": f"Bearer {api.TOKENS[user_id]}"}
+                chat = client.post(
+                    "/api/ai/chat", headers=headers,
+                    json={"system": "效率报告分析师", "user": "请解读本周报告", "max_tokens": 2200},
+                )
+                probe = client.post(
+                    "/api/admin/ai/test",
+                    headers={"Authorization": f"Bearer {admin['token']}"},
+                )
+                used = client.get("/api/ai/usage", headers=headers).json()["used"]
+        self.assertEqual(chat.status_code, 200, chat.text)
+        self.assertEqual(chat.json()["content"], expected)
+        self.assertEqual(chat.json()["model"], "minimax-m3.1-flash-free")
+        self.assertEqual(probe.status_code, 200, probe.text)
+        self.assertTrue(probe.json()["ok"])
+        self.assertEqual(probe.json()["sample"], expected)
+        self.assertEqual(probe.json()["finish_reason"], "end_turn")
+        self.assertEqual(used, 1)
+        self.assertEqual(upstream.call_count, 2)
+        self.assertEqual(upstream.call_args_list[0].kwargs["timeout"], 150)
+        self.assertEqual(upstream.call_args_list[1].kwargs["timeout"], 30)
+        for call in upstream.call_args_list:
+            request = call.args[0]
+            payload = json.loads(request.data)
+            self.assertIs(payload["stream"], False)
+            self.assertEqual(request.full_url, "https://ai.example.com/v1/chat/completions")
+
+    def test_ai_upstream_accepts_openai_sse_multiline_crlf_and_usage(self):
+        stream = (
+            '\ufeff: keep-alive\r\n\r\n'
+            'data: {"choices":[{"index":0,"delta":{"reasoning_content":"私有思考"}}]}\r\n\r\n'
+            'data: {"choices":\r\n'
+            'data: [{"index":0,"delta":{"content":"本周"}},'
+            '{"index":1,"delta":{"content":"另一候选不应拼入"}}]}\r\n\r\n'
+            'data: {"choices":[{"index":0,"delta":{"content":"节奏稳定。\\n"}}]}\r\n\r\n'
+            'data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\r\n\r\n'
+            'data: {"choices":[],"usage":{"completion_tokens":22,'
+            '"completion_tokens_details":{"reasoning_tokens":8}}}\r\n\r\n'
+            'data: [DONE]\r\n\r\n'
+        )
+        content, reply = self._call_ai_with_body(stream)
+        self.assertEqual(content, "本周节奏稳定。")
+        meta = api._ai_chat_reply_meta(reply)
+        self.assertEqual(meta["finish_reason"], "stop")
+        self.assertEqual(meta["completion_tokens"], 22)
+        self.assertEqual(meta["reasoning_tokens"], 8)
+
+    def test_ai_upstream_rejects_error_corrupt_and_incomplete_streams(self):
+        partial = 'data: {"choices":[{"delta":{"content":"只生成一半"}}]}\n\n'
+        cases = [
+            (partial, "SSE 流未完整结束"),
+            (partial + 'data: broken-json\n\ndata: [DONE]\n\n', "SSE 数据帧不是有效 JSON"),
+            (partial + 'data: {"error":{"message":"模型暂不可用"}}\n\n', "模型暂不可用"),
+            ('event: error\ndata: {"error":{"message":"请求失败"}}\n\n', "请求失败"),
+            ('<html>不能泄露的原始响应</html>', "上游响应格式错误"),
+            ('[]', "上游响应不是 JSON 对象"),
+        ]
+        for body, detail in cases:
+            with self.subTest(detail=detail):
+                with self.assertRaises(HTTPException) as failure:
+                    self._call_ai_with_body(body)
+                self.assertEqual(failure.exception.status_code, 502)
+                self.assertIn(detail, failure.exception.detail)
+                self.assertNotIn("上游不可达", failure.exception.detail)
+                self.assertNotIn("不能泄露的原始响应", failure.exception.detail)
+
+    def test_ai_upstream_rejects_reasoning_only_sse_and_preserves_budget_meta(self):
+        stream = (
+            'data: {"choices":[{"delta":{"reasoning_content":"私有思考"}}]}\n\n'
+            'data: {"choices":[{"delta":{},"finish_reason":"length"}],'
+            '"usage":{"completion_tokens":256,"completion_tokens_details":{"reasoning_tokens":256}}}\n\n'
+            'data: [DONE]\n\n'
+        )
+        with self.assertRaises(HTTPException) as failure:
+            self._call_ai_with_body(stream)
+        self.assertIn("正文为空", failure.exception.detail)
+        self.assertIn("finish_reason=length", failure.exception.detail)
+        self.assertIn("256", failure.exception.detail)
+        self.assertNotIn("私有思考", failure.exception.detail)
+        content, reply = self._call_ai_with_body(stream, require_content=False)
+        self.assertEqual(content, "")
+        self.assertEqual(api._ai_chat_reply_meta(reply)["reasoning_tokens"], 256)
+
+    def test_ai_upstream_network_error_is_distinct_from_response_parse_error(self):
+        with patch("urllib.request.urlopen", side_effect=api.urllib.error.URLError("connection refused")):
+            with self.assertRaises(HTTPException) as failure:
+                api._call_ai_chat_upstream(
+                    base_url="https://ai.example.com", api_key="sk-test-only", model="m",
+                    messages=[], temperature=0, max_tokens=256, timeout=5,
+                )
+        self.assertEqual(failure.exception.status_code, 502)
+        self.assertIn("上游不可达", failure.exception.detail)
+        self.assertIn("connection refused", failure.exception.detail)
+
+    def test_ai_empty_length_reports_budget_without_reasoning_token_counters(self):
+        for has_reasoning in (True, False):
+            with self.subTest(has_reasoning=has_reasoning):
+                message = {"content": ""}
+                if has_reasoning:
+                    message["reasoning_content"] = "私有思考不能展示"
+                reply = {
+                    "choices": [{"message": message, "finish_reason": "length"}],
+                    "usage": {"completion_tokens": 2200},
+                }
+                meta = api._ai_chat_reply_meta(reply)
+                self.assertEqual(meta["reasoning_tokens"], 0)
+                self.assertEqual(meta["has_reasoning_text"], has_reasoning)
+                with self.assertRaises(HTTPException) as failure:
+                    self._call_ai_with_body(reply)
+                detail = failure.exception.detail
+                self.assertIn("达到输出上限", detail)
+                self.assertIn("正文为空", detail)
+                self.assertIn("finish_reason=length", detail)
+                self.assertIn("2200", detail)
+                self.assertIn("max_tokens", detail)
+                self.assertNotIn("私有思考不能展示", detail)
+                if has_reasoning:
+                    self.assertIn("检测到思考内容", detail)
+
+    def test_ai_upstream_timeout_returns_504_instead_of_unreachable_502(self):
+        for error in (TimeoutError("timed out"), api.urllib.error.URLError(TimeoutError("timed out"))):
+            with self.subTest(error=type(error).__name__):
+                with patch("urllib.request.urlopen", side_effect=error):
+                    with self.assertRaises(HTTPException) as failure:
+                        api._call_ai_chat_upstream(
+                            base_url="https://ai.example.com", api_key="sk-test-only", model="m",
+                            messages=[], temperature=0, max_tokens=8192, timeout=150,
+                        )
+                self.assertEqual(failure.exception.status_code, 504)
+                self.assertIn("超时", failure.exception.detail)
+                self.assertIn("150", failure.exception.detail)
+                self.assertNotIn("不可达", failure.exception.detail)
 
     def test_ai_chat_rejects_reasoning_truncated_empty_reply(self):
         user_id = self._register("ai-empty-chat")

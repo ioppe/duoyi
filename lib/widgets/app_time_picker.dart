@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n_date_format.dart';
 import 'surface_components.dart';
@@ -106,15 +107,20 @@ class _AppTimePickerSheetState extends State<_AppTimePickerSheet> {
       _hour = rounded.hour;
       _minute = rounded.minute;
     });
+    if (AppMotion.reduced(context)) {
+      _hourController.jumpToItem(_hour);
+      _minuteController.jumpToItem(_minutes.indexOf(_minute));
+      return;
+    }
     _hourController.animateToItem(
       _hour,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: AppMotion.feedback(context),
+      curve: AppMotion.enterCurve,
     );
     _minuteController.animateToItem(
       _minutes.indexOf(_minute).clamp(0, _minutes.length - 1),
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: AppMotion.feedback(context),
+      curve: AppMotion.enterCurve,
     );
   }
 

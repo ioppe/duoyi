@@ -1,3 +1,5 @@
+import '../widgets/app_create_fab.dart';
+import '../core/i18n.dart';
 import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -90,7 +92,12 @@ class _ShareScreenState extends State<ShareScreen> {
         child: RefreshIndicator(
           onRefresh: () => provider.load(),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+            padding: const EdgeInsets.fromLTRB(
+              12,
+              12,
+              12,
+              DesignTokens.pageFabBottomPadding,
+            ),
             children: [
               AppSurfaceCard(
                 padding: const EdgeInsets.all(16),
@@ -133,11 +140,6 @@ class _ShareScreenState extends State<ShareScreen> {
                         ],
                       ),
                     ),
-                    FilledButton.tonalIcon(
-                      onPressed: () => _createWorkspace(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text('新建'),
-                    ),
                   ],
                 ),
               ),
@@ -178,6 +180,10 @@ class _ShareScreenState extends State<ShareScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('action.create'),
+        onPressed: () => _createWorkspace(context),
       ),
     );
   }
@@ -229,15 +235,11 @@ class _ShareScreenState extends State<ShareScreen> {
 
   Future<void> _createWorkspace(BuildContext context) async {
     final ctrl = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await showAppModalSheet<String>(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: const Text('新建共享空间'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: '空间名称'),
-        ),
+      builder: (ctx) => AppModalSheet(
+        key: const ValueKey('workspace_create_sheet'),
+        title: '新建共享空间',
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -248,6 +250,13 @@ class _ShareScreenState extends State<ShareScreen> {
             child: const Text('创建'),
           ),
         ],
+        child: AppFormFieldTheme(
+          child: TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: '空间名称'),
+          ),
+        ),
       ),
     );
     if (name == null || name.isEmpty || !context.mounted) return;
@@ -525,12 +534,35 @@ class _WorkspaceCard extends StatelessWidget {
 
   Future<void> _createInvite(BuildContext context, Workspace workspace) async {
     var role = WorkspaceRole.viewer;
-    final invite = await showDialog<ShareInvite>(
+    final invite = await showAppModalSheet<ShareInvite>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: const Text('生成邀请码'),
-          content: Column(
+        builder: (ctx, setSt) => AppModalSheet(
+          key: const ValueKey('workspace_invite_create_sheet'),
+          title: '生成邀请码',
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  final created = await context
+                      .read<ShareProvider>()
+                      .createInvite(workspace.id, role: role);
+                  if (ctx.mounted) Navigator.pop(ctx, created);
+                } catch (e) {
+                  if (!ctx.mounted) return;
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text('生成失败: ${_shareError(e)}')),
+                  );
+                }
+              },
+              child: const Text('生成'),
+            ),
+          ],
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
@@ -557,28 +589,6 @@ class _WorkspaceCard extends StatelessWidget {
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                try {
-                  final created = await context
-                      .read<ShareProvider>()
-                      .createInvite(workspace.id, role: role);
-                  if (ctx.mounted) Navigator.pop(ctx, created);
-                } catch (e) {
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text('生成失败: ${_shareError(e)}')),
-                  );
-                }
-              },
-              child: const Text('生成'),
-            ),
-          ],
         ),
       ),
     );

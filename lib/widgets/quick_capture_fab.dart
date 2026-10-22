@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../core/ai_command.dart';
 import '../core/i18n.dart';
 import '../core/design_tokens.dart';
+import '../core/app_motion.dart';
 import '../core/home_page_style.dart';
 import '../models/goal.dart'
     show ReminderKind, ReminderPlan, ReminderRule, ReminderRuleType;
-import '../models/note.dart';
 import '../models/quick_capture_template.dart';
 import '../models/todo.dart';
 import '../providers/habit_provider.dart';
@@ -20,6 +20,7 @@ import '../services/local_notifications.dart';
 import '../providers/notification_service.dart';
 import '../services/reminder_scheduler.dart';
 import '../screens/ai_schedule_screen.dart';
+import '../screens/note_screen.dart' show showNoteCreateSheet;
 import 'surface_components.dart';
 import 'todo_create_sheet.dart';
 
@@ -44,8 +45,17 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: DesignTokens.durationBase,
+      reverseDuration: DesignTokens.durationFast,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ctrl.duration = AppMotion.transition(context);
+    _ctrl.reverseDuration = AppMotion.feedback(context);
+    if (AppMotion.reduced(context)) _ctrl.value = _open ? 1 : 0;
   }
 
   @override
@@ -301,42 +311,8 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
   }
 
   Future<void> _quickNote() async {
-    _toggle();
-    final ctrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AppDialog(
-        title: Text(I18n.tr('quick.note.title')),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          maxLines: 5,
-          decoration: InputDecoration(hintText: I18n.tr('quick.note.hint')),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(I18n.tr('action.cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(I18n.tr('action.save')),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && ctrl.text.trim().isNotEmpty) {
-      if (!mounted) return;
-      final now = DateTime.now();
-      context.read<NoteProvider>().addOrUpdateNote(
-        NoteItem(
-          id: now.millisecondsSinceEpoch.toString(),
-          content: ctrl.text.trim(),
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-    }
+    _closeIfOpen();
+    await showNoteCreateSheet(context);
   }
 
   Future<void> _showTemplateSheet() async {
@@ -413,140 +389,12 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
     var todoReminder = false;
     var habitReminder = false;
 
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AppDialog(
-          title: Text(I18n.tr('quick.template.save')),
-          content: SingleChildScrollView(
-            child: AppSecondaryControlTheme(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: Text(I18n.tr('quick.template.kind.todo')),
-                          selected: kind == QuickCaptureTemplateKind.todo,
-                          onSelected: (_) => setDialogState(
-                            () => kind = QuickCaptureTemplateKind.todo,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: Text(I18n.tr('quick.template.kind.habit')),
-                          selected: kind == QuickCaptureTemplateKind.habit,
-                          onSelected: (_) => setDialogState(
-                            () => kind = QuickCaptureTemplateKind.habit,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(
-                      labelText: I18n.tr('quick.template.name'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: prefixCtrl,
-                    decoration: InputDecoration(
-                      labelText: I18n.tr('quick.template.prefix'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: tagsCtrl,
-                    decoration: InputDecoration(
-                      labelText: I18n.tr('quick.template.tags'),
-                    ),
-                  ),
-                  if (kind == QuickCaptureTemplateKind.todo) ...[
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: listCtrl,
-                      decoration: InputDecoration(
-                        labelText: I18n.tr('quick.template.list'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    AppDropdownField<TodoPriority>(
-                      initialValue: priority,
-                      decoration: InputDecoration(
-                        labelText: I18n.tr('quick.template.priority'),
-                      ),
-                      items: [
-                        for (final item in TodoPriority.values)
-                          DropdownMenuItem(
-                            value: item,
-                            child: Text(item.label),
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => priority = value);
-                        }
-                      },
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: todoReminder,
-                      onChanged: (value) {
-                        setDialogState(() => todoReminder = value);
-                      },
-                      title: Text(I18n.tr('quick.template.reminder15')),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: habitCategoryCtrl,
-                      decoration: InputDecoration(
-                        labelText: I18n.tr('quick.template.habit_category'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: habitTargetCtrl,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: I18n.tr('quick.template.habit_target'),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 92,
-                          child: TextField(
-                            controller: habitUnitCtrl,
-                            decoration: InputDecoration(
-                              labelText: I18n.tr('quick.template.habit_unit'),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: habitReminder,
-                      onChanged: (value) {
-                        setDialogState(() => habitReminder = value);
-                      },
-                      title: Text(I18n.tr('quick.template.habit_reminder')),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+        builder: (dialogContext, setDialogState) => AppModalSheet(
+          key: const ValueKey('quick_template_create_sheet'),
+          title: I18n.tr('quick.template.save'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
@@ -560,6 +408,130 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
               child: Text(I18n.tr('action.save')),
             ),
           ],
+          child: AppFormFieldTheme(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: Text(I18n.tr('quick.template.kind.todo')),
+                        selected: kind == QuickCaptureTemplateKind.todo,
+                        onSelected: (_) => setDialogState(
+                          () => kind = QuickCaptureTemplateKind.todo,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: Text(I18n.tr('quick.template.kind.habit')),
+                        selected: kind == QuickCaptureTemplateKind.habit,
+                        onSelected: (_) => setDialogState(
+                          () => kind = QuickCaptureTemplateKind.habit,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: I18n.tr('quick.template.name'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: prefixCtrl,
+                  decoration: InputDecoration(
+                    labelText: I18n.tr('quick.template.prefix'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: tagsCtrl,
+                  decoration: InputDecoration(
+                    labelText: I18n.tr('quick.template.tags'),
+                  ),
+                ),
+                if (kind == QuickCaptureTemplateKind.todo) ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: listCtrl,
+                    decoration: InputDecoration(
+                      labelText: I18n.tr('quick.template.list'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AppDropdownField<TodoPriority>(
+                    initialValue: priority,
+                    decoration: InputDecoration(
+                      labelText: I18n.tr('quick.template.priority'),
+                    ),
+                    items: [
+                      for (final item in TodoPriority.values)
+                        DropdownMenuItem(value: item, child: Text(item.label)),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => priority = value);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: todoReminder,
+                    onChanged: (value) {
+                      setDialogState(() => todoReminder = value);
+                    },
+                    title: Text(I18n.tr('quick.template.reminder15')),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: habitCategoryCtrl,
+                    decoration: InputDecoration(
+                      labelText: I18n.tr('quick.template.habit_category'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: habitTargetCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: I18n.tr('quick.template.habit_target'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 92,
+                        child: TextField(
+                          controller: habitUnitCtrl,
+                          decoration: InputDecoration(
+                            labelText: I18n.tr('quick.template.habit_unit'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: habitReminder,
+                    onChanged: (value) {
+                      setDialogState(() => habitReminder = value);
+                    },
+                    title: Text(I18n.tr('quick.template.habit_reminder')),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -610,18 +582,11 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
   Future<void> _applyTemplate(QuickCaptureTemplate template) async {
     if (!mounted) return;
     final ctrl = TextEditingController();
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: Text(template.name),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          maxLines: template.kind == QuickCaptureTemplateKind.todo ? 2 : 1,
-          decoration: InputDecoration(
-            hintText: I18n.tr('quick.template.apply_hint'),
-          ),
-        ),
+      builder: (dialogContext) => AppModalSheet(
+        key: const ValueKey('quick_template_apply_sheet'),
+        title: template.name,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -632,6 +597,16 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
             child: Text(I18n.tr('action.create')),
           ),
         ],
+        child: AppFormFieldTheme(
+          child: TextField(
+            controller: ctrl,
+            autofocus: true,
+            maxLines: template.kind == QuickCaptureTemplateKind.todo ? 2 : 1,
+            decoration: InputDecoration(
+              hintText: I18n.tr('quick.template.apply_hint'),
+            ),
+          ),
+        ),
       ),
     );
     if (ok != true || !mounted) return;
@@ -676,7 +651,7 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
     required VoidCallback onTap,
   }) {
     return ScaleTransition(
-      scale: _ctrl,
+      scale: _ctrl.drive(CurveTween(curve: AppMotion.enterCurve)),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Row(
@@ -765,7 +740,8 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
                     onPressed: _toggle,
                     child: AnimatedRotation(
                       turns: _open ? 0.125 : 0,
-                      duration: const Duration(milliseconds: 220),
+                      duration: AppMotion.feedback(context),
+                      curve: AppMotion.enterCurve,
                       child: const Icon(Icons.add),
                     ),
                   )

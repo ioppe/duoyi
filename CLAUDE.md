@@ -148,9 +148,9 @@ Workflow `.github/workflows/build-apk.yml` validates a shared profile first and 
 
 | Trigger | Job | Output |
 |---------|-----|--------|
-| Every push/PR | `analyze` | `flutter analyze`, `dart format`, `flutter test`, and backend tests |
-| Every push/PR | `android` | Generic APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
-| Tag push or manual trigger | `web` | `duoyi-web-*.tar.gz` for nginx deployment |
+| Push to or PR targeting `main` / `self-hosted-skydrow` | `analyze` | `flutter analyze`, complete Flutter tests and backend tests |
+| Same triggers, after checks pass | `android` | Signed universal APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
+| Push to `main`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for nginx deployment |
 | Tag `v*` push | `release` | Auto-creates GitHub Release with APKs, AAB, and web tarball |
 
 ### Required Repository Secrets

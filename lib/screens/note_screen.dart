@@ -1,3 +1,4 @@
+import '../widgets/app_create_fab.dart';
 import '../core/app_clock.dart';
 import '../widgets/app_page_tabs.dart';
 import 'dart:io' show File;
@@ -18,6 +19,14 @@ import '../widgets/surface_components.dart';
 enum _NoteLibraryView { active, archived }
 
 enum _NoteCardAction { pin, unpin, archive, restore, delete }
+
+/// 新建便签和「新建任务」一致，走共享底部弹窗；已有便签仍用全屏编辑页。
+Future<void> showNoteCreateSheet(BuildContext context) {
+  return showAppModalSheet<void>(
+    context: context,
+    builder: (_) => const NoteEditScreen(),
+  );
+}
 
 class NoteScreen extends StatefulWidget {
   const NoteScreen({super.key});
@@ -79,10 +88,7 @@ class _NoteScreenState extends State<NoteScreen> {
               icon: Icons.edit_note,
               message: I18n.tr('note.empty.message'),
               actionLabel: I18n.tr('note.empty.action'),
-              onAction: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NoteEditScreen()),
-              ),
+              onAction: () => showNoteCreateSheet(context),
             )
           : Column(
               children: [
@@ -176,12 +182,10 @@ class _NoteScreenState extends State<NoteScreen> {
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const NoteEditScreen()),
-        ),
-        child: const Icon(Icons.edit),
+      floatingActionButton: AppCreateFab(
+        label: I18n.tr('note.empty.action'),
+        icon: Icons.edit,
+        onPressed: () => showNoteCreateSheet(context),
       ),
     );
   }
@@ -466,6 +470,7 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.note == null) return _buildCreateSheet();
     return Scaffold(
       appBar: AppBar(
         title: Text(I18n.tr('note.edit.title')),
@@ -480,53 +485,107 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
       ),
       body: Column(
         children: [
-          _NoteFormatToolbar(
-            onHeading: () => _insertPrefix('# '),
-            onBold: () => _wrapSelection('**'),
-            onItalic: () => _wrapSelection('*'),
-            onQuote: () => _insertPrefix('> '),
-            onBullet: () => _insertPrefix('- '),
-            onChecklist: () => _insertPrefix('- [ ] '),
-            onCode: () => _wrapSelection('`'),
-            onLink: _insertLink,
-            onAttachment: _addAttachment,
-          ),
-          if (_attachments.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (var i = 0; i < _attachments.length; i++)
-                      _AttachmentChip(
-                        attachment: _attachments[i],
-                        onDeleted: () =>
-                            setState(() => _attachments.removeAt(i)),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _preview
-                  ? _MarkdownPreview(
-                      content: _ctrl.text,
-                      blocks: NoteBlock.fromMarkdown(_ctrl.text),
-                      attachments: _attachments,
-                    )
-                  : _NoteEditorPane(
-                      controller: _ctrl,
-                      attachments: _attachments,
-                    ),
-            ),
-          ),
+          _buildToolbar(),
+          if (_attachments.isNotEmpty) _buildAttachmentStrip(),
+          Expanded(child: _buildEditorBody()),
         ],
       ),
+    );
+  }
+
+  /// 新建便签复用编辑器状态，外壳交给共享弹窗，不再套一层 Scaffold。
+  Widget _buildCreateSheet() {
+    return AppModalSheet(
+      key: const ValueKey('note_create_sheet'),
+      title: I18n.tr('note.edit.title'),
+      // 关掉弹窗自身滚动：编辑器要拿到有界高度，预览列表自己负责滚动。
+      scrollable: false,
+      actions: [
+        TextButton(
+          key: const ValueKey('note_create_cancel'),
+          onPressed: () => Navigator.pop(context),
+          child: Text(I18n.tr('action.cancel')),
+        ),
+        FilledButton(
+          key: const ValueKey('note_create_save'),
+          style: appSecondaryFilledButtonStyle(context),
+          onPressed: _saveAndPop,
+          child: Text(I18n.tr('action.save')),
+        ),
+      ],
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildToolbar()),
+              IconButton(
+                key: const ValueKey('note_create_preview_toggle'),
+                icon: Icon(_preview ? Icons.edit_outlined : Icons.visibility),
+                tooltip: _preview
+                    ? I18n.tr('note.edit')
+                    : I18n.tr('note.preview'),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => setState(() => _preview = !_preview),
+              ),
+            ],
+          ),
+          if (_attachments.isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 84),
+              child: SingleChildScrollView(child: _buildAttachmentStrip()),
+            ),
+          Expanded(child: _buildEditorBody()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolbar() {
+    return _NoteFormatToolbar(
+      onHeading: () => _insertPrefix('# '),
+      onBold: () => _wrapSelection('**'),
+      onItalic: () => _wrapSelection('*'),
+      onQuote: () => _insertPrefix('> '),
+      onBullet: () => _insertPrefix('- '),
+      onChecklist: () => _insertPrefix('- [ ] '),
+      onCode: () => _wrapSelection('`'),
+      onLink: _insertLink,
+      onAttachment: _addAttachment,
+    );
+  }
+
+  Widget _buildAttachmentStrip() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (var i = 0; i < _attachments.length; i++)
+              _AttachmentChip(
+                attachment: _attachments[i],
+                onDeleted: () => setState(() => _attachments.removeAt(i)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditorBody() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: _preview
+          ? _MarkdownPreview(
+              content: _ctrl.text,
+              blocks: NoteBlock.fromMarkdown(_ctrl.text),
+              attachments: _attachments,
+            )
+          : _NoteEditorPane(controller: _ctrl, attachments: _attachments),
     );
   }
 

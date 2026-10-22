@@ -3,6 +3,7 @@ import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/models/pomodoro.dart';
+import 'package:duoyi/widgets/focus_task_stats_card.dart';
 import 'package:duoyi/models/time_entry.dart';
 import 'package:duoyi/models/todo.dart';
 import 'package:duoyi/providers/goal_provider.dart';
@@ -54,10 +55,29 @@ Future<void> _open(WidgetTester tester, {bool populated = false}) async {
     pomo.sessions.add(
       PomodoroSession(
         id: 'cross-midnight',
+        todoId: 'task-project',
+        todoTitle: '项目任务',
+        subtaskId: 'task-research',
+        taskName: '需求调研',
         startTime: DateTime.utc(2026, 6, 14, 23, 45),
         endTime: DateTime.utc(2026, 6, 15, 0, 15),
         durationSeconds: 1800,
         type: PomodoroType.focus,
+      ),
+    );
+  }
+  if (populated) {
+    pomo.sessions.add(
+      PomodoroSession(
+        id: 'earlier-month',
+        startTime: DateTime.utc(2026, 6, 4, 11),
+        endTime: DateTime.utc(2026, 6, 4, 11, 10),
+        durationSeconds: 600,
+        type: PomodoroType.focus,
+        todoId: 'task-project',
+        todoTitle: '项目任务',
+        subtaskId: 'task-research',
+        taskName: '需求调研',
       ),
     );
   }
@@ -127,6 +147,43 @@ void main() {
       );
       expect(
         find.descendant(of: _kpi('待办完成'), matching: find.text(todos)),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('任务专注随周月年切换，子任务明细不重复计算', (tester) async {
+    await _open(tester, populated: true);
+    for (final (range, minutes, sessions) in [
+      ('本周', 30, 1),
+      ('本月', 40, 2),
+      ('本年', 40, 2),
+    ]) {
+      await tester.tap(
+        find.descendant(of: find.byType(AppBar), matching: find.text(range)),
+      );
+      await tester.pumpAndSettle();
+      final card = find.byType(FocusTaskStatsCard);
+      await tester.ensureVisible(card);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: card, matching: find.text('项目任务')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.text('$minutes 分钟 · $sessions 次专注'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.descendant(of: card, matching: find.byType(ExpansionTile)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: card, matching: find.text('需求调研')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

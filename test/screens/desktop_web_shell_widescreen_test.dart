@@ -29,6 +29,7 @@ import 'package:duoyi/providers/time_audit_provider.dart';
 import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/providers/user_provider.dart';
 import 'package:duoyi/screens/habit_screen.dart';
+import 'package:duoyi/screens/pomodoro_screen.dart';
 import 'package:duoyi/screens/todo_screen.dart';
 import 'package:duoyi/screens/today_screen.dart';
 import 'package:duoyi/services/ai_service.dart';
@@ -142,7 +143,7 @@ void main() {
           .widget<NavigationRail>(find.byType(NavigationRail))
           .destinations
           .map((item) => (item.label as Text).data),
-      ['今日', '待办', '习惯', '我的'],
+      ['今日', '待办', '习惯', '专注', '我的'],
     );
     expect(tester.takeException(), isNull);
 
@@ -239,7 +240,7 @@ void main() {
           .widget<NavigationBar>(find.byType(NavigationBar))
           .destinations
           .map((item) => (item as NavigationDestination).label),
-      ['今日', '待办', '习惯', '我的'],
+      ['今日', '待办', '习惯', '专注', '我的'],
     );
     expect(find.byType(NavigationRail), findsNothing);
     expect(_maxWidthBox, findsNothing);
@@ -252,7 +253,7 @@ void main() {
       (const Size(390, 844), 1.0),
       (const Size(320, 720), 1.5),
     ]) {
-      testWidgets('${brand.id} $size ×$scale 四个一级页面共用圆体粗体底栏', (tester) async {
+      testWidgets('${brand.id} $size ×$scale 五个一级页面共用圆体粗体底栏', (tester) async {
         await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
               rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
             ))
@@ -262,7 +263,7 @@ void main() {
         final navigation = find.byType(NavigationBar);
         final shared = brand.theme.navigationBarTheme;
         List<(IconData?, IconData?)>? icons;
-        for (final (navIndex, tab) in [0, 1, 2, 6].indexed) {
+        for (final (navIndex, tab) in [0, 1, 2, 4, 6].indexed) {
           tester.state<MainShellState>(find.byType(MainShell)).navigateTo(tab);
           await tester.pumpAndSettle();
           final bar = tester.widget<NavigationBar>(navigation);
@@ -316,6 +317,44 @@ void main() {
         }
       });
     }
+  }
+
+  for (final size in [const Size(1280, 800), const Size(390, 844)]) {
+    testWidgets('$size 专注一级入口可点击，往返待办保留专注子页面', (tester) async {
+      await _pumpShellAt(tester, AppBrands.defaultBrand.theme, size);
+      final wide = size.width >= 900;
+      final navigation = wide
+          ? find.byType(NavigationRail)
+          : find.byType(NavigationBar);
+      Finder destination(String label) =>
+          find.descendant(of: navigation, matching: find.text(label)).last;
+
+      await tester.tap(destination('专注'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PomodoroScreen), findsOneWidget);
+      expect(
+        wide
+            ? tester.widget<NavigationRail>(navigation).selectedIndex
+            : tester.widget<NavigationBar>(navigation).selectedIndex,
+        3,
+      );
+      expect(find.byTooltip('返回我的'), findsNothing);
+      final focusPage = tester.element(find.byType(PomodoroScreen));
+      await tester.tap(
+        find.text(AppBrands.defaultBrand.strings.focusTabHistory),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 1);
+
+      await tester.tap(destination('待办'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TodoScreen), findsOneWidget);
+      await tester.tap(destination('专注'));
+      await tester.pumpAndSettle();
+      expect(tester.element(find.byType(PomodoroScreen)), same(focusPage));
+      expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 1);
+      expect(tester.takeException(), isNull);
+    });
   }
 
   test('web 底导航模糊降级档低于原生档（VM 上 kIsWeb=false 不降级）', () {

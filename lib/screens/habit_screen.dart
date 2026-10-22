@@ -1,8 +1,10 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/desktop_tokens.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -24,7 +26,6 @@ import '../widgets/habit_heatmap.dart';
 import '../widgets/habit_weekly_card.dart';
 import '../widgets/reminder_plan_editor.dart';
 import '../widgets/brand_background.dart';
-import '../widgets/empty_state.dart';
 import '../widgets/surface_components.dart';
 import 'habit_detail_screen.dart';
 
@@ -37,10 +38,13 @@ class HabitScreen extends StatefulWidget {
   State<HabitScreen> createState() => _HabitScreenState();
 }
 
+enum _HabitStatusFilter { all, pending, completed }
+
 class _HabitScreenState extends State<HabitScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   bool _heatmapTabBuilt = false;
+  _HabitStatusFilter _statusFilter = _HabitStatusFilter.all;
 
   @override
   void initState() {
@@ -132,515 +136,504 @@ class _HabitScreenState extends State<HabitScreen>
             DesignTokens.spaceXl,
           ),
           child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  // --- Recommended Section ---
-                  const Text(
-                    '推荐目标',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: DesignTokens.fontWeightStrong,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...templatesByCategory.entries.map((entry) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-                          child: Text(
-                            entry.key,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 44,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: entry.value.length,
-                            separatorBuilder: (_, index) =>
-                                const SizedBox(width: 8),
-                            itemBuilder: (ctx, i) {
-                              final t = entry.value[i];
-                              final frequencyLabel = t.hasFlexRule
-                                  ? _habitTemplateFrequencyLabel(t)
-                                  : t.localizedFrequencyLabel;
-                              return ActionChip(
-                                avatar: Icon(
-                                  t.icon,
-                                  size: 16,
-                                  color: Color(t.colorValue),
-                                ),
-                                label: Text(
-                                  '${t.localizedName} · $frequencyLabel',
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                                backgroundColor: Color(
-                                  t.colorValue,
-                                ).withValues(alpha: 0.05),
-                                side: BorderSide(
-                                  color: Color(
-                                    t.colorValue,
-                                  ).withValues(alpha: 0.14),
-                                  width: 0.45,
-                                ),
-                                onPressed: () {
-                                  setSt(() {
-                                    selectedKind = HabitKind.positive;
-                                    selectedIcon = habitIconTokenForIcon(
-                                      t.icon,
-                                    );
-                                    nameCtrl.text = t.localizedName;
-                                    targetCtrl.text = t.targetCount.toString();
-                                    unitCtrl.text = t.localizedUnit;
-                                    categoryCtrl.text = t.localizedCategory;
-                                    selectedColor = t.colorValue;
-                                    flexRuleEnabled = t.hasFlexRule;
-                                    if (t.hasFlexRule) {
-                                      selectedFlexPeriod = t.flexPeriod!;
-                                      flexTargetCtrl.text = t.flexTarget!
-                                          .toString();
-                                    }
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    );
-                  }),
-
-                  const Divider(height: 32),
-
-                  // --- Kind Selector ---
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Text('正向养成'),
-                          selected: selectedKind == HabitKind.positive,
-                          onSelected: (_) => setSt(() {
-                            selectedKind = HabitKind.positive;
-                          }),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ChoiceChip(
-                          label: const Text('反向戒除'),
-                          selected: selectedKind == HabitKind.negative,
-                          onSelected: (_) => setSt(() {
-                            selectedKind = HabitKind.negative;
-                            flexRuleEnabled = false;
-                          }),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // --- Remind ---
-                  Row(
-                    children: [
-                      const Icon(Icons.alarm, size: 18, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      const Text('打卡提醒'),
-                      const Spacer(),
-                      Switch(
-                        value: remindEnabled,
-                        onChanged: (v) async {
-                          if (!v) {
-                            setSt(() => remindEnabled = false);
-                            return;
-                          }
-                          final ready = await _ensureHabitReminderReady();
-                          if (!mounted || !ctx.mounted) return;
-                          setSt(() => remindEnabled = ready);
-                        },
-                      ),
-                    ],
-                  ),
-                  if (remindEnabled) ...[
-                    const Padding(
-                      padding: EdgeInsets.only(left: 26, top: 2, bottom: 6),
-                      child: Text(
-                        '到点弹出打卡提醒，可添加多个时间（例如每天 8 杯水）',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                    ),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Recommended Section ---
+              const Text(
+                '推荐目标',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...templatesByCategory.entries.map((entry) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (var i = 0; i < remindTimes.length; i++)
-                            InputChip(
-                              avatar: const Icon(Icons.schedule, size: 16),
-                              label: Text(AppTimePicker.format(remindTimes[i])),
-                              onPressed: () async {
-                                final t = await AppTimePicker.show(
-                                  ctx,
-                                  initialTime: remindTimes[i],
-                                  title: '提醒时间',
-                                  minuteStep: 5,
-                                );
-                                if (t == null || !mounted || !ctx.mounted) {
-                                  return;
-                                }
-                                setSt(() => remindTimes[i] = t);
-                              },
-                              onDeleted: remindTimes.length <= 1
-                                  ? null
-                                  : () => setSt(() => remindTimes.removeAt(i)),
+                      padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
+                      child: Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 44,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: entry.value.length,
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(width: 8),
+                        itemBuilder: (ctx, i) {
+                          final t = entry.value[i];
+                          final frequencyLabel = t.hasFlexRule
+                              ? _habitTemplateFrequencyLabel(t)
+                              : t.localizedFrequencyLabel;
+                          return ActionChip(
+                            avatar: Icon(
+                              t.icon,
+                              size: 16,
+                              color: Color(t.colorValue),
                             ),
-                          ActionChip(
-                            avatar: const Icon(Icons.add, size: 16),
-                            label: const Text('添加时间'),
-                            onPressed: () async {
-                              final t = await AppTimePicker.show(
-                                ctx,
-                                initialTime: nextHalfHourTimeOfDay(),
-                                title: '提醒时间',
-                                minuteStep: 5,
-                              );
-                              if (t == null || !mounted || !ctx.mounted) return;
+                            label: Text(
+                              '${t.localizedName} · $frequencyLabel',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            backgroundColor: Color(
+                              t.colorValue,
+                            ).withValues(alpha: 0.05),
+                            side: BorderSide(
+                              color: Color(
+                                t.colorValue,
+                              ).withValues(alpha: 0.14),
+                              width: 0.45,
+                            ),
+                            onPressed: () {
                               setSt(() {
-                                if (!remindTimes.any(
-                                  (e) =>
-                                      e.hour == t.hour && e.minute == t.minute,
-                                )) {
-                                  remindTimes.add(t);
+                                selectedKind = HabitKind.positive;
+                                selectedIcon = habitIconTokenForIcon(t.icon);
+                                nameCtrl.text = t.localizedName;
+                                targetCtrl.text = t.targetCount.toString();
+                                unitCtrl.text = t.localizedUnit;
+                                categoryCtrl.text = t.localizedCategory;
+                                selectedColor = t.colorValue;
+                                flexRuleEnabled = t.hasFlexRule;
+                                if (t.hasFlexRule) {
+                                  selectedFlexPeriod = t.flexPeriod!;
+                                  flexTargetCtrl.text = t.flexTarget!
+                                      .toString();
                                 }
                               });
                             },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-
-                  // --- Manual Entry ---
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '习惯名称',
-                      hintText: '输入或从上方选择',
-                      prefixIcon: Icon(Icons.edit, size: 20),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: categoryCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '分组',
-                      hintText: '例如 身体健康、学习提升',
-                      prefixIcon: Icon(Icons.folder_outlined, size: 20),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: TextField(
-                          controller: targetCtrl,
-                          decoration: const InputDecoration(
-                            labelText: '每日目标',
-                            prefixIcon: Icon(Icons.track_changes, size: 20),
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        width: 82,
-                        child: TextField(
-                          controller: unitCtrl,
-                          decoration: const InputDecoration(labelText: '单位'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      AppSurfaceCard(
-                        padding: const EdgeInsets.all(6),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Row(
-                          children: colors
-                              .take(4)
-                              .map(
-                                (c) => GestureDetector(
-                                  onTap: () => setSt(() => selectedColor = c),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: Color(c),
-                                        shape: BoxShape.circle,
-                                        border: selectedColor == c
-                                            ? Border.all(
-                                                color: Colors.white,
-                                                width: 1.2,
-                                              )
-                                            : null,
-                                        boxShadow: selectedColor == c
-                                            ? [
-                                                BoxShadow(
-                                                  color: Color(
-                                                    c,
-                                                  ).withValues(alpha: 0.4),
-                                                  blurRadius: 4,
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  AppSurfaceCard(
-                    padding: const EdgeInsets.all(12),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.tune, size: 18),
-                            const SizedBox(width: 8),
-                            const Expanded(child: Text('目标规则')),
-                            Switch(
-                              value:
-                                  flexRuleEnabled &&
-                                  selectedKind == HabitKind.positive,
-                              onChanged: selectedKind == HabitKind.positive
-                                  ? (v) => setSt(() => flexRuleEnabled = v)
-                                  : null,
-                            ),
-                          ],
-                        ),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          child:
-                              flexRuleEnabled &&
-                                  selectedKind == HabitKind.positive
-                              ? Padding(
-                                  key: const ValueKey('habit-flex-rule-fields'),
-                                  padding: const EdgeInsets.only(top: 10),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SegmentedButton<HabitFlexPeriod>(
-                                        showSelectedIcon: false,
-                                        segments: [
-                                          ButtonSegment(
-                                            value: HabitFlexPeriod.week,
-                                            label: Text(
-                                              I18n.tr('habit.flex.weekly'),
-                                            ),
-                                          ),
-                                          ButtonSegment(
-                                            value: HabitFlexPeriod.month,
-                                            label: Text(
-                                              I18n.tr('habit.flex.monthly'),
-                                            ),
-                                          ),
-                                        ],
-                                        selected: {selectedFlexPeriod},
-                                        onSelectionChanged: (value) => setSt(
-                                          () =>
-                                              selectedFlexPeriod = value.first,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      TextField(
-                                        controller: flexTargetCtrl,
-                                        decoration: InputDecoration(
-                                          labelText: I18n.tr(
-                                            'habit.flex.period_target',
-                                          ),
-                                          hintText: I18n.tr(
-                                            'habit.flex.period_target_hint',
-                                          ),
-                                          prefixIcon: const Icon(
-                                            Icons.event_repeat,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : Padding(
-                                  key: const ValueKey('habit-daily-rule-note'),
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    selectedKind == HabitKind.positive
-                                        ? '关闭时按每日目标连续统计'
-                                        : '反向戒除按每日不发生统计',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-                  HabitDateRangeFields(
-                    startDate: startDate,
-                    endDate: endDate,
-                    onStartChanged: (value) => setSt(() => startDate = value),
-                    onEndChanged: (value) => setSt(() => endDate = value),
-                  ),
-
-                  const SizedBox(height: 16),
-                  HabitActiveWeekdayPicker(
-                    weekdays: selectedActiveWeekdays,
-                    onChanged: (value) =>
-                        setSt(() => selectedActiveWeekdays = value),
-                  ),
-
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 46,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (nameCtrl.text.trim().isNotEmpty) {
-                          final habitProvider = context.read<HabitProvider>();
-                          final navigator = Navigator.of(ctx);
-                          final shouldRemind =
-                              remindEnabled && remindTimes.isNotEmpty;
-                          final shouldUseFlex =
-                              flexRuleEnabled &&
-                              selectedKind == HabitKind.positive;
-                          final flexTarget =
-                              int.tryParse(flexTargetCtrl.text.trim()) ?? 0;
-                          if (shouldUseFlex && flexTarget < 1) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('周期目标至少为 1')),
-                            );
-                            return;
-                          }
-                          if (!habitDateRangeIsValid(startDate, endDate)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('结束日期不能早于开始日期')),
-                            );
-                            return;
-                          }
-                          // legacy 字段与 reminderPlan 都从同一份排序后的时间派生，
-                          // 避免“录入顺序”与“最早时间”不一致。
-                          final sortedRemindTimes = remindTimes.toList()
-                            ..sort(
-                              (a, b) => a.hour != b.hour
-                                  ? a.hour - b.hour
-                                  : a.minute - b.minute,
-                            );
-                          final reminderPlan = shouldRemind
-                              ? _habitPopupDailyReminderPlan(sortedRemindTimes)
-                              : const ReminderPlan.disabled();
-                          final habitId = DateTime.now().millisecondsSinceEpoch
-                              .toString();
-                          final reminderReady = shouldRemind
-                              ? await _ensureHabitReminderReady(
-                                  scheduledTime:
-                                      _nextHabitReminderTriggerForTimes(
-                                        sortedRemindTimes,
-                                      ),
-                                  relatedId: habitId,
-                                )
-                              : false;
-                          if (!mounted || !ctx.mounted) return;
-                          if (shouldRemind && !reminderReady) return;
-                          await habitProvider.addHabit(
-                            Habit(
-                              id: habitId,
-                              name: nameCtrl.text.trim(),
-                              icon: selectedIcon,
-                              colorValue: selectedColor,
-                              kind: selectedKind,
-                              targetCount: (int.tryParse(targetCtrl.text) ?? 1)
-                                  .clamp(1, 9999)
-                                  .toInt(),
-                              unit: unitCtrl.text.trim().isEmpty
-                                  ? null
-                                  : unitCtrl.text.trim(),
-                              category: habitCategoryOrNull(categoryCtrl.text),
-                              flexTarget: shouldUseFlex ? flexTarget : null,
-                              flexPeriod: shouldUseFlex
-                                  ? selectedFlexPeriod
-                                  : null,
-                              startDate: startDate,
-                              endDate: endDate,
-                              activeWeekdays: List<int>.from(
-                                selectedActiveWeekdays,
-                              ),
-                              remind: shouldRemind,
-                              remindHour: sortedRemindTimes.isNotEmpty
-                                  ? sortedRemindTimes.first.hour
-                                  : null,
-                              remindMinute: sortedRemindTimes.isNotEmpty
-                                  ? sortedRemindTimes.first.minute
-                                  : null,
-                              reminderPlan: reminderPlan,
-                            ),
                           );
-                          navigator.pop();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(selectedColor),
-                        foregroundColor: _habitButtonForeground(
-                          Color(selectedColor),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
+                        },
                       ),
-                      child: const Text(
-                        '开启新习惯',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: DesignTokens.fontWeightStrong,
-                        ),
-                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                );
+              }),
+
+              const Divider(height: 32),
+
+              // --- Kind Selector ---
+              Row(
+                children: [
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text('正向养成'),
+                      selected: selectedKind == HabitKind.positive,
+                      onSelected: (_) => setSt(() {
+                        selectedKind = HabitKind.positive;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text('反向戒除'),
+                      selected: selectedKind == HabitKind.negative,
+                      onSelected: (_) => setSt(() {
+                        selectedKind = HabitKind.negative;
+                        flexRuleEnabled = false;
+                      }),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+
+              // --- Remind ---
+              Row(
+                children: [
+                  const Icon(Icons.alarm, size: 18, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  const Text('打卡提醒'),
+                  const Spacer(),
+                  Switch(
+                    value: remindEnabled,
+                    onChanged: (v) async {
+                      if (!v) {
+                        setSt(() => remindEnabled = false);
+                        return;
+                      }
+                      final ready = await _ensureHabitReminderReady();
+                      if (!mounted || !ctx.mounted) return;
+                      setSt(() => remindEnabled = ready);
+                    },
+                  ),
+                ],
+              ),
+              if (remindEnabled) ...[
+                const Padding(
+                  padding: EdgeInsets.only(left: 26, top: 2, bottom: 6),
+                  child: Text(
+                    '到点弹出打卡提醒，可添加多个时间（例如每天 8 杯水）',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (var i = 0; i < remindTimes.length; i++)
+                        InputChip(
+                          avatar: const Icon(Icons.schedule, size: 16),
+                          label: Text(AppTimePicker.format(remindTimes[i])),
+                          onPressed: () async {
+                            final t = await AppTimePicker.show(
+                              ctx,
+                              initialTime: remindTimes[i],
+                              title: '提醒时间',
+                              minuteStep: 5,
+                            );
+                            if (t == null || !mounted || !ctx.mounted) {
+                              return;
+                            }
+                            setSt(() => remindTimes[i] = t);
+                          },
+                          onDeleted: remindTimes.length <= 1
+                              ? null
+                              : () => setSt(() => remindTimes.removeAt(i)),
+                        ),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 16),
+                        label: const Text('添加时间'),
+                        onPressed: () async {
+                          final t = await AppTimePicker.show(
+                            ctx,
+                            initialTime: nextHalfHourTimeOfDay(),
+                            title: '提醒时间',
+                            minuteStep: 5,
+                          );
+                          if (t == null || !mounted || !ctx.mounted) return;
+                          setSt(() {
+                            if (!remindTimes.any(
+                              (e) => e.hour == t.hour && e.minute == t.minute,
+                            )) {
+                              remindTimes.add(t);
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 4),
+
+              // --- Manual Entry ---
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '习惯名称',
+                  hintText: '输入或从上方选择',
+                  prefixIcon: Icon(Icons.edit, size: 20),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: categoryCtrl,
+                decoration: const InputDecoration(
+                  labelText: '分组',
+                  hintText: '例如 身体健康、学习提升',
+                  prefixIcon: Icon(Icons.folder_outlined, size: 20),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: targetCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '每日目标',
+                        prefixIcon: Icon(Icons.track_changes, size: 20),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 82,
+                    child: TextField(
+                      controller: unitCtrl,
+                      decoration: const InputDecoration(labelText: '单位'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  AppSurfaceCard(
+                    padding: const EdgeInsets.all(6),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Row(
+                      children: colors
+                          .take(4)
+                          .map(
+                            (c) => GestureDetector(
+                              onTap: () => setSt(() => selectedColor = c),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                child: AnimatedContainer(
+                                  duration: AppMotion.feedback(context),
+                                  curve: AppMotion.enterCurve,
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: Color(c),
+                                    shape: BoxShape.circle,
+                                    border: selectedColor == c
+                                        ? Border.all(
+                                            color: Colors.white,
+                                            width: 1.2,
+                                          )
+                                        : null,
+                                    boxShadow: selectedColor == c
+                                        ? [
+                                            BoxShadow(
+                                              color: Color(
+                                                c,
+                                              ).withValues(alpha: 0.4),
+                                              blurRadius: 4,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              AppSurfaceCard(
+                padding: const EdgeInsets.all(12),
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.tune, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(child: Text('目标规则')),
+                        Switch(
+                          value:
+                              flexRuleEnabled &&
+                              selectedKind == HabitKind.positive,
+                          onChanged: selectedKind == HabitKind.positive
+                              ? (v) => setSt(() => flexRuleEnabled = v)
+                              : null,
+                        ),
+                      ],
+                    ),
+                    AnimatedSwitcher(
+                      duration: AppMotion.feedback(context),
+                      switchInCurve: AppMotion.enterCurve,
+                      switchOutCurve: AppMotion.exitCurve,
+                      child:
+                          flexRuleEnabled && selectedKind == HabitKind.positive
+                          ? Padding(
+                              key: const ValueKey('habit-flex-rule-fields'),
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SegmentedButton<HabitFlexPeriod>(
+                                    showSelectedIcon: false,
+                                    segments: [
+                                      ButtonSegment(
+                                        value: HabitFlexPeriod.week,
+                                        label: Text(
+                                          I18n.tr('habit.flex.weekly'),
+                                        ),
+                                      ),
+                                      ButtonSegment(
+                                        value: HabitFlexPeriod.month,
+                                        label: Text(
+                                          I18n.tr('habit.flex.monthly'),
+                                        ),
+                                      ),
+                                    ],
+                                    selected: {selectedFlexPeriod},
+                                    onSelectionChanged: (value) => setSt(
+                                      () => selectedFlexPeriod = value.first,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: flexTargetCtrl,
+                                    decoration: InputDecoration(
+                                      labelText: I18n.tr(
+                                        'habit.flex.period_target',
+                                      ),
+                                      hintText: I18n.tr(
+                                        'habit.flex.period_target_hint',
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.event_repeat,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Padding(
+                              key: const ValueKey('habit-daily-rule-note'),
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                selectedKind == HabitKind.positive
+                                    ? '关闭时按每日目标连续统计'
+                                    : '反向戒除按每日不发生统计',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              HabitDateRangeFields(
+                startDate: startDate,
+                endDate: endDate,
+                onStartChanged: (value) => setSt(() => startDate = value),
+                onEndChanged: (value) => setSt(() => endDate = value),
+              ),
+
+              const SizedBox(height: 16),
+              HabitActiveWeekdayPicker(
+                weekdays: selectedActiveWeekdays,
+                onChanged: (value) =>
+                    setSt(() => selectedActiveWeekdays = value),
+              ),
+
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (nameCtrl.text.trim().isNotEmpty) {
+                      final habitProvider = context.read<HabitProvider>();
+                      final navigator = Navigator.of(ctx);
+                      final shouldRemind =
+                          remindEnabled && remindTimes.isNotEmpty;
+                      final shouldUseFlex =
+                          flexRuleEnabled && selectedKind == HabitKind.positive;
+                      final flexTarget =
+                          int.tryParse(flexTargetCtrl.text.trim()) ?? 0;
+                      if (shouldUseFlex && flexTarget < 1) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('周期目标至少为 1')),
+                        );
+                        return;
+                      }
+                      if (!habitDateRangeIsValid(startDate, endDate)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('结束日期不能早于开始日期')),
+                        );
+                        return;
+                      }
+                      // legacy 字段与 reminderPlan 都从同一份排序后的时间派生，
+                      // 避免“录入顺序”与“最早时间”不一致。
+                      final sortedRemindTimes = remindTimes.toList()
+                        ..sort(
+                          (a, b) => a.hour != b.hour
+                              ? a.hour - b.hour
+                              : a.minute - b.minute,
+                        );
+                      final reminderPlan = shouldRemind
+                          ? _habitPopupDailyReminderPlan(sortedRemindTimes)
+                          : const ReminderPlan.disabled();
+                      final habitId = DateTime.now().millisecondsSinceEpoch
+                          .toString();
+                      final reminderReady = shouldRemind
+                          ? await _ensureHabitReminderReady(
+                              scheduledTime: _nextHabitReminderTriggerForTimes(
+                                sortedRemindTimes,
+                              ),
+                              relatedId: habitId,
+                            )
+                          : false;
+                      if (!mounted || !ctx.mounted) return;
+                      if (shouldRemind && !reminderReady) return;
+                      await habitProvider.addHabit(
+                        Habit(
+                          id: habitId,
+                          name: nameCtrl.text.trim(),
+                          icon: selectedIcon,
+                          colorValue: selectedColor,
+                          kind: selectedKind,
+                          targetCount: (int.tryParse(targetCtrl.text) ?? 1)
+                              .clamp(1, 9999)
+                              .toInt(),
+                          unit: unitCtrl.text.trim().isEmpty
+                              ? null
+                              : unitCtrl.text.trim(),
+                          category: habitCategoryOrNull(categoryCtrl.text),
+                          flexTarget: shouldUseFlex ? flexTarget : null,
+                          flexPeriod: shouldUseFlex ? selectedFlexPeriod : null,
+                          startDate: startDate,
+                          endDate: endDate,
+                          activeWeekdays: List<int>.from(
+                            selectedActiveWeekdays,
+                          ),
+                          remind: shouldRemind,
+                          remindHour: sortedRemindTimes.isNotEmpty
+                              ? sortedRemindTimes.first.hour
+                              : null,
+                          remindMinute: sortedRemindTimes.isNotEmpty
+                              ? sortedRemindTimes.first.minute
+                              : null,
+                          reminderPlan: reminderPlan,
+                        ),
+                      );
+                      navigator.pop();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(selectedColor),
+                    foregroundColor: _habitButtonForeground(
+                      Color(selectedColor),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '开启新习惯',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: DesignTokens.fontWeightStrong,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -654,19 +647,26 @@ class _HabitScreenState extends State<HabitScreen>
     final activeHabits = provider.habits
         .where((h) => h.isActiveToday())
         .toList();
+    final completedCount = activeHabits
+        .where((h) => h.isCompletedToday())
+        .length;
+    final visibleHabits = activeHabits
+        .where(
+          (habit) => switch (_statusFilter) {
+            _HabitStatusFilter.all => true,
+            _HabitStatusFilter.pending => !habit.isCompletedToday(),
+            _HabitStatusFilter.completed => habit.isCompletedToday(),
+          },
+        )
+        .toList();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final routeBackground = theme.brightness == Brightness.dark
         ? cs.surface
         : cs.surfaceContainerLowest;
-    // 宽屏桌面档（与 today 桌面仪表盘同款纯宽度判定）：打卡列与热力图
-    // 双栏并置，替代窄屏的 TabBar 切换；标记已构建，缩回窄屏时热力图
-    // 不再退回占位。
+    // 所有尺寸共用两个内容页签，打卡与回顾各自只呈现一次。
     final isWidescreen =
         MediaQuery.widthOf(context) >= DesktopTokens.breakpointTwoColumn;
-    if (isWidescreen) {
-      _heatmapTabBuilt = true;
-    }
     final todayScrollView = CustomScrollView(
       key: const ValueKey('habit_today_scroll_view'),
       slivers: [
@@ -680,28 +680,59 @@ class _HabitScreenState extends State<HabitScreen>
             key: const ValueKey('habit_today_empty_state_sliver'),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-              child: EmptyState(
-                icon: Icons.repeat,
-                message: s.habitEmpty,
-                actionLabel: s.habitAddAction,
-                onAction: _showAddDialog,
+              child: _HabitWorkspaceEmpty(
+                icon: provider.habits.isEmpty
+                    ? Icons.repeat_rounded
+                    : Icons.event_available_outlined,
+                title: provider.habits.isEmpty
+                    ? s.habitEmpty
+                    : I18n.tr('habit.workspace.rest_title'),
+                description: I18n.tr(
+                  provider.habits.isEmpty
+                      ? 'habit.workspace.empty_hint'
+                      : 'habit.workspace.rest_hint',
+                ),
+                actionLabel: provider.habits.isEmpty
+                    ? null
+                    : I18n.tr('habit.workspace.view_all'),
+                onAction: provider.habits.isEmpty
+                    ? null
+                    : () => _tabCtrl.animateTo(1),
               ),
             ),
           )
         else ...[
           SliverToBoxAdapter(
             child: _HabitTodaySummaryCard(
-              completedCount: activeHabits
-                  .where((h) => h.isCompletedToday())
-                  .length,
+              completedCount: completedCount,
               totalCount: activeHabits.length,
-              progress: provider.todayOverallProgress,
-              longestStreak: provider.longestCurrentStreak,
-              doneLabel: s.habitTodayDone,
-              streakLabel: s.habitStreakLabel,
+              selected: _statusFilter,
+              onChanged: (value) => setState(() => _statusFilter = value),
             ),
           ),
-          if (isWidescreen)
+          if (visibleHabits.isEmpty)
+            SliverToBoxAdapter(
+              key: const ValueKey('habit_filter_empty'),
+              child: _HabitWorkspaceEmpty(
+                icon: _statusFilter == _HabitStatusFilter.pending
+                    ? Icons.task_alt_rounded
+                    : Icons.radio_button_unchecked,
+                title: I18n.tr(
+                  _statusFilter == _HabitStatusFilter.pending
+                      ? 'habit.workspace.pending_empty_title'
+                      : 'habit.workspace.completed_empty_title',
+                ),
+                description: I18n.tr(
+                  _statusFilter == _HabitStatusFilter.pending
+                      ? 'habit.workspace.pending_empty_hint'
+                      : 'habit.workspace.completed_empty_hint',
+                ),
+                actionLabel: I18n.tr('habit.workspace.reset_filter'),
+                onAction: () =>
+                    setState(() => _statusFilter = _HabitStatusFilter.all),
+              ),
+            )
+          else if (isWidescreen)
             // 宽屏桌面档：今日打卡双列网格。仍走 builder 懒构建（与窄屏
             // SliverList 同一 item 工厂），保留"一屏多卡"的宽屏利用率；
             // 窄屏保持单列 SliverList 不变。
@@ -713,16 +744,16 @@ class _HabitScreenState extends State<HabitScreen>
                 crossAxisSpacing: DesignTokens.spaceSm,
                 mainAxisExtent: _habitCheckinGridTileExtent,
               ),
-              itemCount: activeHabits.length,
+              itemCount: visibleHabits.length,
               itemBuilder: (context, index) =>
-                  _HabitCheckinCard(habit: activeHabits[index]),
+                  _HabitCheckinCard(habit: visibleHabits[index]),
             )
           else
             SliverList.builder(
               key: const ValueKey('habit_today_checkin_sliver'),
-              itemCount: activeHabits.length,
+              itemCount: visibleHabits.length,
               itemBuilder: (context, index) =>
-                  _HabitCheckinCard(habit: activeHabits[index]),
+                  _HabitCheckinCard(habit: visibleHabits[index]),
             ),
         ],
         SliverToBoxAdapter(
@@ -734,9 +765,7 @@ class _HabitScreenState extends State<HabitScreen>
       provider: provider,
       heading: s.habitHeatmapHeading,
       streakLabel: s.habitStreakLabel,
-      emptyMessage: s.habitEmpty,
-      actionLabel: s.habitAddAction,
-      onAdd: _showAddDialog,
+      emptyMessage: I18n.tr('habit.workspace.history_empty_title'),
     );
 
     return BrandScaffold(
@@ -745,43 +774,33 @@ class _HabitScreenState extends State<HabitScreen>
         title: Text(s.habitTitle),
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
-        // 宽屏双栏并置时 TabBar 失去切换意义，顶栏不再挂载。
-        bottom: isWidescreen
-            ? null
-            : AppPageTabs(
-                controller: _tabCtrl,
-                height: AppPageTabs.heightFor(context),
-                tabs: [
-                  Tab(text: s.habitTabToday),
-                  Tab(text: s.habitTabHeatmap),
-                ],
-              ),
+        bottom: AppPageTabs(
+          controller: _tabCtrl,
+          height: AppPageTabs.heightFor(context),
+          tabs: [
+            Tab(text: s.habitTabToday),
+            Tab(text: s.habitTabHeatmap),
+          ],
+        ),
       ),
-      body: isWidescreen
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: todayScrollView),
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  // 不传 color：走主题 dividerTheme 档位（outlineVariant@feel alpha）。
-                ),
-                Expanded(child: heatmapTab),
-              ],
-            )
-          : TabBarView(
-              controller: _tabCtrl,
-              children: [
-                // Today check-in
-                todayScrollView,
-                // Heatmap
-                _heatmapTabBuilt ? heatmapTab : const SizedBox.shrink(),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: DesignTokens.habitWorkspaceMaxWidth,
+          ),
+          child: TabBarView(
+            controller: _tabCtrl,
+            children: [
+              todayScrollView,
+              _heatmapTabBuilt ? heatmapTab : const SizedBox.shrink(),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: AppCreateFab(
+        key: const ValueKey('habit_add_action'),
+        label: s.habitAddAction,
         onPressed: _showAddDialog,
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -792,16 +811,12 @@ class _HabitHeatmapTab extends StatelessWidget {
   final String heading;
   final String streakLabel;
   final String emptyMessage;
-  final String actionLabel;
-  final VoidCallback onAdd;
 
   const _HabitHeatmapTab({
     required this.provider,
     required this.heading,
     required this.streakLabel,
     required this.emptyMessage,
-    required this.actionLabel,
-    required this.onAdd,
   });
 
   @override
@@ -810,6 +825,7 @@ class _HabitHeatmapTab extends StatelessWidget {
     final heatmapData = provider.combinedHeatmap(12);
     final habitGroups = groupHabitsByCategory(provider.habits);
     return CustomScrollView(
+      key: const PageStorageKey('habit_history_scroll_view'),
       slivers: [
         SliverToBoxAdapter(
           child: AppSurfaceCard(
@@ -828,11 +844,21 @@ class _HabitHeatmapTab extends StatelessWidget {
                     height: 1.12,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: DesignTokens.spaceSm),
+                Text(
+                  I18n.tr('habit.workspace.review_hint'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+                const SizedBox(height: DesignTokens.spaceMd),
                 Center(
                   child: FractionallySizedBox(
                     widthFactor: DesignTokens.habitHeatmapWidthFactor,
-                    child: HabitHeatmap(heatmapData: heatmapData, fitToWidth: true),
+                    child: HabitHeatmap(
+                      heatmapData: heatmapData,
+                      fitToWidth: true,
+                    ),
                   ),
                 ),
               ],
@@ -841,15 +867,10 @@ class _HabitHeatmapTab extends StatelessWidget {
         ),
         if (provider.habits.isEmpty)
           SliverToBoxAdapter(
-            child: AppSurfaceCard(
-              margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-              padding: const EdgeInsets.all(16),
-              child: EmptyState(
-                icon: Icons.folder_open,
-                message: emptyMessage,
-                actionLabel: actionLabel,
-                onAction: onAdd,
-              ),
+            child: _HabitWorkspaceEmpty(
+              icon: Icons.insights_outlined,
+              title: emptyMessage,
+              description: I18n.tr('habit.workspace.history_empty_hint'),
             ),
           )
         else ...[
@@ -884,6 +905,64 @@ class _HabitHeatmapTab extends StatelessWidget {
   }
 }
 
+class _HabitWorkspaceEmpty extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _HabitWorkspaceEmpty({
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceXxl,
+        vertical: DesignTokens.space3xl,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: DesignTokens.space4xl, color: cs.primary),
+              const SizedBox(height: DesignTokens.spaceLg),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: DesignTokens.spaceSm),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: DesignTokens.spaceLg),
+                TextButton(onPressed: onAction, child: Text(actionLabel!)),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HabitInsightSection extends StatelessWidget {
   final List<Habit> habits;
 
@@ -900,111 +979,44 @@ class _HabitInsightSection extends StatelessWidget {
 class _HabitTodaySummaryCard extends StatelessWidget {
   final int completedCount;
   final int totalCount;
-  final double progress;
-  final int longestStreak;
-  final String doneLabel;
-  final String streakLabel;
+  final _HabitStatusFilter selected;
+  final ValueChanged<_HabitStatusFilter> onChanged;
 
   const _HabitTodaySummaryCard({
     required this.completedCount,
     required this.totalCount,
-    required this.progress,
-    required this.longestStreak,
-    required this.doneLabel,
-    required this.streakLabel,
+    required this.selected,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 7),
-      child: AppSurfaceCard(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        borderRadius: BorderRadius.circular(DesignTokens.radiusCard),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.alphaBlend(
-              cs.primary.withValues(alpha: isDark ? 0.13 : 0.065),
-              cs.surface,
-            ),
-            Color.alphaBlend(
-              cs.secondary.withValues(alpha: isDark ? 0.09 : 0.04),
-              cs.surface,
-            ),
-          ],
-        ),
-        border: Border.all(
-          color: cs.primary.withValues(alpha: isDark ? 0.18 : 0.13),
-          width: 0.6,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 4,
-                    strokeCap: StrokeCap.round,
-                    backgroundColor: cs.primary.withValues(alpha: 0.12),
-                    color: progress >= 1 ? const Color(0xFF2E7D32) : cs.primary,
-                  ),
-                  Text(
-                    '${(progress * 100).toInt()}%',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: DesignTokens.fontWeightStrong,
-                      color: progress >= 1
-                          ? const Color(0xFF2E7D32)
-                          : cs.primary,
-                    ),
-                  ),
-                ],
+      key: const ValueKey('habit_status_filters'),
+      padding: const EdgeInsets.all(DesignTokens.spaceMd),
+      child: Wrap(
+        spacing: DesignTokens.spaceSm,
+        runSpacing: DesignTokens.spaceSm,
+        children: [
+          for (final status in _HabitStatusFilter.values)
+            ChoiceChip(
+              key: ValueKey('habit_filter_${status.name}'),
+              showCheckmark: false,
+              label: Text(
+                '${I18n.tr(switch (status) {
+                  _HabitStatusFilter.all => 'habit.workspace.filter_all',
+                  _HabitStatusFilter.pending => 'habit.workspace.filter_pending',
+                  _HabitStatusFilter.completed => 'habit.workspace.filter_completed',
+                })} ${switch (status) {
+                  _HabitStatusFilter.all => totalCount,
+                  _HabitStatusFilter.pending => totalCount - completedCount,
+                  _HabitStatusFilter.completed => completedCount,
+                }}',
               ),
+              selected: selected == status,
+              onSelected: (_) => onChanged(status),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$completedCount / $totalCount $doneLabel',
-                    style: TextStyle(
-                      color: cs.onSurface,
-                      fontSize: 13,
-                      fontWeight: DesignTokens.fontWeightStrong,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$streakLabel $longestStreak ${I18n.tr('unit.day')}',
-                    style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.58),
-                      fontSize: 11,
-                      height: 1.15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.task_alt_rounded,
-              size: 18,
-              color: progress >= 1
-                  ? const Color(0xFF2E7D32)
-                  : cs.primary.withValues(alpha: 0.62),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -1415,7 +1427,9 @@ class _HabitCheckinCard extends StatelessWidget {
                               child: Align(
                                 alignment: Alignment.centerRight,
                                 child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 180),
+                                  duration: AppMotion.feedback(context),
+                                  switchInCurve: AppMotion.enterCurve,
+                                  switchOutCurve: AppMotion.exitCurve,
                                   child: isDone && !isNegative
                                       ? _HabitFeedbackBadge(
                                           key: const ValueKey(
@@ -1739,10 +1753,8 @@ class _HabitSwipeActionWrapperState extends State<_HabitSwipeActionWrapper> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: widget.child,
           ),

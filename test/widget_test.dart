@@ -31,7 +31,7 @@ import 'package:duoyi/services/app_update_service.dart';
 import 'package:duoyi/services/calendar_sync_service.dart';
 
 void main() {
-  testWidgets('App renders default bottom tabs with widgets and mine fixed', (
+  testWidgets('App renders default bottom tabs: 今日/待办/习惯/专注/我的', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -77,8 +77,9 @@ void main() {
     expect(find.text('待办'), findsWidgets);
     expect(find.text('习惯'), findsWidgets);
     expect(find.text('今日'), findsWidgets);
-    expect(find.text('小组件'), findsWidgets);
+    expect(find.text('专注'), findsWidgets);
     expect(find.text('我的'), findsWidgets);
+    expect(find.text('小组件'), findsNothing);
     expect(find.text('日历'), findsNothing);
   });
 }

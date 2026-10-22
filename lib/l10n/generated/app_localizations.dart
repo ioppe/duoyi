@@ -98,6 +98,246 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @stateError.
+  ///
+  /// In zh, this message translates to:
+  /// **'出错了'**
+  String get stateError;
+
+  /// No description provided for @stateLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载失败'**
+  String get stateLoadFailed;
+
+  /// No description provided for @calendarProjectEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个项目暂无任务'**
+  String get calendarProjectEmpty;
+
+  /// No description provided for @focusTasksPickerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'先选择待办，也可展开选择子任务'**
+  String get focusTasksPickerHint;
+
+  /// No description provided for @focusTasksSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索任务或子任务'**
+  String get focusTasksSearch;
+
+  /// No description provided for @focusTasksEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无未完成待办，可先添加待办或手动输入'**
+  String get focusTasksEmpty;
+
+  /// No description provided for @focusTasksNoMatches.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的任务或子任务'**
+  String get focusTasksNoMatches;
+
+  /// No description provided for @focusTasksManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动输入'**
+  String get focusTasksManual;
+
+  /// No description provided for @focusTasksClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除选择'**
+  String get focusTasksClear;
+
+  /// No description provided for @focusTasksSubtasks.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开或收起子任务'**
+  String get focusTasksSubtasks;
+
+  /// No description provided for @focusTasksPresets.
+  ///
+  /// In zh, this message translates to:
+  /// **'其他专注内容'**
+  String get focusTasksPresets;
+
+  /// No description provided for @focusTasksPresetDeepWork.
+  ///
+  /// In zh, this message translates to:
+  /// **'深度工作'**
+  String get focusTasksPresetDeepWork;
+
+  /// No description provided for @focusTasksPresetReading.
+  ///
+  /// In zh, this message translates to:
+  /// **'阅读'**
+  String get focusTasksPresetReading;
+
+  /// No description provided for @focusTasksPresetWriting.
+  ///
+  /// In zh, this message translates to:
+  /// **'写作'**
+  String get focusTasksPresetWriting;
+
+  /// No description provided for @focusTasksPresetReview.
+  ///
+  /// In zh, this message translates to:
+  /// **'复盘'**
+  String get focusTasksPresetReview;
+
+  /// No description provided for @focusTasksPresetExercise.
+  ///
+  /// In zh, this message translates to:
+  /// **'运动'**
+  String get focusTasksPresetExercise;
+
+  /// No description provided for @focusTasksPresetStudy.
+  ///
+  /// In zh, this message translates to:
+  /// **'学习'**
+  String get focusTasksPresetStudy;
+
+  /// No description provided for @focusTasksResults.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务专注'**
+  String get focusTasksResults;
+
+  /// No description provided for @focusTasksResultsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前周期的专注时长与次数，可展开查看子任务'**
+  String get focusTasksResultsHint;
+
+  /// No description provided for @focusTasksResultsEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周期还没有专注记录，选择待办开始一次专注吧'**
+  String get focusTasksResultsEmpty;
+
+  /// No description provided for @focusTasksUnassigned.
+  ///
+  /// In zh, this message translates to:
+  /// **'未关联任务'**
+  String get focusTasksUnassigned;
+
+  /// No description provided for @focusTasksWholeTask.
+  ///
+  /// In zh, this message translates to:
+  /// **'直接专注父任务'**
+  String get focusTasksWholeTask;
+
+  /// No description provided for @focusTasksMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get focusTasksMinutes;
+
+  /// No description provided for @focusTasksSeconds.
+  ///
+  /// In zh, this message translates to:
+  /// **'秒'**
+  String get focusTasksSeconds;
+
+  /// No description provided for @focusTasksSessions.
+  ///
+  /// In zh, this message translates to:
+  /// **'次专注'**
+  String get focusTasksSessions;
+
+  /// No description provided for @habitWorkspaceEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'从一件容易坚持的小事开始，每一次打卡都会留下记录。'**
+  String get habitWorkspaceEmptyHint;
+
+  /// No description provided for @habitWorkspaceRestTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天没有安排打卡'**
+  String get habitWorkspaceRestTitle;
+
+  /// No description provided for @habitWorkspaceRestHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有习惯仍然保留，可以查看记录或调整生效日期。'**
+  String get habitWorkspaceRestHint;
+
+  /// No description provided for @habitWorkspaceViewAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看全部习惯'**
+  String get habitWorkspaceViewAll;
+
+  /// No description provided for @habitWorkspaceFilterAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部'**
+  String get habitWorkspaceFilterAll;
+
+  /// No description provided for @habitWorkspaceFilterPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'待完成'**
+  String get habitWorkspaceFilterPending;
+
+  /// No description provided for @habitWorkspaceFilterCompleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已达标'**
+  String get habitWorkspaceFilterCompleted;
+
+  /// No description provided for @habitWorkspacePendingEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天的目标都完成了'**
+  String get habitWorkspacePendingEmptyTitle;
+
+  /// No description provided for @habitWorkspacePendingEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这一天的坚持已经记下，明天继续。'**
+  String get habitWorkspacePendingEmptyHint;
+
+  /// No description provided for @habitWorkspaceCompletedEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有达标记录'**
+  String get habitWorkspaceCompletedEmptyTitle;
+
+  /// No description provided for @habitWorkspaceCompletedEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成一次打卡，进展就会显示在这里。'**
+  String get habitWorkspaceCompletedEmptyHint;
+
+  /// No description provided for @habitWorkspaceResetFilter.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示全部'**
+  String get habitWorkspaceResetFilter;
+
+  /// No description provided for @habitWorkspaceHistoryEmptyTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'让坚持留下痕迹'**
+  String get habitWorkspaceHistoryEmptyTitle;
+
+  /// No description provided for @habitWorkspaceHistoryEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加习惯后，每次打卡都会汇成这里的热度记录。'**
+  String get habitWorkspaceHistoryEmptyHint;
+
+  /// No description provided for @habitWorkspaceReviewHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近12周的记录，按天汇总打卡次数。'**
+  String get habitWorkspaceReviewHint;
+
   /// No description provided for @authDesignTagline.
   ///
   /// In zh, this message translates to:

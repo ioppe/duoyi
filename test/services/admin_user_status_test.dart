@@ -185,17 +185,39 @@ void main() {
       contains("'\${_adminPageSummary(page)} · \${_adminPageNumber(page)}'"),
     );
     expect(adminScreen, contains('class _AdminChipWrap'));
-    expect(adminScreen, contains('minWidth: textWidth.clamp(72.0, 118.0)'));
+    final chipWrapStart = adminScreen.indexOf('class _AdminChipWrap');
+    final chipWrapEnd = adminScreen.indexOf('class _AdminCompactChipStrip');
+    expect(chipWrapStart, greaterThanOrEqualTo(0));
+    expect(chipWrapEnd, greaterThan(chipWrapStart));
+    final chipWrap = adminScreen.substring(chipWrapStart, chipWrapEnd);
+    expect(
+      chipWrap,
+      contains('Wrap('),
+      reason: '标签条用 Wrap 随内容宽度自然换行，标签宽度由共享样式决定，不写死局部宽度。',
+    );
+    expect(chipWrap, contains('spacing: 8'));
+    expect(chipWrap, contains('runSpacing: 6'));
+    expect(chipWrap, contains('children: children'));
+    expect(
+      chipWrap,
+      isNot(contains('textWidth.clamp')),
+      reason: '标签宽度由共享样式决定，组件内不再局部测量文本宽度。',
+    );
     expect(adminScreen, isNot(contains('width: 92')));
     expect(
       RegExp(r'_AdminChipWrap\(').allMatches(adminScreen).length,
       greaterThanOrEqualTo(8),
     );
+    final scrollableDialogs = RegExp(
+      r'content:\s+SingleChildScrollView\(',
+    ).allMatches(adminScreen).length;
+    final sharedScrollableSheets = RegExp(
+      r'\bAppModalSheet\(',
+    ).allMatches(adminScreen).length;
     expect(
-      RegExp(
-        r'content:\s+SingleChildScrollView\(',
-      ).allMatches(adminScreen).length,
+      scrollableDialogs + sharedScrollableSheets,
       greaterThanOrEqualTo(4),
+      reason: '管理员表单通过共享弹层或自带滚动的对话框保持内容可达，共享弹层不再嵌套第二层滚动。',
     );
     expect(adminScreen, contains('Widget navButton({'));
     expect(adminScreen, contains('iconSize: 16'));

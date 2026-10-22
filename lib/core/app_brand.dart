@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_motion.dart';
 import 'brand_strings.dart';
 import 'design_tokens.dart';
 import 'i18n.dart';
@@ -362,6 +363,10 @@ ThemeData _withSharedControls(
   );
 
   return theme.copyWith(
+    pageTransitionsTheme: AppMotion.pageTransitions,
+    expansionTileTheme: theme.expansionTileTheme.copyWith(
+      expansionAnimationStyle: AppMotion.expansionStyle,
+    ),
     primaryTextTheme: _textTheme(
       brightness: theme.brightness,
       bodyColor: cs.onPrimary,

@@ -8,14 +8,19 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-AiService _serviceReturning(String content) {
-  final client = MockClient(
-    (request) async => http.Response.bytes(
+AiService _serviceReturning(
+  String content, {
+  String model = '',
+  void Function(http.Request)? onRequest,
+}) {
+  final client = MockClient((request) async {
+    onRequest?.call(request);
+    return http.Response.bytes(
       utf8.encode(jsonEncode({'content': content})),
       200,
       headers: {'content-type': 'application/json'},
-    ),
-  );
+    );
+  });
   final service = AiService()
     ..attachClient(
       ApiClient(
@@ -24,7 +29,7 @@ AiService _serviceReturning(String content) {
         httpClient: client,
       ),
     )
-    ..updateFromServerConfig({'ai_enabled': true});
+    ..updateFromServerConfig({'ai_enabled': true, 'ai_model': model});
   addTearDown(service.dispose);
   addTearDown(client.close);
   return service;
@@ -94,6 +99,48 @@ void main() {
     );
   });
 
+  test('502 保留格式、空响应和模型错误详情，不误报为网络不可达', () async {
+    for (final detail in [
+      '模型已达到输出上限，正文为空（finish_reason=length，输出 2200 tokens，检测到思考内容）。请调大 max_tokens。',
+      '上游响应格式错误（预期 JSON 或 SSE）：SSE 流未完整结束，请重试',
+      '上游返回空内容（finish_reason=stop），请检查网关配置',
+      '上游错误: 模型暂不可用',
+    ]) {
+      final client = MockClient(
+        (request) async => http.Response.bytes(
+          utf8.encode(jsonEncode({'detail': detail})),
+          502,
+          headers: {'content-type': 'application/json'},
+        ),
+      );
+      final service = AiService()
+        ..attachClient(
+          ApiClient(
+            baseUrl: 'https://duoyi.test',
+            token: 'test-token',
+            httpClient: client,
+          ),
+        )
+        ..updateFromServerConfig({'ai_enabled': true});
+      addTearDown(service.dispose);
+      addTearDown(client.close);
+      await expectLater(
+        service.personalizedReportReview(
+          periodLabel: '本周周报',
+          reportMarkdown: '# 本周周报',
+        ),
+        throwsA(
+          isA<AiException>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains(detail), isNot(contains('上游服务不可达'))),
+          ),
+        ),
+      );
+      expect(service.reviewHistory, isEmpty);
+    }
+  });
+
   test('正常正文原样返回并去掉首尾空白', () async {
     final service = _serviceReturning('  本周节奏稳定。  ');
     final review = await service.personalizedReportReview(
@@ -101,6 +148,36 @@ void main() {
       reportMarkdown: '# 本周周报',
     );
     expect(review, '本周节奏稳定。');
+  });
+
+  test('MiniMax 报告留足推理预算，短探针和其他模型保持原预算', () async {
+    for (final (model, reportBudget, weeklyBudget) in [
+      ('minimax-m3.1-flash-free', 8192, 8192),
+      ('opencode/minimax-m3.1-flash-free', 8192, 8192),
+      ('deepseek-v4.1-flash', 2200, 1000),
+    ]) {
+      final budgets = <int>[];
+      final service = _serviceReturning(
+        '本周回顾已完成。',
+        model: model,
+        onRequest: (request) {
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          budgets.add(body['max_tokens'] as int);
+        },
+      );
+      await service.personalizedReportReview(
+        periodLabel: '本周周报',
+        reportMarkdown: '# 本周周报',
+      );
+      await service.weeklyReview(
+        completedTodos: 1,
+        totalTodos: 1,
+        weeklyFocusMinutes: 0,
+        habitStreak: 0,
+      );
+      await service.testConnection();
+      expect(budgets, [reportBudget, weeklyBudget, 256], reason: model);
+    }
   });
 
   test('推理模型的输出预算已覆盖思考与正文', () {

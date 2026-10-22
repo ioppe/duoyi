@@ -137,8 +137,8 @@ List<DailyReminderScheduleSlot> effectiveDailyReminderScheduleSlots(
 class PreferencesProvider extends ChangeNotifier {
   static const maxBottomNavTabs = 5;
   static const fixedBottomNavTabs = <int>{6};
-  static const mobileDefaultBottomNavTabs = <int>{0, 1, 2, 5, 6};
-  static const webDefaultBottomNavTabs = <int>{0, 1, 2, 6};
+  static const mobileDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6};
+  static const webDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6};
   static Set<int> get defaultBottomNavTabs => WebTarget.isWebBuild
       ? webDefaultBottomNavTabs
       : mobileDefaultBottomNavTabs;
@@ -202,6 +202,7 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kBottomNavOrder = 'pref_bottom_nav_order';
   static const _kBottomNavVisible = 'pref_bottom_nav_visible';
   static const _kWebNavigationMigrated = 'pref_web_navigation_v2';
+  static const _kFocusNavigationMigrated = 'pref_focus_navigation_v1';
   static const _kAppTimeZone = LocalTimezoneResolver.preferenceKey;
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
 
@@ -476,8 +477,15 @@ class PreferencesProvider extends ChangeNotifier {
         .toSet();
     final legacyWebDefault =
         needsWebNavMigration &&
-        (setEquals(storedVisibleSet, mobileDefaultBottomNavTabs) ||
+        (setEquals(storedVisibleSet, const <int>{0, 1, 2, 5, 6}) ||
             setEquals(storedVisibleSet, const <int>{0, 1, 2, 3, 6}));
+    final needsFocusNavMigration =
+        !(p.getBool(_kFocusNavigationMigrated) ?? false);
+    // 只升级旧默认入口；保留自定义顺序，且不覆盖迁移后主动隐藏专注的选择。
+    final legacyFocusDefault =
+        needsFocusNavMigration &&
+        (setEquals(storedVisibleSet, const <int>{0, 1, 2, 6}) ||
+            setEquals(storedVisibleSet, const <int>{0, 1, 2, 5, 6}));
     final isOldBottomNavConfig =
         (storedOrder == null || !storedOrder.contains('6')) &&
         (storedVisible == null || !storedVisible.contains('6'));
@@ -600,13 +608,13 @@ class PreferencesProvider extends ChangeNotifier {
       storedOrder?.map(int.tryParse).whereType<int>(),
     );
     _bottomNavVisible = _normalizeNavVisible(
-      legacyWebDefault
-          ? webDefaultBottomNavTabs
+      legacyWebDefault || legacyFocusDefault
+          ? defaultBottomNavTabs
           : storedVisible?.map(int.tryParse).whereType<int>(),
       order: _bottomNavOrder,
     );
     if (generation != _storageGeneration) return;
-    if (WebTarget.isWebBuild &&
+    if ((WebTarget.isWebBuild || legacyFocusDefault) &&
         storedVisible != null &&
         !setEquals(storedVisibleSet, _bottomNavVisible)) {
       await p.setStringList(
@@ -617,6 +625,10 @@ class PreferencesProvider extends ChangeNotifier {
     }
     if (needsWebNavMigration) {
       await p.setBool(_kWebNavigationMigrated, true);
+      if (generation != _storageGeneration) return;
+    }
+    if (needsFocusNavMigration) {
+      await p.setBool(_kFocusNavigationMigrated, true);
       if (generation != _storageGeneration) return;
     }
     notifyListeners();

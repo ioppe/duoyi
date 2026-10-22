@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/habit_grouping.dart';
 import '../core/habit_icons.dart';
@@ -331,7 +332,9 @@ Future<void> showHabitEditor(BuildContext context, Habit habit) async {
                       ],
                     ),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
+                      duration: AppMotion.feedback(sheetCtx),
+                      switchInCurve: AppMotion.enterCurve,
+                      switchOutCurve: AppMotion.exitCurve,
                       child:
                           flexRuleEnabled && selectedKind == HabitKind.positive
                           ? Padding(
@@ -473,7 +476,8 @@ Future<void> showHabitEditor(BuildContext context, Habit habit) async {
                     GestureDetector(
                       onTap: () => setSt(() => selectedColor = c),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
+                        duration: AppMotion.feedback(sheetCtx),
+                        curve: AppMotion.enterCurve,
                         width: 30,
                         height: 30,
                         decoration: BoxDecoration(
@@ -1110,7 +1114,8 @@ class _HabitTrendBucketRow extends StatelessWidget {
                             color: color.withValues(alpha: 0.10),
                           ),
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
+                            duration: AppMotion.feedback(context),
+                            curve: AppMotion.enterCurve,
                             height: 8,
                             width: constraints.maxWidth * rate,
                             color: rowColor,

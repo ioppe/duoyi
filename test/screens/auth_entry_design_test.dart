@@ -105,7 +105,7 @@ void main() {
   });
 
   testWidgets(
-    'web offers password and configured email only, with no bootstrap hint',
+    'web single password entry hides the method selector until email code login',
     (tester) async {
       WebTarget.debugWebBuild = true;
       for (final config in <Map<String, Object?>>[
@@ -113,6 +113,7 @@ void main() {
         {'email_code_login_enabled': false},
         {'email_code_login_enabled': true},
       ]) {
+        final emailCodeEnabled = config['email_code_login_enabled'] == true;
         await tester.pumpWidget(_app(_auth(config)));
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('auth-method-token')), findsNothing);
@@ -121,14 +122,19 @@ void main() {
         expect(find.textContaining('admin'), findsNothing);
         expect(
           find.byKey(const ValueKey('auth-method-password')),
-          findsOneWidget,
+          emailCodeEnabled ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('auth_method_selector')),
+          emailCodeEnabled ? findsOneWidget : findsNothing,
         );
         expect(
           find.byKey(const ValueKey('auth-method-emailCode')),
-          config['email_code_login_enabled'] == true
-              ? findsOneWidget
-              : findsNothing,
+          emailCodeEnabled ? findsOneWidget : findsNothing,
         );
+        expect(find.byKey(const ValueKey('auth-account')), findsOneWidget);
+        expect(find.byKey(const ValueKey('auth-password')), findsOneWidget);
+        expect(find.byKey(const ValueKey('auth-submit')), findsOneWidget);
         await tester.pumpWidget(const SizedBox.shrink());
       }
     },

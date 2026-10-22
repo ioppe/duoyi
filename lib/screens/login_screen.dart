@@ -625,7 +625,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? I18n.tr('auth.maintenance')
                   : auth.maintenanceMessage,
             ),
-          if (!_isRegister)
+          if (!_isRegister && (emailAvailable || !isWeb))
             AuthMethodSelector(
               selected: tokenLogin
                   ? AuthMethod.token

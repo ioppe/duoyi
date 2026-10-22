@@ -1,3 +1,6 @@
+import '../models/todo.dart';
+import '../providers/todo_provider.dart';
+import '../widgets/pomodoro_task_picker.dart';
 import '../core/app_clock.dart';
 import '../widgets/app_page_tabs.dart';
 import 'dart:async';
@@ -118,6 +121,7 @@ Future<void> showPomodoroSessionEditor(
                   ? null
                   : taskCtrl.text.trim(),
               clearTaskName: taskCtrl.text.trim().isEmpty,
+              clearTaskLink: taskCtrl.text.trim() != (session.taskName ?? ''),
               tag: tagCtrl.text.trim().isEmpty ? null : tagCtrl.text.trim(),
               clearTag: tagCtrl.text.trim().isEmpty,
               whiteNoiseSound: selectedSound,
@@ -721,7 +725,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                           const SizedBox(width: 6),
                                           Flexible(
                                             child: Text(
-                                              state.taskName!,
+                                              state.taskLabel!,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
@@ -791,7 +795,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                   icon: Icons.assignment_outlined,
                                   label: '专注任务',
                                   subtitle: state.taskName?.isNotEmpty == true
-                                      ? state.taskName!
+                                      ? state.taskLabel!
                                       : '选择本轮内容',
                                   color: color,
                                   compact: tight,
@@ -816,18 +820,20 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                               ),
                             ],
                           ),
-                          SizedBox(height: tight ? 6 : 8),
-                          _FocusDndTile(
-                            enabled: provider.config.autoEnableDnd,
-                            active: provider.focusDndActive,
-                            accessGranted:
-                                provider.focusDndStatus.accessGranted,
-                            supported: provider.focusDndStatus.supported,
-                            compact: tight,
-                            color: color,
-                            onChanged: provider.setAutoEnableDnd,
-                            onTap: () => _showDndSheet(context),
-                          ),
+                          if (provider.focusDndStatus.supported) ...[
+                            SizedBox(height: tight ? 6 : 8),
+                            _FocusDndTile(
+                              enabled: provider.config.autoEnableDnd,
+                              active: provider.focusDndActive,
+                              accessGranted:
+                                  provider.focusDndStatus.accessGranted,
+                              supported: provider.focusDndStatus.supported,
+                              compact: tight,
+                              color: color,
+                              onChanged: provider.setAutoEnableDnd,
+                              onTap: () => _showDndSheet(context),
+                            ),
+                          ],
                           SizedBox(height: tight ? 6 : 8),
                           _StrictFocusTile(
                             enabled: provider.config.strictFocusMode,
@@ -1171,12 +1177,31 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final targetCtrl = TextEditingController(text: '300');
-    showDialog(
+    showAppModalSheet<void>(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: const Text('新建自习室'),
-        shiftForKeyboard: true,
-        content: _PomodoroDialogBody(
+      builder: (ctx) => AppModalSheet(
+        key: const ValueKey('focus_room_create_sheet'),
+        title: '新建自习室',
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final target = int.tryParse(targetCtrl.text.trim()) ?? 300;
+              final room = await rooms.createRoom(
+                name: nameCtrl.text,
+                description: descCtrl.text,
+                weeklyTargetMinutes: target,
+              );
+              await pomodoro.setFocusRoomId(room.id);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('创建'),
+          ),
+        ],
+        child: AppFormFieldTheme(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1198,25 +1223,6 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final target = int.tryParse(targetCtrl.text.trim()) ?? 300;
-              final room = await rooms.createRoom(
-                name: nameCtrl.text,
-                description: descCtrl.text,
-                weeklyTargetMinutes: target,
-              );
-              await pomodoro.setFocusRoomId(room.id);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('创建'),
-          ),
-        ],
       ),
     );
   }
@@ -1268,7 +1274,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
           ),
           FilledButton(
             onPressed: () {
-              provider.setTaskName(ctrl.text);
+              if (ctrl.text.trim() != (provider.state.taskName ?? '')) {
+                provider.setTaskName(ctrl.text);
+              }
               provider.setTag(tagCtrl.text);
               Navigator.pop(ctx);
             },
@@ -1530,44 +1538,44 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
   }
 
   void _showTaskPresetPicker(BuildContext context, PomodoroProvider provider) {
-    final presets = const ['深度工作', '阅读', '写作', '复盘', '运动', '学习'];
-    showAppModalSheet(
+    final strings = context.read<ThemeProvider>().brand.strings;
+    showAppModalSheet<void>(
       context: context,
-      builder: (ctx) => AppModalSheet(
-        title: '专注任务',
-        subtitle: '选择预设或手动输入',
-        actions: [
-          TextButton(
-            onPressed: () {
+      builder: (ctx) => Builder(
+        builder: (sheetContext) {
+          final todos =
+              sheetContext.watch<TodoProvider?>()?.todos ?? const <TodoItem>[];
+          final state = sheetContext.watch<PomodoroProvider>().state;
+          return PomodoroTaskPicker(
+            title: strings.focusTaskLinkLabel,
+            todos: todos,
+            selectedTodoId: state.todoId,
+            selectedSubtaskId: state.subtaskId,
+            hasSelection: state.taskName?.isNotEmpty == true,
+            onSelected: (todo, child) {
+              // The sheet watches account-local tasks, and selection never completes them.
+              provider.setTaskTarget(
+                todoId: todo.id,
+                todoTitle: todo.title,
+                taskName: child?.title ?? todo.title,
+                subtaskId: child?.id,
+              );
               Navigator.pop(ctx);
-              _editTaskName(context, provider, provider.state.taskName ?? '');
             },
-            child: const Text('手动输入'),
-          ),
-          if (provider.state.taskName?.isNotEmpty == true)
-            TextButton(
-              onPressed: () {
-                provider.setTaskName(null);
-                Navigator.pop(ctx);
-              },
-              child: const Text('清除'),
-            ),
-        ],
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final preset in presets)
-              ActionChip(
-                avatar: const Icon(Icons.assignment_outlined, size: 16),
-                label: Text(preset),
-                onPressed: () {
-                  provider.setTaskName(preset);
-                  Navigator.pop(ctx);
-                },
-              ),
-          ],
-        ),
+            onPreset: (name) {
+              provider.setTaskName(name);
+              Navigator.pop(ctx);
+            },
+            onManual: () {
+              Navigator.pop(ctx);
+              _editTaskName(context, provider, state.taskName ?? '');
+            },
+            onClear: () {
+              provider.setTaskName(null);
+              Navigator.pop(ctx);
+            },
+          );
+        },
       ),
     );
   }
@@ -2334,13 +2342,36 @@ class _FocusRoomTabState extends State<_FocusRoomTab>
   ) {
     var expiryDays = 0;
     var maxUses = 0;
-    showDialog<void>(
+    showAppModalSheet<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AppDialog(
-          title: const Text('新建邀请码'),
-          shiftForKeyboard: true,
-          content: _PomodoroDialogBody(
+        builder: (dialogContext, setState) => AppModalSheet(
+          key: const ValueKey('focus_room_invite_create_sheet'),
+          title: '新建邀请码',
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('取消'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                final expiresAt = expiryDays <= 0
+                    ? null
+                    : DateTime.now().add(Duration(days: expiryDays));
+                await _createAndCopyFocusRoomInvite(
+                  context,
+                  rooms,
+                  room,
+                  expiresAt,
+                  maxUses,
+                );
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              },
+              icon: const Icon(Icons.add_link_outlined),
+              label: const Text('创建并复制'),
+            ),
+          ],
+          child: AppFormFieldTheme(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -2377,29 +2408,6 @@ class _FocusRoomTabState extends State<_FocusRoomTab>
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('取消'),
-            ),
-            FilledButton.icon(
-              onPressed: () async {
-                final expiresAt = expiryDays <= 0
-                    ? null
-                    : DateTime.now().add(Duration(days: expiryDays));
-                await _createAndCopyFocusRoomInvite(
-                  context,
-                  rooms,
-                  room,
-                  expiresAt,
-                  maxUses,
-                );
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              },
-              icon: const Icon(Icons.add_link_outlined),
-              label: const Text('创建并复制'),
-            ),
-          ],
         ),
       ),
     );
@@ -2697,12 +2705,28 @@ class _FocusRoomTabState extends State<_FocusRoomTab>
     FocusRoomProvider rooms,
   ) {
     final usernameCtrl = TextEditingController();
-    showDialog<void>(
+    showAppModalSheet<void>(
       context: context,
-      builder: (dialogContext) => AppDialog(
-        title: const Text('发送好友申请'),
-        shiftForKeyboard: true,
-        content: _PomodoroDialogBody(
+      builder: (dialogContext) => AppModalSheet(
+        key: const ValueKey('focus_friend_create_sheet'),
+        title: '发送好友申请',
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('取消'),
+          ),
+          FilledButton.icon(
+            onPressed: () => _addFocusFriend(
+              context,
+              dialogContext,
+              rooms,
+              usernameCtrl.text,
+            ),
+            icon: const Icon(Icons.person_add_alt_1_outlined),
+            label: const Text('发送申请'),
+          ),
+        ],
+        child: AppFormFieldTheme(
           child: TextField(
             controller: usernameCtrl,
             autofocus: true,
@@ -2720,22 +2744,6 @@ class _FocusRoomTabState extends State<_FocusRoomTab>
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('取消'),
-          ),
-          FilledButton.icon(
-            onPressed: () => _addFocusFriend(
-              context,
-              dialogContext,
-              rooms,
-              usernameCtrl.text,
-            ),
-            icon: const Icon(Icons.person_add_alt_1_outlined),
-            label: const Text('发送申请'),
-          ),
-        ],
       ),
     );
   }

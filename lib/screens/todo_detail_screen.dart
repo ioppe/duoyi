@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show File;
@@ -511,30 +512,11 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     final nameCtrl = TextEditingController();
     final uriCtrl = TextEditingController();
     final mimeCtrl = TextEditingController();
-    final attachment = await showDialog<NoteAttachment>(
+    final attachment = await showAppModalSheet<NoteAttachment>(
       context: context,
-      builder: (ctx) => AppDialog(
-        title: const Text('添加附件链接'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: '名称'),
-              autofocus: true,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: uriCtrl,
-              decoration: const InputDecoration(labelText: '链接或本地路径'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: mimeCtrl,
-              decoration: const InputDecoration(labelText: '类型（可选）'),
-            ),
-          ],
-        ),
+      builder: (ctx) => AppModalSheet(
+        key: const ValueKey('todo_attachment_create_sheet'),
+        title: '添加附件链接',
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -558,6 +540,28 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
             child: const Text('添加'),
           ),
         ],
+        child: AppFormFieldTheme(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: '名称'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: uriCtrl,
+                decoration: const InputDecoration(labelText: '链接或本地路径'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: mimeCtrl,
+                decoration: const InputDecoration(labelText: '类型（可选）'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
     if (!mounted || attachment == null) return;
@@ -1151,12 +1155,23 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     var trigger = LocationTrigger.enter;
     var oneShot = true;
 
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: const Text('添加位置提醒'),
-          content: SingleChildScrollView(
+        builder: (ctx, setSt) => AppModalSheet(
+          key: const ValueKey('todo_location_reminder_create_sheet'),
+          title: '添加位置提醒',
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(I18n.tr('action.cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(I18n.tr('action.save')),
+            ),
+          ],
+          child: AppFormFieldTheme(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1248,16 +1263,6 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(I18n.tr('action.cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(I18n.tr('action.save')),
-            ),
-          ],
         ),
       ),
     );
@@ -1728,7 +1733,9 @@ class _TodoMarkdownDescriptionEditor extends StatelessWidget {
               onLink: onLink,
             ),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 160),
+            duration: AppMotion.feedback(context),
+            switchInCurve: AppMotion.enterCurve,
+            switchOutCurve: AppMotion.exitCurve,
             child: preview
                 ? _TodoMarkdownPreview(
                     key: const ValueKey('todo-description-preview'),

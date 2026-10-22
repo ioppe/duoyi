@@ -92,7 +92,7 @@ void main() {
     expect(preferencesProvider, contains('webDefaultBottomNavTabs'));
     expect(
       preferencesProvider,
-      contains('webDefaultBottomNavTabs = <int>{0, 1, 2, 6}'),
+      contains('webDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6}'),
     );
     expect(preferencesProvider, contains('isBottomNavTabSupported'));
     expect(preferencesProvider, contains('normalizeDefaultTab'));

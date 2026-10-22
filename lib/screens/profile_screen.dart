@@ -12,6 +12,7 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/user_provider.dart';
 import '../services/api_client.dart';
+import '../widgets/brand_background.dart';
 import '../widgets/cached_avatar_image.dart';
 import '../widgets/surface_components.dart';
 import 'login_screen.dart';
@@ -1434,7 +1435,9 @@ class _AccountProfileEditorState extends State<_AccountProfileEditor> {
                       ? null
                       : () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const AccessTokensScreen(),
+                            builder: (_) => const BrandRouteSurface(
+                              child: AccessTokensScreen(),
+                            ),
                           ),
                         ),
                   icon: const Icon(Icons.key_outlined),

@@ -414,8 +414,13 @@ void main() {
     expect(habit, isNot(contains('Colors.red')));
     expect(note, contains('title: AppSecondaryMenuText('));
     expect(note, contains("color: cs.error"));
-    expect(eventSheet, contains('AppSecondaryControlTheme('));
-    expect(quickCapture, contains('AppSecondaryControlTheme('));
+    expect(eventSheet, contains('AppFormFieldTheme('));
+    final formTheme = surfaces.substring(
+      surfaces.indexOf('class AppFormFieldTheme'),
+      surfaces.indexOf('class AppSecondaryMenuText'),
+    );
+    expect(formTheme, contains('AppSecondaryControlTheme('));
+    expect(quickCapture, contains('AppFormFieldTheme('));
     expect(goalEdit, contains('AppSecondaryControlTheme('));
     expect(integrations, contains('AppSecondaryControlTheme('));
     final diary = File('lib/screens/diary_screen.dart').readAsStringSync();

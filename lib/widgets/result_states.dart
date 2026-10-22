@@ -12,6 +12,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/design_tokens.dart';
+import '../core/app_motion.dart';
+import '../core/i18n.dart';
+import 'empty_state.dart';
 export 'empty_state.dart' show EmptyState;
 
 /// 加载中占位：带 shimmer 扫光的骨架条。
@@ -37,8 +40,19 @@ class _LoadingStateState extends State<LoadingState>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
+      duration: AppMotion.loadingCycle,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context) || !TickerMode.valuesOf(context).enabled) {
+      _controller.stop();
+      _controller.value = 0.5;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -63,37 +77,35 @@ class _LoadingStateState extends State<LoadingState>
           return math.max(0.0, math.min(desired, availableWidth));
         }
 
-        return Center(
-          child: Padding(
-            padding: EdgeInsets.all(padding),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (int i = 0; i < widget.lines; i++) ...[
-                  _ShimmerBar(controller: _controller, width: barWidth(i)),
-                  const SizedBox(height: DesignTokens.spaceSm),
-                ],
-                if (widget.message != null) ...[
-                  const SizedBox(height: DesignTokens.spaceLg),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: availableWidth),
-                    child: Text(
-                      widget.message!,
-                      textAlign: TextAlign.center,
-                      maxLines: narrow ? 3 : null,
-                      overflow: narrow ? TextOverflow.ellipsis : null,
-                      style: TextStyle(
-                        fontSize: DesignTokens.fontSizeSm,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+        final content = Padding(
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < widget.lines; i++) ...[
+                _ShimmerBar(controller: _controller, width: barWidth(i)),
+                const SizedBox(height: DesignTokens.spaceSm),
+              ],
+              if (widget.message != null) ...[
+                const SizedBox(height: DesignTokens.spaceLg),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: availableWidth),
+                  child: Text(
+                    widget.message!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
+        );
+        return Center(
+          child: constraints.hasBoundedHeight
+              ? SingleChildScrollView(child: content)
+              : content,
         );
       },
     );
@@ -108,6 +120,18 @@ class _ShimmerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final base = cs.surfaceContainerHighest;
+    if (AppMotion.reduced(context)) {
+      return Container(
+        width: width,
+        height: 12,
+        decoration: BoxDecoration(
+          color: base,
+          borderRadius: DesignTokens.borderRadiusSm,
+        ),
+      );
+    }
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -118,18 +142,15 @@ class _ShimmerBar extends StatelessWidget {
             width: width,
             height: 12,
             child: ShaderMask(
+              blendMode: BlendMode.srcIn,
               shaderCallback: (rect) {
                 return LinearGradient(
                   begin: Alignment(-1.0 + 2.0 * t, 0),
                   end: Alignment(0.0 + 2.0 * t, 0),
-                  colors: const [
-                    DesignTokens.resultLoadingShimmerBase,
-                    DesignTokens.resultLoadingShimmerHighlight,
-                    DesignTokens.resultLoadingShimmerBase,
-                  ],
+                  colors: [base, cs.surface, base],
                 ).createShader(rect);
               },
-              child: Container(color: DesignTokens.resultLoadingShimmerBase),
+              child: Container(color: base),
             ),
           ),
         );
@@ -140,7 +161,7 @@ class _ShimmerBar extends StatelessWidget {
 
 /// 紧凑型空态提示：用于卡片/区块内部的小占位。
 ///
-/// 区别于整页 [EmptyState]（卡片式大图标 + 操作按钮），本组件只渲染
+/// 区别于整页 [EmptyState]（大图标 + 操作按钮），本组件只渲染
 /// 一个弱化的图标与文案，适合嵌入统计卡片、图表区块内部的空数据占位。
 class EmptyHint extends StatelessWidget {
   final IconData icon;
@@ -164,14 +185,14 @@ class EmptyHint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 28, color: cs.onSurface.withValues(alpha: 0.35)),
+            Icon(icon, size: 28, color: cs.onSurfaceVariant),
             const SizedBox(height: DesignTokens.spaceSm),
             Text(
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: DesignTokens.fontSizeSm,
-                color: cs.onSurface.withValues(alpha: 0.5),
+                color: cs.onSurfaceVariant,
                 fontWeight: DesignTokens.fontWeightStrong,
               ),
             ),
@@ -202,68 +223,14 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow =
-            constraints.maxWidth.isFinite && constraints.maxWidth < 320;
-        final padding = narrow ? DesignTokens.spaceMd : DesignTokens.space3xl;
-        final availableWidth = constraints.maxWidth.isFinite
-            ? math.max(0.0, constraints.maxWidth - padding * 2)
-            : 420.0;
-        return Center(
-          child: Padding(
-            padding: EdgeInsets.all(padding),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: availableWidth),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: narrow ? 44 : 56,
-                    color: DesignTokens.resultError,
-                  ),
-                  const SizedBox(height: DesignTokens.spaceMd),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    maxLines: narrow ? 2 : null,
-                    overflow: narrow ? TextOverflow.ellipsis : null,
-                    style: const TextStyle(
-                      fontSize: DesignTokens.fontSizeMd,
-                      fontWeight: DesignTokens.fontWeightStrong,
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.spaceXs),
-                  Text(
-                    error.toString(),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: DesignTokens.fontSizeSm,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  if (onRetry != null) ...[
-                    const SizedBox(height: DesignTokens.spaceLg),
-                    SizedBox(
-                      width: narrow ? double.infinity : null,
-                      child: FilledButton.tonalIcon(
-                        onPressed: onRetry,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('重试'),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    return EmptyState(
+      icon: Icons.error_outline,
+      iconColor: Theme.of(context).colorScheme.error,
+      message: title == '出错了' ? I18n.tr('state.error') : title,
+      description: error.toString(),
+      actionLabel: onRetry == null ? null : I18n.tr('action.retry'),
+      onAction: onRetry,
+      actionIcon: Icons.refresh,
     );
   }
 }

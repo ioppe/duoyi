@@ -159,6 +159,7 @@ class AccountLocalDataCleaner {
     'pref_bottom_nav_order',
     'pref_bottom_nav_visible',
     'pref_web_navigation_v2',
+    'pref_focus_navigation_v1',
   };
 
   static const accountScopedPrefixes = <String>[

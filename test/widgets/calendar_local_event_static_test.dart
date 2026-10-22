@@ -48,7 +48,8 @@ void main() {
     expect(screen, contains('workspaceId: _activeWorkspaceId'));
 
     expect(sheet, contains('Future<void> showLocalCalendarEventEditor'));
-    expect(sheet, contains("title: Text(event == null ? '新建日程' : '编辑日程')"));
+    expect(sheet, contains("title: event == null ? '新建日程' : '编辑日程'"));
+    expect(sheet, contains("ValueKey('calendar_event_create_sheet')"));
     expect(sheet, contains('SwitchListTile('));
     expect(sheet, contains("title: const Text('全天')"));
     expect(sheet, contains("title: '开始日期'"));

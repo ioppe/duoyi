@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/app_version.dart';
 import 'core/app_config.dart';
 import 'core/app_clock.dart';
+import 'core/app_motion.dart';
 import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
@@ -15,7 +16,7 @@ import 'core/i18n.dart';
 import 'core/iterable_extensions.dart';
 import 'core/local_timezone_resolver.dart';
 import 'core/report_engine.dart';
-import 'core/smart_date_parser.dart';
+import 'widgets/todo_create_sheet.dart';
 import 'core/smart_todo_draft.dart';
 import 'core/web_target.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -3358,108 +3359,7 @@ String _todayTaskProgressNotificationBody(
 
 Future<void> _showQuickTodoDialog(BuildContext context) async {
   if (!context.mounted) return;
-  final ctrl = TextEditingController();
-  try {
-    SmartDateParseResult parsed = SmartDateParseResult.empty;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AppDialog(
-          title: const Text('快速待办'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: '一句话描述（如：明天下午3点开会）',
-                ),
-                onChanged: (value) {
-                  setState(() => parsed = SmartDateParser.parse(value));
-                },
-              ),
-              if (parsed.isSuccess) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      ctx,
-                    ).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 14,
-                        color: Theme.of(ctx).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '识别到：${_formatParsedSmartDate(parsed)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(ctx).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(I18n.tr('action.cancel')),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(I18n.tr('action.add')),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    final text = ctrl.text.trim();
-    if (text.isEmpty) return;
-    final draft = SmartTodoDraftBuilder.fromText(text);
-    final todo = draft.toTodo();
-    if (!await _preflightQuickTodoReminder(
-      context,
-      todo,
-      feedback: (message) => _showContextSnackBar(context, message),
-    )) {
-      return;
-    }
-    if (!context.mounted) return;
-    final todos = Provider.of<TodoProvider?>(context, listen: false);
-    if (todos == null) {
-      _showContextSnackBar(context, '快捷待办暂不可用，请打开待办页后重试');
-      return;
-    }
-    await todos.addTodo(todo);
-    if (!context.mounted) return;
-    _showContextSnackBar(context, _quickTodoCreatedMessage(todo));
-  } catch (e, st) {
-    debugPrint('[QuickTodoDialog] create failed: $e\n$st');
-    if (context.mounted) {
-      _showContextSnackBar(context, '快捷待办创建失败，请稍后重试');
-    } else {
-      _showWidgetActionFeedbackFromShell('快捷待办创建失败，请稍后重试');
-    }
-  } finally {
-    ctrl.dispose();
-  }
+  await showTodoCreateSheet(context);
 }
 
 Future<void> _showSharedTextImportSheet(String rawText) async {
@@ -3598,14 +3498,6 @@ void _showContextSnackBar(BuildContext context, String message) {
     ..showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
-}
-
-String _formatParsedSmartDate(SmartDateParseResult result) {
-  final dt = result.dateTime!;
-  final date =
-      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-  if (!result.hasTimeOfDay) return date;
-  return '$date ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }
 
 Future<void> _showTodoCompletePrompt(
@@ -3986,13 +3878,17 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       locale: locale.flutterLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (context, child) => AppClockScope(
-        child: WebAuthGate(
-          enabled: WebTarget.isWebBuild && !mustUpdate,
-          child: child!,
+      builder: (context, child) => Theme(
+        data: AppMotion.themeFor(context, Theme.of(context)),
+        child: AppClockScope(
+          child: WebAuthGate(
+            enabled: WebTarget.isWebBuild && !mustUpdate,
+            child: child!,
+          ),
         ),
       ),
       theme: brand.theme,
+      themeAnimationStyle: AppMotion.overlayStyle(context),
       home: mustUpdate
           ? const Stack(children: [ForceUpdateGate()])
           : Stack(
@@ -4016,7 +3912,7 @@ class MainShell extends StatefulWidget {
 
 class MainShellState extends State<MainShell> {
   static const _tabCount = 7;
-  static const _fallbackVisibleTabs = <int>[0, 1, 2, 6];
+  static const _fallbackVisibleTabs = <int>[0, 1, 2, 4, 6];
 
   int _currentIndex = 0; // Today first
   bool _allowHiddenCurrentIndex = false;

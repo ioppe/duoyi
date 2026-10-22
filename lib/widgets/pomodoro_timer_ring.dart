@@ -59,30 +59,38 @@ class PomodoroTimerRing extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                timeText,
-                style: TextStyle(
-                  fontSize: timeFontSize,
-                  fontWeight: DesignTokens.fontWeightStrong,
-                  fontFamily: DesignTokens.fontFamilyRounded,
-                  letterSpacing: 0,
-                  color: Theme.of(context).textTheme.headlineSmall?.color,
-                ),
-              ),
-              if (!compact) const SizedBox(height: 8),
-              if (!countUp && progress > 0 && !compact)
-                Text(
-                  '${(progress.clamp(0.0, 1.0) * 100).round()}%',
-                  style: TextStyle(
-                    fontSize: progress >= 1.0 ? 14 : 16,
-                    color: Colors.grey.shade500,
-                    fontWeight: DesignTokens.fontWeightStrong,
+          Padding(
+            padding: const EdgeInsets.all(DesignTokens.spaceMd),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    timeText,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: timeFontSize,
+                      fontWeight: DesignTokens.fontWeightStrong,
+                      fontFamily: DesignTokens.fontFamilyRounded,
+                      letterSpacing: 0,
+                      color: Theme.of(context).textTheme.headlineSmall?.color,
+                    ),
                   ),
-                ),
-            ],
+                  if (!compact) const SizedBox(height: 8),
+                  if (!countUp && progress > 0 && !compact)
+                    Text(
+                      '${(progress.clamp(0.0, 1.0) * 100).round()}%',
+                      style: TextStyle(
+                        fontSize: progress >= 1.0 ? 14 : 16,
+                        color: Colors.grey.shade500,
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

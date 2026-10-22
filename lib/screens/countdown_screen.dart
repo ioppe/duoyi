@@ -1,5 +1,7 @@
+import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -129,12 +131,11 @@ class _CountdownScreenState extends State<CountdownScreen> {
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppCreateFab(
         key: const ValueKey('countdown_add_button'),
         tooltip: I18n.tr('countdown.title'),
+        label: I18n.tr('action.add'),
         onPressed: () => _showNewEditor(context),
-        icon: const Icon(Icons.add),
-        label: Text(I18n.tr('action.add')),
         backgroundColor: cs.primary,
       ),
       body: AppSecondaryControlTheme(
@@ -146,7 +147,12 @@ class _CountdownScreenState extends State<CountdownScreen> {
                 onAction: () => _showNewEditor(context),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  12,
+                  12,
+                  12,
+                  DesignTokens.pageFabBottomPadding,
+                ),
                 children: [
                   AppSurfaceCard(
                     padding: const EdgeInsets.all(16),
@@ -1049,10 +1055,8 @@ class _CountdownCardState extends State<_CountdownCard> {
               ),
             ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
+            duration: _dragging ? Duration.zero : AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             transform: Matrix4.translationValues(-_swipeOffset, 0, 0),
             child: content,
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -206,7 +207,8 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
           ),
           const SizedBox(height: 12),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
+            duration: AppMotion.feedback(context),
+            curve: AppMotion.enterCurve,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Color.alphaBlend(

@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import '../core/app_motion.dart';
 import '../widgets/app_page_tabs.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -18,6 +19,7 @@ import '../services/admin_api.dart';
 import '../services/ai_service.dart';
 import '../services/api_client.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/result_states.dart' show ErrorState, LoadingState;
 import '../widgets/surface_components.dart';
 
 /// 管理员后台 — 仅当 AuthProvider.state.isAdmin == true 时可进入。
@@ -768,10 +770,14 @@ class _DashboardTabState extends State<_DashboardTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingState();
     }
     if (_stats == null) {
-      return Center(child: Text(_error ?? '加载失败'));
+      return ErrorState(
+        title: I18n.tr('state.load_failed'),
+        error: _error ?? I18n.tr('state.error'),
+        onRetry: _load,
+      );
     }
     final users = _stats!['users'] as Map? ?? {};
     final fb = _stats!['feedback'] as Map? ?? {};
@@ -1470,6 +1476,35 @@ List<Widget> _adminDialogActions(
   ];
 }
 
+/// Create/edit sheet body. [AppModalSheet] owns the only scroll view, so the
+/// form must not add its own scroller or the sheet's keyboard avoidance and
+/// drag-to-expand would fight a nested viewport.
+Widget _adminSheetForm({required List<Widget> children, double gap = 10}) {
+  return AppFormFieldTheme(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: _adminDialogChildren(children, gap: gap),
+    ),
+  );
+}
+
+List<Widget> _adminSheetActions(
+  BuildContext context, {
+  String saveLabel = '保存',
+}) {
+  return [
+    TextButton(
+      onPressed: () => Navigator.pop(context, false),
+      child: const Text('取消'),
+    ),
+    FilledButton(
+      onPressed: () => Navigator.pop(context, true),
+      child: Text(saveLabel),
+    ),
+  ];
+}
+
 Widget _adminPermissionChecklist({
   required Set<String> selected,
   required ValueChanged<Set<String>> onChanged,
@@ -1593,7 +1628,9 @@ class _AdminInlineLoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 160),
+      duration: AppMotion.feedback(context),
+      switchInCurve: AppMotion.enterCurve,
+      switchOutCurve: AppMotion.exitCurve,
       child: visible
           ? Padding(
               key: ValueKey(label),
@@ -2018,14 +2055,13 @@ class _GroupsTabState extends State<_GroupsTab> {
       text: adminVisibleDescription(group?['description']),
     );
     var isActive = group?['is_active'] != false;
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: Text(group == null ? '新增用户组' : '编辑用户组'),
-          icon: const Icon(Icons.groups_2_outlined),
-          content: _adminDialogForm(
-            maxWidth: 430,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: group == null ? '新增用户组' : '编辑用户组',
+          actions: _adminSheetActions(ctx),
+          child: _adminSheetForm(
             children: [
               TextField(
                 controller: nameCtrl,
@@ -2049,7 +2085,6 @@ class _GroupsTabState extends State<_GroupsTab> {
               ),
             ],
           ),
-          actions: _adminDialogActions(ctx),
         ),
       ),
     );
@@ -2425,14 +2460,13 @@ class _SettingsTabState extends State<_SettingsTab> {
       text: adminVisibleDescription(group?['description']),
     );
     var isActive = group?['is_active'] != false;
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: Text(group == null ? '新增用户组' : '编辑用户组'),
-          icon: const Icon(Icons.groups_2_outlined),
-          content: _adminDialogForm(
-            maxWidth: 430,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: group == null ? '新增用户组' : '编辑用户组',
+          actions: _adminSheetActions(ctx),
+          child: _adminSheetForm(
             children: [
               TextField(
                 controller: nameCtrl,
@@ -2456,7 +2490,6 @@ class _SettingsTabState extends State<_SettingsTab> {
               ),
             ],
           ),
-          actions: _adminDialogActions(ctx),
         ),
       ),
     );
@@ -2501,14 +2534,13 @@ class _SettingsTabState extends State<_SettingsTab> {
       selected = _adminAllPermissionKeys();
     }
     var isActive = role?['is_active'] != false;
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: Text(role == null ? '新增角色' : '编辑角色'),
-          icon: const Icon(Icons.admin_panel_settings_outlined),
-          content: _adminDialogForm(
-            maxWidth: 520,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: role == null ? '新增角色' : '编辑角色',
+          actions: _adminSheetActions(ctx),
+          child: _adminSheetForm(
             children: [
               TextField(
                 controller: nameCtrl,
@@ -2536,7 +2568,6 @@ class _SettingsTabState extends State<_SettingsTab> {
               ),
             ],
           ),
-          actions: _adminDialogActions(ctx),
         ),
       ),
     );
@@ -3562,10 +3593,11 @@ String _adminAiFailureReason(String raw) {
   if (text.contains('404') || text.toLowerCase().contains('not found')) {
     return '测试失败：AI 代理或上游模型不可用，请检查 Base URL、模型名称和后端 /api/admin/ai/test 路由';
   }
-  if (text.contains('上游不可达') || text.contains('不可达') || text.contains('502')) {
-    return '测试失败：AI 上游服务不可达，请检查 Base URL、网络或模型配置';
-  }
   if (text.contains('超时')) return '测试失败：AI 服务响应超时，请稍后重试';
+  if (text.contains('上游不可达') || text.contains('不可达')) {
+    return '测试失败：AI 上游服务不可达：$text';
+  }
+  if (text.contains('502')) return '测试失败：AI 代理处理失败：$text';
   return '测试失败：$text';
 }
 
@@ -5523,14 +5555,13 @@ class _UsersTabState extends State<_UsersTab> {
     var isAdmin = false;
     var isDisabled = false;
 
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: const Text('新增用户'),
-          icon: const Icon(Icons.person_add_alt_1_outlined),
-          content: _adminDialogForm(
-            maxWidth: 460,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: '新增用户',
+          actions: _adminSheetActions(ctx, saveLabel: '创建'),
+          child: _adminSheetForm(
             children: [
               TextField(
                 controller: usernameCtrl,
@@ -5620,7 +5651,6 @@ class _UsersTabState extends State<_UsersTab> {
               ),
             ],
           ),
-          actions: _adminDialogActions(ctx, saveLabel: '创建'),
         ),
       ),
     );
@@ -7024,56 +7054,41 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
     bool published =
         (item?['published'] ?? 1) == 1 || item?['published'] == true;
 
-    final saved = await showDialog<bool>(
+    final saved = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: Text(item == null ? '新增公告' : '编辑公告'),
-          icon: const Icon(Icons.campaign_outlined),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: '标题'),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: bodyCtrl,
-                  maxLines: 6,
-                  decoration: const InputDecoration(labelText: '内容'),
-                ),
-                const SizedBox(height: 8),
-                AppDropdownField<String>(
-                  initialValue: level,
-                  labelText: '级别',
-                  items: const [
-                    DropdownMenuItem(value: 'info', child: Text('普通')),
-                    DropdownMenuItem(value: 'warning', child: Text('警告')),
-                    DropdownMenuItem(value: 'critical', child: Text('紧急')),
-                  ],
-                  onChanged: (v) => setSt(() => level = v ?? 'info'),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: published,
-                  title: const Text('立即发布'),
-                  onChanged: (v) => setSt(() => published = v),
-                ),
-              ],
-            ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: item == null ? '新增公告' : '编辑公告',
+          actions: _adminSheetActions(ctx),
+          child: _adminSheetForm(
+            children: [
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: '标题'),
+              ),
+              TextField(
+                controller: bodyCtrl,
+                maxLines: 6,
+                decoration: const InputDecoration(labelText: '内容'),
+              ),
+              AppDropdownField<String>(
+                initialValue: level,
+                labelText: '级别',
+                items: const [
+                  DropdownMenuItem(value: 'info', child: Text('普通')),
+                  DropdownMenuItem(value: 'warning', child: Text('警告')),
+                  DropdownMenuItem(value: 'critical', child: Text('紧急')),
+                ],
+                onChanged: (v) => setSt(() => level = v ?? 'info'),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: published,
+                title: const Text('立即发布'),
+                onChanged: (v) => setSt(() => published = v),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('保存'),
-            ),
-          ],
         ),
       ),
     );
@@ -8453,8 +8468,8 @@ class _AdminFeedbackSwipeActionsState
               ),
             TweenAnimationBuilder<double>(
               tween: Tween<double>(end: _open ? -_actionRailWidth : 0),
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOutCubic,
+              duration: AppMotion.feedback(context),
+              curve: AppMotion.enterCurve,
               builder: (context, dx, child) =>
                   Transform.translate(offset: Offset(dx, 0), child: child),
               child: widget.child,
@@ -8586,49 +8601,36 @@ class _InvitesTabState extends State<_InvitesTab> {
   Future<void> _generate() async {
     int count = 5;
     String note = '';
-    final ok = await showDialog<bool>(
+    final ok = await showAppModalSheet<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AppDialog(
-          title: const Text('生成邀请码'),
-          icon: const Icon(Icons.vpn_key_outlined),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Text('数量:'),
-                    Expanded(
-                      child: Slider(
-                        value: count.toDouble(),
-                        min: 1,
-                        max: 50,
-                        divisions: 49,
-                        label: '$count',
-                        onChanged: (v) => setSt(() => count = v.toInt()),
-                      ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) => AppModalSheet(
+          title: '生成邀请码',
+          actions: _adminSheetActions(ctx, saveLabel: '生成'),
+          child: _adminSheetForm(
+            children: [
+              Row(
+                children: [
+                  const Text('数量:'),
+                  Expanded(
+                    child: Slider(
+                      value: count.toDouble(),
+                      min: 1,
+                      max: 50,
+                      divisions: 49,
+                      label: '$count',
+                      onChanged: (v) => setSt(() => count = v.toInt()),
                     ),
-                    Text('$count'),
-                  ],
-                ),
-                TextField(
-                  decoration: const InputDecoration(labelText: '备注 (可选)'),
-                  onChanged: (v) => note = v,
-                ),
-              ],
-            ),
+                  ),
+                  Text('$count'),
+                ],
+              ),
+              TextField(
+                decoration: const InputDecoration(labelText: '备注 (可选)'),
+                onChanged: (v) => note = v,
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('生成'),
-            ),
-          ],
         ),
       ),
     );

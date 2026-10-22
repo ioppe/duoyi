@@ -23,13 +23,13 @@ void main() {
   });
 
   for (final desktop in [false, true]) {
-    test('Web desktop=$desktop 初始及重载均默认四个一级入口', () async {
+    test('Web desktop=$desktop 初始及重载均默认五个一级入口', () async {
       WebTarget.debugDesktopWebBuild = desktop;
       final provider = PreferencesProvider();
       addTearDown(provider.dispose);
-      expect(provider.visibleBottomNavTabs, [0, 1, 2, 6]);
+      expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
       await provider.loadFromStorage();
-      expect(provider.visibleBottomNavTabs, [0, 1, 2, 6]);
+      expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
       expect(provider.bottomNavOrder, isNot(contains(5)));
       expect(PreferencesProvider.isBottomNavTabSupported(5), isFalse);
       expect(PreferencesProvider.normalizeDefaultTab(5), 0);
@@ -40,15 +40,16 @@ void main() {
         isNot(contains(5)),
       );
       await provider.setBottomNavVisible(5, true);
-      expect(provider.visibleBottomNavTabs, [0, 1, 2, 6]);
+      expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
     });
   }
 
   for (final previous in [
     ['0', '1', '2', '5', '6'],
     ['0', '1', '2', '3', '6'],
+    ['0', '1', '2', '6'],
   ]) {
-    test('旧Web默认导航 $previous 升级为四项并保存', () async {
+    test('旧Web默认导航 $previous 升级为含专注的五项并保存', () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('pref_bottom_nav_order', [
         '0',
@@ -64,18 +65,19 @@ void main() {
       final provider = PreferencesProvider();
       addTearDown(provider.dispose);
       await provider.loadFromStorage();
-      expect(provider.visibleBottomNavTabs, [0, 1, 2, 6]);
+      expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
       expect(provider.defaultTab, 0);
       expect(prefs.getStringList('pref_bottom_nav_visible'), [
         '0',
         '1',
         '2',
+        '4',
         '6',
       ]);
       final reloaded = PreferencesProvider();
       addTearDown(reloaded.dispose);
       await reloaded.loadFromStorage();
-      expect(reloaded.visibleBottomNavTabs, [0, 1, 2, 6]);
+      expect(reloaded.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
     });
   }
 
@@ -103,6 +105,7 @@ void main() {
     final provider = PreferencesProvider();
     addTearDown(provider.dispose);
     await provider.loadFromStorage();
+    await provider.setBottomNavVisible(4, false);
     await provider.setBottomNavVisible(3, true);
     expect(provider.visibleBottomNavTabs, [0, 1, 2, 3, 6]);
     final reloaded = PreferencesProvider();
@@ -111,15 +114,78 @@ void main() {
     expect(reloaded.visibleBottomNavTabs, [0, 1, 2, 3, 6]);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('pref_web_navigation_v2'), isTrue);
+    expect(prefs.getBool('pref_focus_navigation_v1'), isTrue);
     await AccountLocalDataCleaner.clearSharedPreferences();
     expect(prefs.getBool('pref_web_navigation_v2'), isNull);
+    expect(prefs.getBool('pref_focus_navigation_v1'), isNull);
   });
 
-  test('原生客户端默认导航保持兼容', () {
+  test('原生客户端默认专注作为一级入口，小组件收纳到更多应用', () async {
     WebTarget.debugWebBuild = false;
     final provider = PreferencesProvider();
     addTearDown(provider.dispose);
-    expect(provider.visibleBottomNavTabs, [0, 1, 2, 5, 6]);
+    expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
+    await provider.loadFromStorage();
+    expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
     expect(PreferencesProvider.isBottomNavTabSupported(5), isTrue);
+    expect(
+      MoreApplicationsScreen.hiddenBottomNavApps(
+        provider,
+      ).map((app) => app.tab),
+      contains(5),
+    );
   });
+
+  for (final web in [false, true]) {
+    test('Web=$web 旧默认布局升级到专注五项，手动隐藏后重载不恢复', () async {
+      WebTarget.debugWebBuild = web;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('pref_web_navigation_v2', true);
+      await prefs.setStringList('pref_bottom_nav_visible', [
+        '0',
+        '1',
+        '2',
+        if (!web) '5',
+        '6',
+      ]);
+      final provider = PreferencesProvider();
+      addTearDown(provider.dispose);
+      await provider.loadFromStorage();
+      expect(provider.visibleBottomNavTabs, [0, 1, 2, 4, 6]);
+      expect(prefs.getStringList('pref_bottom_nav_visible'), [
+        '0',
+        '1',
+        '2',
+        '4',
+        '6',
+      ]);
+      expect(prefs.getBool('pref_focus_navigation_v1'), isTrue);
+
+      await provider.setBottomNavVisible(4, false);
+      final reloaded = PreferencesProvider();
+      addTearDown(reloaded.dispose);
+      await reloaded.loadFromStorage();
+      expect(reloaded.visibleBottomNavTabs, [0, 1, 2, 6]);
+    });
+
+    test('Web=$web 专注迁移保留自定义组合与排序', () async {
+      WebTarget.debugWebBuild = web;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('pref_bottom_nav_order', [
+        '3',
+        '6',
+        '0',
+        '1',
+        '2',
+        '4',
+        '5',
+      ]);
+      await prefs.setStringList('pref_bottom_nav_visible', ['3', '0', '6']);
+      final provider = PreferencesProvider();
+      addTearDown(provider.dispose);
+      await provider.loadFromStorage();
+      expect(provider.visibleBottomNavTabs, [3, 6, 0]);
+      expect(provider.bottomNavVisible, {3, 0, 6});
+    });
+  }
 }

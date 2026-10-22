@@ -2,10 +2,10 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, self-hosted-skydrow]
     tags: ['v*']
   pull_request:
-    branches: [main]
+    branches: [main, self-hosted-skydrow]
   workflow_dispatch:
     inputs:
       server_url:
