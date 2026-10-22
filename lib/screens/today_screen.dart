@@ -1415,7 +1415,7 @@ class _TodoTodaySubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visual = CompletionVisibilityPolicy.visualState(todo);
-    final subtasks = todo.subtasks.take(3).toList();
+    final subtasks = todo.subtasks;
     final hasNoDueDate = todo.dueDate == null;
     if (todo.listGroupName == null &&
         subtasks.isEmpty &&

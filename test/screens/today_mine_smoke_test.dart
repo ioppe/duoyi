@@ -413,6 +413,69 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final size in [const Size(390, 844), const Size(1440, 1000)]) {
+    testWidgets('首页显示全部6个子任务并能完成第4至6条 $size', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final todos = TodoProvider();
+      final parent = TodoItem(
+        id: 'all-home-subtasks',
+        title: '完成全部子任务',
+        subtasks: [
+          for (var i = 1; i <= 6; i++)
+            Subtask(
+              id: 'all-s$i',
+              title: '第$i步',
+              isCompleted: i <= 3,
+              sortOrder: i - 1,
+            ),
+        ],
+      );
+      await todos.addTodo(parent);
+      await tester.pumpWidget(
+        _wrap(
+          const TodayScreen(),
+          todoProvider: todos,
+          theme: AppBrands.defaultBrand.theme,
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (var i = 1; i <= 6; i++) {
+        expect(
+          find.byKey(ValueKey('today_subtask_toggle_all-s$i')),
+          findsOneWidget,
+          reason: '第$i条子任务必须能在首页操作',
+        );
+      }
+      final progress = find.byKey(
+        const ValueKey('today_subtask_progress_all-home-subtasks'),
+      );
+      expect(tester.widget<Text>(progress).data, '3/6');
+      for (var i = 4; i <= 6; i++) {
+        final row = find.byKey(ValueKey('today_subtask_toggle_all-s$i'));
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+        expect(
+          todos.todos.single.subtasks.where((item) => item.isCompleted),
+          hasLength(i),
+        );
+        expect(todos.todos.single.isCompleted, i == 6);
+        if (i < 6) expect(tester.widget<Text>(progress).data, '$i/6');
+      }
+      final reloaded = TodoProvider();
+      await reloaded.loadFromStorage();
+      expect(reloaded.todos.single.isCompleted, isTrue);
+      expect(
+        reloaded.todos.single.subtasks.every((item) => item.isCompleted),
+        isTrue,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('无子任务的任务保留整任务勾选', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
