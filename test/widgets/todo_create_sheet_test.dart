@@ -18,6 +18,7 @@ import 'package:duoyi/providers/share_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/services/ai_service.dart';
+import 'package:duoyi/services/reminder_scheduler.dart';
 import 'package:duoyi/widgets/surface_components.dart';
 import 'package:duoyi/widgets/todo_create_sheet.dart';
 import 'package:duoyi/widgets/todo_subtask_editor.dart';
@@ -226,6 +227,119 @@ Future<void> _scrollToSubmit(WidgetTester tester) async {
     find.byKey(const ValueKey('todo_create_submit')).hitTestable(),
     findsOneWidget,
   );
+}
+
+Future<({_CapturingTodos todos, _ReadyNotifications notifications})>
+_openReminderSheet(
+  WidgetTester tester, {
+  AiService? ai,
+  Size size = const Size(390, 844),
+  double textScale = 1,
+}) async {
+  final todos = _CapturingTodos();
+  final notifications = _ReadyNotifications();
+  await _open(
+    tester,
+    todos: todos,
+    notifications: notifications,
+    ai: ai,
+    size: size,
+    textScale: textScale,
+  );
+  return (todos: todos, notifications: notifications);
+}
+
+Future<void> _enterCreateTitle(WidgetTester tester, String text) async {
+  await tester.enterText(find.byKey(const ValueKey('todo_create_title')), text);
+  await tester.pumpAndSettle();
+}
+
+String _reminderLabel(WidgetTester tester, String key) => tester
+    .widget<Text>(
+      find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(Text),
+      ),
+    )
+    .data!;
+
+bool _reminderEnabled(WidgetTester tester) => tester
+    .widget<Switch>(find.byKey(const ValueKey('todo_create_reminder')))
+    .value;
+
+String _clockLabel(WidgetTester tester, TimeOfDay time) => time.format(
+  tester.element(find.byKey(const ValueKey('todo_create_reminder_time'))),
+);
+
+String _expectReminderLabels(
+  WidgetTester tester,
+  DateTime date,
+  TimeOfDay time,
+) {
+  expect(
+    _reminderLabel(tester, 'todo_create_reminder_date'),
+    I18nDateFormat.date(date),
+  );
+  final label = _clockLabel(tester, time);
+  expect(_reminderLabel(tester, 'todo_create_reminder_time'), label);
+  return label;
+}
+
+void _expectReminderPlan(TodoItem saved, DateTime at) {
+  expect(saved.toJson()['reminderAt'], at.toUtc().toIso8601String());
+  expect(saved.reminderPlan.enabled, isTrue);
+  expect(saved.reminderPlan.rules.single.hour, at.hour);
+  expect(saved.reminderPlan.rules.single.minute, at.minute);
+}
+
+Future<void> _tapAi(WidgetTester tester) async {
+  final chip = find.widgetWithText(ActionChip, I18n.tr('todo.create.ai'));
+  await tester.ensureVisible(chip);
+  await tester.tap(chip);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _submitCreateSheet(WidgetTester tester) async {
+  await _scrollToSubmit(tester);
+  await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
+  await tester.pumpAndSettle();
+}
+
+/// 通过现有 [AppDatePicker] 的公历日期单元格选择提醒日期。
+Future<void> _pickReminderDate(
+  WidgetTester tester,
+  DateTime day, {
+  bool confirm = true,
+}) async {
+  final button = find.byKey(const ValueKey('todo_create_reminder_date'));
+  await tester.ensureVisible(button);
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+  expect(find.text(I18n.tr('todo.create.pick_date')), findsOneWidget);
+  final cell = find.byKey(
+    ValueKey(
+      'solar-day-${day.year}-${day.month.toString().padLeft(2, '0')}-'
+      '${day.day.toString().padLeft(2, '0')}',
+    ),
+  );
+  expect(cell, findsOneWidget);
+  await tester.ensureVisible(cell);
+  await tester.pumpAndSettle();
+  await tester.tap(cell);
+  await tester.pumpAndSettle();
+  final action = confirm
+      ? find.widgetWithText(FilledButton, '确定')
+      : find.widgetWithText(TextButton, '取消').last;
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
+  if (action.hitTestable().evaluate().isEmpty) {
+    await tester.drag(find.byType(AppModalSheet).last, const Offset(0, -180));
+    await tester.pumpAndSettle();
+  }
+  expect(action.hitTestable(), findsOneWidget);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+  expect(find.text(I18n.tr('todo.create.pick_date')), findsNothing);
 }
 
 Future<void> _expandListGroup(WidgetTester tester) async {
@@ -1252,6 +1366,201 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AppModalSheet), findsNothing);
     expect(todos.todos, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI 完整日期时间填充提醒日期与时间并保存到点提醒', (tester) async {
+    final at = AppClock.date(2026, 11, 1, 10, 30);
+    final (:todos, :notifications) = await _openReminderSheet(
+      tester,
+      size: const Size(320, 844),
+      textScale: 1.5,
+      ai: _ReadyAi(
+        AiTodoBreakdown(subtasks: const [], dateTime: at, hasTimeOfDay: true),
+      ),
+    );
+    await _enterCreateTitle(tester, '整理会议资料');
+    expect(_reminderEnabled(tester), isFalse);
+    expect(
+      find.byKey(const ValueKey('todo_create_reminder_date')),
+      findsNothing,
+    );
+    await _tapAi(tester);
+    expect(_reminderEnabled(tester), isTrue);
+    final time = _expectReminderLabels(
+      tester,
+      at,
+      const TimeOfDay(hour: 10, minute: 30),
+    );
+    expect(
+      tester.widget<Text>(find.text(I18n.tr('todo.create.at_time'))).data,
+      isNot(contains(time)),
+    );
+    final dateButton = find.byKey(const ValueKey('todo_create_reminder_date'));
+    final timeButton = find.byKey(const ValueKey('todo_create_reminder_time'));
+    await tester.ensureVisible(dateButton);
+    await tester.ensureVisible(timeButton);
+    expect(dateButton.hitTestable(), findsOneWidget);
+    expect(timeButton.hitTestable(), findsOneWidget);
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.date, at);
+    _expectReminderPlan(saved, at);
+    expect(notifications.scheduledTime!.toUtc(), at.toUtc());
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('本地日期同日 AI 补全时间，冲突日期不覆盖完整本地时间', (tester) async {
+    for (final (input, aiAt, before, hour, minute) in [
+      ('明天参加会议', AppClock.date(2026, 10, 22, 15, 30), false, 15, 30),
+      ('明天下午3点会议', AppClock.date(2026, 10, 24, 9), true, 15, 0),
+    ]) {
+      final (:todos, :notifications) = await _openReminderSheet(
+        tester,
+        ai: _ReadyAi(
+          AiTodoBreakdown(
+            subtasks: const [],
+            dateTime: aiAt,
+            hasTimeOfDay: true,
+          ),
+        ),
+      );
+      await _enterCreateTitle(tester, input);
+      expect(_reminderEnabled(tester), before);
+      if (!before) {
+        expect(
+          find.byKey(const ValueKey('todo_create_reminder_date')),
+          findsNothing,
+        );
+      }
+      await _tapAi(tester);
+      expect(_reminderEnabled(tester), isTrue);
+      _expectReminderLabels(
+        tester,
+        DateTime(2026, 10, 22),
+        TimeOfDay(hour: hour, minute: minute),
+      );
+      await _submitCreateSheet(tester);
+      final expectedAt = DateTime.utc(2026, 10, 22, hour, minute);
+      _expectReminderPlan(todos.saved.single, expectedAt);
+      expect(notifications.scheduledTime!.toUtc(), expectedAt);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('手动提醒日期只改提醒锚点，任务日期与序列化预检保持独立', (tester) async {
+    final (:todos, notifications: _) = await _openReminderSheet(tester);
+    await _enterCreateTitle(tester, '明天下午3点会议');
+    expect(_reminderEnabled(tester), isTrue);
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 22),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _pickReminderDate(tester, DateTime(2026, 10, 25));
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 25),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    final taskAt = AppClock.date(2026, 10, 22, 15);
+    expect(saved.date, taskAt);
+    expect(saved.dueDate, taskAt);
+    _expectReminderPlan(saved, DateTime.utc(2026, 10, 25, 15));
+    final preflight = preflightTodoReminderPlan(
+      TodoItem.fromJson(saved.toJson()),
+    );
+    expect(preflight.blockingIssue, isNull);
+    expect(
+      preflight.firstScheduledTime!.toUtc(),
+      DateTime.utc(2026, 10, 25, 15),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI 返回不覆盖已手动选择的提醒日期', (tester) async {
+    final (:todos, :notifications) = await _openReminderSheet(
+      tester,
+      ai: _ReadyAi(
+        AiTodoBreakdown(
+          subtasks: const [],
+          dateTime: AppClock.date(2026, 10, 23, 15, 30),
+          hasTimeOfDay: true,
+        ),
+      ),
+    );
+    await _enterCreateTitle(tester, '后天下午3点会议');
+    await _pickReminderDate(tester, DateTime(2026, 10, 26));
+    await _tapAi(tester);
+    expect(_reminderEnabled(tester), isTrue);
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 26),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.date, AppClock.date(2026, 10, 23, 15));
+    _expectReminderPlan(saved, DateTime.utc(2026, 10, 26, 15));
+    expect(
+      notifications.scheduledTime!.toUtc(),
+      DateTime.utc(2026, 10, 26, 15),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('取消日期选择保留原提醒日期与时间', (tester) async {
+    final (:todos, notifications: _) = await _openReminderSheet(tester);
+    await _enterCreateTitle(tester, '后天下午3点会议');
+    await _pickReminderDate(tester, DateTime(2026, 10, 28), confirm: false);
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 23),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _submitCreateSheet(tester);
+    _expectReminderPlan(todos.saved.single, DateTime.utc(2026, 10, 23, 15));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('过去提醒在表单内提示，关闭开关后可保存无提醒任务', (tester) async {
+    final (:todos, notifications: _) = await _openReminderSheet(tester);
+    await _enterCreateTitle(tester, '昨天下午3点会议');
+    expect(_reminderEnabled(tester), isFalse);
+    final reminderSwitch = find.byKey(const ValueKey('todo_create_reminder'));
+    await tester.ensureVisible(reminderSwitch);
+    await tester.tap(reminderSwitch);
+    await tester.pumpAndSettle();
+    expect(_reminderEnabled(tester), isTrue);
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 20),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _submitCreateSheet(tester);
+    final error = find.byKey(const ValueKey('todo_create_reminder_error'));
+    expect(
+      tester.widget<Text>(error).data,
+      I18n.tr('todo.create.reminder_past'),
+    );
+    expect(find.byType(SnackBar), findsNothing);
+    expect(todos.saved, isEmpty);
+    await tester.ensureVisible(reminderSwitch);
+    await tester.tap(reminderSwitch);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('todo_create_reminder_error')),
+      findsNothing,
+    );
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.reminderPlan.enabled, isFalse);
+    expect(saved.toJson()['reminderAt'], isNull);
+    expect(saved.date, AppClock.date(2026, 10, 20, 15));
     expect(tester.takeException(), isNull);
   });
 }

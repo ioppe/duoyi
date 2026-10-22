@@ -458,6 +458,30 @@ abstract class AppLocalizations {
   /// **'选择提醒时间'**
   String get todoCreatePickTime;
 
+  /// No description provided for @todoCreatePickDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择提醒日期'**
+  String get todoCreatePickDate;
+
+  /// No description provided for @todoCreateReminderRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择提醒日期和时间'**
+  String get todoCreateReminderRequired;
+
+  /// No description provided for @todoCreateReminderPast.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择未来的提醒日期和时间'**
+  String get todoCreateReminderPast;
+
+  /// No description provided for @todoCreateReminderInvalidTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前时区不存在这个时间，请重新选择'**
+  String get todoCreateReminderInvalidTime;
+
   /// No description provided for @todoCreateAi.
   ///
   /// In zh, this message translates to:

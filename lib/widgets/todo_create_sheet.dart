@@ -33,6 +33,7 @@ import '../services/ai_service.dart';
 import '../services/api_client.dart';
 import '../services/reminder_scheduler.dart' show preflightTodoReminderPlan;
 import 'surface_components.dart';
+import 'app_date_picker.dart';
 import 'todo_subtask_editor.dart';
 import 'todo_list_group_picker.dart';
 
@@ -97,6 +98,9 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   String? _aiError;
   bool _enableReminder = false;
   TimeOfDay? _reminderTime;
+  DateTime? _reminderDate;
+  DateTime? _reminderExactInstant;
+  String? _reminderErrorKey;
   late DateTime _referenceNow;
   int _inputRevision = 0;
   DateTime? _aiDateTime;
@@ -145,6 +149,17 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   String get _sourceInput =>
       _aiApplied ? _descriptionCtrl.text : _titleCtrl.text;
 
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool _useAiDate(SmartTodoDraft draft) =>
+      _aiDateTime != null &&
+      !draft.recurrence.isActive &&
+      (!_parsed.isSuccess ||
+          (!_parsed.hasTimeOfDay &&
+              _aiHasTimeOfDay &&
+              _sameDay(_parsed.dateTime!, _aiDateTime!)));
+
   SmartDateParseResult get _effectiveParsed {
     final draft = _buildDraft();
     if (!_parsed.isSuccess &&
@@ -156,7 +171,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       dateTime: draft.date,
       matchedText: _parsed.matchedText,
       hasTimeOfDay:
-          _parsed.hasTimeOfDay || (!_parsed.isSuccess && _aiHasTimeOfDay),
+          _parsed.hasTimeOfDay || (_useAiDate(draft) && _aiHasTimeOfDay),
     );
   }
 
@@ -166,8 +181,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       now: _referenceNow,
       defaultReminderKind: ReminderKind.push,
     );
-    final useAiDate =
-        !_parsed.isSuccess && !draft.recurrence.isActive && _aiDateTime != null;
+    final useAiDate = _useAiDate(draft);
     return SmartTodoDraft(
       title: _aiApplied ? _titleCtrl.text.trim() : draft.title,
       date: useAiDate ? _aiDateTime! : draft.date,
@@ -187,7 +201,105 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     final parsed = _effectiveParsed;
     final at = parsed.hasTimeOfDay ? parsed.dateTime : null;
     _enableReminder = at != null && at.isAfter(AppClock.now());
+    _reminderDate = parsed.dateTime == null
+        ? null
+        : AppClock.dateOnly(parsed.dateTime!);
     _reminderTime = at == null ? null : TimeOfDay.fromDateTime(at);
+    _reminderExactInstant = at;
+    _reminderErrorKey = null;
+  }
+
+  void _seedManualReminder() {
+    final parsed = _effectiveParsed;
+    final seed =
+        (parsed.hasTimeOfDay ? parsed.dateTime : null) ??
+        AppClock.now().add(const Duration(minutes: 1));
+    _reminderDate ??= AppClock.dateOnly(parsed.dateTime ?? seed);
+    _reminderTime ??= TimeOfDay.fromDateTime(seed);
+    _reminderExactInstant ??= seed;
+  }
+
+  DateTime? get _selectedReminderAt {
+    final day = _reminderDate;
+    final time = _reminderTime;
+    if (day == null || time == null) return null;
+    final exact = _reminderExactInstant == null
+        ? null
+        : AppClock.toLocal(_reminderExactInstant!);
+    if (exact != null &&
+        _sameDay(exact, day) &&
+        exact.hour == time.hour &&
+        exact.minute == time.minute) {
+      // Preserve an explicitly parsed second occurrence during a DST fold.
+      return exact;
+    }
+    return AppClock.date(day.year, day.month, day.day, time.hour, time.minute);
+  }
+
+  String? get _selectedReminderError {
+    final at = _selectedReminderAt;
+    final day = _reminderDate;
+    final time = _reminderTime;
+    if (at == null || day == null || time == null) {
+      return 'todo.create.reminder_required';
+    }
+    if (!_sameDay(at, day) ||
+        at.hour != time.hour ||
+        at.minute != time.minute) {
+      return 'todo.create.reminder_invalid_time';
+    }
+    return at.isAfter(AppClock.now()) ? null : 'todo.create.reminder_past';
+  }
+
+  Future<void> _pickReminderDate() async {
+    final auth = context.read<AuthProvider>();
+    final identity = (auth.baseUrl, auth.state.userId);
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
+    final zone = LocalTimezoneResolver.currentIana;
+    final picked = await AppDatePicker.pickSolar(
+      context,
+      initialDate: _reminderDate ?? AppClock.today(),
+      firstDate: AppClock.today(),
+      title: I18n.tr('todo.create.pick_date'),
+    );
+    if (!mounted ||
+        picked == null ||
+        _submitting ||
+        identity != (auth.baseUrl, auth.state.userId) ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation) ||
+        zone != LocalTimezoneResolver.currentIana) {
+      return;
+    }
+    setState(() {
+      _reminderManuallyChanged = true;
+      _reminderDate = AppClock.dateOnly(picked);
+      _reminderErrorKey = null;
+    });
+  }
+
+  Future<void> _pickReminderTime() async {
+    final auth = context.read<AuthProvider>();
+    final identity = (auth.baseUrl, auth.state.userId);
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
+    final zone = LocalTimezoneResolver.currentIana;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime!,
+      helpText: I18n.tr('todo.create.pick_time'),
+    );
+    if (!mounted ||
+        picked == null ||
+        _submitting ||
+        identity != (auth.baseUrl, auth.state.userId) ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation) ||
+        zone != LocalTimezoneResolver.currentIana) {
+      return;
+    }
+    setState(() {
+      _reminderManuallyChanged = true;
+      _reminderTime = picked;
+      _reminderErrorKey = null;
+    });
   }
 
   void _onTitleChanged(String text) {
@@ -227,6 +339,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       _parsed = SmartDateParser.parse(_sourceInput, now: _referenceNow);
       _aiDateTime = null;
       _aiHasTimeOfDay = false;
+      _reminderExactInstant = null;
       _syncAutomaticReminder();
     });
   }
@@ -331,7 +444,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         if (!_quadrantManuallyChanged && result.quadrant != null) {
           _quadrant = result.quadrant!;
         }
-        if (!_parsed.isSuccess) {
+        if (!_parsed.hasTimeOfDay) {
           _aiDateTime = result.dateTime;
           _aiHasTimeOfDay = result.hasTimeOfDay;
         }
@@ -351,6 +464,13 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     if (_subtasks.any((task) => task.title.trim().isEmpty)) {
       _feedback(I18n.tr('todo.subtask.empty'));
       return;
+    }
+    if (_enableReminder) {
+      final error = _selectedReminderError;
+      if (error != null) {
+        setState(() => _reminderErrorKey = error);
+        return;
+      }
     }
     setState(() => _submitting = true);
     try {
@@ -400,53 +520,29 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         hasReminder: false,
         reminderAt: null,
       );
-      // Explicitly selected reminder time takes precedence over smart parsing.
-      final reminderTime = _reminderTime;
-      if (_enableReminder && reminderTime != null) {
+      // The displayed date and time form an independent reminder anchor.
+      final reminderAt = _enableReminder ? _selectedReminderAt : null;
+      if (reminderAt != null) {
         final plan = ReminderPlan(
           enabled: true,
           rules: [
             ReminderRule(
               type: ReminderRuleType.absolute,
               kind: ReminderKind.push,
-              hour: reminderTime.hour,
-              minute: reminderTime.minute,
+              hour: reminderAt.hour,
+              minute: reminderAt.minute,
             ),
           ],
         );
-        final legacy = plan.toLegacyReminderConfig(fallback: todo.reminder);
-        final now = AppClock.now();
-        final base = todo.date;
-        var mirroredAt =
-            _effectiveParsed.hasTimeOfDay &&
-                base.hour == reminderTime.hour &&
-                base.minute == reminderTime.minute
-            ? base
-            : AppClock.date(
-                base.year,
-                base.month,
-                base.day,
-                reminderTime.hour,
-                reminderTime.minute,
-              );
-        if (!_effectiveParsed.isSuccess && !mirroredAt.isAfter(now)) {
-          mirroredAt = AppClock.date(
-            base.year,
-            base.month,
-            base.day + 1,
-            reminderTime.hour,
-            reminderTime.minute,
-          );
-        }
         // ignore: deprecated_member_use_from_same_package
         todo = todo.copyWith(
-          reminder: legacy,
+          reminder: plan.toLegacyReminderConfig(fallback: todo.reminder),
           reminderPlan: plan,
           hasReminder: true,
-          reminderAt: mirroredAt,
+          reminderAt: reminderAt,
         );
       }
-      final hasReminder = _enableReminder && reminderTime != null;
+      final hasReminder = reminderAt != null;
       if (hasReminder && WebTarget.isWebBuild) {
         final blocking = preflightTodoReminderPlan(todo).blockingIssue;
         if (blocking != null) {
@@ -675,43 +771,59 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
                     : (value) => setState(() {
                         _reminderManuallyChanged = true;
                         _enableReminder = value;
-                        if (value && _reminderTime == null) {
-                          _reminderTime = TimeOfDay.fromDateTime(
-                            parsed.dateTime ?? AppClock.now(),
-                          );
-                        }
+                        _reminderErrorKey = null;
+                        if (value) _seedManualReminder();
                       }),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spaceSm),
               Expanded(
                 child: Text(
-                  _enableReminder && _reminderTime != null
-                      ? '${I18n.tr('todo.create.at_time')} · ${_reminderTime!.format(context)}'
-                      : I18n.tr('todo.create.no_reminder'),
+                  I18n.tr(
+                    _enableReminder
+                        ? 'todo.create.at_time'
+                        : 'todo.create.no_reminder',
+                  ),
                 ),
               ),
-              if (_enableReminder)
-                TextButton.icon(
-                  icon: const Icon(Icons.access_time, size: 18),
-                  label: Text(_reminderTime!.format(context)),
-                  onPressed: _submitting
-                      ? null
-                      : () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: _reminderTime!,
-                            helpText: I18n.tr('todo.create.pick_time'),
-                          );
-                          if (mounted && picked != null) {
-                            setState(() {
-                              _reminderManuallyChanged = true;
-                              _reminderTime = picked;
-                            });
-                          }
-                        },
-                ),
             ],
           ),
+          if (_enableReminder) ...[
+            Wrap(
+              spacing: DesignTokens.spaceMd,
+              runSpacing: DesignTokens.spaceXs,
+              children: [
+                TextButton.icon(
+                  key: const ValueKey('todo_create_reminder_date'),
+                  icon: const Icon(
+                    Icons.event_outlined,
+                    size: DesignTokens.controlIconSize,
+                  ),
+                  label: Text(I18nDateFormat.date(_reminderDate!)),
+                  onPressed: _submitting ? null : _pickReminderDate,
+                ),
+                TextButton.icon(
+                  key: const ValueKey('todo_create_reminder_time'),
+                  icon: const Icon(
+                    Icons.access_time,
+                    size: DesignTokens.controlIconSize,
+                  ),
+                  label: Text(_reminderTime!.format(context)),
+                  onPressed: _submitting ? null : _pickReminderTime,
+                ),
+              ],
+            ),
+            if (_reminderErrorKey != null)
+              Padding(
+                padding: const EdgeInsets.only(top: DesignTokens.spaceXs),
+                child: Text(
+                  I18n.tr(_reminderErrorKey!),
+                  key: const ValueKey('todo_create_reminder_error'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.error),
+                ),
+              ),
+          ],
           if (_feedbackMessage != null) ...[
             Container(
               key: const ValueKey('todo_create_feedback'),

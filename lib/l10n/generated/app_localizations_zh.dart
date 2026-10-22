@@ -191,6 +191,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreatePickTime => '选择提醒时间';
 
   @override
+  String get todoCreatePickDate => '选择提醒日期';
+
+  @override
+  String get todoCreateReminderRequired => '请选择提醒日期和时间';
+
+  @override
+  String get todoCreateReminderPast => '请选择未来的提醒日期和时间';
+
+  @override
+  String get todoCreateReminderInvalidTime => '当前时区不存在这个时间，请重新选择';
+
+  @override
   String get todoCreateAi => 'AI 智能拆解';
 
   @override

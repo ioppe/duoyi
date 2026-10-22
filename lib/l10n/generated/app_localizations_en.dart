@@ -203,6 +203,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreatePickTime => 'Choose reminder time';
 
   @override
+  String get todoCreatePickDate => 'Choose reminder date';
+
+  @override
+  String get todoCreateReminderRequired => 'Choose a reminder date and time';
+
+  @override
+  String get todoCreateReminderPast => 'Choose a future reminder date and time';
+
+  @override
+  String get todoCreateReminderInvalidTime =>
+      'This time does not exist in the current time zone. Choose another time.';
+
+  @override
   String get todoCreateAi => 'AI task breakdown';
 
   @override

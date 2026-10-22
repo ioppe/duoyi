@@ -1,0 +1,25 @@
+{
+  "scope": "creation reminder date and AI date/time autofill",
+  "aiFixture": {"fixedStructuredReply": true, "usesRealModelKey": false},
+  "ui": {
+    "aiDateTimeEnablesReminder": true,
+    "manualCalendarDateSelection": true,
+    "manualDatePreservesTime": true,
+    "browserScriptErrors": 0,
+    "viewports": [[1440,1100],[390,1000],[320,844]]
+  },
+  "persistence": {
+    "applicationZone": "America/New_York",
+    "taskDate": "2026-10-29T15:30:00.000-0400",
+    "dueDate": "2026-10-29T19:30:00.000Z",
+    "reminderAt": "2026-10-30T19:30:00.000Z",
+    "independentReminderDateVerified": true
+  },
+  "tests": {"uniqueTargetedPasses": 305,"pickerRetestPasses":3},
+  "analyze": {"exitCode":0,"issues":0},
+  "releaseWeb": {"exitCode":0},
+  "mainDartJsSha256":"6ad3739909c9c8e56063cfcbe65e3e7f8dd7472af04596e9f4077ad9db596148",
+  "localPreview": {"port":18655,"servedBytesVerified":true,"backendRestarted":false},
+  "productionDeployed":false,
+  "deviceBackgroundDeliveryTested":false
+}
