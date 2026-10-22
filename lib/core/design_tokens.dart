@@ -52,7 +52,9 @@ class DesignTokens {
   static const double homeCounterSize = 10;
   static const double homeTabIndicatorWidth = 22;
   static const double homeStatusSize = 21;
-  static const double homeItemLeadingGap = spaceXxl;
+  static const double homeItemLeadingGap = space3xl;
+  static const double homeQuadrantDotSize = 10;
+  static const double homeQuadrantTitleGap = spaceSm;
   static const Color homeText = Color(0xFF242C38);
   static const Color homeMuted = Color(0xFF78808B);
   static const Color homeSubtle = Color(0xFF959BA3);

@@ -1864,8 +1864,8 @@ class _TodayTodoQuadrantDot extends StatelessWidget {
       message: '$label (Q${todo.quadrant.index + 1})',
       child: Container(
         key: ValueKey('today_todo_quadrant_dot_${todo.id}'),
-        width: DesignTokens.spaceSm,
-        height: DesignTokens.spaceSm,
+        width: DesignTokens.homeQuadrantDotSize,
+        height: DesignTokens.homeQuadrantDotSize,
         decoration: BoxDecoration(
           color: _todoQuadrantColor(todo.quadrant),
           shape: BoxShape.circle,
@@ -1910,7 +1910,7 @@ class _TodayTodoTitleLine extends StatelessWidget {
           const SizedBox(width: DesignTokens.spaceSm),
         ],
         _TodayTodoQuadrantDot(todo: todo),
-        const SizedBox(width: DesignTokens.spaceSm),
+        const SizedBox(width: DesignTokens.homeQuadrantTitleGap),
         Expanded(
           child: Text(
             title,
@@ -2254,7 +2254,9 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
                             ),
                           ),
                           Positioned(
-                            left: -DesignTokens.spaceMd,
+                            left:
+                                -(DesignTokens.homeQuadrantDotSize +
+                                    DesignTokens.homeQuadrantTitleGap),
                             top: 0,
                             bottom: 0,
                             child: Center(

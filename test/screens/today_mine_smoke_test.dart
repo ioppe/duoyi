@@ -423,12 +423,18 @@ void main() {
             tester.widget<Container>(dot).decoration! as BoxDecoration;
         expect(decoration.shape, BoxShape.circle);
         expect(decoration.color, color);
-        expect(tester.getSize(dot), const Size.square(DesignTokens.spaceSm));
+        expect(tester.getSize(dot), const Size.square(10));
         expect(
           tester.getCenter(dot).dx,
           lessThan(
             tester.getTopLeft(find.text('四象限任务${quadrant.index + 1}')).dx,
           ),
+        );
+        expect(
+          tester.getTopLeft(find.text('四象限任务${quadrant.index + 1}')).dx -
+              tester.getTopRight(dot).dx,
+          closeTo(8, 0.01),
+          reason: '圆点与任务名之间应留出8px间距',
         );
         final card = find.byKey(
           ValueKey('today_todo_quadrant-dot-${quadrant.index}'),

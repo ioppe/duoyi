@@ -738,7 +738,7 @@ TodoScreen 增加第三种视图切换（四象限 / 列表 / 看板），通过
 
 四象限使用共享的`todoQuadrantColor`映射和`DesignTokens.quadrantQ1`至`quadrantQ4`：Q1紧急且重要为红色`#E53935`，Q2重要不紧急为紫色`#8E5CC6`，Q3紧急不重要为黄色`#F6A339`，Q4不紧急不重要为绿色`#43A047`。首页标题圆点、待办页四象限和列表、日历的象限标记以及统计卡片使用同一映射；象限名称继续保留，不仅依赖颜色区分。完成状态色、清单分类色与这套象限色独立。
 
-首页的完成控件或子任务进度与右侧内容列之间使用`DesignTokens.homeItemLeadingGap`（24px）。8px象限圆点位于标题前的留白，距左侧控件边界至少12px；任务标题、清单标签、子任务及目标页签标题保留对应的对齐关系。
+首页的完成控件或子任务进度与右侧内容列之间使用`DesignTokens.homeItemLeadingGap`（32px）。象限圆点使用`homeQuadrantDotSize`（10px），与任务名之间使用`homeQuadrantTitleGap`（8px）；圆点距左侧控件边界至少12px。任务标题、清单标签、子任务及目标页签标题保留对应的对齐关系。
 
 ### D11: 专注模式增强
 
