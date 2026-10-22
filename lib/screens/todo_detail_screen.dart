@@ -1,4 +1,5 @@
 import '../core/app_clock.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show File;
 
@@ -11,17 +12,22 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
+import '../core/todo_templates.dart';
 import '../models/goal.dart' show ReminderKind, ReminderPlan;
 import '../models/location_reminder.dart';
 import '../models/note.dart' show NoteAttachment, NoteBlock, NoteBlockType;
 import '../models/todo.dart';
+import '../models/list_group.dart';
 import '../models/workspace.dart';
+import '../services/account_local_data_cleaner.dart';
 import '../services/api_client.dart';
 import '../services/alarm_service.dart';
 import '../services/local_notifications.dart';
 import '../services/note_attachment_picker.dart';
 import '../services/reminder_scheduler.dart';
 import '../providers/location_reminder_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/list_group_provider.dart';
 import '../providers/notification_service.dart';
 import '../providers/share_provider.dart';
 import '../providers/todo_provider.dart';
@@ -31,6 +37,7 @@ import '../widgets/app_date_picker.dart';
 import '../widgets/reminder_plan_editor.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/todo_subtask_editor.dart';
+import '../widgets/todo_list_group_picker.dart';
 
 /// Todo 详情页 / 编辑页。
 ///
@@ -41,8 +48,8 @@ import '../widgets/todo_subtask_editor.dart';
 /// - 返回键在 `editing` 下会弹"放弃修改"对话框；
 /// - 用 `PopScope` + `onPopInvoked` 统一拦截路由 pop，`Clean` 状态直接放行。
 ///
-/// 同时保留 Task 7 的视觉对齐：token 化间距 / 圆角、优先级 ChoiceChip、提醒
-/// 分段、目标时长模块、标签 / 子任务 / 重复 / 截止日 等模块。
+/// 四象限统一表达优先级；清单类型、标签、子任务、重复、截止日等配置
+/// 保留在页面草稿中，由保存按钮统一持久化。
 class TodoDetailScreen extends StatefulWidget {
   final String todoId;
 
@@ -71,6 +78,8 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   bool _missingTodo = false;
   bool _notesPreview = false;
   String? _commentsLoadedForWorkspaceId;
+  late final int _accountGeneration;
+  late final (String?, String?) _accountIdentity;
 
   /// "保存不返回"状态机当前状态。
   _EditState _state = _EditState.clean;
@@ -83,7 +92,11 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   @override
   void initState() {
     super.initState();
+    final auth = context.read<AuthProvider?>();
+    _accountIdentity = (auth?.baseUrl, auth?.state.userId);
+    _accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     _load();
+    unawaited(context.read<ListGroupProvider?>()?.loadFromStorage());
   }
 
   /// 把当前 `_todo` + 文本控制器中的可编辑字段序列化为快照字符串。
@@ -91,12 +104,13 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   /// 只记录 UI 可编辑字段，包括子任务内容、完成状态及排列顺序。
   String _snapshot(TodoItem t) {
     final tags = [...t.tags]..sort();
-    return <String, dynamic>{
+    return jsonEncode(<String, dynamic>{
       'title': _titleCtrl.text.trim(),
       'notes': _notesCtrl.text.trim(),
       'quadrant': t.quadrant.index,
       'priority': t.priority.index,
       'listGroupId': t.listGroupId,
+      'listGroupName': t.listGroupName,
       'tags': tags,
       'dueDate': t.dueDate?.toIso8601String(),
       'reminderPlan': t.reminderPlan.toJson(),
@@ -108,7 +122,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       'workspaceId': t.workspaceId,
       'assigneeId': t.assigneeId,
       'attachments': t.attachments.map((a) => a.toJson()).toList(),
-    }.toString();
+    });
   }
 
   String _subtaskSnapshot(TodoItem todo) =>
@@ -191,6 +205,89 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     }
   }
 
+  bool _isCurrentAccount() {
+    if (!mounted ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+          _accountGeneration,
+        )) {
+      return false;
+    }
+    final auth = context.read<AuthProvider?>();
+    return _accountIdentity == (auth?.baseUrl, auth?.state.userId);
+  }
+
+  String _workspaceKey(String id) => id.isEmpty ? 'private' : id;
+
+  ListGroup? _listGroupForName(String name, ListGroupProvider? custom) {
+    final normalized = ListGroupProvider.normalizedName(name);
+    for (final group in custom?.groups ?? const <ListGroup>[]) {
+      if (_workspaceKey(group.workspaceId) ==
+              _workspaceKey(_todo.workspaceId) &&
+          ListGroupProvider.normalizedName(group.name) == normalized) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  String _listGroupValue(ListGroupProvider? custom) {
+    final name = _todo.listGroupName?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    for (final group in custom?.groups ?? const <ListGroup>[]) {
+      if (group.id == _todo.listGroupId &&
+          _workspaceKey(group.workspaceId) ==
+              _workspaceKey(_todo.workspaceId)) {
+        return group.name;
+      }
+    }
+    return '';
+  }
+
+  List<String> _listGroupNames(TodoProvider todos, ListGroupProvider? custom) {
+    final workspace = _workspaceKey(_todo.workspaceId);
+    final names = <String, String>{};
+    for (final name in [
+      for (final template in TodoListTemplates.all) template.name,
+      for (final group in custom?.groups ?? const <ListGroup>[])
+        if (_workspaceKey(group.workspaceId) == workspace) group.name,
+      for (final todo in todos.todos)
+        if (_workspaceKey(todo.workspaceId) == workspace)
+          todo.listGroupName ?? '',
+      _listGroupValue(custom),
+    ]) {
+      final clean = name.trim();
+      if (clean.isNotEmpty) {
+        names.putIfAbsent(ListGroupProvider.normalizedName(clean), () => clean);
+      }
+    }
+    return names.values.toList();
+  }
+
+  void _changeListGroup(String name) {
+    if (_state == _EditState.saving ||
+        !_isCurrentAccount() ||
+        !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
+      return;
+    }
+    final custom = context.read<ListGroupProvider?>();
+    final clean = name.trim();
+    if (clean.isNotEmpty &&
+        !_listGroupNames(context.read<TodoProvider>(), custom).any(
+          (item) =>
+              ListGroupProvider.normalizedName(item) ==
+              ListGroupProvider.normalizedName(clean),
+        )) {
+      return;
+    }
+    setState(
+      () => _todo = _todo.copyWith(
+        listGroupName: clean.isEmpty ? null : clean,
+        listGroupId: _listGroupForName(clean, custom)?.id,
+      ),
+    );
+    _markEditing();
+  }
+
   /// 保存当前编辑结果。
   ///
   /// - `clean`：不触发任何写入，直接返回上一页；
@@ -200,6 +297,12 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   ///
   Future<void> _save() async {
     if (_state == _EditState.saving) return;
+    if (!_isCurrentAccount()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(I18n.tr('auth.connection_changed'))),
+      );
+      return;
+    }
     if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -277,6 +380,12 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
           _restoreEditingAfterSaveInterruption();
           return;
         }
+      }
+      if (!_isCurrentAccount() ||
+          !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ??
+              true)) {
+        _restoreEditingAfterSaveInterruption();
+        return;
       }
       await provider.updateTodo(widget.todoId, nextTodo);
       if (!mounted) return;
@@ -489,13 +598,6 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     }
   }
 
-  // ---- Priority ----------------------------------------------------------
-
-  void _pickPriority(TodoPriority p) {
-    setState(() => _todo = _todo.copyWith(priority: p));
-    _markEditing();
-  }
-
   // ---- Reminder ----------------------------------------------------------
 
   /// 同步新 `reminderPlan` 与旧 `reminder / hasReminder / reminderAt` 镜像。
@@ -662,8 +764,12 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       _baseline = _snapshot(_todo);
       _baselineSubtasks = _subtaskSnapshot(_todo);
     }
+    final auth = context.watch<AuthProvider?>();
+    final connection = (auth?.baseUrl, auth?.state.userId);
+    final customLists = context.watch<ListGroupProvider?>();
     final canEdit =
-        context.watch<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true;
+        _isCurrentAccount() &&
+        (context.watch<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true);
     final shareProvider = context.watch<ShareProvider?>();
     final locationReminderProvider = context.watch<LocationReminderProvider?>();
     final linkedLocationReminders =
@@ -788,68 +894,72 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                       onRemove: _removeAttachment,
                     ),
 
-                    // ---- 四象限 --------------------------------------------------
+                    // ---- 清单类型与四象限优先级 ---------------------------------
                     const SizedBox(height: DesignTokens.spaceLg),
                     AppSurfaceCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          _SectionLabel(text: I18n.tr('todo.create.list_type')),
+                          const SizedBox(height: DesignTokens.spaceSm),
+                          KeyedSubtree(
+                            key: ValueKey((
+                              connection,
+                              customLists,
+                              AccountLocalDataCleaner.accountDataGeneration,
+                            )),
+                            child: TodoListGroupPicker(
+                              key: const ValueKey(
+                                'todo_detail_list_group_picker',
+                              ),
+                              value: _listGroupValue(customLists),
+                              names: _listGroupNames(provider, customLists),
+                              provider: customLists,
+                              enabled: canEdit && _state != _EditState.saving,
+                              canCreate:
+                                  canEdit &&
+                                  customLists != null &&
+                                  _workspaceKey(_todo.workspaceId) == 'private',
+                              canManage: (group) =>
+                                  _workspaceKey(group.workspaceId) ==
+                                      _workspaceKey(_todo.workspaceId) &&
+                                  (shareProvider?.canEdit(group.workspaceId) ??
+                                      true),
+                              isCurrent: _isCurrentAccount,
+                              onChanged: _changeListGroup,
+                            ),
+                          ),
+                          const SizedBox(height: DesignTokens.spaceLg),
                           AppDropdownField<EisenhowerQuadrant>(
+                            key: const ValueKey('todo_detail_quadrant'),
                             initialValue: _todo.quadrant,
-                            labelText: '四象限',
+                            enabled: canEdit && _state != _EditState.saving,
+                            labelText: I18n.tr('todo.create.quadrant'),
                             items: const [
                               DropdownMenuItem(
                                 value: EisenhowerQuadrant.urgentImportant,
-                                child: Text(
-                                  'Q1 重要且紧急',
-                                  style: TextStyle(
-                                    fontSize: DesignTokens.fontSizeBody,
-                                  ),
-                                ),
+                                child: Text('Q1 重要且紧急'),
                               ),
                               DropdownMenuItem(
                                 value: EisenhowerQuadrant.notUrgentImportant,
-                                child: Text(
-                                  'Q2 重要不紧急',
-                                  style: TextStyle(
-                                    fontSize: DesignTokens.fontSizeBody,
-                                  ),
-                                ),
+                                child: Text('Q2 重要不紧急'),
                               ),
                               DropdownMenuItem(
                                 value: EisenhowerQuadrant.urgentNotImportant,
-                                child: Text(
-                                  'Q3 紧急不重要',
-                                  style: TextStyle(
-                                    fontSize: DesignTokens.fontSizeBody,
-                                  ),
-                                ),
+                                child: Text('Q3 紧急不重要'),
                               ),
                               DropdownMenuItem(
                                 value: EisenhowerQuadrant.notUrgentNotImportant,
-                                child: Text(
-                                  'Q4 不重要不紧急',
-                                  style: TextStyle(
-                                    fontSize: DesignTokens.fontSizeBody,
-                                  ),
-                                ),
+                                child: Text('Q4 不重要不紧急'),
                               ),
                             ],
-                            onChanged: (v) {
+                            onChanged: (value) {
+                              if (value == null) return;
                               setState(
-                                () => _todo = _todo.copyWith(quadrant: v!),
+                                () => _todo = _todo.copyWith(quadrant: value),
                               );
                               _markEditing();
                             },
-                          ),
-
-                          // ---- 优先级 --------------------------------------------------
-                          const SizedBox(height: DesignTokens.spaceLg),
-                          _SectionLabel(text: '优先级'),
-                          const SizedBox(height: DesignTokens.spaceSm),
-                          _PriorityChipRow(
-                            selected: _todo.priority,
-                            onSelected: _pickPriority,
                           ),
                         ],
                       ),
@@ -2242,35 +2352,6 @@ String _formatCommentTime(DateTime value) {
   return I18nDateFormat.shortDateTime(AppClock.toLocal(value));
 }
 
-/// 优先级 Chip 行。
-///
-/// 对齐 Requirement 2.1："列表项展示优先级色标"。编辑面板用 ChoiceChip 做分段选择。
-class _PriorityChipRow extends StatelessWidget {
-  final TodoPriority selected;
-  final ValueChanged<TodoPriority> onSelected;
-
-  const _PriorityChipRow({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: DesignTokens.spaceXs,
-      runSpacing: DesignTokens.spaceXs,
-      children: [
-        for (final p in TodoPriority.values)
-          ChoiceChip(
-            avatar: p == TodoPriority.none
-                ? null
-                : _PriorityDot(priority: p, size: 10),
-            label: Text(p.label),
-            selected: selected == p,
-            onSelected: (_) => onSelected(p),
-          ),
-      ],
-    );
-  }
-}
-
 /// 目标时长编辑器：分钟输入 + 15/25/45/60 预设。
 class _TimeTargetEditor extends StatelessWidget {
   final TextEditingController controller;
@@ -2560,29 +2641,7 @@ class _TagsEditor extends StatelessWidget {
 // 共享小工具：优先级色点 / 颜色映射 / 时间格式化
 // ---------------------------------------------------------------------------
 
-/// 优先级色标（圆点）。
-class _PriorityDot extends StatelessWidget {
-  final TodoPriority priority;
-  final double size;
-
-  const _PriorityDot({required this.priority, this.size = 8});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: priorityColor(priority),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-/// 由 TodoPriority 映射到 DesignTokens 中的语义色。
-///
-/// 供 `_PriorityChipRow` 与 Todo 列表项共享。
+/// 历史 TodoPriority 的兼容配色，继续供任务列表和筛选项使用。
 Color priorityColor(TodoPriority p) {
   switch (p) {
     case TodoPriority.urgent:

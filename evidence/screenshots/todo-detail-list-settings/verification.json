@@ -1,0 +1,22 @@
+{
+  "scope": "task detail list and quadrant settings",
+  "uiChecks": {
+    "oneQuadrantPriorityField": true,
+    "oldPriorityChipsRemoved": true,
+    "categoryDraftDoesNotWriteTaskBeforeSave": true,
+    "saveAndReopenKeepsCategoryIdAndName": true,
+    "discardPreservesStoredCategory": true,
+    "clearSetsCategoryIdAndNameToNull": true,
+    "quadrantChangesPersist": true,
+    "legacyPriorityPreserved": true,
+    "workspacePreserved": true,
+    "browserScriptErrors": 0,
+    "viewports": [[1440, 1100], [390, 1000], [320, 844]]
+  },
+  "tests": {"uniqueTargetedPasses": 108, "affectedFileRetestPasses": 35},
+  "analyze": {"exitCode": 0, "issues": 0},
+  "releaseWeb": {"exitCode": 0},
+  "mainDartJsSha256": "48e631f7c3059140908736264398abc754e84e67d85984eb8fa9eddfb427a3a4",
+  "localPreview": {"port": 18655, "servedBytesVerified": true, "backendRestarted": false},
+  "productionDeployed": false
+}

@@ -1,5 +1,6 @@
 import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/core/design_tokens.dart';
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/models/note.dart';
 import 'package:duoyi/models/todo.dart';
 import 'package:duoyi/providers/todo_provider.dart';
@@ -109,16 +110,43 @@ void main() {
 
   testWidgets('描述、附件、优先级与日期行采用相同正文字号', (tester) async {
     await pumpDetail(tester, size: const Size(720, 1200));
-    for (final label in ['任务描述', '附件', '优先级', '截止日期', '重复']) {
-      final finder = find.text(label);
+    Future<void> reveal(Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: find.byType(Scrollable).first,
+        maxScrolls: 40,
+      );
       await tester.ensureVisible(finder);
       await tester.pumpAndSettle();
+    }
+
+    for (final label in ['任务描述', '附件', '截止日期', '重复']) {
+      final finder = find.text(label);
+      await reveal(finder);
       final text = tester.widget<Text>(finder);
       final style = DefaultTextStyle.of(
         tester.element(finder),
       ).style.merge(text.style);
       expect(style.fontSize, DesignTokens.fontSizeBody, reason: label);
     }
+
+    // 四象限（优先级）改为下拉字段：标签由 InputDecorator 渲染成浮动
+    // 标签，渲染字号可能带 0.75 缩放，因此比较源 labelStyle 的字号。
+    final quadrant = find.byKey(const ValueKey('todo_detail_quadrant'));
+    await reveal(quadrant);
+    final decorator = tester.widget<InputDecorator>(
+      find
+          .descendant(of: quadrant, matching: find.byType(InputDecorator))
+          .first,
+    );
+    final theme = Theme.of(tester.element(quadrant));
+    expect(decorator.decoration.labelText, I18n.tr('todo.create.quadrant'));
+    expect(
+      (decorator.decoration.labelStyle ?? theme.inputDecorationTheme.labelStyle)
+          ?.fontSize,
+      DesignTokens.fontSizeBody,
+    );
     expect(tester.takeException(), isNull);
   });
 
