@@ -339,6 +339,7 @@ jobs:
 
       - name: Package web
         run: |
+          rm -rf web-artifacts
           mkdir -p web-artifacts
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             SUFFIX="${GITHUB_REF##refs/tags/}"
