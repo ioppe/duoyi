@@ -129,6 +129,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listGroupNoMatches => '没有匹配的清单';
 
   @override
+  String get listGroupSearchOrCreate => '搜索或新建清单';
+
+  @override
+  String listGroupCreateNamed(String name) {
+    return '新建“$name”';
+  }
+
+  @override
   String get todoCreateQuadrant => '优先级';
 
   @override

@@ -118,6 +118,7 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
     setState(() {
       _expanded = !_expanded;
       _editing = false;
+      _renaming = null;
       _errorKey = null;
       _search.clear();
     });
@@ -137,14 +138,14 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
     });
   }
 
-  void _beginEdit([ListGroup? group]) {
+  void _beginEdit(ListGroup group) {
     if (!_enabled || widget.provider == null || !widget.isCurrent()) return;
-    if (group == null ? !widget.canCreate : !_canManage(group)) return;
+    if (!_canManage(group)) return;
     setState(() {
       _editing = true;
       _renaming = group;
       _errorKey = null;
-      _name.text = group?.name ?? _search.text.trim();
+      _name.text = group.name;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _editing) _nameFocus.requestFocus();
@@ -161,16 +162,15 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
     _revealPanel();
   }
 
-  Future<void> _saveName() async {
+  Future<void> _saveName(String input, {ListGroup? group}) async {
     final provider = widget.provider;
     if (!_enabled || provider == null || !widget.isCurrent()) return;
     final isCurrent = widget.isCurrent;
-    final group = _renaming;
     if (group == null ? !widget.canCreate : !_canManage(group)) {
       setState(() => _errorKey = 'todo.create.read_only');
       return;
     }
-    final clean = _name.text.trim();
+    final clean = input.trim();
     if (group == null) {
       for (final name in widget.names) {
         if (_normalized(name) == _normalized(clean)) {
@@ -349,16 +349,13 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
   );
 
   Widget _editor(ColorScheme cs) {
-    final suggestions = _renaming == null && _name.text.trim().isNotEmpty
-        ? _matches(_name.text).take(3).toList()
-        : const <String>[];
     return Padding(
       padding: const EdgeInsets.all(DesignTokens.spaceMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            I18n.tr(_renaming == null ? 'list_group.new' : 'list_group.rename'),
+            I18n.tr('list_group.rename'),
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: DesignTokens.spaceMd),
@@ -375,16 +372,9 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
                 errorMaxLines: 3,
               ),
               onChanged: (_) => setState(() => _errorKey = null),
-              onSubmitted: (_) => _saveName(),
+              onSubmitted: (_) => _saveName(_name.text, group: _renaming),
             ),
           ),
-          for (final name in suggestions)
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: DesignTokens.formFieldMinHeight,
-              ),
-              child: _option(name, cs),
-            ),
           const SizedBox(height: DesignTokens.spaceMd),
           Row(
             children: [
@@ -397,20 +387,15 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
               Flexible(
                 child: FilledButton(
                   key: const ValueKey('todo_list_group_create_confirm'),
-                  onPressed: _enabled ? _saveName : null,
+                  onPressed: _enabled
+                      ? () => _saveName(_name.text, group: _renaming)
+                      : null,
                   child: _busy
                       ? const SizedBox.square(
                           dimension: DesignTokens.controlIconSize,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(
-                          I18n.tr(
-                            _renaming == null
-                                ? 'list_group.create_select'
-                                : 'action.save',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                      : Text(I18n.tr('action.save')),
                 ),
               ),
             ],
@@ -423,6 +408,11 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
   Widget _browser(ColorScheme cs) {
     final query = _search.text.trim();
     final matching = _matches(query);
+    final canCreate = widget.canCreate && widget.provider != null;
+    final offerCreate =
+        canCreate &&
+        query.isNotEmpty &&
+        !widget.names.any((name) => _normalized(name) == _normalized(query));
     final defaults = matching.where((name) => _template(name) != null).toList();
     final custom = matching.where((name) => _template(name) == null).toList();
     final media = MediaQuery.of(context);
@@ -438,51 +428,53 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              if (widget.canCreate && widget.provider != null) ...[
-                IconButton.outlined(
-                  key: const ValueKey('todo_list_group_create'),
-                  tooltip: I18n.tr('list_group.new'),
-                  onPressed: _enabled ? () => _beginEdit() : null,
-                  icon: const Icon(Icons.add),
-                ),
-                const SizedBox(width: DesignTokens.spaceSm),
-              ],
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('todo_list_group_search'),
-                  controller: _search,
-                  enabled: _enabled,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    labelText: I18n.tr('list_group.search'),
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: query.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: I18n.tr('action.clear'),
-                            onPressed: _enabled
-                                ? () => setState(_search.clear)
-                                : null,
-                            icon: const Icon(Icons.close),
-                          ),
-                  ),
-                  onChanged: (_) => setState(() => _errorKey = null),
-                  onSubmitted: (_) {
-                    if (matching.length == 1) _select(matching.single);
-                  },
-                ),
+          TextField(
+            key: const ValueKey('todo_list_group_search'),
+            controller: _search,
+            enabled: _enabled,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              isDense: true,
+              labelText: I18n.tr(
+                canCreate ? 'list_group.search_or_create' : 'list_group.search',
               ),
-            ],
+              errorText: _errorKey == null ? null : I18n.tr(_errorKey!),
+              errorMaxLines: 3,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: I18n.tr('action.clear'),
+                      onPressed: _enabled
+                          ? () => setState(() {
+                              _search.clear();
+                              _errorKey = null;
+                            })
+                          : null,
+                      icon: const Icon(Icons.close),
+                    ),
+            ),
+            onChanged: (_) {
+              setState(() => _errorKey = null);
+              if (_scroll.hasClients) _scroll.jumpTo(0);
+            },
+            onSubmitted: (_) {
+              if (matching.length == 1) {
+                _select(matching.single);
+              } else if (matching.isNotEmpty &&
+                  _normalized(matching.first) == _normalized(query)) {
+                _select(matching.first);
+              } else if (matching.isEmpty && offerCreate) {
+                _saveName(query);
+              }
+            },
           ),
           const SizedBox(height: DesignTokens.spaceSm),
           LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 520 ? 3 : 2;
               final desired = query.isNotEmpty
-                  ? matching.length * rowHeight +
+                  ? (matching.length + (offerCreate ? 1 : 0)) * rowHeight +
                         DesignTokens.formFieldMinHeight
                   : rowHeight +
                         (defaults.isEmpty
@@ -538,7 +530,7 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
                         SliverToBoxAdapter(
                           child: _heading('list_group.results'),
                         ),
-                      if (query.isNotEmpty && matching.isEmpty)
+                      if (query.isNotEmpty && matching.isEmpty && !offerCreate)
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.all(DesignTokens.spaceLg),
@@ -560,14 +552,47 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
                               (query.isEmpty ? custom : matching).length,
                         ),
                       ),
+                      if (offerCreate)
+                        SliverToBoxAdapter(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: rowHeight),
+                            child: TextButton.icon(
+                              key: const ValueKey('todo_list_group_create'),
+                              onPressed: _enabled
+                                  ? () => _saveName(query)
+                                  : null,
+                              style: TextButton.styleFrom(
+                                alignment: Alignment.centerLeft,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: DesignTokens.spaceMd,
+                                  vertical: DesignTokens.spaceSm,
+                                ),
+                              ),
+                              icon: _busy
+                                  ? const SizedBox.square(
+                                      dimension: DesignTokens.controlIconSize,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.add),
+                              label: Text(
+                                I18n.tr(
+                                  'list_group.create_named',
+                                ).replaceAll('{name}', query),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.start,
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               );
             },
           ),
-          if (_errorKey != null)
-            Text(I18n.tr(_errorKey!), style: TextStyle(color: cs.error)),
         ],
       ),
     );

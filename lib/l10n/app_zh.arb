@@ -40,6 +40,11 @@
   "listGroupCustom": "自定义清单",
   "listGroupResults": "搜索结果",
   "listGroupNoMatches": "没有匹配的清单",
+  "listGroupSearchOrCreate": "搜索或新建清单",
+  "listGroupCreateNamed": "新建“{name}”",
+  "@listGroupCreateNamed": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "todoCreateQuadrant": "优先级",
   "todoCreatePriority": "优先级标记",
   "todoCreateReminder": "提醒",

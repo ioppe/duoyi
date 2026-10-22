@@ -1,0 +1,29 @@
+{
+  "fixture": {"initialCustomListCount": 80, "isolatedDatabase": true},
+  "browserChecks": {
+    "typingDoesNotCreate": true,
+    "unmatchedQueryShowsNamedCreateAction": true,
+    "creationSelectsAndCollapses": true,
+    "creationUsesSameSearchField": true,
+    "normalizedExactNameHidesCreateAction": true,
+    "lengthErrorStaysUnderSearchField": true,
+    "browserScriptErrors": 0,
+    "viewports": [[1440, 1000], [390, 844], [320, 844]]
+  },
+  "serverPersistence": {
+    "finalCustomListCount": 81,
+    "finalTaskCount": 1,
+    "taskListIdMatchesCreatedListId": true,
+    "taskListNameMatchesCreatedListName": true
+  },
+  "releaseWebBuild": {
+    "exitCode": 0,
+    "mainDartJsSha256": "95a63e72fb160e55d619866b0dd9e732d3891755a54b1d7c322e23618521dc6c"
+  },
+  "localPreview": {
+    "url": "http://127.0.0.1:18655",
+    "servedBytesMatchRelease": true,
+    "backendRestarted": false,
+    "productionDeployed": false
+  }
+}

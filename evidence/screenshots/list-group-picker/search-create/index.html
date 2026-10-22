@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>清单搜索与新建一体化</title>
+<style>body{margin:0;background:#f5f6f8;color:#242c38;font:16px/1.6 system-ui,sans-serif;padding:28px}main{max-width:1440px;margin:auto}h1{font-size:26px;margin:0 0 8px}p{color:#78808b}.mobile{display:flex;gap:24px;flex-wrap:wrap}figure{margin:16px 0}figcaption{margin:0 0 10px}img{display:block;max-width:100%;height:auto;border:1px solid #ddd;border-radius:12px}.mobile img{width:390px}.mobile figure{max-width:100%}details{margin:24px 0}summary{cursor:pointer;font-weight:bold}a{color:#b84f54}</style></head>
+<body><main><h1>搜索清单，也能直接新建</h1><p>同一个输入框：搜到就选，未有同名清单就显示创建选项。以下为实际 Flutter release 页面。<a href="README.md">验证说明</a></p>
+<section class="mobile"><figure><figcaption>输入名称后直接新建</figcaption><img src="03-mobile-create-result.png" alt="同一搜索框下出现新建会议筹备选项"></figure><figure><figcaption>创建成功即选中、收起</figcaption><img src="04-mobile-created-selected.png" alt="会议筹备清单已选中"></figure><figure><figcaption>已有同名清单直接复用</figcaption><img src="05-mobile-exact-reuse.png" alt="工作清单结果没有重复新建选项"></figure></section>
+<details open><summary>桌面：搜索和新建使用同一入口</summary><img src="02-desktop-create-result.png" alt="桌面直接创建搜索名称"></details>
+<details><summary>桌面：空输入只有浏览和搜索</summary><img src="01-desktop-unified-field.png" alt="没有独立加号的新选择器"></details>
+<details><summary>长度错误紧贴同一输入框</summary><img src="06-mobile-inline-validation.png" alt="清单名称长度校验"></details>
+<details><summary>320px 手机宽度</summary><img src="07-mobile-320-create-result.png" alt="窄屏直接创建清单"></details>
+</main></body></html>

@@ -40,6 +40,8 @@
   "listGroupCustom": "Custom",
   "listGroupResults": "Results",
   "listGroupNoMatches": "No matching lists",
+  "listGroupSearchOrCreate": "Search or create a list",
+  "listGroupCreateNamed": "Create “{name}”",
   "todoCreateQuadrant": "Priority",
   "todoCreatePriority": "Priority flag",
   "todoCreateReminder": "Reminder",

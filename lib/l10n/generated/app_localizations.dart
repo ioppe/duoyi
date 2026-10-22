@@ -338,6 +338,18 @@ abstract class AppLocalizations {
   /// **'没有匹配的清单'**
   String get listGroupNoMatches;
 
+  /// No description provided for @listGroupSearchOrCreate.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索或新建清单'**
+  String get listGroupSearchOrCreate;
+
+  /// No description provided for @listGroupCreateNamed.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建“{name}”'**
+  String listGroupCreateNamed(String name);
+
   /// No description provided for @todoCreateQuadrant.
   ///
   /// In zh, this message translates to:

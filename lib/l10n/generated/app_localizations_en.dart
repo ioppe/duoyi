@@ -139,6 +139,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listGroupNoMatches => 'No matching lists';
 
   @override
+  String get listGroupSearchOrCreate => 'Search or create a list';
+
+  @override
+  String listGroupCreateNamed(String name) {
+    return 'Create “$name”';
+  }
+
+  @override
   String get todoCreateQuadrant => 'Priority';
 
   @override
