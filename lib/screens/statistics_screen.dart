@@ -22,6 +22,7 @@ import '../core/report_cross_analysis.dart';
 import '../core/report_engine.dart';
 import '../core/report_time_slices.dart';
 import '../core/statistics_period.dart';
+import '../core/todo_quadrant_style.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
@@ -719,7 +720,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         label: '重要紧急',
         action: '立即处理',
         guidance: '优先清空逾期和今天到期事项。',
-        color: const Color(0xFFE53935),
+        color: todoQuadrantColor(EisenhowerQuadrant.urgentImportant),
         icon: Icons.priority_high_rounded,
       ),
       stat(
@@ -727,7 +728,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         label: '重要不紧急',
         action: '安排计划',
         guidance: '保持推进节奏，避免滚入紧急区。',
-        color: const Color(0xFFF6A339),
+        color: todoQuadrantColor(EisenhowerQuadrant.notUrgentImportant),
         icon: Icons.event_available_outlined,
       ),
       stat(
@@ -735,7 +736,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         label: '紧急不重要',
         action: '委派或限时',
         guidance: '用批量处理减少被打断时间。',
-        color: const Color(0xFF42A5F5),
+        color: todoQuadrantColor(EisenhowerQuadrant.urgentNotImportant),
         icon: Icons.swap_horiz_rounded,
       ),
       stat(
@@ -743,7 +744,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         label: '不重要不紧急',
         action: '清理剔除',
         guidance: '定期归档，避免待办池膨胀。',
-        color: const Color(0xFF8E8E8E),
+        color: todoQuadrantColor(EisenhowerQuadrant.notUrgentNotImportant),
         icon: Icons.filter_alt_off_outlined,
       ),
     ];

@@ -12,9 +12,9 @@ const Object _copyWithUnset = Object();
 
 enum EisenhowerQuadrant {
   urgentImportant, // Q1 - red: Do First
-  notUrgentImportant, // Q2 - blue: Schedule
+  notUrgentImportant, // Q2 - purple: Schedule
   urgentNotImportant, // Q3 - yellow: Delegate
-  notUrgentNotImportant, // Q4 - grey: Eliminate
+  notUrgentNotImportant, // Q4 - green: Eliminate
 }
 
 /// 优先级(独立于四象限，可组合使用)。

@@ -38,6 +38,29 @@ Future<void> _longPressDrag(
 }
 
 void main() {
+  testWidgets('四象限标题使用红紫黄绿的共享语义色', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        SingleChildScrollView(
+          child: EisenhowerMatrix(
+            quadrantGroups: const {},
+            onQuadrantTap: (_) {},
+          ),
+        ),
+      ),
+    );
+    final strings = ThemeProvider().brand.strings;
+    for (final (label, color) in [
+      (strings.quadrantQ1Label, const Color(0xFFE53935)),
+      (strings.quadrantQ2Label, const Color(0xFF8E5CC6)),
+      (strings.quadrantQ3Label, const Color(0xFFF6A339)),
+      (strings.quadrantQ4Label, const Color(0xFF43A047)),
+    ]) {
+      expect(tester.widget<Text>(find.text(label)).style?.color, color);
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('长按拖动待办到目标象限触发 onTodoQuadrantChanged', (tester) async {
     final todoA = _todo('a', EisenhowerQuadrant.urgentImportant);
     final moves = <(TodoItem, EisenhowerQuadrant)>[];

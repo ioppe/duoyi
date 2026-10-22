@@ -15,6 +15,7 @@ import '../core/lunar_calendar.dart';
 import '../core/quotes.dart';
 import '../core/smart_schedule_advisor.dart';
 import '../core/todo_templates.dart';
+import '../core/todo_quadrant_style.dart';
 import '../models/course_schedule.dart' show CourseItem, ScheduleSettings;
 import '../models/todo.dart';
 import '../providers/anniversary_provider.dart';
@@ -391,7 +392,8 @@ class TodayScreen extends StatelessWidget {
                         ),
                         minLeadingWidth: DesignTokens.controlMinHeight,
                         horizontalTitleGap:
-                            DesignTokens.spaceSm - DesignTokens.spaceXxs,
+                            DesignTokens.homeItemLeadingGap +
+                            DesignTokens.spaceXs,
                         leading: SizedBox.square(
                           dimension: DesignTokens.controlMinHeight,
                           child: Icon(
@@ -1699,14 +1701,8 @@ IconData _todoQuadrantIcon(EisenhowerQuadrant quadrant) {
   };
 }
 
-Color _todoQuadrantColor(EisenhowerQuadrant quadrant) {
-  return switch (quadrant) {
-    EisenhowerQuadrant.urgentImportant => const Color(0xFFE53935),
-    EisenhowerQuadrant.notUrgentImportant => const Color(0xFFF6A339),
-    EisenhowerQuadrant.urgentNotImportant => const Color(0xFF42A5F5),
-    EisenhowerQuadrant.notUrgentNotImportant => const Color(0xFF8E8E8E),
-  };
-}
+Color _todoQuadrantColor(EisenhowerQuadrant quadrant) =>
+    todoQuadrantColor(quadrant);
 
 class _TodoListTemplateLabel extends StatelessWidget {
   final TodoItem todo;
@@ -2171,7 +2167,8 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
         contentPadding: widget.flat
             ? const EdgeInsets.symmetric(vertical: DesignTokens.spaceMd)
             : EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
-        horizontalTitleGap: widget.flat ? DesignTokens.spaceSm : 4,
+        horizontalTitleGap:
+            DesignTokens.homeItemLeadingGap + DesignTokens.spaceXs,
         minLeadingWidth: widget.leading == null ? _TodayTodoLeading.width : 30,
         leading:
             widget.leading ??
@@ -2237,7 +2234,7 @@ class _TodayTodoSwipeTileState extends State<_TodayTodoSwipeTile> {
                             : (_) => _showReadOnlyMessage('完成任务'),
                       )
                     : _TodaySubtaskProgress(todo: todo),
-                const SizedBox(width: DesignTokens.spaceXxs),
+                const SizedBox(width: DesignTokens.homeItemLeadingGap),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

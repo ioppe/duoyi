@@ -12,6 +12,7 @@ import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/todo_templates.dart';
+import '../core/todo_quadrant_style.dart';
 import '../models/calendar_event.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -872,12 +873,7 @@ _CalendarTodoVisual _calendarTodoVisual(TodoItem todo) {
       EisenhowerQuadrant.urgentNotImportant => Icons.bolt_outlined,
       EisenhowerQuadrant.notUrgentNotImportant => Icons.checklist_rounded,
     },
-    color: switch (todo.quadrant) {
-      EisenhowerQuadrant.urgentImportant => const Color(0xFFE53935),
-      EisenhowerQuadrant.notUrgentImportant => const Color(0xFFF6A339),
-      EisenhowerQuadrant.urgentNotImportant => const Color(0xFF42A5F5),
-      EisenhowerQuadrant.notUrgentNotImportant => const Color(0xFF8E8E8E),
-    },
+    color: todoQuadrantColor(todo.quadrant),
   );
 }
 

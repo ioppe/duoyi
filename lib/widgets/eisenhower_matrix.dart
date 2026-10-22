@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/completion_visibility_policy.dart';
 import '../core/design_tokens.dart';
+import '../core/todo_quadrant_style.dart';
 import '../models/todo.dart';
 import '../providers/theme_provider.dart';
 
@@ -131,18 +132,7 @@ class _QuadrantCard extends StatelessWidget {
     this.canEditTodo,
   });
 
-  Color _bgColor() {
-    switch (quadrant) {
-      case EisenhowerQuadrant.urgentImportant:
-        return const Color(0xFFE53935);
-      case EisenhowerQuadrant.notUrgentImportant:
-        return const Color(0xFFF6A339);
-      case EisenhowerQuadrant.urgentNotImportant:
-        return const Color(0xFF42A5F5);
-      case EisenhowerQuadrant.notUrgentNotImportant:
-        return const Color(0xFF8E8E8E);
-    }
-  }
+  Color _bgColor() => todoQuadrantColor(quadrant);
 
   @override
   Widget build(BuildContext context) {

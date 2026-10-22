@@ -52,6 +52,7 @@ class DesignTokens {
   static const double homeCounterSize = 10;
   static const double homeTabIndicatorWidth = 22;
   static const double homeStatusSize = 21;
+  static const double homeItemLeadingGap = spaceXxl;
   static const Color homeText = Color(0xFF242C38);
   static const Color homeMuted = Color(0xFF78808B);
   static const Color homeSubtle = Color(0xFF959BA3);
@@ -223,6 +224,12 @@ class DesignTokens {
   static const Color priorityMedium = Color(0xFFFB8C00); // orange 600
   static const Color priorityLow = Color(0xFF43A047); // green 600
   static const Color priorityNone = Color(0xFFB0BEC5); // blueGrey 200
+
+  // ----- 四象限语义色（首页 / 待办 / 日历 / 统计共用） -----
+  static const Color quadrantQ1 = Color(0xFFE53935); // 紧急且重要：红
+  static const Color quadrantQ2 = Color(0xFF8E5CC6); // 重要不紧急：紫
+  static const Color quadrantQ3 = Color(0xFFF6A339); // 紧急不重要：黄
+  static const Color quadrantQ4 = Color(0xFF43A047); // 不紧急不重要：绿
 
   // ----- Dialog / 二次确认 统一样式 token -----
   static const EdgeInsets dialogContentPadding = EdgeInsets.fromLTRB(

@@ -12,6 +12,7 @@ import '../core/iterable_extensions.dart';
 import '../core/i18n.dart';
 import '../core/todo_filters.dart';
 import '../core/todo_kanban.dart';
+import '../core/todo_quadrant_style.dart';
 import '../models/goal.dart' show ReminderKind;
 import '../models/habit.dart';
 import '../models/todo.dart';
@@ -2469,18 +2470,7 @@ class _KanbanSettingsSheetState extends State<_KanbanSettingsSheet> {
   }
 }
 
-Color _quadrantColor(EisenhowerQuadrant q) {
-  switch (q) {
-    case EisenhowerQuadrant.urgentImportant:
-      return const Color(0xFFE53935);
-    case EisenhowerQuadrant.notUrgentImportant:
-      return const Color(0xFFF6A339);
-    case EisenhowerQuadrant.urgentNotImportant:
-      return const Color(0xFF42A5F5);
-    case EisenhowerQuadrant.notUrgentNotImportant:
-      return const Color(0xFF8E8E8E);
-  }
-}
+Color _quadrantColor(EisenhowerQuadrant q) => todoQuadrantColor(q);
 
 String _quadrantLabel(EisenhowerQuadrant q) {
   switch (q) {

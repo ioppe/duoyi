@@ -381,9 +381,9 @@ void main() {
       addTearDown(tester.view.reset);
       const palette = [
         (EisenhowerQuadrant.urgentImportant, Color(0xFFE53935)),
-        (EisenhowerQuadrant.notUrgentImportant, Color(0xFFF6A339)),
-        (EisenhowerQuadrant.urgentNotImportant, Color(0xFF42A5F5)),
-        (EisenhowerQuadrant.notUrgentNotImportant, Color(0xFF8E8E8E)),
+        (EisenhowerQuadrant.notUrgentImportant, Color(0xFF8E5CC6)),
+        (EisenhowerQuadrant.urgentNotImportant, Color(0xFFF6A339)),
+        (EisenhowerQuadrant.notUrgentNotImportant, Color(0xFF43A047)),
       ];
       final todos = TodoProvider();
       for (final (quadrant, _) in palette) {
@@ -429,6 +429,16 @@ void main() {
           lessThan(
             tester.getTopLeft(find.text('四象限任务${quadrant.index + 1}')).dx,
           ),
+        );
+        final card = find.byKey(
+          ValueKey('today_todo_quadrant-dot-${quadrant.index}'),
+        );
+        final leadingEnd =
+            tester.getTopLeft(card).dx + DesignTokens.controlMinHeight;
+        expect(
+          tester.getTopLeft(dot).dx - leadingEnd,
+          greaterThanOrEqualTo(DesignTokens.spaceMd),
+          reason: '象限圆点不能贴住左侧完成控件或子任务进度',
         );
       }
       expect(tester.takeException(), isNull);
