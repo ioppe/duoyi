@@ -69,7 +69,7 @@
   {
     "id": "8f1c…",                 // 客户端生成的 uuid
     "name": "旅行",                 // 去空白、1–24 字符、同账号内归一化后唯一
-    "sortOrder": 6,                // 递增整数，决定 chips 顺序
+    "sortOrder": 6,                // 递增整数，决定自定义清单展示顺序
     "workspaceId": "private",      // 与 TodoItem.workspaceId 同一套空间语义
     "isDeleted": false,            // 墓碑：服务端保留，客户端隐藏
     "createdAt": "2026-06-02T10:00:00.000",
@@ -81,7 +81,7 @@
 - 合并：按 `id` 取并集，逐条 `updatedAt` 较新者胜；`isDeleted` 与普通修改同权，旧时间戳不能复活墓碑。
 - 隔离：每个账号独立存储；`/api/sync/pull` 只返回本账号数据。
 - 备份：服务端备份直接快照 SQLite，`sync_data.list_groups` 随库一起进出；管理员清空用户数据时会一并重置。
-- 客户端：`ListGroupProvider` 负责本地持久化与校验，`CloudSyncProvider` 将其纳入集合/条目哈希与增量上传；清单名同时参与新建表单 chips 与 AI 拆解白名单（内置模板 ∪ 自定义清单 ∪ 已有任务清单名，按写权限过滤）。
+- 客户端：`ListGroupProvider` 负责本地持久化与校验，`CloudSyncProvider` 将其纳入集合/条目哈希与增量上传；清单名同时参与新建表单的收纳选择器与 AI 拆解白名单（内置模板 ∪ 自定义清单 ∪ 已有任务清单名，按写权限过滤）。选择器交互见 [清单类型收纳选择器](list-group-picker.md)。
 
 ## 时间规范
 

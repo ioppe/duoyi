@@ -115,6 +115,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unable to save the list. Please try again.';
 
   @override
+  String get listGroupUngrouped => 'Ungrouped';
+
+  @override
+  String get listGroupManage => 'Manage list';
+
+  @override
+  String get listGroupCreateSelect => 'Create and select';
+
+  @override
+  String get listGroupSearch => 'Search lists';
+
+  @override
+  String get listGroupBuiltIn => 'Built-in';
+
+  @override
+  String get listGroupCustom => 'Custom';
+
+  @override
+  String get listGroupResults => 'Results';
+
+  @override
+  String get listGroupNoMatches => 'No matching lists';
+
+  @override
   String get todoCreateQuadrant => 'Priority';
 
   @override

@@ -290,6 +290,54 @@ abstract class AppLocalizations {
   /// **'清单保存失败，请重试'**
   String get listGroupSaveFailed;
 
+  /// No description provided for @listGroupUngrouped.
+  ///
+  /// In zh, this message translates to:
+  /// **'未分类'**
+  String get listGroupUngrouped;
+
+  /// No description provided for @listGroupManage.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理清单'**
+  String get listGroupManage;
+
+  /// No description provided for @listGroupCreateSelect.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建并选择'**
+  String get listGroupCreateSelect;
+
+  /// No description provided for @listGroupSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索清单'**
+  String get listGroupSearch;
+
+  /// No description provided for @listGroupBuiltIn.
+  ///
+  /// In zh, this message translates to:
+  /// **'内置清单'**
+  String get listGroupBuiltIn;
+
+  /// No description provided for @listGroupCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义清单'**
+  String get listGroupCustom;
+
+  /// No description provided for @listGroupResults.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索结果'**
+  String get listGroupResults;
+
+  /// No description provided for @listGroupNoMatches.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的清单'**
+  String get listGroupNoMatches;
+
   /// No description provided for @todoCreateQuadrant.
   ///
   /// In zh, this message translates to:

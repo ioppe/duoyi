@@ -28,11 +28,13 @@ import '../providers/share_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/todo_provider.dart';
 import '../screens/todo_detail_screen.dart' show preflightTodoReminderSave;
+import '../services/account_local_data_cleaner.dart';
 import '../services/ai_service.dart';
 import '../services/api_client.dart';
 import '../services/reminder_scheduler.dart' show preflightTodoReminderPlan;
 import 'surface_components.dart';
 import 'todo_subtask_editor.dart';
+import 'todo_list_group_picker.dart';
 
 /// The same full creation form is used by Today, the todo page and its quadrants.
 Future<void> showTodoCreateSheet(
@@ -104,10 +106,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   bool _reminderManuallyChanged = false;
   String? _feedbackMessage;
   Timer? _feedbackTimer;
-  final _newListCtrl = TextEditingController();
-  final _newListFocus = FocusNode();
-  bool _creatingList = false;
-  String? _newListErrorKey;
 
   @override
   void initState() {
@@ -124,8 +122,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     _titleCtrl.dispose();
     _descriptionCtrl.dispose();
     _feedbackTimer?.cancel();
-    _newListCtrl.dispose();
-    _newListFocus.dispose();
     super.dispose();
   }
 
@@ -273,348 +269,6 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       names.putIfAbsent(ListGroupProvider.normalizedName(clean), () => clean);
     }
     return names.values.toList();
-  }
-
-  /// 重命名仍用对话框（低频、需要确认原文）；新建改成就地输入 + 补全。
-  Future<void> _renameListGroup(ListGroup group) async {
-    final provider = context.read<ListGroupProvider?>();
-    if (provider == null || _submitting) return;
-    final todos = context.read<TodoProvider>();
-    final shares = context.read<ShareProvider>();
-    if (!shares.canEdit(group.workspaceId)) return;
-    final auth = context.read<AuthProvider>();
-    final connection = (auth.baseUrl, auth.state.userId);
-    final result = await showDialog<ListGroup>(
-      context: context,
-      builder: (_) => _ListGroupNameDialog(
-        provider: provider,
-        group: group,
-        otherNames: [
-          for (final name in [
-            for (final template in TodoListTemplates.all) template.name,
-            ...todos.listGroupNames,
-          ])
-            if (ListGroupProvider.normalizedName(name) !=
-                ListGroupProvider.normalizedName(group.name))
-              name,
-        ],
-        isCurrent: () => connection == (auth.baseUrl, auth.state.userId),
-      ),
-    );
-    if (!mounted ||
-        result == null ||
-        connection != (auth.baseUrl, auth.state.userId)) {
-      return;
-    }
-    setState(() {
-      if (_groupName == group.name) {
-        _groupName = result.name;
-        _groupManuallyChanged = true;
-      }
-    });
-  }
-
-  void _startCreateList() {
-    setState(() {
-      _creatingList = true;
-      _newListErrorKey = null;
-      _newListCtrl.clear();
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _creatingList) _newListFocus.requestFocus();
-    });
-  }
-
-  void _cancelCreateList() {
-    if (!_creatingList) return;
-    _newListFocus.unfocus();
-    setState(() {
-      _creatingList = false;
-      _newListErrorKey = null;
-      _newListCtrl.clear();
-    });
-  }
-
-  void _selectListName(String name) {
-    _newListFocus.unfocus();
-    setState(() {
-      _groupName = name;
-      _groupManuallyChanged = true;
-      _creatingList = false;
-      _newListCtrl.clear();
-    });
-  }
-
-  /// 输入时优先补全“开头匹配”，其次“包含匹配”，方便直接选中已有清单。
-  List<String> _listGroupMatches(List<String> names, String query) {
-    final q = ListGroupProvider.normalizedName(query);
-    // 空输入不列任何建议：列表只在用户开始输入后才出现。
-    if (q.isEmpty) return const [];
-    final startsWith = <String>[];
-    final contains = <String>[];
-    for (final name in names) {
-      final lower = ListGroupProvider.normalizedName(name);
-      if (lower == q) continue;
-      if (lower.startsWith(q)) {
-        startsWith.add(name);
-      } else if (lower.contains(q)) {
-        contains.add(name);
-      }
-    }
-    return [...startsWith, ...contains].take(8).toList(growable: false);
-  }
-
-  Future<void> _submitNewList(
-    ListGroupProvider provider,
-    List<String> names,
-  ) async {
-    final raw = _newListCtrl.text.trim();
-    final normalized = ListGroupProvider.normalizedName(raw);
-    for (final name in names) {
-      if (ListGroupProvider.normalizedName(name) == normalized) {
-        _selectListName(name);
-        return;
-      }
-    }
-    final error = provider.validateName(raw, otherNames: names);
-    if (error != null) {
-      _showListError(error);
-      return;
-    }
-    try {
-      final created = await provider.create(raw, provider.nextSortOrder);
-      if (!mounted) return;
-      _selectListName(created.name);
-    } on ListGroupNameException catch (error) {
-      if (mounted) _showListError(error.messageKey);
-    } catch (_) {
-      if (mounted) _showListError('list_group.save_failed');
-    }
-  }
-
-  /// 清单名校验错误紧贴输入框显示，避免被弹窗滚出视野或被 SnackBar 遮住。
-  void _showListError(String key) {
-    setState(() => _newListErrorKey = key);
-  }
-
-  Future<void> _showListGroupMenu(
-    ListGroup group,
-    LongPressStartDetails details,
-  ) async {
-    final auth = context.read<AuthProvider>();
-    final connection = (auth.baseUrl, auth.state.userId);
-    final provider = context.read<ListGroupProvider?>();
-    final shares = context.read<ShareProvider>();
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final position = overlay.globalToLocal(details.globalPosition);
-    final action = await showMenu<_ListGroupAction>(
-      context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(position.dx, position.dy, 0, 0),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        PopupMenuItem(
-          value: _ListGroupAction.rename,
-          child: Text(I18n.tr('list_group.rename')),
-        ),
-        PopupMenuItem(
-          value: _ListGroupAction.delete,
-          child: Text(I18n.tr('action.delete')),
-        ),
-      ],
-    );
-    if (!mounted ||
-        action == null ||
-        provider == null ||
-        connection != (auth.baseUrl, auth.state.userId) ||
-        !shares.canEdit(group.workspaceId)) {
-      return;
-    }
-    if (action == _ListGroupAction.rename) {
-      await _renameListGroup(group);
-    } else {
-      try {
-        await provider.delete(group.id);
-        if (mounted && connection == (auth.baseUrl, auth.state.userId)) {
-          setState(() {
-            if (_groupName == group.name) {
-              _groupName = '';
-              _groupManuallyChanged = true;
-            }
-          });
-        }
-      } catch (_) {
-        if (mounted) _feedback(I18n.tr('list_group.save_failed'));
-      }
-    }
-  }
-
-  /// 新建入口固定在最左侧：默认是一枚 chip，点击后就地变成输入框。
-  Widget _listGroupCreateEntry(
-    ListGroupProvider provider,
-    List<String> names,
-    ColorScheme cs,
-  ) {
-    if (!_creatingList) {
-      // 与其它清单使用同一种 ChoiceChip，字号/字重/内边距完全一致。
-      return Padding(
-        padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
-        child: ChoiceChip(
-          key: const ValueKey('todo_list_group_create'),
-          avatar: Icon(
-            Icons.add,
-            size: DesignTokens.spaceLg,
-            color: cs.primary,
-          ),
-          label: Text(I18n.tr('list_group.new_chip')),
-          labelStyle: Theme.of(context).textTheme.labelLarge,
-          showCheckmark: false,
-          selected: false,
-          onSelected: _submitting ? null : (_) => _startCreateList(),
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
-      child: SizedBox(
-        width: 232,
-        child: TextField(
-          key: const ValueKey('todo_list_group_input'),
-          controller: _newListCtrl,
-          focusNode: _newListFocus,
-          autofocus: true,
-          enabled: !_submitting,
-          textInputAction: TextInputAction.done,
-          style: Theme.of(context).textTheme.bodyMedium,
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.spaceMd,
-              vertical: DesignTokens.spaceSm,
-            ),
-            suffixIconConstraints: const BoxConstraints(
-              minWidth: 0,
-              minHeight: 0,
-            ),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: const ValueKey('todo_list_group_create_confirm'),
-                  tooltip: I18n.tr('list_group.new'),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 32,
-                    height: 32,
-                  ),
-                  iconSize: 18,
-                  icon: const Icon(Icons.check),
-                  onPressed: _submitting
-                      ? null
-                      : () => _submitNewList(provider, names),
-                ),
-                IconButton(
-                  key: const ValueKey('todo_list_group_create_cancel'),
-                  tooltip: I18n.tr('action.cancel'),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 32,
-                    height: 32,
-                  ),
-                  iconSize: 18,
-                  icon: const Icon(Icons.close),
-                  onPressed: _submitting ? null : _cancelCreateList,
-                ),
-              ],
-            ),
-          ),
-          onChanged: (_) => setState(() => _newListErrorKey = null),
-          onSubmitted: (_) => _submitNewList(provider, names),
-        ),
-      ),
-    );
-  }
-
-  /// 输入时就地列出最相关的已有清单，直接点选即可，不必新建重名清单。
-  Widget _listGroupSuggestions(
-    ListGroupProvider provider,
-    List<String> names,
-    ColorScheme cs,
-  ) {
-    final matches = _listGroupMatches(names, _newListCtrl.text);
-    if (matches.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: DesignTokens.spaceSm),
-      child: Wrap(
-        spacing: DesignTokens.spaceSm,
-        runSpacing: DesignTokens.spaceXs,
-        children: [
-          for (final name in matches)
-            ActionChip(
-              key: ValueKey('todo_list_group_suggestion_$name'),
-              avatar: Icon(
-                Icons.folder_outlined,
-                size: DesignTokens.spaceLg,
-                color: cs.primary,
-              ),
-              label: Text(name),
-              onPressed: _submitting ? null : () => _selectListName(name),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _listGroupChip(
-    String name,
-    ListGroupProvider? custom,
-    ColorScheme cs,
-  ) {
-    TodoListTemplate? builtIn;
-    for (final item in TodoListTemplates.all) {
-      if (item.name == name) builtIn = item;
-    }
-    final template =
-        builtIn ??
-        TodoListTemplate(
-          name: name,
-          icon: Icons.folder_outlined,
-          color: cs.primary,
-        );
-    final group = _customGroupFor(name, custom);
-    return Padding(
-      padding: const EdgeInsets.only(right: DesignTokens.spaceSm),
-      child: GestureDetector(
-        onLongPressStart: group != null && builtIn == null && !_submitting
-            ? (details) => _showListGroupMenu(group, details)
-            : null,
-        child: ChoiceChip(
-          key: ValueKey('todo_list_group_$name'),
-          avatar: Icon(
-            template.icon,
-            size: DesignTokens.spaceLg,
-            color: template.color,
-          ),
-          label: Text(name),
-          selected: _groupName == name,
-          selectedColor: template.color.withValues(alpha: 0.12),
-          checkmarkColor: template.color,
-          labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: _groupName == name ? template.color : null,
-          ),
-          onSelected: _submitting
-              ? null
-              : (selected) => setState(() {
-                  _groupManuallyChanged = true;
-                  _groupName = selected ? name : '';
-                }),
-        ),
-      ),
-    );
   }
 
   Future<void> _breakDownTask() async {
@@ -861,6 +515,8 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     final todos = context.watch<TodoProvider>();
     final shares = context.watch<ShareProvider>();
     final custom = context.watch<ListGroupProvider?>();
+    final auth = context.watch<AuthProvider>();
+    final connection = (auth.baseUrl, auth.state.userId);
     final listGroups = _editableListGroups(todos, shares, custom);
     return AppModalSheet(
       key: const ValueKey('todo_create_sheet'),
@@ -950,32 +606,28 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
             style: appSecondaryControlLabelStyle(context),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: DesignTokens.controlMinHeight,
-            child: ListView(
-              key: const ValueKey('todo_list_groups'),
-              scrollDirection: Axis.horizontal,
-              children: [
-                if (custom != null && shares.canEdit('private'))
-                  _listGroupCreateEntry(custom, listGroups, cs),
-                for (final name in listGroups) _listGroupChip(name, custom, cs),
-              ],
+          KeyedSubtree(
+            key: ValueKey((
+              connection,
+              custom,
+              AccountLocalDataCleaner.accountDataGeneration,
+            )),
+            child: TodoListGroupPicker(
+              key: const ValueKey('todo_list_group_picker'),
+              value: _groupName,
+              names: listGroups,
+              provider: custom,
+              enabled: !_submitting,
+              canCreate: custom != null && shares.canEdit('private'),
+              canManage: (group) => shares.canEdit(group.workspaceId),
+              isCurrent: () =>
+                  mounted && connection == (auth.baseUrl, auth.state.userId),
+              onChanged: (value) => setState(() {
+                _groupManuallyChanged = true;
+                _groupName = value;
+              }),
             ),
           ),
-          if (_creatingList && custom != null) ...[
-            _listGroupSuggestions(custom, listGroups, cs),
-            if (_newListErrorKey != null)
-              Padding(
-                padding: const EdgeInsets.only(top: DesignTokens.spaceXs),
-                child: Text(
-                  I18n.tr(_newListErrorKey!),
-                  key: const ValueKey('todo_list_group_error'),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.error),
-                ),
-              ),
-          ],
           const SizedBox(height: 20),
           Text(
             I18n.tr('todo.create.quadrant'),
@@ -1164,101 +816,4 @@ class _SmartDatePreview extends StatelessWidget {
       ),
     );
   }
-}
-
-enum _ListGroupAction { rename, delete }
-
-class _ListGroupNameDialog extends StatefulWidget {
-  final ListGroupProvider provider;
-  final ListGroup group;
-  final List<String> otherNames;
-  final bool Function() isCurrent;
-
-  const _ListGroupNameDialog({
-    required this.provider,
-    required this.group,
-    required this.otherNames,
-    required this.isCurrent,
-  });
-
-  @override
-  State<_ListGroupNameDialog> createState() => _ListGroupNameDialogState();
-}
-
-class _ListGroupNameDialogState extends State<_ListGroupNameDialog> {
-  late final _controller = TextEditingController(text: widget.group.name);
-  String? _errorKey;
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_saving) return;
-    final error = widget.isCurrent()
-        ? widget.provider.validateName(
-            _controller.text,
-            excludingId: widget.group.id,
-            otherNames: widget.otherNames,
-          )
-        : 'auth.connection_changed';
-    if (error != null) {
-      setState(() => _errorKey = error);
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _errorKey = null;
-    });
-    try {
-      final result = await widget.provider.rename(
-        widget.group.id,
-        _controller.text,
-      );
-      if (mounted) Navigator.pop(context, result);
-    } on ListGroupNameException catch (error) {
-      if (mounted) setState(() => _errorKey = error.messageKey);
-    } catch (_) {
-      if (mounted) setState(() => _errorKey = 'list_group.save_failed');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AppDialog(
-    title: Text(I18n.tr('list_group.rename')),
-    contentPadding: DesignTokens.dialogContentPadding,
-    content: AppFormFieldTheme(
-      child: TextField(
-        key: const ValueKey('list_group_name'),
-        controller: _controller,
-        autofocus: true,
-        enabled: !_saving,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(
-          labelText: I18n.tr('list_group.name'),
-          helperText: I18n.tr('list_group.name_hint'),
-          errorText: _errorKey == null ? null : I18n.tr(_errorKey!),
-          errorMaxLines: 3,
-        ),
-        onChanged: (_) => setState(() => _errorKey = null),
-        onSubmitted: (_) => _submit(),
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: Text(I18n.tr('action.cancel')),
-      ),
-      FilledButton(
-        key: const ValueKey('list_group_confirm'),
-        onPressed: _saving ? null : _submit,
-        child: Text(I18n.tr('action.confirm')),
-      ),
-    ],
-  );
 }

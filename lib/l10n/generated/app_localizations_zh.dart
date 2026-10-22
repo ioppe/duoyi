@@ -105,6 +105,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listGroupSaveFailed => '清单保存失败，请重试';
 
   @override
+  String get listGroupUngrouped => '未分类';
+
+  @override
+  String get listGroupManage => '管理清单';
+
+  @override
+  String get listGroupCreateSelect => '新建并选择';
+
+  @override
+  String get listGroupSearch => '搜索清单';
+
+  @override
+  String get listGroupBuiltIn => '内置清单';
+
+  @override
+  String get listGroupCustom => '自定义清单';
+
+  @override
+  String get listGroupResults => '搜索结果';
+
+  @override
+  String get listGroupNoMatches => '没有匹配的清单';
+
+  @override
   String get todoCreateQuadrant => '优先级';
 
   @override

@@ -106,6 +106,26 @@ class _DelayedAi extends AiService {
   }) => pending.future;
 }
 
+class _SwitchableAuth extends AuthProvider {
+  AuthState _current = const AuthState(userId: 'account-a', token: 'fixture');
+  String _server = 'https://server-a.invalid';
+
+  @override
+  AuthState get state => _current;
+
+  @override
+  String get baseUrl => _server;
+
+  void switchIdentity({required bool changeServer}) {
+    if (changeServer) {
+      _server = 'https://server-b.invalid';
+    } else {
+      _current = const AuthState(userId: 'account-b', token: 'fixture-b');
+    }
+    notifyListeners();
+  }
+}
+
 class _ReadOnlyShare extends ShareProvider {
   @override
   bool canEdit(String? workspaceId) => false;
@@ -137,6 +157,7 @@ Future<void> _open(
   EisenhowerQuadrant? quadrant,
   NotificationService? notifications,
   ListGroupProvider? listGroups,
+  AuthProvider? auth,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -145,7 +166,9 @@ Future<void> _open(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => auth ?? AuthProvider(),
+        ),
         ChangeNotifierProvider<NotificationService>(
           create: (_) => notifications ?? NotificationService(),
         ),
@@ -205,20 +228,42 @@ Future<void> _scrollToSubmit(WidgetTester tester) async {
   );
 }
 
-Future<void> _revealListGroup(WidgetTester tester, Finder target) async {
-  final list = find.byKey(const ValueKey('todo_list_groups'));
-  await tester.ensureVisible(list);
-  await tester.pumpAndSettle();
-  for (var i = 0; i < 8 && target.hitTestable().evaluate().isEmpty; i++) {
-    await tester.drag(list, const Offset(-250, 0));
-    await tester.pumpAndSettle();
+Future<void> _expandListGroup(WidgetTester tester) async {
+  final selector = find.byKey(const ValueKey('todo_list_group_selector'));
+  await tester.ensureVisible(selector);
+  if (find.byKey(const ValueKey('todo_list_group_search')).evaluate().isEmpty) {
+    await tester.tap(selector);
+    await tester.pump();
   }
-  // 目标在最左侧（如“新建清单”入口）时需要往回滚。
-  for (var i = 0; i < 8 && target.hitTestable().evaluate().isEmpty; i++) {
-    await tester.drag(list, const Offset(250, 0));
-    await tester.pumpAndSettle();
+  final search = find.byKey(const ValueKey('todo_list_group_search'));
+  await tester.ensureVisible(search);
+  await tester.pump();
+}
+
+Future<void> _revealListGroupTarget(WidgetTester tester, Finder target) async {
+  final options = find.byKey(const ValueKey('todo_list_group_options'));
+  for (var i = 0; i < 16; i++) {
+    if (target.hitTestable().evaluate().isNotEmpty) return;
+    await tester.drag(options, const Offset(0, -120));
+    await tester.pump();
   }
   expect(target.hitTestable(), findsOneWidget);
+}
+
+Future<void> _selectListGroup(WidgetTester tester, String name) async {
+  await _expandListGroup(tester);
+  final target = find.byKey(ValueKey('todo_list_group_$name'));
+  await _revealListGroupTarget(tester, target);
+  await tester.tap(target);
+  await tester.pump();
+  expect(
+    tester
+        .widget<Text>(
+          find.byKey(const ValueKey('todo_list_group_selected_name')),
+        )
+        .data,
+    name,
+  );
 }
 
 void main() {
@@ -238,7 +283,60 @@ void main() {
 
   tearDown(() => AppClock.debugNow = null);
 
-  testWidgets('chips 和 AI 白名单共用内置、自定义与历史清单并过滤只读空间', (tester) async {
+  for (final changeServer in [false, true]) {
+    testWidgets('账号或服务器切换会丢弃清单编辑器旧草稿 server=$changeServer', (tester) async {
+      final auth = _SwitchableAuth();
+      final groups = ListGroupProvider();
+      await _open(tester, auth: auth, listGroups: groups);
+      await _expandListGroup(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_list_group_create')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('todo_list_group_input')),
+        '旧账号草稿',
+      );
+      auth.switchIdentity(changeServer: changeServer);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('todo_list_group_input')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('todo_list_group_create_confirm')),
+        findsNothing,
+      );
+      expect(groups.groups, isEmpty);
+      await _expandListGroup(tester);
+      await tester.tap(find.byKey(const ValueKey('todo_list_group_create')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('todo_list_group_input')),
+            )
+            .controller!
+            .text,
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('键盘弹出时展开清单仍可搜索选择并收起', (tester) async {
+    await _open(tester, size: const Size(320, 844), textScale: 1.5);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await tester.pumpAndSettle();
+    await _expandListGroup(tester);
+    final search = find.byKey(const ValueKey('todo_list_group_search'));
+    await tester.enterText(search, '工作');
+    await tester.pumpAndSettle();
+    final option = find.byKey(const ValueKey('todo_list_group_工作'));
+    await tester.ensureVisible(option);
+    expect(option.hitTestable(), findsOneWidget);
+    await tester.tap(option);
+    await tester.pumpAndSettle();
+    expect(search, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('收纳清单选择器与 AI 白名单共用可编辑清单', (tester) async {
     final groups = ListGroupProvider();
     await groups.create('旅行', 0);
     final now = DateTime.now();
@@ -287,16 +385,22 @@ void main() {
     expect(ai.receivedListGroups, isNot(contains('工作')));
     expect(ai.receivedListGroups, isNot(contains('只读自定义')));
     expect(ai.receivedListGroups, isNot(contains('只读项目')));
-    final travel = find.widgetWithText(ChoiceChip, '旅行');
-    await _revealListGroup(tester, travel);
-    expect(tester.widget<ChoiceChip>(travel).selected, isTrue);
-    await _revealListGroup(tester, find.widgetWithText(ChoiceChip, '旧项目'));
-    expect(find.widgetWithText(ChoiceChip, '只读自定义'), findsNothing);
-    expect(find.widgetWithText(ChoiceChip, '只读项目'), findsNothing);
+
+    await _selectListGroup(tester, '旅行');
+    expect(find.byKey(const ValueKey('todo_list_group_search')), findsNothing);
+    await _expandListGroup(tester);
+    final search = find.byKey(const ValueKey('todo_list_group_search'));
+    await tester.enterText(search, '旧');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('todo_list_group_旧项目')), findsOneWidget);
+    await tester.enterText(search, '只读');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('todo_list_group_只读自定义')), findsNothing);
+    expect(find.byKey(const ValueKey('todo_list_group_只读项目')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('新建清单位于最左，内联输入后立即选中并随待办保存 id 和名称', (tester) async {
+  testWidgets('展开面板内新建清单并随待办保存 id 和名称', (tester) async {
     final groups = ListGroupProvider();
     final todos = _CapturingTodos();
     await _open(tester, listGroups: groups, todos: todos);
@@ -304,39 +408,36 @@ void main() {
       find.byKey(const ValueKey('todo_create_title')),
       '准备旅行',
     );
+    await _expandListGroup(tester);
+    expect(
+      find.byKey(const ValueKey('todo_list_group_search')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('todo_list_group_options')),
+      findsOneWidget,
+    );
     final create = find.byKey(const ValueKey('todo_list_group_create'));
-    await _revealListGroup(tester, create);
-    expect(find.text('新建清单'), findsOneWidget);
-    final templateChip = find.byKey(const ValueKey('todo_list_group_工作'));
-    // 新建入口排在所有清单 chip 之前，并使用与清单一致的 ChoiceChip 样式。
-    expect(
-      tester.getTopLeft(create).dx,
-      lessThan(tester.getTopLeft(templateChip).dx),
-    );
-    final createWidget = tester.widget<ChoiceChip>(create);
-    final templateWidget = tester.widget<ChoiceChip>(templateChip);
-    expect(
-      createWidget.labelStyle?.fontSize,
-      templateWidget.labelStyle?.fontSize,
-    );
-    expect(
-      createWidget.labelStyle?.fontWeight,
-      templateWidget.labelStyle?.fontWeight,
-    );
-    expect(createWidget.showCheckmark, isFalse);
+    expect(create, findsOneWidget);
     await tester.tap(create);
     await tester.pumpAndSettle();
-    final input = find.byKey(const ValueKey('todo_list_group_input'));
-    expect(input, findsOneWidget);
+    expect(find.text('新建清单'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
+    final input = find.byKey(const ValueKey('todo_list_group_input'));
     await tester.enterText(input, '  旅行  ');
     await tester.tap(
       find.byKey(const ValueKey('todo_list_group_create_confirm')),
     );
     await tester.pumpAndSettle();
-    final travel = find.widgetWithText(ChoiceChip, '旅行');
-    await _revealListGroup(tester, travel);
-    expect(tester.widget<ChoiceChip>(travel).selected, isTrue);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '旅行',
+    );
+    expect(find.byKey(const ValueKey('todo_list_group_search')), findsNothing);
     expect(groups.groups.single.name, '旅行');
     await _scrollToSubmit(tester);
     await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
@@ -346,46 +447,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('内联输入补全已有清单：点选建议直接选中，重名不再新建', (tester) async {
+  testWidgets('输入后补全已有清单、归一化重名并在字段内显示校验', (tester) async {
     final groups = ListGroupProvider();
     await groups.create('Travel', 0);
     final todos = _CapturingTodos()
       ..saved.add(TodoItem(title: '旧任务', listGroupName: '旧项目'));
     await _open(tester, listGroups: groups, todos: todos);
-    final create = find.byKey(const ValueKey('todo_list_group_create'));
-    await _revealListGroup(tester, create);
-    await tester.tap(create);
+
+    await _expandListGroup(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_list_group_create')));
     await tester.pumpAndSettle();
     final input = find.byKey(const ValueKey('todo_list_group_input'));
-    // 空输入不展示任何清单建议。
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is ActionChip &&
-            widget.key.toString().contains('todo_list_group_suggestion_'),
-      ),
-      findsNothing,
-    );
-
-    // 输入片段即补全相关已有清单，点选后直接选中该清单，不会新建。
+    expect(find.byKey(const ValueKey('todo_list_group_旧项目')), findsNothing);
     await tester.enterText(input, '旧');
     await tester.pumpAndSettle();
-    final suggestion = find.byKey(
-      const ValueKey('todo_list_group_suggestion_旧项目'),
-    );
+    final suggestion = find.byKey(const ValueKey('todo_list_group_旧项目'));
     expect(suggestion, findsOneWidget);
     await tester.tap(suggestion);
     await tester.pumpAndSettle();
-    final legacy = find.widgetWithText(ChoiceChip, '旧项目');
-    await _revealListGroup(tester, legacy);
-    expect(tester.widget<ChoiceChip>(legacy).selected, isTrue);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '旧项目',
+    );
     expect(groups.groups, hasLength(1));
     expect(find.byKey(const ValueKey('todo_list_group_input')), findsNothing);
 
-    // 归一化重名（大小写/空白）提交时选中已有清单，而不是报错或新建。
-    await _revealListGroup(tester, create);
-    await tester.pumpAndSettle();
-    await tester.tap(create);
+    await _expandListGroup(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_list_group_create')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('todo_list_group_input')),
@@ -395,33 +487,32 @@ void main() {
       find.byKey(const ValueKey('todo_list_group_create_confirm')),
     );
     await tester.pumpAndSettle();
-    final travel = find.widgetWithText(ChoiceChip, 'Travel');
-    await _revealListGroup(tester, travel);
-    expect(tester.widget<ChoiceChip>(travel).selected, isTrue);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      'Travel',
+    );
     expect(groups.groups, hasLength(1));
 
-    // 空值与超长仍在就地输入里给出提示，且不写库。
-    await _revealListGroup(tester, create);
-    await tester.pumpAndSettle();
-    await tester.tap(create);
+    await _expandListGroup(tester);
+    await tester.tap(find.byKey(const ValueKey('todo_list_group_create')));
     await tester.pumpAndSettle();
     for (final (name, key) in [
       ('   ', 'list_group.name_required'),
       (List.filled(25, '旅').join(), 'list_group.name_length'),
     ]) {
-      await tester.enterText(
-        find.byKey(const ValueKey('todo_list_group_input')),
-        name,
-      );
+      final field = find.byKey(const ValueKey('todo_list_group_input'));
+      await tester.enterText(field, name);
       await tester.tap(
         find.byKey(const ValueKey('todo_list_group_create_confirm')),
       );
       await tester.pumpAndSettle();
-      expect(find.text(I18n.tr(key)), findsOneWidget);
-      // 提示紧贴清单输入框显示，不会被底部弹窗或 SnackBar 遮挡。
       expect(
-        find.byKey(const ValueKey('todo_list_group_error')),
-        findsOneWidget,
+        tester.widget<TextField>(field).decoration?.errorText,
+        I18n.tr(key),
       );
       expect(find.byType(SnackBar), findsNothing);
       expect(groups.groups, hasLength(1));
@@ -430,34 +521,45 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('自定义清单长按可重命名和删除，内置清单保持只读', (tester) async {
+  testWidgets('自定义清单通过可见菜单重命名和删除，内置清单无管理入口', (tester) async {
     final groups = ListGroupProvider();
     final initial = await groups.create('旅行', 0);
     await _open(tester, listGroups: groups);
-    await tester.longPress(find.widgetWithText(ChoiceChip, '工作'));
-    await tester.pumpAndSettle();
-    expect(find.text(I18n.tr('list_group.rename')), findsNothing);
-    final travel = find.widgetWithText(ChoiceChip, '旅行');
-    await _revealListGroup(tester, travel);
-    await tester.tap(travel);
-    await tester.longPress(travel);
+    await _selectListGroup(tester, '旅行');
+    await _expandListGroup(tester);
+    final manage = find.byKey(ValueKey('todo_list_group_manage_${initial.id}'));
+    await _revealListGroupTarget(tester, manage);
+    expect(manage, findsOneWidget);
+    await tester.tap(manage);
     await tester.pumpAndSettle();
     await tester.tap(find.text(I18n.tr('list_group.rename')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const ValueKey('list_group_name')), '假期');
-    await tester.tap(find.byKey(const ValueKey('list_group_confirm')));
+    final input = find.byKey(const ValueKey('todo_list_group_input'));
+    expect(tester.widget<TextField>(input).controller!.text, '旅行');
+    await tester.enterText(input, '假期');
+    await tester.tap(
+      find.byKey(const ValueKey('todo_list_group_create_confirm')),
+    );
     await tester.pumpAndSettle();
-    final renamed = find.widgetWithText(ChoiceChip, '假期');
-    await _revealListGroup(tester, renamed);
-    expect(tester.widget<ChoiceChip>(renamed).selected, isTrue);
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '假期',
+    );
     expect(groups.groups.single.id, initial.id);
-    await tester.longPress(renamed);
+
+    await _expandListGroup(tester);
+    await _revealListGroupTarget(tester, manage);
+    await tester.tap(manage);
     await tester.pumpAndSettle();
     await tester.tap(find.text(I18n.tr('action.delete')));
     await tester.pumpAndSettle();
     expect(groups.groups, isEmpty);
     expect(groups.allGroups.single.isDeleted, isTrue);
-    expect(find.widgetWithText(ChoiceChip, '假期'), findsNothing);
+    expect(find.byKey(const ValueKey('todo_list_group_假期')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -692,8 +794,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(todos.saved, isEmpty, reason: '拆解只填入草稿，等待统一保存');
     expect(
-      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '学习')).selected,
-      isTrue,
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '学习',
     );
     expect(
       tester
@@ -778,8 +884,7 @@ void main() {
       find.widgetWithText(ActionChip, I18n.tr('todo.create.ai')),
     );
     await tester.pump();
-    await tester.ensureVisible(find.widgetWithText(ChoiceChip, '个人'));
-    await tester.tap(find.widgetWithText(ChoiceChip, '个人'));
+    await _selectListGroup(tester, '个人');
     tester
         .widget<AppDropdownField<EisenhowerQuadrant>>(
           find.byKey(const ValueKey('todo_create_quadrant')),
@@ -806,8 +911,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '个人')).selected,
-      isTrue,
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '个人',
     );
     expect(
       tester
@@ -859,9 +968,11 @@ void main() {
       expect(find.text('过期子任务'), findsNothing);
       expect(
         tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '工作'))
-            .selected,
-        isFalse,
+            .widget<Text>(
+              find.byKey(const ValueKey('todo_list_group_selected_name')),
+            )
+            .data,
+        I18n.tr('list_group.ungrouped'),
       );
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
       await _scrollToSubmit(tester);
@@ -955,7 +1066,7 @@ void main() {
       find.byKey(const ValueKey('todo_create_title')),
       '共享表单验收',
     );
-    await tester.tap(find.widgetWithText(ChoiceChip, '工作'));
+    await _selectListGroup(tester, '工作');
     expect(find.text(I18n.tr('todo.create.priority')), findsNothing);
     expect(
       find.widgetWithText(ChoiceChip, TodoPriority.high.label),

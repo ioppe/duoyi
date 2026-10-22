@@ -46,11 +46,8 @@ void main() {
     expect(form, contains('appSecondaryControlLabelStyle(context)'));
     expect(form, contains('minimumSize: const Size(0, 42)'));
     expect(source, isNot(contains('fontSize: 20')));
-    expect(form, isNot(contains('selectedColor: template.color,')));
-    expect(
-      form,
-      contains('selectedColor: template.color.withValues(alpha: 0.12)'),
-    );
+    expect(form, contains('TodoListGroupPicker('));
+    expect(form, isNot(contains("ValueKey('todo_list_groups')")));
   });
 
   test('任务筛选覆盖日期、完成状态、标签、清单和空结果', () {
@@ -107,29 +104,23 @@ void main() {
     expect(source, contains('goalProvider.activeGoals.length'));
   });
 
-  test('清单模板选中态使用浅色主题背景避免白字实心块', () {
+  test('收纳清单选中态保留浅色背景、主题文字和勾选反馈', () {
     final source = File(
-      'lib/widgets/todo_create_sheet.dart',
+      'lib/widgets/todo_list_group_picker.dart',
     ).readAsStringSync();
-
-    expect(source, isNot(contains('Color _todoTemplateChipForeground')));
-    expect(source, isNot(contains('double _todoContrastRatio')));
-    expect(source, isNot(contains('_todoTemplateChipForeground(t.color)')));
-    final templateStart = source.indexOf('TodoListTemplates.all');
-    final templateEnd = source.indexOf(
-      'const SizedBox(height: 20)',
-      templateStart,
-    );
-    expect(templateStart, greaterThanOrEqualTo(0));
-    expect(templateEnd, greaterThan(templateStart));
-    final templateBlock = source.substring(templateStart, templateEnd);
-    expect(templateBlock, isNot(contains('? Colors.white')));
-    expect(templateBlock, isNot(contains('selectedColor: template.color,')));
-    expect(
-      templateBlock,
-      contains('selectedColor: template.color.withValues(alpha: 0.12)'),
-    );
-    expect(templateBlock, contains('checkmarkColor: template.color'));
+    final start = source.indexOf('Widget _option(');
+    final end = source.indexOf('Widget _heading(', start);
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, greaterThan(start));
+    final option = source.substring(start, end);
+    expect(option, contains('cs.primary.withValues(alpha: 0.09)'));
+    expect(option, contains('color: selected ? cs.primary : cs.onSurface'));
+    expect(option, contains('Icons.check'));
+    expect(option, contains('selected: selected'));
+    expect(option, isNot(contains('? Colors.white')));
+    expect(source, contains('CustomScrollView('));
+    expect(source, contains('final maxHeight ='));
+    expect(source, isNot(contains('scrollDirection: Axis.horizontal')));
   });
 
   test('四象限详情继承外层自定义视图条件', () {

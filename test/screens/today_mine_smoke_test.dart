@@ -353,14 +353,27 @@ void main() {
       find.byKey(const ValueKey('todo_create_title')),
       '行程准备',
     );
-    final list = find.byKey(const ValueKey('todo_list_groups'));
-    await tester.ensureVisible(list);
-    await tester.drag(list, const Offset(-2000, 0));
+    final selector = find.byKey(const ValueKey('todo_list_group_selector'));
+    await tester.ensureVisible(selector);
+    await tester.tap(selector);
     await tester.pumpAndSettle();
-    final chip = find.widgetWithText(ChoiceChip, '旅行');
-    await tester.tap(chip);
+    final search = find.byKey(const ValueKey('todo_list_group_search'));
+    await tester.ensureVisible(search);
+    await tester.enterText(search, '旅行');
     await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(chip).selected, isTrue);
+    final option = find.byKey(const ValueKey('todo_list_group_旅行'));
+    await tester.ensureVisible(option);
+    await tester.tap(option);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<Text>(
+            find.byKey(const ValueKey('todo_list_group_selected_name')),
+          )
+          .data,
+      '旅行',
+    );
+    expect(search, findsNothing);
     final submit = find.byKey(const ValueKey('todo_create_submit'));
     await tester.ensureVisible(submit);
     await tester.pumpAndSettle();
