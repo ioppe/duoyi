@@ -1,4 +1,5 @@
 import 'package:duoyi/providers/preferences_provider.dart';
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/report_reminder_config.dart';
 import 'package:duoyi/models/goal.dart';
@@ -44,6 +45,64 @@ void main() {
     preferences.resetLocalState();
     expect(preferences.showHomeCalendar, isFalse);
     preferences.dispose();
+  });
+
+  test('应用字体大小只保存三个档位，并随载入/重置恢复', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.standard);
+
+    await preferences.setTextScale(0.9);
+    expect(preferences.textScale, AppTextScale.small);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getDouble('pref_text_scale'), AppTextScale.small);
+
+    await preferences.setTextScale(AppTextScale.large);
+    expect(prefs.getDouble('pref_text_scale'), AppTextScale.large);
+
+    final reloaded = PreferencesProvider();
+    await reloaded.loadFromStorage();
+    expect(reloaded.textScale, AppTextScale.large);
+
+    reloaded.resetLocalState();
+    expect(reloaded.textScale, AppTextScale.standard);
+    preferences.dispose();
+    reloaded.dispose();
+  });
+
+  test('载入字号偏好时把越界值归一化到标准档', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': 1.6,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.standard);
+    preferences.dispose();
+  });
+
+  test('载入字号偏好时把临近档位的历史值吸附到最近档位', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': 1.18,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.large);
+    preferences.dispose();
+  });
+
+  test('个性设置页提供应用字体大小入口并绑定档位 setter', () {
+    final source = File(
+      'lib/screens/preferences_screen.dart',
+    ).readAsStringSync();
+
+    expect(source, contains("I18n.tr('preferences.menu.text_scale')"));
+    expect(source, contains("I18n.tr('preferences.text_scale.title')"));
+    expect(source, contains("I18n.tr('preferences.text_scale.subtitle')"));
+    expect(source, contains('Icons.format_size'));
+    expect(source, contains("ValueKey('preferences_text_scale_tile')"));
+    expect(source, contains('AppTextScale.options'));
+    expect(source, contains('setTextScale'));
   });
 
   test('旧版底部导航偏好升级后保留我的并限制 5 个', () async {

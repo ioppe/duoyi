@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/report_reminder_config.dart';
 import 'package:duoyi/models/goal.dart' show ReminderKind;
@@ -25,6 +26,7 @@ void main() {
     'pref_haptic_feedback': false,
     'pref_show_lunar': false,
     'pref_show_home_calendar': true,
+    'pref_text_scale': 1.15,
     'pref_date_format': 'dd/MM/yyyy',
     'pref_default_tab': 2,
     'pref_app_timezone_mode': 'fixed',
@@ -66,6 +68,7 @@ void main() {
     expect(preferences.haptic, isFalse, reason: 'haptic');
     expect(preferences.showLunar, isFalse, reason: 'lunar');
     expect(preferences.showHomeCalendar, isTrue, reason: 'home calendar');
+    expect(preferences.textScale, AppTextScale.large, reason: 'text scale');
     expect(preferences.dateFormat, 'dd/MM/yyyy', reason: 'date format');
     expect(preferences.defaultTab, 2, reason: 'default tab');
     expect(preferences.appTimeZone, 'Asia/Tokyo', reason: 'timezone');
@@ -107,6 +110,7 @@ void main() {
     expect(prefs.getBool('sync_pending_local_changes'), isNull);
     expect(prefs.getString('webdav_backup_password'), isNull);
     expect(prefs.getString('active_brand'), isNull);
+    expect(prefs.getDouble('pref_text_scale'), AppTextScale.large);
     first.dispose();
 
     // 第二次冷启动使用同一份持久化存储，模拟用户重启 App。

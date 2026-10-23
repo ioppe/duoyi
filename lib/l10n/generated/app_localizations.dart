@@ -1064,6 +1064,12 @@ abstract class AppLocalizations {
   /// **'日期日历'**
   String get preferencesMenuCalendar;
 
+  /// No description provided for @preferencesMenuTextScale.
+  ///
+  /// In zh, this message translates to:
+  /// **'字体大小'**
+  String get preferencesMenuTextScale;
+
   /// No description provided for @preferencesMenuInteractionArchive.
   ///
   /// In zh, this message translates to:
@@ -1837,6 +1843,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'影响今日卡片、日历和日期展示'**
   String get preferencesSectionDateSubtitle;
+
+  /// No description provided for @preferencesTextScaleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用字体大小'**
+  String get preferencesTextScaleTitle;
+
+  /// No description provided for @preferencesTextScaleSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'只调整多仪内文字，不改变手机其他应用'**
+  String get preferencesTextScaleSubtitle;
+
+  /// No description provided for @preferencesTextScaleSmall.
+  ///
+  /// In zh, this message translates to:
+  /// **'小（85%）'**
+  String get preferencesTextScaleSmall;
+
+  /// No description provided for @preferencesTextScaleStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准（100%）'**
+  String get preferencesTextScaleStandard;
+
+  /// No description provided for @preferencesTextScaleLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'大（115%）'**
+  String get preferencesTextScaleLarge;
 
   /// No description provided for @preferencesFirstDayTitle.
   ///

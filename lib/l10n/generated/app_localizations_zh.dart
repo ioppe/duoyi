@@ -501,6 +501,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferencesMenuCalendar => '日期日历';
 
   @override
+  String get preferencesMenuTextScale => '字体大小';
+
+  @override
   String get preferencesMenuInteractionArchive => '交互归档';
 
   @override
@@ -886,6 +889,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get preferencesSectionDateSubtitle => '影响今日卡片、日历和日期展示';
+
+  @override
+  String get preferencesTextScaleTitle => '应用字体大小';
+
+  @override
+  String get preferencesTextScaleSubtitle => '只调整多仪内文字，不改变手机其他应用';
+
+  @override
+  String get preferencesTextScaleSmall => '小（85%）';
+
+  @override
+  String get preferencesTextScaleStandard => '标准（100%）';
+
+  @override
+  String get preferencesTextScaleLarge => '大（115%）';
 
   @override
   String get preferencesFirstDayTitle => '一周从哪一天开始';

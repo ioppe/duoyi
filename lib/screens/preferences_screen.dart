@@ -4,6 +4,7 @@ import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/app_clock.dart';
 import '../core/app_motion.dart';
+import '../core/app_text_scale.dart';
 import '../core/i18n_date_format.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/surface_components.dart';
@@ -125,6 +126,7 @@ class PersonalizationSettingsScreen extends StatefulWidget {
 class _PersonalizationSettingsScreenState
     extends State<PersonalizationSettingsScreen> {
   final GlobalKey _dateSectionKey = GlobalKey();
+  final GlobalKey _textScaleSectionKey = GlobalKey();
   final GlobalKey _defaultsSectionKey = GlobalKey();
   final GlobalKey _interactionSectionKey = GlobalKey();
   final GlobalKey _archiveSectionKey = GlobalKey();
@@ -238,6 +240,11 @@ class _PersonalizationSettingsScreenState
                   title: I18n.tr('preferences.menu.display'),
                   items: [
                     _PreferenceMenuItem(
+                      icon: Icons.format_size,
+                      label: I18n.tr('preferences.menu.text_scale'),
+                      onTap: () => _scrollToMenuTarget(_textScaleSectionKey),
+                    ),
+                    _PreferenceMenuItem(
                       icon: Icons.calendar_month_outlined,
                       label: I18n.tr('preferences.menu.calendar'),
                       onTap: () => _scrollToMenuTarget(_dateSectionKey),
@@ -264,6 +271,34 @@ class _PersonalizationSettingsScreenState
                 subtitle: I18n.tr('preferences.section.date.subtitle'),
                 children: [
                   const LanguageSettingsTile(),
+                  KeyedSubtree(
+                    key: _textScaleSectionKey,
+                    child: AppSettingsTile(
+                      key: const ValueKey('preferences_text_scale_tile'),
+                      icon: Icons.format_size,
+                      color: Colors.deepPurple,
+                      title: I18n.tr('preferences.text_scale.title'),
+                      subtitle: I18n.tr('preferences.text_scale.subtitle'),
+                      trailing: _compactDropdown<double>(
+                        value: p.textScale,
+                        items: [
+                          for (final scale in AppTextScale.options)
+                            DropdownMenuItem(
+                              value: scale,
+                              child: Text(
+                                _textScaleLabel(scale),
+                                style: appSecondaryControlTextStyle(context),
+                              ),
+                            ),
+                        ],
+                        onChanged: (v) => v == null
+                            ? null
+                            : context.read<PreferencesProvider>().setTextScale(
+                                v,
+                              ),
+                      ),
+                    ),
+                  ),
                   AppSwitchTile(
                     key: const ValueKey('preferences_home_calendar_switch'),
                     icon: Icons.calendar_today_outlined,
@@ -500,6 +535,14 @@ class _PersonalizationSettingsScreenState
         ),
       ),
     );
+  }
+
+  String _textScaleLabel(double scale) {
+    return switch (AppTextScale.normalize(scale)) {
+      AppTextScale.small => I18n.tr('preferences.text_scale.small'),
+      AppTextScale.large => I18n.tr('preferences.text_scale.large'),
+      _ => I18n.tr('preferences.text_scale.standard'),
+    };
   }
 
   Widget _compactDropdown<T>({

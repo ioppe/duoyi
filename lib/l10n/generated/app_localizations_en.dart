@@ -535,6 +535,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferencesMenuCalendar => 'Date and calendar';
 
   @override
+  String get preferencesMenuTextScale => 'Font size';
+
+  @override
   String get preferencesMenuInteractionArchive => 'Interactions and archiving';
 
   @override
@@ -936,6 +939,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preferencesSectionDateSubtitle =>
       'Affects Today cards, calendar, and date display';
+
+  @override
+  String get preferencesTextScaleTitle => 'App font size';
+
+  @override
+  String get preferencesTextScaleSubtitle =>
+      'Only changes text inside Duoyi. Other apps and system settings stay unchanged.';
+
+  @override
+  String get preferencesTextScaleSmall => 'Small (85%)';
+
+  @override
+  String get preferencesTextScaleStandard => 'Standard (100%)';
+
+  @override
+  String get preferencesTextScaleLarge => 'Large (115%)';
 
   @override
   String get preferencesFirstDayTitle => 'First day of week';

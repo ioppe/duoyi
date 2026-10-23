@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_text_scale.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/notification_history_policy.dart';
 import '../core/report_reminder_config.dart';
@@ -207,6 +208,7 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kFocusNavigationMigrated = 'pref_focus_navigation_v1';
   static const _kAppTimeZone = LocalTimezoneResolver.preferenceKey;
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
+  static const _kTextScale = 'pref_text_scale';
 
   Future<void> Function()? onAppTimeZoneChanged;
 
@@ -222,6 +224,8 @@ class PreferencesProvider extends ChangeNotifier {
   // 本机首页布局偏好，与账号业务数据独立。
   bool _showHomeCalendar = false;
   bool _showCompletedTodos = false;
+  // 应用内字号档位：只在本机生效，不进入账号业务数据。
+  double _textScale = AppTextScale.defaultScale;
   int _defaultPomodoroMinutes = 25;
   bool _quickCaptureFab = true;
   bool _notificationQuickAdd = false;
@@ -275,6 +279,7 @@ class PreferencesProvider extends ChangeNotifier {
   bool get showLunar => _showLunar;
   bool get showHomeCalendar => _showHomeCalendar;
   bool get showCompletedTodos => _showCompletedTodos;
+  double get textScale => _textScale;
   int get defaultPomodoroMinutes => _defaultPomodoroMinutes;
   bool get quickCaptureFab => _quickCaptureFab;
   bool get notificationQuickAdd => _notificationQuickAdd;
@@ -417,6 +422,7 @@ class PreferencesProvider extends ChangeNotifier {
     _showLunar = true;
     _showHomeCalendar = false;
     _showCompletedTodos = false;
+    _textScale = AppTextScale.defaultScale;
     _defaultPomodoroMinutes = 25;
     _quickCaptureFab = true;
     _notificationQuickAdd = false;
@@ -545,6 +551,7 @@ class PreferencesProvider extends ChangeNotifier {
     _showLunar = p.getBool(_kShowLunar) ?? true;
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
+    _textScale = AppTextScale.normalize(p.getDouble(_kTextScale));
     _defaultPomodoroMinutes = p.getInt(_kDefaultPomodoroMinutes) ?? 25;
     _quickCaptureFab = p.getBool(_kQuickCaptureFab) ?? true;
     _notificationQuickAdd = p.getBool(_kNotificationQuickAdd) ?? false;
@@ -1114,6 +1121,14 @@ class PreferencesProvider extends ChangeNotifier {
         await p.setBool(_kShowCompletedTodos, value);
         await _notifyPreferenceKeys(const [_kShowCompletedTodos]);
       });
+
+  /// 只接受三个字号档位，其他输入按 [AppTextScale.normalize] 归一化后保存。
+  Future<void> setTextScale(double value) => _trackPreferenceWrite(() async {
+    _textScale = AppTextScale.normalize(value);
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble(_kTextScale, _textScale);
+    await _notifyPreferenceKeys(const [_kTextScale]);
+  });
 
   Future<void> setDefaultPomodoroMinutes(int value) =>
       _trackPreferenceWrite(() async {

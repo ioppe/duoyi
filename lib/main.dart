@@ -7,6 +7,7 @@ import 'core/app_version.dart';
 import 'core/app_config.dart';
 import 'core/app_clock.dart';
 import 'core/app_motion.dart';
+import 'core/app_text_scale.dart';
 import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
@@ -3883,17 +3884,33 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       scrollBehavior: const KeyboardDismissScrollBehavior(),
       navigatorObservers: [_keyboardObserver],
-      builder: (context, child) => KeyboardDismissScope(
-        child: Theme(
-          data: AppMotion.themeFor(context, Theme.of(context)),
-          child: AppClockScope(
-            child: WebAuthGate(
-              enabled: WebTarget.isWebBuild && !mustUpdate,
-              child: child!,
+      builder: (context, child) {
+        // 应用字号是设备本地偏好，与系统字号相乘后只作用于多仪内部文字；
+        // 这里只替换 textScaler，padding / viewInsets 仍沿用系统值。
+        final mediaQuery = MediaQuery.of(context);
+        final textScale = context.select<PreferencesProvider, double>(
+          (prefs) => prefs.textScale,
+        );
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: AppTextScale.resolve(
+              system: mediaQuery.textScaler,
+              appScale: textScale,
             ),
           ),
-        ),
-      ),
+          child: KeyboardDismissScope(
+            child: Theme(
+              data: AppMotion.themeFor(context, Theme.of(context)),
+              child: AppClockScope(
+                child: WebAuthGate(
+                  enabled: WebTarget.isWebBuild && !mustUpdate,
+                  child: child!,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
       theme: brand.theme,
       themeAnimationStyle: AppMotion.overlayStyle(context),
       home: mustUpdate

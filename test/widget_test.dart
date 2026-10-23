@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:duoyi/main.dart';
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/app_version.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/providers/app_lock_provider.dart';
@@ -34,6 +37,7 @@ void main() {
   testWidgets('App renders default bottom tabs: 今日/待办/习惯/专注/我的', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -81,5 +85,22 @@ void main() {
     expect(find.text('我的'), findsWidgets);
     expect(find.text('小组件'), findsNothing);
     expect(find.text('日历'), findsNothing);
+
+    // MaterialApp.builder 把应用字号乘进 MediaQuery.textScaler，主页面随之缩放。
+    expect(
+      MediaQuery.textScalerOf(tester.element(find.byType(MainShell))).scale(20),
+      closeTo(20, 1e-9),
+    );
+
+    final preferences = Provider.of<PreferencesProvider>(
+      tester.element(find.byType(MainShell)),
+      listen: false,
+    );
+    await tester.runAsync(() => preferences.setTextScale(AppTextScale.large));
+    await tester.pump();
+    expect(
+      MediaQuery.textScalerOf(tester.element(find.byType(MainShell))).scale(20),
+      closeTo(20 * AppTextScale.large, 1e-9),
+    );
   });
 }
