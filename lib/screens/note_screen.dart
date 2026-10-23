@@ -971,7 +971,7 @@ class _MarkdownEditingController extends TextEditingController {
               TextSpan(
                 text: source.substring(i + 1, end),
                 style: base.copyWith(
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   backgroundColor: cs.surfaceContainerHighest.withValues(
                     alpha: 0.7,
                   ),
@@ -1381,7 +1381,7 @@ class _PreviewBlock extends StatelessWidget {
         child: Text(
           block.text,
           style: const TextStyle(
-            fontFamily: DesignTokens.fontFamilyRounded,
+            fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
           ),
         ),
@@ -1455,7 +1455,7 @@ class _InlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, end),
               style: base.copyWith(
-                fontFamily: DesignTokens.fontFamilyRounded,
+                fontFamily: DesignTokens.fontFamily,
                 backgroundColor: Colors.black.withValues(alpha: 0.06),
               ),
             ),

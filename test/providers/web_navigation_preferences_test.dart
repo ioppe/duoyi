@@ -115,9 +115,11 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('pref_web_navigation_v2'), isTrue);
     expect(prefs.getBool('pref_focus_navigation_v1'), isTrue);
+    // 导航迁移标记是设备配置：账号清理后仍保留，避免下次冷启动重复迁移并
+    // 覆盖用户自定义的隐藏选择。
     await AccountLocalDataCleaner.clearSharedPreferences();
-    expect(prefs.getBool('pref_web_navigation_v2'), isNull);
-    expect(prefs.getBool('pref_focus_navigation_v1'), isNull);
+    expect(prefs.getBool('pref_web_navigation_v2'), isTrue);
+    expect(prefs.getBool('pref_focus_navigation_v1'), isTrue);
   });
 
   test('原生客户端默认专注作为一级入口，小组件收纳到更多应用', () async {

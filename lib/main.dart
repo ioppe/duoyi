@@ -95,6 +95,7 @@ import 'widgets/force_update_gate.dart';
 import 'widgets/web_auth_gate.dart';
 import 'widgets/todo_completion_flow.dart';
 import 'widgets/surface_components.dart';
+import 'widgets/keyboard_dismiss_scope.dart';
 
 final GlobalKey<MainShellState> mainShellKey = GlobalKey<MainShellState>();
 final List<Uri> _pendingWidgetUris = <Uri>[];
@@ -923,8 +924,8 @@ void main() async {
   calendarProvider.localEventReminderCanceller =
       notificationService.cancelCalendarReminder;
   preferencesProvider.onChangedKeys = cloudSyncProvider.markPreferencesChanged;
-  ReminderRingtoneSettings.onChanged = (keys) {
-    cloudSyncProvider.markPreferencesChanged(keys);
+  ReminderRingtoneSettings.onChanged = (keys) async {
+    await cloudSyncProvider.markPreferencesChanged(keys);
     if (keys.contains(ReminderRingtoneSettings.soundPreferenceKey) ||
         keys.contains(ReminderRingtoneSettings.volumePreferenceKey)) {
       unawaited(() async {
@@ -3602,6 +3603,8 @@ class DuoyiApp extends StatefulWidget {
 }
 
 class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
+  final _keyboardObserver = KeyboardDismissNavigatorObserver();
+
   /// 缓存上一次已知的"本地日"，用于在 resumed 时判定是否跨天。
   /// 初始值写入于 [initState]。
   DateTime? _lastLifecycleDay;
@@ -3878,12 +3881,16 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       locale: locale.flutterLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (context, child) => Theme(
-        data: AppMotion.themeFor(context, Theme.of(context)),
-        child: AppClockScope(
-          child: WebAuthGate(
-            enabled: WebTarget.isWebBuild && !mustUpdate,
-            child: child!,
+      scrollBehavior: const KeyboardDismissScrollBehavior(),
+      navigatorObservers: [_keyboardObserver],
+      builder: (context, child) => KeyboardDismissScope(
+        child: Theme(
+          data: AppMotion.themeFor(context, Theme.of(context)),
+          child: AppClockScope(
+            child: WebAuthGate(
+              enabled: WebTarget.isWebBuild && !mustUpdate,
+              child: child!,
+            ),
           ),
         ),
       ),
@@ -3958,6 +3965,7 @@ class MainShellState extends State<MainShell> {
     final target = allowHidden
         ? index.clamp(0, _tabCount - 1)
         : _coerceTabIndex(index);
+    KeyboardDismissScope.dismiss();
     setState(() {
       _currentIndex = target;
       _builtTabs.add(target);
@@ -4116,12 +4124,7 @@ class MainShellState extends State<MainShell> {
     final navBarBlurSigma = appSurfaceStyleOf(context)?.navBarBlurSigma ?? 0;
     final navBar = NavigationBar(
       selectedIndex: selectedNavIndex < 0 ? 0 : selectedNavIndex,
-      onDestinationSelected: (i) => setState(() {
-        _currentIndex = safeVisibleTabs[i];
-        _builtTabs.add(_currentIndex);
-        _allowHiddenCurrentIndex = false;
-        _hasExplicitNavigation = true;
-      }),
+      onDestinationSelected: (i) => navigateTo(safeVisibleTabs[i]),
       destinations: destinations,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
     );
@@ -4182,14 +4185,9 @@ class MainShellState extends State<MainShell> {
           : BrandBackground(child: tabStack),
       bottomNavigationBar: showingHiddenTab
           ? _HiddenTabReturnBar(
-              onClose: () => setState(() {
-                _currentIndex = safeVisibleTabs.contains(6)
-                    ? 6
-                    : safeVisibleTabs.first;
-                _builtTabs.add(_currentIndex);
-                _allowHiddenCurrentIndex = false;
-                _hasExplicitNavigation = true;
-              }),
+              onClose: () => navigateTo(
+                safeVisibleTabs.contains(6) ? 6 : safeVisibleTabs.first,
+              ),
             )
           : glassNavBarActive
           ? ClipRect(
@@ -4228,14 +4226,9 @@ class MainShellState extends State<MainShell> {
         ? Column(
             children: [
               _HiddenTabReturnBar(
-                onClose: () => setState(() {
-                  _currentIndex = safeVisibleTabs.contains(6)
-                      ? 6
-                      : safeVisibleTabs.first;
-                  _builtTabs.add(_currentIndex);
-                  _allowHiddenCurrentIndex = false;
-                  _hasExplicitNavigation = true;
-                }),
+                onClose: () => navigateTo(
+                  safeVisibleTabs.contains(6) ? 6 : safeVisibleTabs.first,
+                ),
               ),
               Expanded(child: content),
             ],
@@ -4265,12 +4258,7 @@ class MainShellState extends State<MainShell> {
                 right: false,
                 child: NavigationRail(
                   selectedIndex: selectedNavIndex < 0 ? null : selectedNavIndex,
-                  onDestinationSelected: (i) => setState(() {
-                    _currentIndex = safeVisibleTabs[i];
-                    _builtTabs.add(_currentIndex);
-                    _allowHiddenCurrentIndex = false;
-                    _hasExplicitNavigation = true;
-                  }),
+                  onDestinationSelected: (i) => navigateTo(safeVisibleTabs[i]),
                   extended: railExtended,
                   minExtendedWidth: DesktopTokens.railExtendedWidth,
                   backgroundColor: Colors.transparent,

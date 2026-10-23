@@ -96,10 +96,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
-          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
-        ))
-        .load();
+    await (FontLoader(
+      DesignTokens.fontFamily,
+    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
   });
 
   setUp(() {

@@ -8808,7 +8808,7 @@ class _InvitesTabState extends State<_InvitesTab> {
                           child: SelectableText(
                             c['code'].toString(),
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              fontFamily: DesignTokens.fontFamilyRounded,
+                              fontFamily: DesignTokens.fontFamily,
                               fontWeight: DesignTokens.fontWeightStrong,
                               color: cs.onSurface,
                             ),

@@ -32,7 +32,7 @@ void main() {
     expect(screen, contains('_InlineMarkdownText'));
     expect(screen, contains('TextDecoration.lineThrough'));
     expect(screen, contains('FontStyle.italic'));
-    expect(screen, contains('fontFamily: DesignTokens.fontFamilyRounded'));
+    expect(screen, contains('fontFamily: DesignTokens.fontFamily'));
     expect(screen, contains('Icons.format_italic'));
     expect(screen, contains('Icons.format_quote'));
     expect(screen, contains('Icons.format_list_bulleted'));

@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:duoyi/core/app_version.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('force update defaults use current 1.1.44 version floor', () {
+  test('force update defaults follow current client version floor', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final appVersion = File('lib/core/app_version.dart').readAsStringSync();
     final backend = File('backend/main.py').readAsStringSync();
@@ -12,9 +13,12 @@ void main() {
       'lib/screens/admin_screen.dart',
     ).readAsStringSync();
 
-    expect(pubspec, contains('version: 1.1.44+140010'));
-    expect(appVersion, contains("static const name = '1.1.44';"));
-    expect(appVersion, contains('static const build = 140010;'));
+    expect(
+      pubspec,
+      contains('version: ${AppVersion.name}+${AppVersion.build}'),
+    );
+    expect(appVersion, contains("static const name = '${AppVersion.name}';"));
+    expect(appVersion, contains('static const build = ${AppVersion.build};'));
     final backendConfig = File('backend/config.py').readAsStringSync();
     expect(backendConfig, contains('def _pubspec_app_version('));
     expect(backendConfig, contains('"pubspec.yaml"'));

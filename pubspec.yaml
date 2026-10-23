@@ -14,7 +14,7 @@ publish_to: 'none'
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.44+140010
+version: 1.1.45+140011
 
 environment:
   sdk: ^3.11.5
@@ -93,6 +93,19 @@ flutter:
     - assets/sounds/reminders/
 
   fonts:
+    # 全局 UI 字体：Noto Sans SC 变量字库（wght 100–900）。同一个变量文件按
+    # 400/500/600/700 注册，引擎按请求字重选择并应用 wght 变体。
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 700
+    # 旧圆体字库保留打包：UI 已不再引用，仅避免移除历史资产带来干扰。
     - family: ResourceHanRounded
       fonts:
         - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf

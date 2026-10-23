@@ -9,6 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// listed here. Account data, sync metadata, notification history, backup
 /// targets and cached integration payloads must not survive logout or account
 /// switching.
+///
+/// `pref_*` ([deviceConfigurationKeyPrefix]) is device configuration, not
+/// account data: PreferencesProvider persists haptic feedback, lunar calendar,
+/// date format, default tab, bottom navigation, timezone and the daily/report
+/// reminder slots there, together with migration markers such as
+/// `pref_web_navigation_v2` and the reminder ringtone channel sound cache.
+/// Those keys are also part of the synced preferences collection, but every
+/// device must keep its own copy across logout, account switching and expired
+/// tokens; clearing them reset user settings on the next cold start. Cleanup
+/// still removes account data, `sync_*` metadata, history, theme purchase and
+/// reward state, OAuth/WebDAV credentials and private caches.
 class AccountLocalDataCleaner {
   AccountLocalDataCleaner._();
 
@@ -32,6 +43,10 @@ class AccountLocalDataCleaner {
   static void invalidateInFlightAccountWrites() {
     _accountDataGeneration++;
   }
+
+  /// 设备配置前缀：PreferencesProvider 写出的本机偏好（含迁移标记、提醒
+  /// 音量/声效配置）属于设备配置，不进入账号清理集，见文件头分类说明。
+  static const deviceConfigurationKeyPrefix = 'pref_';
 
   static const accountScopedKeys = <String>{
     accountDataOwnerKey,
@@ -96,78 +111,11 @@ class AccountLocalDataCleaner {
     'sync_preferences_changed_keys',
     'sync_quick_capture_templates_updated_at',
     'sync_merge_decisions',
-    'pref_haptic_feedback',
-    'pref_show_lunar',
-    'pref_show_completed_todos',
-    'pref_quick_capture_fab',
-    'pref_notification_quick_add',
-    'pref_notification_today_progress',
-    'pref_daily_reminder_enabled',
-    'pref_daily_reminder_today_tasks',
-    'pref_daily_reminder_tomorrow_plan',
-    'pref_daily_reminder_overdue',
-    'pref_daily_reminder_pause_holidays',
-    'pref_daily_reminder_slot2_enabled',
-    'pref_daily_reminder_slot2_today',
-    'pref_daily_reminder_slot2_tomorrow',
-    'pref_daily_reminder_slot2_overdue',
-    'pref_daily_reminder_slot2_pause_holidays',
-    'pref_daily_reminder_slot3_enabled',
-    'pref_daily_reminder_slot3_today',
-    'pref_daily_reminder_slot3_tomorrow',
-    'pref_daily_reminder_slot3_overdue',
-    'pref_daily_reminder_slot3_pause_holidays',
-    'pref_daily_report_reminder',
-    'pref_weekly_report_reminder',
-    'pref_monthly_report_reminder',
-    'pref_yearly_report_reminder',
-    'pref_first_day_of_week',
-    'pref_default_tab',
-    'pref_default_pomodoro_minutes',
-    'pref_notification_history_limit',
-    'pref_auto_archive_completed_days',
-    'pref_daily_reminder_hour',
-    'pref_daily_reminder_minute',
-    'pref_daily_reminder_slot2_hour',
-    'pref_daily_reminder_slot2_minute',
-    'pref_daily_reminder_slot3_hour',
-    'pref_daily_reminder_slot3_minute',
-    'pref_daily_report_reminder_hour',
-    'pref_daily_report_reminder_minute',
-    'pref_weekly_report_reminder_weekday',
-    'pref_weekly_report_reminder_hour',
-    'pref_weekly_report_reminder_minute',
-    'pref_monthly_report_reminder_day',
-    'pref_monthly_report_reminder_hour',
-    'pref_monthly_report_reminder_minute',
-    'pref_yearly_report_reminder_month',
-    'pref_yearly_report_reminder_day',
-    'pref_yearly_report_reminder_hour',
-    'pref_yearly_report_reminder_minute',
-    'pref_reminder_ringtone_volume_percent',
-    'pref_reminder_ringtone_alarm_migrated_to_soft',
-    'pref_date_format',
-    'pref_app_timezone_iana',
-    'pref_app_timezone_mode',
-    'pref_daily_reminder_kind',
-    'pref_daily_reminder_slot2_kind',
-    'pref_daily_reminder_slot3_kind',
-    'pref_reminder_ringtone_sound',
-    'pref_daily_reminder_repeat_days',
-    'pref_daily_reminder_slot2_repeat_days',
-    'pref_daily_reminder_slot3_repeat_days',
-    'pref_bottom_nav_order',
-    'pref_bottom_nav_visible',
-    'pref_web_navigation_v2',
-    'pref_focus_navigation_v1',
   };
 
   static const accountScopedPrefixes = <String>[
     'sync_',
     'widget_display_mode_',
-    'pref_daily_reminder_slot',
-    'pref_reminder_ringtone_fallback_channel_sound_',
-    'pref_reminder_ringtone_fallback_channel_sound_schema_',
     'duoyi_ics_',
     'duoyi_ics_events_',
     'duoyi_oauth_calendar_',

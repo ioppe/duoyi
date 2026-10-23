@@ -16,14 +16,17 @@ class AiReviewMarkdown extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final body = (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-      fontFamily: DesignTokens.fontFamilyRounded,
-      fontWeight: DesignTokens.fontWeightStrong,
+      fontFamily: DesignTokens.fontFamily,
+      fontWeight: DesignTokens.fontWeightRegular,
       fontSize: DesignTokens.fontSizeBody,
       color: cs.onSurface,
       height: 1.6,
     );
-    TextStyle heading(double size) =>
-        body.copyWith(fontSize: size, height: 1.4);
+    TextStyle heading(double size) => body.copyWith(
+      fontSize: size,
+      fontWeight: DesignTokens.fontWeightStrong,
+      height: 1.4,
+    );
     return MarkdownBody(
       data: data,
       selectable: true,
@@ -36,12 +39,12 @@ class AiReviewMarkdown extends StatelessWidget {
           color: cs.primary,
           decoration: TextDecoration.underline,
         ),
-        h1: heading(DesignTokens.fontSizeXl),
-        h2: heading(DesignTokens.fontSizeLg),
-        h3: heading(DesignTokens.fontSizeMd),
-        h4: heading(DesignTokens.fontSizeSection),
-        h5: heading(DesignTokens.fontSizeBody),
-        h6: heading(DesignTokens.fontSizeBody),
+        h1: heading(DesignTokens.fontSizeXxl),
+        h2: heading(DesignTokens.fontSizeXl),
+        h3: heading(DesignTokens.fontSizeLg),
+        h4: heading(DesignTokens.fontSizeMd),
+        h5: heading(DesignTokens.fontSizeSection),
+        h6: heading(DesignTokens.fontSizeSection),
         h1Padding: const EdgeInsets.only(top: DesignTokens.spaceSm),
         h2Padding: const EdgeInsets.only(top: DesignTokens.spaceSm),
         h3Padding: const EdgeInsets.only(top: DesignTokens.spaceSm),

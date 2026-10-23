@@ -9,6 +9,9 @@ import 'package:duoyi/providers/share_provider.dart';
 import 'package:duoyi/screens/goal_edit_screen.dart';
 import 'package:duoyi/screens/goal_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/design_tokens.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +19,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() async {
+    await (FontLoader(
+      DesignTokens.fontFamily,
+    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+  });
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -174,6 +182,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => CustomFocusSoundProvider()),
         ],
         child: MaterialApp(
+          theme: AppBrands.defaultBrand.theme,
           home: RepaintBoundary(
             key: screenshotKey,
             child: const GoalEditScreen(),
@@ -241,6 +250,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => CustomFocusSoundProvider()),
         ],
         child: MaterialApp(
+          theme: AppBrands.defaultBrand.theme,
           home: GoalEditScreen(
             goal: GoalItem(
               id: 'goal-with-dates',
@@ -319,6 +329,7 @@ void main() {
           ChangeNotifierProvider<ShareProvider>.value(value: shareProvider),
         ],
         child: MaterialApp(
+          theme: AppBrands.defaultBrand.theme,
           home: GoalEditScreen(
             goal: GoalItem(
               id: 'goal-shared',
@@ -331,6 +342,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('空间归属'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('空间归属'), findsOneWidget);
     await tester.ensureVisible(find.text('空间归属'));
     await tester.pumpAndSettle();
@@ -362,7 +378,10 @@ void main() {
               create: (_) => ShareProvider(),
             ),
           ],
-          child: const MaterialApp(home: GoalScreen()),
+          child: MaterialApp(
+            theme: AppBrands.defaultBrand.theme,
+            home: const GoalScreen(),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -405,7 +424,7 @@ void _expectTextFits(WidgetTester tester, Finder finder) {
   final context = tester.element(finder);
   final widget = tester.widget<Text>(finder);
   final text = widget.data ?? widget.textSpan?.toPlainText() ?? '';
-  final style = widget.style ?? DefaultTextStyle.of(context).style;
+  final style = DefaultTextStyle.of(context).style.merge(widget.style);
   final painter = TextPainter(
     text: TextSpan(text: text, style: style),
     textDirection: Directionality.of(context),

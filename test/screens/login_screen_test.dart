@@ -107,13 +107,19 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text(I18n.tr('auth.email_code_login')));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('auth-method-emailCode')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('auth-method-emailCode')));
     await tester.pumpAndSettle();
     expect(
       find.widgetWithText(TextField, I18n.tr('auth.verified_email')),
       findsOneWidget,
     );
-    await tester.tap(find.text(I18n.tr('auth.token.login')));
+    await tester.ensureVisible(find.byKey(const ValueKey('auth-method-token')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('auth-method-token')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('access-token')), findsOneWidget);
     final server = tester.widget<TextField>(
@@ -121,7 +127,11 @@ void main() {
     );
     expect(server.readOnly, kIsWeb);
     expect(server.controller?.text, kIsWeb ? Uri.base.origin : auth.baseUrl);
-    await tester.tap(find.text(I18n.tr('auth.password_login')));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('auth-method-password')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('auth-method-password')));
     await tester.pumpAndSettle();
     expect(
       find.widgetWithText(TextField, I18n.tr('auth.password')),

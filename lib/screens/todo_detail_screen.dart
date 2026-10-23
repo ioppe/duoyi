@@ -2037,7 +2037,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         child: Text(
           block.text,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontFamily: DesignTokens.fontFamilyRounded,
+            fontFamily: DesignTokens.fontFamily,
             fontSize: DesignTokens.fontSizeBody,
             color: colorScheme.onSurface,
           ),
@@ -2121,7 +2121,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, end),
               style: base.copyWith(
-                fontFamily: DesignTokens.fontFamilyRounded,
+                fontFamily: DesignTokens.fontFamily,
                 backgroundColor: cs.surfaceContainerHighest,
               ),
             ),

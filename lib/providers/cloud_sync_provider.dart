@@ -288,21 +288,56 @@ class CloudSyncProvider extends ChangeNotifier {
     _scheduleAutoSync();
   }
 
-  void markPreferencesChanged([Iterable<String>? keys]) {
-    if (_suppressDirtyMark) return;
+  /// 由 PreferencesProvider 在本地偏好写入后调用。
+  ///
+  /// 内存标记（stamp / changedKeys / pending）与自动同步排队保持同步执行，
+  /// 调用方 await 之前即可见；返回的 Future 在同步元数据落盘后完成，避免
+  /// 进程退出或连续设置时丢失冲突元数据、或被旧 stamp 覆盖新 stamp。
+  Future<void> markPreferencesChanged([Iterable<String>? keys]) {
+    if (_suppressDirtyMark) return Future<void>.value();
     final normalizedKeys = _normalizePreferenceChangedKeys(keys);
-    if (keys != null && normalizedKeys.isEmpty) return;
+    if (keys != null && normalizedKeys.isEmpty) return Future<void>.value();
     final stamp = DateTime.now().toUtc().toIso8601String();
     _pendingPreferencesUpdatedAt = stamp;
-    unawaited(_persistSyncStamp(_preferencesUpdatedAtStorageKey, stamp));
     if (keys == null) {
       _pendingPreferencesFullSync = true;
       _pendingPreferenceKeys.clear();
     } else if (!_pendingPreferencesFullSync) {
       _pendingPreferenceKeys.addAll(normalizedKeys);
     }
-    unawaited(_persistPreferenceChangedKeys());
     markPendingLocalChange();
+    return _persistPreferenceSyncMetadata();
+  }
+
+  Future<void> _preferenceMetadataWriteQueue = Future<void>.value();
+
+  /// 串行落盘偏好同步元数据。每个任务执行时才读取最新内存状态，因此快速
+  /// 连续设置不会被较早的调用用旧 stamp 覆盖；切号（[_accountGeneration]）
+  /// 之后到达的旧任务直接丢弃，不把上一账号的同步元数据写给新账号。
+  Future<void> _persistPreferenceSyncMetadata() {
+    final generation = _accountGeneration;
+    final next = _preferenceMetadataWriteQueue.then((_) async {
+      if (generation != _accountGeneration) return;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (generation != _accountGeneration) return;
+        final stamp = _pendingPreferencesUpdatedAt;
+        if (stamp != null) {
+          await prefs.setString(_preferencesUpdatedAtStorageKey, stamp);
+        }
+        await _persistPreferenceChangedKeys(prefs);
+        if (_hasPendingChanges) {
+          await _writePendingChanges(prefs, true);
+        }
+      } catch (error, stack) {
+        debugPrint(
+          '[CloudSync] failed to persist preference sync metadata: $error\n'
+          '$stack',
+        );
+      }
+    });
+    _preferenceMetadataWriteQueue = next;
+    return next;
   }
 
   void markQuickCaptureTemplatesChanged() {
@@ -320,16 +355,16 @@ class CloudSyncProvider extends ChangeNotifier {
     await prefs.setString(key, value);
   }
 
-  Future<void> _persistPreferenceChangedKeys() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _persistPreferenceChangedKeys([SharedPreferences? prefs]) async {
+    final target = prefs ?? await SharedPreferences.getInstance();
     if (_pendingPreferencesFullSync) {
-      await prefs.setStringList(_preferencesChangedKeysStorageKey, const [
+      await target.setStringList(_preferencesChangedKeysStorageKey, const [
         _preferencesFullSyncSentinel,
       ]);
       return;
     }
     final keys = _pendingPreferenceKeys.toList()..sort();
-    await prefs.setStringList(_preferencesChangedKeysStorageKey, keys);
+    await target.setStringList(_preferencesChangedKeysStorageKey, keys);
   }
 
   void _scheduleAutoSync([Duration delay = _autoSyncDelay]) {
@@ -2387,18 +2422,16 @@ class CloudSyncProvider extends ChangeNotifier {
     SharedPreferences prefs,
     Map<String, dynamic> remotePayload,
   ) {
+    // 只要本地存在有效的偏好 stamp 就按时间戳比较：pendingKeys 可能已经
+    // 被一次失败的同步/进程重启丢掉，此时若直接返回 false，旧远端会覆盖
+    // 带更新本地 stamp 的偏好。冲突合并仍由 changedKeys 语义处理。
     final localUpdatedAt =
         _pendingPreferencesUpdatedAt ??
         prefs.getString(_preferencesUpdatedAtStorageKey) ??
         '';
     final remoteUpdatedAt = remotePayload['updatedAt']?.toString() ?? '';
-    final hasPendingKeys =
-        _pendingPreferencesFullSync ||
-        _pendingPreferenceKeys.isNotEmpty ||
-        _readPendingPreferenceChangedKeys(prefs).isNotEmpty;
-    if (!hasPendingKeys) return false;
-    if (localUpdatedAt.isNotEmpty && remoteUpdatedAt.isEmpty) return true;
-    if (localUpdatedAt.isEmpty || remoteUpdatedAt.isEmpty) return false;
+    if (localUpdatedAt.isEmpty) return false;
+    if (remoteUpdatedAt.isEmpty) return true;
     return _timestampGt(localUpdatedAt, remoteUpdatedAt);
   }
 

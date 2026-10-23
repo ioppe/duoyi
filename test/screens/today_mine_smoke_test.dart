@@ -212,6 +212,11 @@ void main() {
           'mine_settings_entry',
           'mine_support_entry',
         ]) {
+          await tester.scrollUntilVisible(
+            find.byKey(ValueKey(key)),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
           expect(find.byKey(ValueKey(key)), findsOneWidget);
         }
         expect(find.text('日程日期'), findsNothing);
@@ -226,7 +231,16 @@ void main() {
           'mine_support_entry',
         ]) {
           final entry = find.byKey(ValueKey(key));
-          await tester.ensureVisible(entry);
+          tester
+              .state<ScrollableState>(find.byType(Scrollable).first)
+              .position
+              .jumpTo(0);
+          await tester.pump();
+          await tester.scrollUntilVisible(
+            entry,
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
           await tester.pumpAndSettle();
           await tester.tap(entry);
           await tester.pumpAndSettle();
@@ -675,11 +689,20 @@ void main() {
     await tester.pumpAndSettle();
     final greeting = find.byKey(const ValueKey('home_greeting'));
     final date = find.byKey(const ValueKey('home_date'));
-    expect(tester.widget<Text>(greeting).style?.fontSize, 19);
+    expect(
+      tester.widget<Text>(greeting).style?.fontSize,
+      DesignTokens.homeHeadingSize,
+    );
     expect(tester.getTopLeft(greeting).dy, closeTo(28, 2));
-    expect(tester.widget<Text>(date).style?.fontSize, 11);
+    expect(
+      tester.widget<Text>(date).style?.fontSize,
+      DesignTokens.homeCaptionSize,
+    );
     expect(tester.widget<Text>(date).style?.color, DesignTokens.homeMuted);
-    expect(tester.widget<Text>(find.text('工作').first).style?.fontSize, 15);
+    expect(
+      tester.widget<Text>(find.text('工作').first).style?.fontSize,
+      DesignTokens.homeTaskTitleSize,
+    );
     for (final pair in [('today_todos_tab', '1'), ('today_goals_tab', '2')]) {
       expect(
         find.descendant(
@@ -1223,7 +1246,7 @@ void main() {
     expect(mine, contains('height: baseHeight + fontGrowth * 2'));
     expect(mine, contains('RepaintBoundary('));
     expect(mine, isNot(contains('GridView.count(')));
-    expect(surface, contains('fontSize: 12'));
+    expect(surface, contains('fontSize: DesignTokens.fontSizeBody'));
     expect(surface, contains('fontSize: 11'));
     expect(surface, contains('fontSize: DesignTokens.fontSizeMd'));
     expect(surface, contains('iconBoxSize = 28'));
