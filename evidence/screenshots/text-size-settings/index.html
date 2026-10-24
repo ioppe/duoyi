@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>多仪字号设置 · 渲染证据</title>
+<style>
+body { margin:0; padding:24px; font-family:system-ui,sans-serif; background:#edf0f3; color:#202932; }
+main { max-width:820px; margin:auto; } h1 { font-size:20px; margin:0 0 8px; }
+p { font-size:14px; line-height:1.6; margin:0 0 20px; color:#56616d; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
+figure { margin:0; } figcaption { font-size:14px; margin:0 0 10px; }
+img { display:block; width:100%; height:auto; border:1px solid #ccd2d8; background:white; }
+a { color:inherit; } @media(max-width:560px) { body{padding:16px} .grid {grid-template-columns:1fr;} }
+</style>
+</head>
+<body><main>
+<h1>应用字体大小：八档预览页</h1>
+<p>1.1.47+140013 · 以下为 Flutter 页面组件测试输出，使用随应用提供的 Noto Sans SC 字体。拖动更新预览，完成后保存；安卓实机效果待安装验证。</p>
+<div class="grid">
+<figure><figcaption>小号 · 85%</figcaption><a href="text-size-85.png"><img src="text-size-85.png" alt="应用字号85%的预览页面"></a></figure>
+<figure><figcaption>标准 · 100%</figcaption><a href="text-size-100.png"><img src="text-size-100.png" alt="应用标准字号100%的预览页面"></a></figure>
+<figure><figcaption>最大 · 190%</figcaption><a href="text-size-190.png"><img src="text-size-190.png" alt="应用最大字号190%的预览页面"></a></figure>
+<figure><figcaption>320px 窄屏 · 系统200% + 应用190% · 预览已滚动</figcaption><a href="text-size-narrow-system-200.png"><img src="text-size-narrow-system-200.png" alt="窄屏系统大字号下底部控制区仍可用"></a></figure>
+</div></main></body></html>

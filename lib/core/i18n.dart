@@ -236,6 +236,14 @@ const Map<String, String> _zh = <String, String>{
   'preferences.text_scale.small': '小（85%）',
   'preferences.text_scale.standard': '标准（100%）',
   'preferences.text_scale.large': '大（115%）',
+  'preferences.text_scale.preview_title': '预览字体大小',
+  'preferences.text_scale.preview_hint': '拖动下面的滑块，选择合适的字体大小。',
+  'preferences.text_scale.preview_note':
+      '设置后，待办、习惯、专注和设置页面的文字会一起调整。选好后点击“完成”保存。',
+  'preferences.text_scale.percent': '{percent}%',
+  'preferences.text_scale.standard_marker': '标准',
+  'preferences.text_scale.done': '完成',
+  'preferences.text_scale.save_failed': '字号保存失败，请重试',
   'preferences.first_day.title': '一周从哪一天开始',
   'preferences.first_day.current_monday': '当前为周一',
   'preferences.first_day.current_sunday': '当前为周日',
@@ -1595,6 +1603,16 @@ const Map<String, String> _en = <String, String>{
   'preferences.text_scale.small': 'Small (85%)',
   'preferences.text_scale.standard': 'Standard (100%)',
   'preferences.text_scale.large': 'Large (115%)',
+  'preferences.text_scale.preview_title': 'Preview font size',
+  'preferences.text_scale.preview_hint':
+      'Drag the slider below to choose a comfortable font size.',
+  'preferences.text_scale.preview_note':
+      'Text in tasks, habits, focus, and settings will use this size. Tap Done to save your choice.',
+  'preferences.text_scale.percent': '{percent}%',
+  'preferences.text_scale.standard_marker': 'Standard',
+  'preferences.text_scale.done': 'Done',
+  'preferences.text_scale.save_failed':
+      'Unable to save font size. Please try again.',
   'preferences.first_day.title': 'First day of week',
   'preferences.first_day.current_monday': 'Currently Monday',
   'preferences.first_day.current_sunday': 'Currently Sunday',

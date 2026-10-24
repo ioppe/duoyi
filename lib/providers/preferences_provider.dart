@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import '../core/app_text_scale.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/notification_history_policy.dart';
 import '../core/report_reminder_config.dart';
+import '../core/server_connection.dart';
 import '../core/web_target.dart';
 import '../models/goal.dart' show ReminderKind;
 
@@ -209,6 +211,7 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kAppTimeZone = LocalTimezoneResolver.preferenceKey;
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
   static const _kTextScale = 'pref_text_scale';
+  static const _kTextScaleOwner = 'pref_text_scale_owner_v1';
 
   Future<void> Function()? onAppTimeZoneChanged;
 
@@ -226,6 +229,10 @@ class PreferencesProvider extends ChangeNotifier {
   bool _showCompletedTodos = false;
   // 应用内字号档位：只在本机生效，不进入账号业务数据。
   double _textScale = AppTextScale.defaultScale;
+  // 当前字号归属的本机账号（服务器规范身份 + 用户ID）；null 表示尚未绑定。
+  String? _textScaleOwner;
+  // 字号相关写入的串行队列：换号重置必须排在旧的字号写入之后落盘。
+  Future<void> _textScaleWriteQueue = Future<void>.value();
   int _defaultPomodoroMinutes = 25;
   bool _quickCaptureFab = true;
   bool _notificationQuickAdd = false;
@@ -280,6 +287,7 @@ class PreferencesProvider extends ChangeNotifier {
   bool get showHomeCalendar => _showHomeCalendar;
   bool get showCompletedTodos => _showCompletedTodos;
   double get textScale => _textScale;
+  String? get textScaleOwner => _textScaleOwner;
   int get defaultPomodoroMinutes => _defaultPomodoroMinutes;
   bool get quickCaptureFab => _quickCaptureFab;
   bool get notificationQuickAdd => _notificationQuickAdd;
@@ -422,7 +430,9 @@ class PreferencesProvider extends ChangeNotifier {
     _showLunar = true;
     _showHomeCalendar = false;
     _showCompletedTodos = false;
-    _textScale = AppTextScale.defaultScale;
+    // 字号与归属账号是跨账号保留的本机偏好：账号清理/重载不回到标准档，
+    // 是否重置由 bindTextScaleToAccount 判定；新建 provider 仍由字段默认值
+    // 初始化为标准档。
     _defaultPomodoroMinutes = 25;
     _quickCaptureFab = true;
     _notificationQuickAdd = false;
@@ -552,6 +562,11 @@ class PreferencesProvider extends ChangeNotifier {
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
     _textScale = AppTextScale.normalize(p.getDouble(_kTextScale));
+    final storedTextScaleOwner = p.getString(_kTextScaleOwner)?.trim();
+    _textScaleOwner =
+        storedTextScaleOwner == null || storedTextScaleOwner.isEmpty
+        ? null
+        : storedTextScaleOwner;
     _defaultPomodoroMinutes = p.getInt(_kDefaultPomodoroMinutes) ?? 25;
     _quickCaptureFab = p.getBool(_kQuickCaptureFab) ?? true;
     _notificationQuickAdd = p.getBool(_kNotificationQuickAdd) ?? false;
@@ -1122,13 +1137,84 @@ class PreferencesProvider extends ChangeNotifier {
         await _notifyPreferenceKeys(const [_kShowCompletedTodos]);
       });
 
-  /// 只接受三个字号档位，其他输入按 [AppTextScale.normalize] 归一化后保存。
-  Future<void> setTextScale(double value) => _trackPreferenceWrite(() async {
-    _textScale = AppTextScale.normalize(value);
-    final p = await SharedPreferences.getInstance();
-    await p.setDouble(_kTextScale, _textScale);
-    await _notifyPreferenceKeys(const [_kTextScale]);
-  });
+  /// 字号写入串行化：调用顺序即落盘顺序，换号重置不会被旧写入覆盖。
+  Future<void> _queueTextScaleWrite(Future<void> Function() operation) {
+    final queued = _textScaleWriteQueue
+        .then<void>((_) {}, onError: (Object _, StackTrace _) {})
+        .then<void>((_) => operation());
+    _textScaleWriteQueue = queued.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return _trackPreferenceWrite(() => queued);
+  }
+
+  /// 只接受 [AppTextScale.options] 中的档位，其他输入归一化后保存。
+  Future<void> setTextScale(double value) {
+    final next = AppTextScale.normalize(value);
+    final ownerAtRequest = _textScaleOwner;
+    return _queueTextScaleWrite(() async {
+      if (_textScaleOwner != ownerAtRequest) {
+        throw StateError('Text scale account changed before saving');
+      }
+      final p = await SharedPreferences.getInstance();
+      try {
+        if (!await p.setDouble(_kTextScale, next)) {
+          throw StateError('Unable to persist text scale');
+        }
+      } catch (_) {
+        // Legacy SharedPreferences changes its cache before the platform write.
+        // Re-read the stored snapshot so a failed draft cannot reappear on load.
+        await p.reload();
+        rethrow;
+      }
+      _textScale = next;
+      notifyListeners();
+    });
+  }
+
+  /// 把本机字号绑定到当前账号（服务器规范身份 + 用户ID）。
+  ///
+  /// - 空 [userId] 不绑定，也不清除已有归属；
+  /// - 首次绑定（无旧 owner）保留当前已保存字号；
+  /// - 同一账号不重置；
+  /// - 不同已知账号把字号恢复标准档并记录新 owner。
+  Future<void> bindTextScaleToAccount({
+    required String serverUrl,
+    required String? userId,
+  }) {
+    final normalizedUserId = userId?.trim();
+    if (normalizedUserId == null || normalizedUserId.isEmpty) {
+      return Future<void>.value();
+    }
+    final owner = jsonEncode([
+      ServerConnection.identity(serverUrl),
+      normalizedUserId,
+    ]);
+    return _queueTextScaleWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      final storedOwner = p.getString(_kTextScaleOwner)?.trim();
+      final previousOwner =
+          _textScaleOwner ??
+          (storedOwner == null || storedOwner.isEmpty ? null : storedOwner);
+      if (previousOwner == owner && _textScaleOwner == owner) return;
+      final nextScale = previousOwner == null || previousOwner == owner
+          ? AppTextScale.normalize(p.getDouble(_kTextScale) ?? _textScale)
+          : AppTextScale.defaultScale;
+      try {
+        if (!await p.setDouble(_kTextScale, nextScale) ||
+            !await p.setString(_kTextScaleOwner, owner)) {
+          throw StateError('Unable to persist text scale account');
+        }
+      } catch (_) {
+        await p.reload();
+        rethrow;
+      }
+      _textScale = nextScale;
+      _textScaleOwner = owner;
+      notifyListeners();
+    });
+  }
 
   Future<void> setDefaultPomodoroMinutes(int value) =>
       _trackPreferenceWrite(() async {

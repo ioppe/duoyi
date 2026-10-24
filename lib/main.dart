@@ -491,6 +491,14 @@ void main() async {
   }
 
   authProvider.onAccountProfileChanged = (state) async {
+    // 登录成功/refreshMe 都走这里：先把本机字号归属到当前账号，再处理资料。
+    // 必须放在 profile 相等提前 return 之前，否则同一账号重复登录不会绑定。
+    if (state.isLoggedIn) {
+      await preferencesProvider.bindTextScaleToAccount(
+        serverUrl: authProvider.baseUrl,
+        userId: state.userId,
+      );
+    }
     final name = firstNonEmptyProfileText([
       state.displayName,
       state.username,
@@ -577,6 +585,16 @@ void main() async {
       () => themeProvider.loadFromStorage(),
       () => authProvider.loadFromStorage(refreshServerConfig: false),
       () => preferencesProvider.loadFromStorage(),
+      // 冷启动时 auth 已还原登录态：补一次字号归属校验，避免升级/重启后
+      // 已选字号被当作无主值。未登录（token 失效/退出）不绑定、不重置。
+      () {
+        final authState = authProvider.state;
+        if (!authState.isLoggedIn) return Future<void>.value();
+        return preferencesProvider.bindTextScaleToAccount(
+          serverUrl: authProvider.baseUrl,
+          userId: authState.userId,
+        );
+      },
       () => appLockProvider.loadFromStorage(),
       () => localeProvider.loadFromStorage(),
       () => userProvider.loadFromStorage(),

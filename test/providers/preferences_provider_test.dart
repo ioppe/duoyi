@@ -47,7 +47,7 @@ void main() {
     preferences.dispose();
   });
 
-  test('应用字体大小只保存三个档位，并随载入/重置恢复', () async {
+  test('应用字体大小保存八档，重载和普通清理不重置', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final preferences = PreferencesProvider();
     await preferences.loadFromStorage();
@@ -66,18 +66,18 @@ void main() {
     expect(reloaded.textScale, AppTextScale.large);
 
     reloaded.resetLocalState();
-    expect(reloaded.textScale, AppTextScale.standard);
+    expect(reloaded.textScale, AppTextScale.large);
     preferences.dispose();
     reloaded.dispose();
   });
 
-  test('载入字号偏好时把越界值归一化到标准档', () async {
+  test('载入扩展字号时保留有效档位', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'pref_text_scale': 1.6,
     });
     final preferences = PreferencesProvider();
     await preferences.loadFromStorage();
-    expect(preferences.textScale, AppTextScale.standard);
+    expect(preferences.textScale, 1.6);
     preferences.dispose();
   });
 
@@ -91,7 +91,7 @@ void main() {
     preferences.dispose();
   });
 
-  test('个性设置页提供应用字体大小入口并绑定档位 setter', () {
+  test('个性设置页提供独立字号预览页入口', () {
     final source = File(
       'lib/screens/preferences_screen.dart',
     ).readAsStringSync();
@@ -101,8 +101,8 @@ void main() {
     expect(source, contains("I18n.tr('preferences.text_scale.subtitle')"));
     expect(source, contains('Icons.format_size'));
     expect(source, contains("ValueKey('preferences_text_scale_tile')"));
-    expect(source, contains('AppTextScale.options'));
-    expect(source, contains('setTextScale'));
+    expect(source, contains('TextSizeSettingsScreen'));
+    expect(source, contains('onTap: _openTextSize'));
   });
 
   test('旧版底部导航偏好升级后保留我的并限制 5 个', () async {

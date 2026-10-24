@@ -957,6 +957,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferencesTextScaleLarge => 'Large (115%)';
 
   @override
+  String get preferencesTextScalePreviewTitle => 'Preview font size';
+
+  @override
+  String get preferencesTextScalePreviewHint =>
+      'Drag the slider below to choose a comfortable font size.';
+
+  @override
+  String get preferencesTextScalePreviewNote =>
+      'Text in tasks, habits, focus, and settings will use this size. Tap Done to save your choice.';
+
+  @override
+  String preferencesTextScalePercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get preferencesTextScaleStandardMarker => 'Standard';
+
+  @override
+  String get preferencesTextScaleDone => 'Done';
+
+  @override
+  String get preferencesTextScaleSaveFailed =>
+      'Unable to save font size. Please try again.';
+
+  @override
   String get preferencesFirstDayTitle => 'First day of week';
 
   @override

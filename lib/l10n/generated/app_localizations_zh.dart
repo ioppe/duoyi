@@ -906,6 +906,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferencesTextScaleLarge => '大（115%）';
 
   @override
+  String get preferencesTextScalePreviewTitle => '预览字体大小';
+
+  @override
+  String get preferencesTextScalePreviewHint => '拖动下面的滑块，选择合适的字体大小。';
+
+  @override
+  String get preferencesTextScalePreviewNote =>
+      '设置后，待办、习惯、专注和设置页面的文字会一起调整。选好后点击“完成”保存。';
+
+  @override
+  String preferencesTextScalePercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get preferencesTextScaleStandardMarker => '标准';
+
+  @override
+  String get preferencesTextScaleDone => '完成';
+
+  @override
+  String get preferencesTextScaleSaveFailed => '字号保存失败，请重试';
+
+  @override
   String get preferencesFirstDayTitle => '一周从哪一天开始';
 
   @override

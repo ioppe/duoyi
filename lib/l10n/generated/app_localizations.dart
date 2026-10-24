@@ -1874,6 +1874,48 @@ abstract class AppLocalizations {
   /// **'大（115%）'**
   String get preferencesTextScaleLarge;
 
+  /// No description provided for @preferencesTextScalePreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'预览字体大小'**
+  String get preferencesTextScalePreviewTitle;
+
+  /// No description provided for @preferencesTextScalePreviewHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动下面的滑块，选择合适的字体大小。'**
+  String get preferencesTextScalePreviewHint;
+
+  /// No description provided for @preferencesTextScalePreviewNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置后，待办、习惯、专注和设置页面的文字会一起调整。选好后点击“完成”保存。'**
+  String get preferencesTextScalePreviewNote;
+
+  /// No description provided for @preferencesTextScalePercent.
+  ///
+  /// In zh, this message translates to:
+  /// **'{percent}%'**
+  String preferencesTextScalePercent(int percent);
+
+  /// No description provided for @preferencesTextScaleStandardMarker.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get preferencesTextScaleStandardMarker;
+
+  /// No description provided for @preferencesTextScaleDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get preferencesTextScaleDone;
+
+  /// No description provided for @preferencesTextScaleSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'字号保存失败，请重试'**
+  String get preferencesTextScaleSaveFailed;
+
   /// No description provided for @preferencesFirstDayTitle.
   ///
   /// In zh, this message translates to:

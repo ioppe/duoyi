@@ -2,103 +2,82 @@ import 'package:duoyi/core/app_text_scale.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _NonlinearScaler extends TextScaler {
+  const _NonlinearScaler();
+  @override
+  double scale(double fontSize) => fontSize + 8 * fontSize / (fontSize + 8);
+  @override
+  double get textScaleFactor => scale(14) / 14;
+}
+
 void main() {
-  test('字号档位为 0.85 / 1.0 / 1.15，默认标准档', () {
-    expect(AppTextScale.small, 0.85);
-    expect(AppTextScale.standard, 1.0);
-    expect(AppTextScale.large, 1.15);
+  test('八档字号保留旧三档，标准为第二档', () {
+    expect(AppTextScale.options, [.85, 1.0, 1.15, 1.3, 1.45, 1.6, 1.75, 1.9]);
+    expect(AppTextScale.standardIndex, 1);
     expect(AppTextScale.defaultScale, AppTextScale.standard);
-    expect(AppTextScale.options, <double>[
-      AppTextScale.small,
-      AppTextScale.standard,
-      AppTextScale.large,
-    ]);
+    for (final value in AppTextScale.options) {
+      expect(AppTextScale.normalize(value), value);
+    }
+    expect(AppTextScale.percentOf(1.9), 190);
+    expect(AppTextScale.normalize(1.18), 1.15);
+    expect(AppTextScale.normalize(.9), .85);
   });
 
-  test('normalize 只保留三个档位，其余回退标准档', () {
-    expect(AppTextScale.normalize(AppTextScale.small), AppTextScale.small);
-    expect(
-      AppTextScale.normalize(AppTextScale.standard),
-      AppTextScale.standard,
-    );
-    expect(AppTextScale.normalize(AppTextScale.large), AppTextScale.large);
-
-    // 历史/异常存储值吸附到最近档位。
-    expect(AppTextScale.normalize(0.9), AppTextScale.small);
-    expect(AppTextScale.normalize(1.18), AppTextScale.large);
-
-    // 超出档位范围或非法输入回退标准档。
-    expect(AppTextScale.normalize(1.6), AppTextScale.standard);
-    expect(AppTextScale.normalize(0.4), AppTextScale.standard);
-    expect(AppTextScale.normalize(double.nan), AppTextScale.standard);
-    expect(AppTextScale.normalize(double.infinity), AppTextScale.standard);
-    expect(AppTextScale.normalize(null), AppTextScale.standard);
+  test('异常值安全回退，有限正数归一到最近档位', () {
+    for (final value in [null, double.nan, double.infinity, -1.0, 0.0]) {
+      expect(AppTextScale.normalize(value), AppTextScale.standard);
+    }
+    expect(AppTextScale.normalize(.4), .85);
+    expect(AppTextScale.normalize(5), 1.9);
+    expect(AppTextScale.normalize(1.6), 1.6);
   });
 
-  test('应用比例为 1 时直接复用系统 scaler', () {
-    const system = TextScaler.linear(1.3);
-
+  test('标准字号原样保留系统 scaler', () {
+    const system = _NonlinearScaler();
     expect(
-      identical(
-        AppTextScale.resolve(system: system, appScale: AppTextScale.standard),
-        system,
-      ),
-      isTrue,
-    );
-    // 超出档位的输入归一化回标准档，同样不加包装层。
-    expect(
-      identical(AppTextScale.resolve(system: system, appScale: 1.6), system),
+      identical(AppTextScale.resolve(system: system, appScale: 1), system),
       isTrue,
     );
   });
 
-  test('组合 scaler 在多个字号上等于系统缩放乘应用档位', () {
-    final systemScalers = <TextScaler>[
+  test('八档保留系统线性和非线性缩放，不转成单个线性比例', () {
+    for (final system in [
       TextScaler.noScaling,
-      const TextScaler.linear(1.3),
-      const TextScaler.linear(0.8),
-    ];
-    const fontSizes = <double>[10, 12.5, 16, 24];
-
-    for (final system in systemScalers) {
-      for (final appScale in const [AppTextScale.small, AppTextScale.large]) {
-        final scaler = AppTextScale.resolve(system: system, appScale: appScale);
-        for (final fontSize in fontSizes) {
+      const TextScaler.linear(2),
+      const _NonlinearScaler(),
+    ]) {
+      for (final value in AppTextScale.options) {
+        final resolved = AppTextScale.resolve(system: system, appScale: value);
+        for (final fontSize in [12.0, 16.0, 20.0, 32.0]) {
           expect(
-            scaler.scale(fontSize),
-            closeTo(system.scale(fontSize * appScale), 1e-9),
-            reason: 'system=$system appScale=$appScale fontSize=$fontSize',
+            resolved.scale(fontSize),
+            closeTo(system.scale(fontSize * value), 1e-9),
           );
         }
       }
     }
   });
 
-  test('相同配置的 scaler 相等且 hashCode 一致，不同档位不相等', () {
-    const system = TextScaler.linear(1.25);
-    final small = AppTextScale.resolve(
-      system: system,
-      appScale: AppTextScale.small,
+  test('字号预览剥离已保存应用档位后只叠加一次草稿', () {
+    const system = _NonlinearScaler();
+    final saved = AppTextScale.resolve(system: system, appScale: 1.75);
+    expect(identical(AppTextScale.systemScalerOf(saved), system), isTrue);
+    final preview = AppTextScale.resolve(
+      system: AppTextScale.systemScalerOf(saved),
+      appScale: 1.3,
     );
-    final same = AppTextScale.resolve(
-      system: system,
-      appScale: AppTextScale.small,
-    );
-    // 归一化后落到同一档位的历史值也应视为相等，避免无意义的文字重建。
-    final normalized = AppTextScale.resolve(system: system, appScale: 0.86);
-    final large = AppTextScale.resolve(
-      system: system,
-      appScale: AppTextScale.large,
-    );
+    expect(preview.scale(16), closeTo(system.scale(16 * 1.3), 1e-9));
+    final duplicate = AppTextScale.resolve(system: saved, appScale: 1.3);
+    expect(identical(AppTextScale.systemScalerOf(duplicate), system), isTrue);
+  });
 
-    expect(small, same);
-    expect(small.hashCode, same.hashCode);
-    expect(small, normalized);
-    expect(normalized.hashCode, small.hashCode);
-    expect(small, isNot(large));
-    expect(
-      small.scale(16),
-      closeTo(system.scale(16 * AppTextScale.small), 1e-9),
-    );
+  test('相同字号配置的相等性和 hash 保持一致', () {
+    const system = TextScaler.linear(1.3);
+    final first = AppTextScale.resolve(system: system, appScale: .85);
+    final same = AppTextScale.resolve(system: system, appScale: .86);
+    final other = AppTextScale.resolve(system: system, appScale: 1.9);
+    expect(first, same);
+    expect(first.hashCode, same.hashCode);
+    expect(first, isNot(other));
   });
 }
