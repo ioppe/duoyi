@@ -29,6 +29,8 @@ import '../widgets/pomodoro_timer_ring.dart';
 import '../widgets/pomodoro_session_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/surface_components.dart';
+import '../core/i18n.dart';
+import '../widgets/focus_distraction_app_picker.dart';
 
 String _focusRoomErrorText(Object error) {
   final message = error is ApiException ? error.message : error.toString();
@@ -998,9 +1000,6 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
           final cs = Theme.of(ctx).colorScheme;
           final today = provider.todayPenalties;
           final recent = provider.penalties.take(8).toList();
-          final packageCtrl = TextEditingController(
-            text: provider.config.distractingAppPackages.join('\n'),
-          );
           return AppModalSheet(
             title: '严格专注',
             subtitle: '暂停、跳过、重置、离开应用或打开分心 App 会留下中断记录',
@@ -1037,23 +1036,12 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                   value: provider.config.monitorDistractingApps,
                   onChanged: provider.setMonitorDistractingApps,
                 ),
-                TextField(
-                  controller: packageCtrl,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: '分心应用包名',
-                    hintText: 'com.tencent.mm\ncom.ss.android.ugc.aweme',
-                  ),
-                  onChanged: (value) => unawaited(
-                    provider.setDistractingAppPackages(
-                      value
-                          .split(RegExp(r'[\n,， ]+'))
-                          .map((e) => e.trim())
-                          .where((e) => e.isNotEmpty)
-                          .toList(),
-                    ),
-                  ),
+                AppSettingsTile(
+                  icon: Icons.apps_outlined,
+                  color: cs.primary,
+                  title: I18n.tr('focus.distraction.tile.title'),
+                  subtitle: _distractingAppsSubtitle(provider),
+                  onTap: () => _showDistractingAppPicker(ctx, provider),
                 ),
                 const SizedBox(height: 8),
                 Align(
@@ -1116,6 +1104,38 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
               ],
             ),
           );
+        },
+      ),
+    );
+  }
+
+  String _distractingAppsSubtitle(PomodoroProvider provider) {
+    final count = provider.config.distractingAppPackages.length;
+    final selected = I18n.tr('focus.distraction.tile.selected');
+    if (!provider.config.isDistractionWhitelistMode) {
+      return count == 0
+          ? I18n.tr('focus.distraction.tile.blacklist_empty')
+          : '${I18n.tr('focus.distraction.tile.blacklist')} · $selected $count';
+    }
+    if (provider.focusDistractionAppScanFailed) {
+      return I18n.tr('focus.distraction.tile.whitelist_scan_failed');
+    }
+    return '${I18n.tr('focus.distraction.tile.whitelist')} · $selected $count';
+  }
+
+  Future<void> _showDistractingAppPicker(
+    BuildContext context,
+    PomodoroProvider provider,
+  ) async {
+    await showAppModalSheet<void>(
+      context: context,
+      builder: (ctx) => FocusDistractionAppPicker(
+        initialMode: provider.config.distractingAppSelectionMode,
+        initialPackages: provider.config.distractingAppPackages,
+        loadApps: provider.loadInstalledFocusApps,
+        onDone: (mode, packages) async {
+          await provider.setDistractingAppSelectionMode(mode);
+          await provider.setDistractingAppPackages(packages);
         },
       ),
     );

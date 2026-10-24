@@ -35,6 +35,25 @@ class FocusDistractionStatus {
   }
 }
 
+/// 一个可启动的已安装应用；图标不跨平台传输，Flutter 侧统一用占位图标。
+@immutable
+class InstalledFocusApp {
+  final String label;
+  final String packageName;
+  final bool isSystemApp;
+
+  const InstalledFocusApp({
+    required this.label,
+    required this.packageName,
+    this.isSystemApp = false,
+  });
+
+  String get displayLabel {
+    final clean = label.trim();
+    return clean.isEmpty ? packageName : clean;
+  }
+}
+
 class FocusDistractionService {
   FocusDistractionService._();
 
@@ -61,6 +80,33 @@ class FocusDistractionService {
     } catch (e, st) {
       debugPrint('[FocusDistractionService] foreground app failed: $e\n$st');
       return null;
+    }
+  }
+
+  /// 扫描可启动的已安装应用。仅 Android 支持；失败时返回空列表，
+  /// 调用方需把空列表当作“无法解析”而不是“没有任何应用”。
+  Future<List<InstalledFocusApp>> getInstalledApps() async {
+    if (!_isAndroid) return const <InstalledFocusApp>[];
+    try {
+      final raw = await _channel.invokeListMethod<Object?>('getInstalledApps');
+      if (raw == null) return const <InstalledFocusApp>[];
+      final apps = <InstalledFocusApp>[];
+      for (final entry in raw) {
+        if (entry is! Map) continue;
+        final packageName = entry['packageName']?.toString().trim() ?? '';
+        if (packageName.isEmpty) continue;
+        apps.add(
+          InstalledFocusApp(
+            label: entry['label']?.toString().trim() ?? '',
+            packageName: packageName,
+            isSystemApp: entry['isSystemApp'] == true,
+          ),
+        );
+      }
+      return List.unmodifiable(apps);
+    } catch (e, st) {
+      debugPrint('[FocusDistractionService] installed apps failed: $e\n$st');
+      return const <InstalledFocusApp>[];
     }
   }
 

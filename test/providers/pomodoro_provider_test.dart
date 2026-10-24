@@ -1189,6 +1189,55 @@ void main() {
       });
     });
   });
+
+  test('distraction selection mode normalizes and persists', () async {
+    final provider = PomodoroProvider();
+    var notifications = 0;
+    provider.addListener(() => notifications++);
+
+    await provider.setDistractingAppSelectionMode(' WHITELIST ');
+    expect(
+      provider.config.distractingAppSelectionMode,
+      PomodoroConfig.distractionModeWhitelist,
+    );
+    expect(provider.config.isDistractionWhitelistMode, isTrue);
+
+    await provider.setDistractingAppSelectionMode('nonsense');
+    expect(
+      provider.config.distractingAppSelectionMode,
+      PomodoroConfig.distractionModeBlacklist,
+    );
+    expect(notifications, 2);
+
+    final prefs = await SharedPreferences.getInstance();
+    final saved =
+        jsonDecode(prefs.getString('pomodoro_config')!) as Map<String, dynamic>;
+    expect(
+      saved['distractingAppSelectionMode'],
+      PomodoroConfig.distractionModeBlacklist,
+    );
+    expect(saved['distractingAppPackages'], isEmpty);
+    provider.dispose();
+  });
+
+  test('whitelist mode fails safe when the app scan is unavailable', () async {
+    final provider = PomodoroProvider();
+    await provider.setConfig(
+      PomodoroConfig(
+        focusDuration: 60,
+        strictFocusMode: true,
+        monitorDistractingApps: true,
+        distractingAppSelectionMode: PomodoroConfig.distractionModeWhitelist,
+        distractingAppPackages: const ['com.tencent.mm'],
+      ),
+    );
+
+    provider.startIfIdle();
+    await pumpEventQueue();
+
+    expect(provider.focusDistractionAppScanFailed, isTrue);
+    provider.dispose();
+  });
 }
 
 /// 读取运行态快照（崩溃恢复路径的落盘内容）。

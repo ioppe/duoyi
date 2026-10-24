@@ -1298,5 +1298,30 @@
   "backupOverwriteWillDeleteMissing": "备份中不存在的本机数据将被删除。",
   "@backupOverwriteWillDeleteMissing": {
     "description": "覆盖导入/WebDAV 覆盖恢复确认弹窗：警告用户备份中不存在的本机数据将被删除"
-  }
+  },
+  "focusDistractionTileTitle": "分心应用选择",
+  "focusDistractionTileSelected": "已选",
+  "focusDistractionTileBlacklistEmpty": "黑名单：未选择应用",
+  "focusDistractionTileBlacklist": "黑名单",
+  "focusDistractionTileWhitelistScanFailed": "白名单扫描失败，暂未拦截",
+  "focusDistractionTileWhitelist": "白名单（未选应用为分心）",
+  "focusDistractionModeBlacklist": "黑名单",
+  "focusDistractionModeWhitelist": "白名单",
+  "focusDistractionModeBlacklistHint": "选择的应用会记录为分心应用。",
+  "focusDistractionModeWhitelistHint": "选择的应用视为无关应用，其余可启动应用会记录为分心应用。",
+  "focusDistractionPickerTitle": "选择分心应用",
+  "focusDistractionPickerSubtitle": "扫描手机上可启动的应用；只在点击完成后保存。",
+  "focusDistractionPickerCancel": "取消",
+  "focusDistractionPickerDone": "完成",
+  "focusDistractionPickerSearch": "搜索应用名或包名",
+  "focusDistractionPickerLoading": "正在扫描已安装应用…",
+  "focusDistractionPickerLoadFailed": "无法读取已安装应用，请重试。",
+  "focusDistractionPickerRetry": "重新扫描",
+  "focusDistractionPickerEmpty": "没有找到可启动应用。",
+  "focusDistractionPickerNoMatches": "没有匹配的应用。",
+  "focusDistractionPickerSystemApp": "系统应用",
+  "focusDistractionPickerSummarySelected": "已选",
+  "focusDistractionPickerSummaryRemaining": "剩余作为分心",
+  "focusDistractionPickerSummaryAvailable": "可选应用",
+  "focusDistractionPickerSaveFailed": "保存失败，请重试"
 }

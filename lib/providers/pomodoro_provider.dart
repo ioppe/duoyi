@@ -70,6 +70,18 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       const FocusDistractionStatus.unavailable();
   String? _lastDistractingPackage;
 
+  /// 白名单模式下最终交给原生拦截/前台检测的包集合；黑名单模式直接读配置。
+  List<String> _effectiveDistractingPackages = const <String>[];
+
+  /// 最近一次可启动应用扫描结果，供白名单换算复用，轮询时不重复扫描。
+  List<InstalledFocusApp> _installedFocusAppsCache =
+      const <InstalledFocusApp>[];
+
+  /// 白名单模式扫描失败；此时保留旧拦截集合或禁用拦截，不静默放行。
+  bool _distractionScanFailed = false;
+
+  int _distractionSyncGeneration = 0;
+
   PomodoroState get state => _state;
   PomodoroConfig get config => _config;
   List<PomodoroSession> get sessions => _sessions;
@@ -79,6 +91,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   FocusDndStatus get focusDndStatus => _dndStatus;
   bool get focusDndActive => _dndActive;
   FocusDistractionStatus get focusDistractionStatus => _distractionStatus;
+
+  /// 白名单模式无法扫描已安装应用时为 true（UI 用它提示拦截已暂停）。
+  bool get focusDistractionAppScanFailed => _distractionScanFailed;
   ValueListenable<int> get timerTicks => _timerTicks;
 
   void attachNotifier(NotificationService n) {
@@ -205,6 +220,10 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _distractionTimer = null;
     _distractionStatus = const FocusDistractionStatus.unavailable();
     _lastDistractingPackage = null;
+    _effectiveDistractingPackages = const <String>[];
+    _installedFocusAppsCache = const <InstalledFocusApp>[];
+    _distractionScanFailed = false;
+    _distractionSyncGeneration++;
     // ignore: discarded_futures
     _distraction.setFocusBlocker(enabled: false, packages: const []);
     notifyListeners();
@@ -1117,6 +1136,30 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _syncDistractionMonitorToState();
   }
 
+  Future<void> setDistractingAppSelectionMode(String mode) async {
+    final normalized = PomodoroConfig.normalizeDistractionSelectionMode(mode);
+    if (_config.distractingAppSelectionMode == normalized) return;
+    _config.distractingAppSelectionMode = normalized;
+    await _touchAndSaveConfig();
+    _persistedRevision++;
+    notifyListeners();
+    _syncDistractionMonitorToState();
+  }
+
+  /// 扫描可启动的已安装应用供选择器展示；成功结果同时刷新白名单换算缓存。
+  Future<List<InstalledFocusApp>> loadInstalledFocusApps() async {
+    final apps = await _distraction.getInstalledApps();
+    if (apps.isEmpty) return apps;
+    final recovered = _distractionScanFailed;
+    _installedFocusAppsCache = apps;
+    _distractionScanFailed = false;
+    if (recovered) {
+      notifyListeners();
+      _syncDistractionMonitorToState();
+    }
+    return apps;
+  }
+
   Future<bool> setWhiteNoiseSound(String sound, {bool preview = true}) async {
     final normalized = sound.startsWith('custom:')
         ? sound
@@ -1213,31 +1256,79 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _syncDistractionMonitorToState() {
+    unawaited(_syncDistractionMonitor());
+  }
+
+  Future<void> _syncDistractionMonitor() async {
+    final generation = ++_distractionSyncGeneration;
     final shouldMonitor =
         _config.strictFocusMode &&
         _config.monitorDistractingApps &&
         _state.isRunning &&
-        _state.type == PomodoroType.focus &&
-        _config.distractingAppPackages.isNotEmpty;
+        _state.type == PomodoroType.focus;
     if (!shouldMonitor) {
-      _distractionTimer?.cancel();
-      _distractionTimer = null;
-      _lastDistractingPackage = null;
-      // ignore: discarded_futures
-      _distraction.setFocusBlocker(enabled: false, packages: const []);
+      _distractionScanFailed = false;
+      _stopDistractionMonitor();
       return;
     }
-    // ignore: discarded_futures
-    _distraction.setFocusBlocker(
-      enabled: true,
-      packages: _config.distractingAppPackages,
-    );
+    final List<String> blocked;
+    if (_config.isDistractionWhitelistMode) {
+      if (_installedFocusAppsCache.isEmpty) {
+        final apps = await _distraction.getInstalledApps();
+        if (generation != _distractionSyncGeneration) return;
+        if (apps.isNotEmpty) {
+          _installedFocusAppsCache = apps;
+          _distractionScanFailed = false;
+        }
+      }
+      if (_installedFocusAppsCache.isEmpty) {
+        // 扫描不可用：保留上次成功换算出的集合；没有旧集合就禁用拦截，
+        // 绝不把空扫描结果当作“全部应用都不拦截”而悄悄改变语义。
+        if (!_distractionScanFailed) {
+          _distractionScanFailed = true;
+          notifyListeners();
+        }
+        if (_effectiveDistractingPackages.isEmpty) {
+          _stopDistractionMonitor();
+          return;
+        }
+        blocked = _effectiveDistractingPackages;
+      } else {
+        blocked = PomodoroConfig.resolveBlockedDistractionPackages(
+          selectionMode: _config.distractingAppSelectionMode,
+          selectedPackages: _config.distractingAppPackages,
+          launchablePackages: _installedFocusAppsCache.map(
+            (app) => app.packageName,
+          ),
+        );
+      }
+    } else {
+      blocked = PomodoroConfig.resolveBlockedDistractionPackages(
+        selectionMode: _config.distractingAppSelectionMode,
+        selectedPackages: _config.distractingAppPackages,
+        launchablePackages: const <String>[],
+      );
+    }
+    if (generation != _distractionSyncGeneration) return;
+    _effectiveDistractingPackages = blocked;
+    if (blocked.isEmpty) {
+      _stopDistractionMonitor();
+      return;
+    }
+    _distraction.setFocusBlocker(enabled: true, packages: blocked);
     _distractionTimer ??= Timer.periodic(
       const Duration(seconds: 20),
       (_) => _checkDistractingForegroundApp(),
     );
-    // ignore: discarded_futures
-    _checkDistractingForegroundApp();
+    unawaited(_checkDistractingForegroundApp());
+  }
+
+  void _stopDistractionMonitor() {
+    _distractionTimer?.cancel();
+    _distractionTimer = null;
+    _lastDistractingPackage = null;
+    _effectiveDistractingPackages = const <String>[];
+    _distraction.setFocusBlocker(enabled: false, packages: const []);
   }
 
   Future<void> _checkDistractingForegroundApp() async {
@@ -1254,7 +1345,10 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       accessGranted: true,
       foregroundPackage: packageName,
     );
-    if (!_config.distractingAppPackages.contains(packageName)) {
+    final blocked = _config.isDistractionWhitelistMode
+        ? _effectiveDistractingPackages
+        : _config.distractingAppPackages;
+    if (!blocked.contains(packageName)) {
       _lastDistractingPackage = null;
       notifyListeners();
       return;

@@ -7819,6 +7819,156 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'备份中不存在的本机数据将被删除。'**
   String get backupOverwriteWillDeleteMissing;
+
+  /// No description provided for @focusDistractionTileTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分心应用选择'**
+  String get focusDistractionTileTitle;
+
+  /// No description provided for @focusDistractionTileSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已选'**
+  String get focusDistractionTileSelected;
+
+  /// No description provided for @focusDistractionTileBlacklistEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单：未选择应用'**
+  String get focusDistractionTileBlacklistEmpty;
+
+  /// No description provided for @focusDistractionTileBlacklist.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单'**
+  String get focusDistractionTileBlacklist;
+
+  /// No description provided for @focusDistractionTileWhitelistScanFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单扫描失败，暂未拦截'**
+  String get focusDistractionTileWhitelistScanFailed;
+
+  /// No description provided for @focusDistractionTileWhitelist.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单（未选应用为分心）'**
+  String get focusDistractionTileWhitelist;
+
+  /// No description provided for @focusDistractionModeBlacklist.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单'**
+  String get focusDistractionModeBlacklist;
+
+  /// No description provided for @focusDistractionModeWhitelist.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单'**
+  String get focusDistractionModeWhitelist;
+
+  /// No description provided for @focusDistractionModeBlacklistHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择的应用会记录为分心应用。'**
+  String get focusDistractionModeBlacklistHint;
+
+  /// No description provided for @focusDistractionModeWhitelistHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择的应用视为无关应用，其余可启动应用会记录为分心应用。'**
+  String get focusDistractionModeWhitelistHint;
+
+  /// No description provided for @focusDistractionPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择分心应用'**
+  String get focusDistractionPickerTitle;
+
+  /// No description provided for @focusDistractionPickerSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描手机上可启动的应用；只在点击完成后保存。'**
+  String get focusDistractionPickerSubtitle;
+
+  /// No description provided for @focusDistractionPickerCancel.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get focusDistractionPickerCancel;
+
+  /// No description provided for @focusDistractionPickerDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get focusDistractionPickerDone;
+
+  /// No description provided for @focusDistractionPickerSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索应用名或包名'**
+  String get focusDistractionPickerSearch;
+
+  /// No description provided for @focusDistractionPickerLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在扫描已安装应用…'**
+  String get focusDistractionPickerLoading;
+
+  /// No description provided for @focusDistractionPickerLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法读取已安装应用，请重试。'**
+  String get focusDistractionPickerLoadFailed;
+
+  /// No description provided for @focusDistractionPickerRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新扫描'**
+  String get focusDistractionPickerRetry;
+
+  /// No description provided for @focusDistractionPickerEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有找到可启动应用。'**
+  String get focusDistractionPickerEmpty;
+
+  /// No description provided for @focusDistractionPickerNoMatches.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的应用。'**
+  String get focusDistractionPickerNoMatches;
+
+  /// No description provided for @focusDistractionPickerSystemApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统应用'**
+  String get focusDistractionPickerSystemApp;
+
+  /// No description provided for @focusDistractionPickerSummarySelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已选'**
+  String get focusDistractionPickerSummarySelected;
+
+  /// No description provided for @focusDistractionPickerSummaryRemaining.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余作为分心'**
+  String get focusDistractionPickerSummaryRemaining;
+
+  /// No description provided for @focusDistractionPickerSummaryAvailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'可选应用'**
+  String get focusDistractionPickerSummaryAvailable;
+
+  /// No description provided for @focusDistractionPickerSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败，请重试'**
+  String get focusDistractionPickerSaveFailed;
 }
 
 class _AppLocalizationsDelegate

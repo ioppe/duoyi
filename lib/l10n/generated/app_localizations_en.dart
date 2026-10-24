@@ -4101,4 +4101,88 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backupOverwriteWillDeleteMissing =>
       'Local data that is missing from the backup will be deleted.';
+
+  @override
+  String get focusDistractionTileTitle => 'Distraction app selection';
+
+  @override
+  String get focusDistractionTileSelected => 'Selected';
+
+  @override
+  String get focusDistractionTileBlacklistEmpty =>
+      'Blacklist: no apps selected';
+
+  @override
+  String get focusDistractionTileBlacklist => 'Blacklist';
+
+  @override
+  String get focusDistractionTileWhitelistScanFailed =>
+      'Whitelist scan failed; blocking is paused';
+
+  @override
+  String get focusDistractionTileWhitelist =>
+      'Whitelist (unselected apps distract)';
+
+  @override
+  String get focusDistractionModeBlacklist => 'Blacklist';
+
+  @override
+  String get focusDistractionModeWhitelist => 'Whitelist';
+
+  @override
+  String get focusDistractionModeBlacklistHint =>
+      'Selected apps are recorded as distractions.';
+
+  @override
+  String get focusDistractionModeWhitelistHint =>
+      'Selected apps are treated as unrelated; other launchable apps are distractions.';
+
+  @override
+  String get focusDistractionPickerTitle => 'Choose distraction apps';
+
+  @override
+  String get focusDistractionPickerSubtitle =>
+      'Scan launchable apps on this phone; changes save only after Done.';
+
+  @override
+  String get focusDistractionPickerCancel => 'Cancel';
+
+  @override
+  String get focusDistractionPickerDone => 'Done';
+
+  @override
+  String get focusDistractionPickerSearch =>
+      'Search app names or package names';
+
+  @override
+  String get focusDistractionPickerLoading => 'Scanning installed apps…';
+
+  @override
+  String get focusDistractionPickerLoadFailed =>
+      'Unable to read installed apps. Try again.';
+
+  @override
+  String get focusDistractionPickerRetry => 'Scan again';
+
+  @override
+  String get focusDistractionPickerEmpty => 'No launchable apps were found.';
+
+  @override
+  String get focusDistractionPickerNoMatches => 'No matching apps.';
+
+  @override
+  String get focusDistractionPickerSystemApp => 'system app';
+
+  @override
+  String get focusDistractionPickerSummarySelected => 'Selected';
+
+  @override
+  String get focusDistractionPickerSummaryRemaining =>
+      'remaining as distractions';
+
+  @override
+  String get focusDistractionPickerSummaryAvailable => 'available apps';
+
+  @override
+  String get focusDistractionPickerSaveFailed => 'Unable to save. Try again.';
 }

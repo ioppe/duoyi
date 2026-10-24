@@ -3907,4 +3907,80 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupOverwriteWillDeleteMissing => '备份中不存在的本机数据将被删除。';
+
+  @override
+  String get focusDistractionTileTitle => '分心应用选择';
+
+  @override
+  String get focusDistractionTileSelected => '已选';
+
+  @override
+  String get focusDistractionTileBlacklistEmpty => '黑名单：未选择应用';
+
+  @override
+  String get focusDistractionTileBlacklist => '黑名单';
+
+  @override
+  String get focusDistractionTileWhitelistScanFailed => '白名单扫描失败，暂未拦截';
+
+  @override
+  String get focusDistractionTileWhitelist => '白名单（未选应用为分心）';
+
+  @override
+  String get focusDistractionModeBlacklist => '黑名单';
+
+  @override
+  String get focusDistractionModeWhitelist => '白名单';
+
+  @override
+  String get focusDistractionModeBlacklistHint => '选择的应用会记录为分心应用。';
+
+  @override
+  String get focusDistractionModeWhitelistHint =>
+      '选择的应用视为无关应用，其余可启动应用会记录为分心应用。';
+
+  @override
+  String get focusDistractionPickerTitle => '选择分心应用';
+
+  @override
+  String get focusDistractionPickerSubtitle => '扫描手机上可启动的应用；只在点击完成后保存。';
+
+  @override
+  String get focusDistractionPickerCancel => '取消';
+
+  @override
+  String get focusDistractionPickerDone => '完成';
+
+  @override
+  String get focusDistractionPickerSearch => '搜索应用名或包名';
+
+  @override
+  String get focusDistractionPickerLoading => '正在扫描已安装应用…';
+
+  @override
+  String get focusDistractionPickerLoadFailed => '无法读取已安装应用，请重试。';
+
+  @override
+  String get focusDistractionPickerRetry => '重新扫描';
+
+  @override
+  String get focusDistractionPickerEmpty => '没有找到可启动应用。';
+
+  @override
+  String get focusDistractionPickerNoMatches => '没有匹配的应用。';
+
+  @override
+  String get focusDistractionPickerSystemApp => '系统应用';
+
+  @override
+  String get focusDistractionPickerSummarySelected => '已选';
+
+  @override
+  String get focusDistractionPickerSummaryRemaining => '剩余作为分心';
+
+  @override
+  String get focusDistractionPickerSummaryAvailable => '可选应用';
+
+  @override
+  String get focusDistractionPickerSaveFailed => '保存失败，请重试';
 }
