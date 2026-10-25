@@ -166,6 +166,14 @@ class DesignTokens {
   static const double fontSizeButton = 12;
   static const double fontSizeBottomNavLabel = 11;
 
+  /// 原生 Android 的正文基准字号：安卓端正文默认按 10dp 排版。
+  ///
+  /// 共享字号 token（[fontSizeBody] 等 14 档）与其它平台的基准保持不变；
+  /// 只有原生 Android 在 `AppTypography.platformScaler` 里按
+  /// `10 / 14` 的比例缩放文字，用户档位（默认 100%）与系统缩放、
+  /// 非线性缩放仍原样叠加。
+  static const double androidFontSizeBody = 10;
+
   /// 全局 UI 字体：随应用打包的 Noto Sans SC 变量字库。
   ///
   /// 中文无衬线、离线可用，所有品牌 / 页面 / 共享控件统一继承该家族；

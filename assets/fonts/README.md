@@ -16,7 +16,7 @@
 - `DesignTokens.fontWeightMedium` (500)：按钮文字、导航标签、chip、浮动标签。
 - `DesignTokens.fontWeightStrong` (600)：页面 / 卡片 / AppBar 标题与强调文字。
 
-字号统一走较紧凑的 `DesignTokens.fontSize*` 档位（应用标准 100% 时正文 14、次级 12、说明 11、页标题 18 等），不要在页面里硬编码字号、字重或家族。默认应用比例为 100%，用户已保存的比例保持不变；基础字阶变小与用户比例设置分别管理。系统未安装的罕见字符、其他语言和 emoji 仍由 `ThemeData.fontFamilyFallback` 中的系统字体回退处理。
+字号统一走共享 `DesignTokens.fontSize*` 档位（正文 14、次级 12、说明 11、页标题 18 等）。原生 Android 另以 `DesignTokens.androidFontSizeBody = 10` 在根部 `AppTypography` 应用 10/14 平台基准，标准 100% 默认正文有效字号为 10，其他角色按原层级同比缩放；Web（包括安卓浏览器）、iOS 和桌面保留共享基准。不要在页面里硬编码字号、字重或家族。默认应用比例为 100%，已保存比例保持不变；平台字阶、用户比例与系统缩放分别组合，预览不重复应用平台基准。罕见字符、其他语言和 emoji 仍由 `ThemeData.fontFamilyFallback` 中的系统字体回退处理。
 
 ## 旧字库
 

@@ -8,6 +8,7 @@ import 'core/app_config.dart';
 import 'core/app_clock.dart';
 import 'core/app_motion.dart';
 import 'core/app_text_scale.dart';
+import 'core/app_typography.dart';
 import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
@@ -3918,6 +3919,8 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       builder: (context, child) {
         // 应用字号是设备本地偏好，与系统字号相乘后只作用于多仪内部文字；
         // 这里只替换 textScaler，padding / viewInsets 仍沿用系统值。
+        // 原生 Android 先叠加基础正文 10 的基准（其它平台基准仍为 14），
+        // 再乘用户档位：默认档位保持 100%，系统缩放 / 非线性缩放原样保留。
         final mediaQuery = MediaQuery.of(context);
         final textScale = context.select<PreferencesProvider, double>(
           (prefs) => prefs.textScale,
@@ -3925,7 +3928,9 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
         return MediaQuery(
           data: mediaQuery.copyWith(
             textScaler: AppTextScale.resolve(
-              system: mediaQuery.textScaler,
+              system: AppTypography.platformScaler(
+                system: mediaQuery.textScaler,
+              ),
               appScale: textScale,
             ),
           ),

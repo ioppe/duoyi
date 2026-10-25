@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/app_text_scale.dart';
+import 'package:duoyi/core/app_typography.dart';
 import 'package:duoyi/core/design_tokens.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
@@ -51,6 +52,7 @@ void main() {
     Size size = const Size(390, 844),
     double systemScale = 1,
     bool settings = false,
+    bool androidBaseline = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -74,7 +76,13 @@ void main() {
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: AppTextScale.resolve(
-                  system: TextScaler.linear(systemScale),
+                  system: androidBaseline
+                      ? AppTypography.platformScaler(
+                          system: TextScaler.linear(systemScale),
+                          platform: TargetPlatform.android,
+                          isWeb: false,
+                        )
+                      : TextScaler.linear(systemScale),
                   appScale: factor,
                 ),
               ),
@@ -289,5 +297,39 @@ void main() {
     expect(tester.takeException(), isNull);
     await choose(tester, 0);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Android 基准预览：已存 175% 显示 17.5，草稿 130% 显示 13，取消保持 175%', (
+    tester,
+  ) async {
+    final p = PreferencesProvider();
+    addTearDown(p.dispose);
+    await p.setTextScale(1.75);
+    await mount(tester, p, androidBaseline: true);
+    final preview = tester.element(
+      find.text(I18n.tr('preferences.text_scale.preview_title')),
+    );
+    expect(
+      MediaQuery.textScalerOf(preview).scale(DesignTokens.fontSizeBody),
+      closeTo(17.5, .001),
+    );
+    // 草稿 130%：正文 14 * 130% * 10 / 14 = 13，不会把已存 175% 再乘进来。
+    await choose(tester, 3);
+    final drafted = tester.element(
+      find.text(I18n.tr('preferences.text_scale.preview_title')),
+    );
+    expect(
+      MediaQuery.textScalerOf(drafted).scale(DesignTokens.fontSizeBody),
+      closeTo(13, .001),
+    );
+    expect(p.textScale, 1.75);
+    await tester.tap(find.byKey(const ValueKey('text_size_back_button')));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextSizeSettingsScreen), findsNothing);
+    expect(p.textScale, 1.75);
+    expect(
+      (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
+      1.75,
+    );
   });
 }
