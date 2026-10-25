@@ -1839,10 +1839,12 @@ void main() {
     expect(start, greaterThanOrEqualTo(0));
     expect(end, greaterThan(start));
     final branch = source.substring(start, end);
+    expect(branch, contains('switch (homeWidgetTodoTargetState(target))'));
+    expect(branch, contains('case HomeWidgetTodoTargetState.ready:'));
 
     expect(
       branch,
-      contains('_completeTodoFromWidgetAction(ctx, todos, target)'),
+      contains('_completeTodoFromWidgetAction(ctx, todos, target!)'),
     );
     expect(branch, contains('navigateTo(1, allowHidden: true)'));
     expect(source, contains('todos.completeTodos([target.id])'));

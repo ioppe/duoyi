@@ -89,7 +89,7 @@ void main() {
     // MaterialApp.builder 把应用字号乘进 MediaQuery.textScaler，主页面随之缩放。
     expect(
       MediaQuery.textScalerOf(tester.element(find.byType(MainShell))).scale(20),
-      closeTo(20, 1e-9),
+      closeTo(20 * AppTextScale.defaultScale, 1e-9),
     );
 
     final preferences = Provider.of<PreferencesProvider>(
