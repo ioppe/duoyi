@@ -16,8 +16,21 @@ class AppTextScale {
   /// 默认档位：标准（100%），新安装或从未保存过档位时按 100% 显示。
   static const double defaultScale = standard;
 
-  /// 可选档位，按从小到大的顺序排列；索引即滑块刻度位置。
-  static const List<double> options = <double>[
+  /// 原生 Android 七档：55 / 70 / 85 / 100 / 115 / 130 / 145。
+  ///
+  /// 步长 15%，标准 100% 为第四档（索引 3），左右各三档。
+  static const List<double> androidOptions = <double>[
+    0.55,
+    0.70,
+    small,
+    standard,
+    large,
+    1.30,
+    1.45,
+  ];
+
+  /// 其它平台（含移动 Web）八档：85 / 100 / 115 / … / 190。
+  static const List<double> sharedOptions = <double>[
     small,
     standard,
     large,
@@ -28,35 +41,69 @@ class AppTextScale {
     1.90,
   ];
 
-  /// 标准档在 [options] 中的索引（第二档），用于滑块标准标识。
+  /// 指定平台生效的档位表。
+  ///
+  /// 只有原生 Android（`!isWeb && platform == TargetPlatform.android`）用
+  /// 七档 [androidOptions]，其它平台与移动 Web 沿用八档 [sharedOptions]。
+  /// [platform] 省略时取 [defaultTargetPlatform]，[isWeb] 省略时取 [kIsWeb]。
+  static List<double> optionsFor({
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) => _androidProfile(platform: platform, isWeb: isWeb)
+      ? androidOptions
+      : sharedOptions;
+
+  static bool _androidProfile({TargetPlatform? platform, bool isWeb = kIsWeb}) {
+    if (isWeb) return false;
+    return (platform ?? defaultTargetPlatform) == TargetPlatform.android;
+  }
+
+  /// 当前平台生效的档位表，按从小到大的顺序排列；索引即滑块刻度位置。
+  static List<double> get options => optionsFor();
+
+  /// 标准档在当前档位表中的索引，用于滑块标准标识（八档为 1，七档为 3）。
   static int get standardIndex => options.indexOf(standard);
 
-  /// 把任意输入归一化到 [options] 中的一档。
+  /// 把任意输入归一化到当前档位表中的一档。
   ///
-  /// 合法档位原样保留；有限正数吸附到最近档位（超出范围时取最近边界）；
-  /// null / NaN / infinity / 非正数回落到默认标准档。
-  static double normalize(double? value) {
+  /// 合法档位原样保留；有限正数吸附到最近档位（超出范围时取最近边界，
+  /// 距离相同时取较小档位）；null / NaN / infinity / 非正数回落到默认标准档。
+  static double normalize(
+    double? value, {
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) {
     if (value == null || !value.isFinite || value <= 0) return defaultScale;
-    var snapped = options.first;
-    var smallestDelta = double.infinity;
-    for (final option in options) {
-      final delta = (value - option).abs();
-      if (delta < smallestDelta) {
-        smallestDelta = delta;
-        snapped = option;
-      }
+    final options = optionsFor(platform: platform, isWeb: isWeb);
+    // 按有序档位的中点分区，避免两次减法的浮点尾差把等距值推向较大档。
+    for (var index = 0; index < options.length - 1; index++) {
+      final midpoint = (options[index] + options[index + 1]) / 2;
+      if (value <= midpoint) return options[index];
     }
-    return snapped;
+    return options.last;
   }
 
-  /// 档位在 [options] 中的索引；非法输入归一化到默认标准档。
-  static int indexOf(double value) {
-    final index = options.indexOf(normalize(value));
-    return index < 0 ? standardIndex : index;
+  /// 档位在当前档位表中的索引；非法输入归一化到默认标准档。
+  static int indexOf(
+    double value, {
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) {
+    final options = optionsFor(platform: platform, isWeb: isWeb);
+    final index = options.indexOf(
+      normalize(value, platform: platform, isWeb: isWeb),
+    );
+    if (index >= 0) return index;
+    final standardIndex = options.indexOf(standard);
+    return standardIndex < 0 ? 0 : standardIndex;
   }
 
-  /// 档位对应的整数百分比（85 / 100 / 115 / … / 190）。
-  static int percentOf(double value) => (normalize(value) * 100).round();
+  /// 档位对应的整数百分比（Android 55 / … / 145，其它平台 85 / … / 190）。
+  static int percentOf(
+    double value, {
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) => (normalize(value, platform: platform, isWeb: isWeb) * 100).round();
 
   /// 从当前应用 wrapper 中取回平台 [TextScaler]。
   ///
@@ -72,12 +119,15 @@ class AppTextScale {
 
   /// 组合系统字号与应用字号。
   ///
-  /// 应用比例为 1 时直接返回 [system]，避免多包一层造成无意义的文字重建。
+  /// 应用比例按 [optionsFor] 的同一平台档位表归一化；比例为 1 时直接返回
+  /// [system]，避免多包一层造成无意义的文字重建。
   static TextScaler resolve({
     required TextScaler system,
     required double appScale,
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
   }) {
-    final scale = normalize(appScale);
+    final scale = normalize(appScale, platform: platform, isWeb: isWeb);
     if (scale == standard) return system;
     return _AppTextScaler(system: system, factor: scale);
   }

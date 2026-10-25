@@ -560,9 +560,12 @@ class PreferencesProvider extends ChangeNotifier {
     _haptic = p.getBool(_kHapticFeedback) ?? true;
     _showLunar = p.getBool(_kShowLunar) ?? true;
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
-    // 已保存的档位一律按原值恢复：本机不区分“自动写入的默认档”与
-    // “用户主动选择”，任何改写都会覆盖真实选择。旧版遗留的迁移标记
-    // 只留在磁盘上，不再读取也不再写入。
+    // 载入时保留仍然有效的档位：正数就近吸附到当前平台的档位表（Android
+    // 七档 55–145，其它平台八档 85–190），超出范围取最近边界，非法值回落
+    // 标准 100%；旧版迁移标记只留在磁盘上，不再读取也不再写入。
+    // 载入本身不写盘，只有 setTextScale / 账号绑定成功才落盘，因此磁盘上
+    // 可能仍是升级前的历史值（例如 Android 保存过的 175%），下次读取会再次
+    // 按当前平台范围吸附，不做强制迁移。
     _textScale = AppTextScale.normalize(p.getDouble(_kTextScale));
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
     final storedTextScaleOwner = p.getString(_kTextScaleOwner)?.trim();
@@ -1152,7 +1155,8 @@ class PreferencesProvider extends ChangeNotifier {
     return _trackPreferenceWrite(() => queued);
   }
 
-  /// 只接受 [AppTextScale.options] 中的档位，其他输入归一化后保存。
+  /// 只接受当前平台 [AppTextScale.options] 中的档位，其他输入按同一档位表
+  /// 归一化后保存。
   Future<void> setTextScale(double value) {
     final next = AppTextScale.normalize(value);
     final ownerAtRequest = _textScaleOwner;

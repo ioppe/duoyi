@@ -7,9 +7,24 @@ import 'package:duoyi/providers/preferences_provider.dart';
 import 'package:duoyi/services/account_local_data_cleaner.dart';
 import 'package:duoyi/services/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// 在指定目标平台下跑用例：字号档位表按该平台计算。
+Future<void> _onPlatform(
+  TargetPlatform platform,
+  Future<void> Function() body,
+) async {
+  final previous = debugDefaultTargetPlatformOverride;
+  debugDefaultTargetPlatformOverride = platform;
+  try {
+    await body();
+  } finally {
+    debugDefaultTargetPlatformOverride = previous;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -75,49 +90,97 @@ void main() {
     return (auth, p);
   }
 
-  test('旧版本首次绑定保留原字号，八档都能保存并重新载入', () async {
-    SharedPreferences.setMockInitialValues({'pref_text_scale': 1.15});
-    final p = PreferencesProvider();
-    await p.loadFromStorage();
-    await bind(p, 'a');
-    expect(p.textScale, 1.15);
-    for (final value in AppTextScale.options) {
-      await p.setTextScale(value);
-      final restarted = PreferencesProvider();
-      await restarted.loadFromStorage();
-      await bind(restarted, 'a');
-      expect(restarted.textScale, value);
-      restarted.dispose();
-    }
-    p.dispose();
+  test('旧版本首次绑定保留原字号，Android 七档都能保存并重新载入', () async {
+    await _onPlatform(TargetPlatform.android, () async {
+      SharedPreferences.setMockInitialValues({'pref_text_scale': 1.15});
+      final p = PreferencesProvider();
+      await p.loadFromStorage();
+      await bind(p, 'a');
+      expect(p.textScale, 1.15);
+      for (final value in AppTextScale.androidOptions) {
+        await p.setTextScale(value);
+        final restarted = PreferencesProvider();
+        await restarted.loadFromStorage();
+        await bind(restarted, 'a');
+        expect(restarted.textScale, value);
+        restarted.dispose();
+      }
+      p.dispose();
+    });
   });
 
-  test('真实登录链连续两次冷启动、退出后重登同账号都保留字号', () async {
-    var (auth, p) = await start();
-    await auth.configureServer('https://duoyi.test');
-    await auth.login(username: 'a', password: 'pw');
-    await p.setTextScale(1.75);
-    auth.dispose();
-    p.dispose();
-    for (var index = 0; index < 2; index++) {
+  test('旧版本首次绑定保留原字号，非 Android 八档都能保存并重新载入', () async {
+    await _onPlatform(TargetPlatform.linux, () async {
+      SharedPreferences.setMockInitialValues({'pref_text_scale': 1.15});
+      final p = PreferencesProvider();
+      await p.loadFromStorage();
+      await bind(p, 'a');
+      expect(p.textScale, 1.15);
+      for (final value in AppTextScale.sharedOptions) {
+        await p.setTextScale(value);
+        final restarted = PreferencesProvider();
+        await restarted.loadFromStorage();
+        await bind(restarted, 'a');
+        expect(restarted.textScale, value);
+        restarted.dispose();
+      }
+      p.dispose();
+    });
+  });
+
+  test('真实登录链连续两次冷启动、退出后重登同账号都保留字号（非 Android 175%）', () async {
+    await _onPlatform(TargetPlatform.linux, () async {
+      var (auth, p) = await start();
+      await auth.configureServer('https://duoyi.test');
+      await auth.login(username: 'a', password: 'pw');
+      await p.setTextScale(1.75);
+      auth.dispose();
+      p.dispose();
+      for (var index = 0; index < 2; index++) {
+        (auth, p) = await start();
+        expect(auth.state.userId, 'a');
+        expect(p.textScale, 1.75);
+        if (index == 0) {
+          auth.dispose();
+          p.dispose();
+        }
+      }
+      await auth.logout();
+      expect(p.textScale, 1.75);
+      auth.dispose();
+      p.dispose();
+      (auth, p) = await start();
+      expect(p.textScale, 1.75);
+      await auth.login(username: 'a', password: 'pw');
+      expect(p.textScale, 1.75);
+      auth.dispose();
+      p.dispose();
+    });
+  });
+
+  test('Android 七档：175% 保存为 145%，冷启动与重登都保留 145%', () async {
+    await _onPlatform(TargetPlatform.android, () async {
+      var (auth, p) = await start();
+      await auth.configureServer('https://duoyi.test');
+      await auth.login(username: 'a', password: 'pw');
+      await p.setTextScale(1.75);
+      expect(p.textScale, 1.45);
+      expect(
+        (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
+        1.45,
+      );
+      auth.dispose();
+      p.dispose();
       (auth, p) = await start();
       expect(auth.state.userId, 'a');
-      expect(p.textScale, 1.75);
-      if (index == 0) {
-        auth.dispose();
-        p.dispose();
-      }
-    }
-    await auth.logout();
-    expect(p.textScale, 1.75);
-    auth.dispose();
-    p.dispose();
-    (auth, p) = await start();
-    expect(p.textScale, 1.75);
-    await auth.login(username: 'a', password: 'pw');
-    expect(p.textScale, 1.75);
-    auth.dispose();
-    p.dispose();
+      expect(p.textScale, 1.45);
+      await auth.logout();
+      expect(p.textScale, 1.45);
+      await auth.login(username: 'a', password: 'pw');
+      expect(p.textScale, 1.45);
+      auth.dispose();
+      p.dispose();
+    });
   });
 
   test('A 换 B 只重置字号，其他设备偏好保留，登录失败不重置', () async {

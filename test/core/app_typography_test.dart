@@ -23,6 +23,17 @@ TextScaler _android(TextScaler system) => AppTypography.platformScaler(
   isWeb: false,
 );
 
+/// 共享排版角色：标题 / 卡片标题 / 正文 / 辅助 / 说明 / 按钮 / 导航标签。
+const _roles = <String, double>{
+  'page title': DesignTokens.fontSizePageTitle,
+  'card title': DesignTokens.fontSizeCardTitle,
+  'body': DesignTokens.fontSizeBody,
+  'secondary': DesignTokens.fontSizeSecondary,
+  'caption': DesignTokens.fontSizeCaption,
+  'button': DesignTokens.fontSizeButton,
+  'bottom nav label': DesignTokens.fontSizeBottomNavLabel,
+};
+
 void main() {
   test('Android 正文基准是 10，共享字号 token 与其它平台仍是 14', () {
     expect(DesignTokens.androidFontSizeBody, 10);
@@ -120,57 +131,128 @@ void main() {
     }
   });
 
-  test('系统非线性与八档用户比例组合，标准 100% 正文 10、85% 拖动到 8.5', () {
+  test('Android 七档 × 共享排版角色：先叠 10/14 基准再乘用户比例', () {
+    final options = AppTextScale.optionsFor(
+      platform: TargetPlatform.android,
+      isWeb: false,
+    );
+    expect(options, [.55, .70, .85, 1.0, 1.15, 1.30, 1.45]);
     for (final system in <TextScaler>[
       TextScaler.noScaling,
       const TextScaler.linear(1.25),
       const _NonlinearScaler(),
     ]) {
       final platform = _android(system);
-      for (final ratio in AppTextScale.options) {
+      for (final ratio in options) {
         final resolved = AppTextScale.resolve(
           system: platform,
           appScale: ratio,
+          platform: TargetPlatform.android,
         );
-        for (final fontSize in <double>[11, 12, 14, 16, 18, 24]) {
+        for (final role in _roles.entries) {
           expect(
-            resolved.scale(fontSize),
-            closeTo(system.scale(fontSize * ratio * 10 / 14), 1e-9),
-            reason: '${system.runtimeType} x $ratio x $fontSize',
+            resolved.scale(role.value),
+            closeTo(system.scale(role.value * ratio * 10 / 14), 1e-9),
+            reason: '${role.key} x ${system.runtimeType} x $ratio',
           );
         }
       }
     }
 
     final platform = _android(TextScaler.noScaling);
-    final standard = AppTextScale.resolve(
+    double bodyAt(double ratio) => AppTextScale.resolve(
       system: platform,
-      appScale: AppTextScale.defaultScale,
+      appScale: ratio,
+      platform: TargetPlatform.android,
+    ).scale(DesignTokens.fontSizeBody);
+    // 最小 55% 正文 5.5、标准 100% 正文 10、最大 145% 正文 14.5。
+    expect(bodyAt(.55), closeTo(5.5, 1e-9));
+    expect(bodyAt(AppTextScale.defaultScale), closeTo(10, 1e-9));
+    expect(bodyAt(1.45), closeTo(14.5, 1e-9));
+  });
+
+  test('非 Android 八档 × 共享角色保持 14 基准，移动 Web 同样是八档', () {
+    const shared = [.85, 1.0, 1.15, 1.30, 1.45, 1.60, 1.75, 1.90];
+    for (final platformKind in <TargetPlatform>[
+      TargetPlatform.iOS,
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+    ]) {
+      final options = AppTextScale.optionsFor(
+        platform: platformKind,
+        isWeb: false,
+      );
+      expect(options, shared, reason: '$platformKind 必须保持八档');
+      for (final system in <TextScaler>[
+        TextScaler.noScaling,
+        const TextScaler.linear(1.25),
+        const _NonlinearScaler(),
+      ]) {
+        for (final ratio in options) {
+          final resolved = AppTextScale.resolve(
+            system: system,
+            appScale: ratio,
+            platform: platformKind,
+          );
+          for (final role in _roles.entries) {
+            expect(
+              resolved.scale(role.value),
+              closeTo(system.scale(role.value * ratio), 1e-9),
+              reason: '$platformKind ${role.key} x $ratio',
+            );
+          }
+        }
+      }
+    }
+
+    // 移动 Web：目标平台是 Android 也保持八档与 14 的正文基准。
+    expect(
+      AppTextScale.optionsFor(platform: TargetPlatform.android, isWeb: true),
+      shared,
     );
-    expect(standard.scale(DesignTokens.fontSizeBody), closeTo(10, 1e-9));
-    final small = AppTextScale.resolve(
-      system: platform,
-      appScale: AppTextScale.small,
+    final webScaler = AppTextScale.resolve(
+      system: AppTypography.platformScaler(
+        system: TextScaler.noScaling,
+        platform: TargetPlatform.android,
+        isWeb: true,
+      ),
+      appScale: 1.90,
+      platform: TargetPlatform.android,
+      isWeb: true,
     );
-    expect(small.scale(DesignTokens.fontSizeBody), closeTo(8.5, 1e-9));
+    expect(
+      webScaler.scale(DesignTokens.fontSizeBody),
+      closeTo(14 * 1.90, 1e-9),
+    );
   });
 
   test('已保存比例保留 Android 基准，预览草稿只叠一次不会乘回已保存比例', () {
     final platform = _android(TextScaler.noScaling);
-    final saved = AppTextScale.resolve(system: platform, appScale: 1.75);
-    expect(saved.scale(DesignTokens.fontSizeBody), closeTo(17.5, 1e-9));
+    // 旧版保存的 175% 在 Android 七档里读到有效的 145%。
+    final saved = AppTextScale.resolve(
+      system: platform,
+      appScale: 1.75,
+      platform: TargetPlatform.android,
+    );
+    expect(saved.scale(DesignTokens.fontSizeBody), closeTo(14.5, 1e-9));
     final previewBase = AppTextScale.systemScalerOf(saved);
     expect(identical(previewBase, platform), isTrue);
     expect(previewBase.scale(DesignTokens.fontSizeBody), closeTo(10, 1e-9));
 
-    final draft = AppTextScale.resolve(system: previewBase, appScale: 1.30);
+    final draft = AppTextScale.resolve(
+      system: previewBase,
+      appScale: 1.30,
+      platform: TargetPlatform.android,
+    );
     expect(draft.scale(DesignTokens.fontSizeBody), closeTo(13, 1e-9));
-    // 没有把已保存的 175% 再乘进草稿预览。
-    expect(draft.scale(DesignTokens.fontSizeBody), lessThan(13 * 1.75));
+    // 没有把已保存的 145% 再乘进草稿预览。
+    expect(draft.scale(DesignTokens.fontSizeBody), lessThan(13 * 1.45));
 
     final standardDraft = AppTextScale.resolve(
       system: previewBase,
       appScale: AppTextScale.defaultScale,
+      platform: TargetPlatform.android,
     );
     expect(standardDraft.scale(DesignTokens.fontSizeBody), closeTo(10, 1e-9));
   });
@@ -293,5 +375,61 @@ void main() {
       heights[TargetPlatform.android]! / heights[TargetPlatform.linux]!,
       closeTo(10 / 14, .01),
     );
+  });
+
+  testWidgets('Android 七档在真实段落上应用组合 scaler：正文 5.5 / 10 / 14.5', (tester) async {
+    for (final system in <TextScaler>[
+      TextScaler.noScaling,
+      const _NonlinearScaler(),
+    ]) {
+      final baseline = _android(system);
+      for (final ratio in AppTextScale.androidOptions) {
+        final scaler = AppTextScale.resolve(
+          system: baseline,
+          appScale: ratio,
+          platform: TargetPlatform.android,
+        );
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(
+              size: const Size(390, 844),
+              textScaler: scaler,
+            ),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                '正文',
+                style: TextStyle(
+                  fontSize: DesignTokens.fontSizeBody,
+                  fontFamily: DesignTokens.fontFamily,
+                ),
+              ),
+            ),
+          ),
+        );
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.byType(RichText),
+        );
+        // 真实段落拿到的是 10 / 14 基准与用户档位组合后的 scaler。
+        expect(
+          paragraph.textScaler.scale(DesignTokens.fontSizeBody),
+          closeTo(system.scale(10 * ratio), .001),
+          reason: '${system.runtimeType} x $ratio',
+        );
+      }
+    }
+    // 标准档正文 10、最大档 145% 正文 14.5。
+    final standard = AppTextScale.resolve(
+      system: _android(TextScaler.noScaling),
+      appScale: AppTextScale.defaultScale,
+      platform: TargetPlatform.android,
+    );
+    expect(standard.scale(DesignTokens.fontSizeBody), closeTo(10, 1e-9));
+    final maximum = AppTextScale.resolve(
+      system: _android(TextScaler.noScaling),
+      appScale: 1.45,
+      platform: TargetPlatform.android,
+    );
+    expect(maximum.scale(DesignTokens.fontSizeBody), closeTo(14.5, 1e-9));
   });
 }

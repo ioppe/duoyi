@@ -177,6 +177,13 @@ class _TextSizeSettingsScreenState extends State<TextSizeSettingsScreen> {
   Widget _buildControls(BuildContext context, String percentLabel) {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    // 当前平台档位表：原生 Android 七档（标准居中），其它平台八档。
+    final options = AppTextScale.options;
+    final divisions = options.length - 1;
+    // 标准标识按档位索引线性落在 -1…1：七档在正中，八档保持原位置。
+    final standardAlignment = divisions == 0
+        ? 0.0
+        : AppTextScale.standardIndex / divisions * 2 - 1;
     return Material(
       color: cs.surface,
       child: SafeArea(
@@ -221,26 +228,21 @@ class _TextSizeSettingsScreenState extends State<TextSizeSettingsScreen> {
                   key: const ValueKey('text_size_slider'),
                   value: AppTextScale.indexOf(_draft).toDouble(),
                   min: 0,
-                  max: (AppTextScale.options.length - 1).toDouble(),
-                  divisions: AppTextScale.options.length - 1,
+                  max: divisions.toDouble(),
+                  divisions: divisions,
                   label: percentLabel,
                   semanticFormatterCallback: (index) => textScaleLabel(
-                    AppTextScale.options[index.round().clamp(
-                      0,
-                      AppTextScale.options.length - 1,
-                    )],
+                    options[index.round().clamp(0, divisions)],
                   ),
                   onChanged: _saving
                       ? null
                       : (index) {
-                          setState(
-                            () => _draft = AppTextScale.options[index.round()],
-                          );
+                          setState(() => _draft = options[index.round()]);
                         },
                 ),
               ),
               Align(
-                alignment: const Alignment(-5 / 7, 0),
+                alignment: Alignment(standardAlignment, 0),
                 child: Text(
                   I18n.tr('preferences.text_scale.standard_marker'),
                   key: const ValueKey('text_size_standard_marker'),

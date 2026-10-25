@@ -179,6 +179,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (idx < 0) return Text(text);
     final end = idx + q.length;
     return RichText(
+      textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       text: TextSpan(
