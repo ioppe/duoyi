@@ -970,24 +970,27 @@ class HomeWidgetService {
     }
   }
 
-  /// 动作影响的原生小组件类名。compact / detailed 变体继承标准 provider，
-  /// 但各自是独立 AppWidget 组件，必须逐个请求刷新。
+  /// 冷后台动作后需要重绘的原生小组件类名。
+  ///
+  /// 4 个核心页（待办 / 习惯 / 日历 / 专注）在原生侧支持按实例切换内容：
+  /// 历史综合小组件、习惯宿主都可能正显示待办页，所以任一动作都要刷新全部
+  /// 13 个唯一 provider（核心 4 类 × 标准/compact/detailed + 历史综合）。
   @visibleForTesting
   static List<String> androidProviderNamesForAction(HomeWidgetActionKind kind) {
-    final primaryProviders = switch (kind) {
-      HomeWidgetActionKind.completeTodo ||
-      HomeWidgetActionKind.quickTodo => const [_androidTodoProviderName],
-      HomeWidgetActionKind.checkinHabit => const [_androidHabitProviderName],
-      HomeWidgetActionKind.startPomodoro => const [
-        _androidFocusProviderName,
-        'DuoyiWidgetProvider',
-      ],
-    };
+    // kind 参数保留以兼容现有调用；实例内切页让四个宿主互相可能显示同一页。
+    const coreProviders = [
+      _androidTodoProviderName,
+      _androidHabitProviderName,
+      _androidCalendarProviderName,
+      _androidFocusProviderName,
+    ];
     return [
-      for (final provider in primaryProviders) ...[
+      for (final provider in coreProviders) ...[
         provider,
         ..._androidWidgetVariants(provider),
       ],
+      // 历史综合组件同样支持实例内切页，必须一起刷新。
+      'DuoyiWidgetProvider',
     ];
   }
 

@@ -101,10 +101,6 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
                 R.id.widget_calendar_summary,
                 DuoyiWidgetDisplayMode.standardOrDetailedVisibility(prefs, id)
             )
-            views.setViewVisibility(
-                R.id.widget_calendar_bottom_nav,
-                DuoyiWidgetDisplayMode.bottomNavVisibility(prefs, id)
-            )
 
             val tabTodo = prefs.getString("nav_todo", "待办") ?: "待办"
             val tabHabit = prefs.getString("nav_habit", "习惯") ?: "习惯"
@@ -115,29 +111,41 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
             views.setTextViewText(R.id.widget_calendar_nav_calendar, tabCalendar)
             views.setTextViewText(R.id.widget_calendar_nav_focus, tabFocus)
 
+            val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
+            // 只有空白 root 打开 App 的日历页。
             val openCalendar = HomeWidgetLaunchIntent.getActivity(
                 context, MainActivity::class.java, Uri.parse("duoyi://tab/calendar")
             )
-            val openTodo = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/todo")
-            )
-            val openHabit = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/habit")
-            )
-            val openFocus = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/focus")
-            )
-
             views.setOnClickPendingIntent(R.id.widget_calendar_root, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_title, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_month, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_today_button, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_grid, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_summary, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_nav_todo, openTodo)
-            views.setOnClickPendingIntent(R.id.widget_calendar_nav_habit, openHabit)
-            views.setOnClickPendingIntent(R.id.widget_calendar_nav_calendar, openCalendar)
-            views.setOnClickPendingIntent(R.id.widget_calendar_nav_focus, openFocus)
+            // 底部四项直接切换小组件内容。
+            DuoyiWidgetNavigation.bindBottomTabs(
+                context = context,
+                views = views,
+                prefs = prefs,
+                target = navTarget,
+                appWidgetId = id,
+                navId = R.id.widget_calendar_bottom_nav,
+                defaultNavVisibility = DuoyiWidgetDisplayMode.bottomNavVisibility(prefs, id),
+                tabViewIds = mapOf(
+                    DuoyiWidgetNavigation.TAB_TODO to R.id.widget_calendar_nav_todo,
+                    DuoyiWidgetNavigation.TAB_HABIT to R.id.widget_calendar_nav_habit,
+                    DuoyiWidgetNavigation.TAB_CALENDAR to R.id.widget_calendar_nav_calendar,
+                    DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_calendar_nav_focus,
+                ),
+            )
+            // 标题 / 月份 / 网格 / 摘要 / “今天”都只本地重绘当前实例。
+            DuoyiWidgetNavigation.bindRefresh(
+                context,
+                views,
+                navTarget,
+                intArrayOf(
+                    R.id.widget_calendar_title,
+                    R.id.widget_calendar_month,
+                    R.id.widget_calendar_grid,
+                    R.id.widget_calendar_summary,
+                    R.id.widget_calendar_today_button,
+                ),
+            )
 
             appWidgetManager.updateAppWidget(id, views)
         }

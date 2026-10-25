@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "widgetTodoPreviewDescription": "Show the top three tasks today, with widget tabs and background completion.",
   "stateError": "Something went wrong",
   "stateLoadFailed": "Unable to load",
   "calendarProjectEmpty": "No tasks in this project yet",

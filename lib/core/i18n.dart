@@ -1173,6 +1173,7 @@ const Map<String, String> _zh = <String, String>{
   'widget.course_section_suffix': '节 ',
   // 账号清理兜底 payload（HomeWidgetService.accountPayloadDefaults）
   'widget.todo_top3_empty': '今天没有未完成待办',
+  'widget.todo_preview_description': '展示前三个今日任务，支持组件内切页和后台完成',
   'widget.goal_empty': '暂无进行中目标',
   'widget.goal_hint': '本周目标保持推进',
   'widget.anniversary_empty': '暂无近期纪念日',
@@ -2658,6 +2659,8 @@ const Map<String, String> _en = <String, String>{
   'widget.course_section_suffix': ' ',
   // Account-clear fallback payload (HomeWidgetService.accountPayloadDefaults)
   'widget.todo_top3_empty': 'No open tasks today',
+  'widget.todo_preview_description':
+      'Show the top three tasks today, with widget tabs and background completion.',
   'widget.goal_empty': 'No active goals',
   'widget.goal_hint': "Keep this week's goals moving",
   'widget.anniversary_empty': 'No upcoming anniversaries',

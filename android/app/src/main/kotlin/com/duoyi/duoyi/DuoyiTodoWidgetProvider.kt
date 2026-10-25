@@ -121,15 +121,12 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
                 R.id.widget_todo_today_summary,
                 "今日待办 · ${prefs.getInt("todo_top3_count", 0)} 项"
             )
-            bindTodoRow(context, views, prefs, 1, R.id.widget_todo_item_1, R.id.widget_todo_done_1)
-            bindTodoRow(context, views, prefs, 2, R.id.widget_todo_item_2, R.id.widget_todo_done_2)
-            bindTodoRow(context, views, prefs, 3, R.id.widget_todo_item_3, R.id.widget_todo_done_3)
+            val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
+            bindTodoRow(context, views, prefs, navTarget, 1, R.id.widget_todo_item_1, R.id.widget_todo_done_1)
+            bindTodoRow(context, views, prefs, navTarget, 2, R.id.widget_todo_item_2, R.id.widget_todo_done_2)
+            bindTodoRow(context, views, prefs, navTarget, 3, R.id.widget_todo_item_3, R.id.widget_todo_done_3)
             val secondRowVisibility = DuoyiWidgetDisplayMode.standardOrDetailedVisibility(prefs, id)
             val thirdRowVisibility = DuoyiWidgetDisplayMode.detailedVisibility(prefs, id)
-            views.setViewVisibility(
-                R.id.widget_todo_bottom_nav,
-                DuoyiWidgetDisplayMode.bottomNavVisibility(prefs, id)
-            )
             views.setViewVisibility(R.id.widget_todo_row_2, secondRowVisibility)
             views.setViewVisibility(
                 R.id.widget_todo_done_2,
@@ -145,41 +142,43 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
                 DuoyiWidgetDisplayMode.detailedVisibility(prefs, id)
             )
 
-            // 点击任意区域都打开待办页
-            val open = HomeWidgetLaunchIntent.getActivity(
+            // 只有空白 root 打开 App 的待办页；标题、统计、内容行都留在组件内。
+            val openTodoPage = HomeWidgetLaunchIntent.getActivity(
                 context, MainActivity::class.java,
                 Uri.parse("duoyi://tab/todo")
             )
-            val quickAdd = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java,
-                Uri.parse("duoyi://action/quick_todo")
+            views.setOnClickPendingIntent(R.id.widget_todo_root, openTodoPage)
+            // 底部四项直接切换小组件内容；切过页的实例即使 compact 也保留底栏。
+            DuoyiWidgetNavigation.bindBottomTabs(
+                context = context,
+                views = views,
+                prefs = prefs,
+                target = navTarget,
+                appWidgetId = id,
+                navId = R.id.widget_todo_bottom_nav,
+                defaultNavVisibility = DuoyiWidgetDisplayMode.bottomNavVisibility(prefs, id),
+                tabViewIds = mapOf(
+                    DuoyiWidgetNavigation.TAB_TODO to R.id.widget_todo_nav_todo,
+                    DuoyiWidgetNavigation.TAB_HABIT to R.id.widget_todo_nav_habit,
+                    DuoyiWidgetNavigation.TAB_CALENDAR to R.id.widget_todo_nav_calendar,
+                    DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_todo_nav_focus,
+                ),
             )
-            views.setOnClickPendingIntent(R.id.widget_todo_root, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_title, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_count, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_quick_add, quickAdd)
-            views.setOnClickPendingIntent(R.id.widget_todo_row_1, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_row_2, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_row_3, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_today_summary, open)
-            views.setOnClickPendingIntent(R.id.widget_todo_nav_todo, open)
-            views.setOnClickPendingIntent(
-                R.id.widget_todo_nav_habit,
-                HomeWidgetLaunchIntent.getActivity(
-                    context, MainActivity::class.java, Uri.parse("duoyi://tab/habit")
-                )
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_todo_nav_calendar,
-                HomeWidgetLaunchIntent.getActivity(
-                    context, MainActivity::class.java, Uri.parse("duoyi://tab/calendar")
-                )
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_todo_nav_focus,
-                HomeWidgetLaunchIntent.getActivity(
-                    context, MainActivity::class.java, Uri.parse("duoyi://tab/focus")
-                )
+            // “+ 添加”需要完整表单：收起按钮（资源 ID 保留），编辑从待办页进入。
+            views.setViewVisibility(R.id.widget_todo_quick_add, View.GONE)
+            // 标题 / 数量 / 行 / 统计都是只读信息：点击只本地重绘。
+            DuoyiWidgetNavigation.bindRefresh(
+                context,
+                views,
+                navTarget,
+                intArrayOf(
+                    R.id.widget_todo_title,
+                    R.id.widget_todo_count,
+                    R.id.widget_todo_row_1,
+                    R.id.widget_todo_row_2,
+                    R.id.widget_todo_row_3,
+                    R.id.widget_todo_today_summary,
+                ),
             )
 
             appWidgetManager.updateAppWidget(id, views)
@@ -190,34 +189,23 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
         context: Context,
         views: RemoteViews,
         prefs: SharedPreferences,
+        target: DuoyiWidgetNavigation.Target?,
         index: Int,
         itemViewId: Int,
         doneViewId: Int
     ) {
         val todoId = prefs.getString("todo_top3_${index}_id", "") ?: ""
+        val encodedTodoId = Uri.encode(todoId)
         if (todoId.isBlank()) {
             views.setViewVisibility(doneViewId, View.GONE)
-            views.setOnClickPendingIntent(
-                itemViewId,
-                HomeWidgetLaunchIntent.getActivity(
-                    context,
-                    MainActivity::class.java,
-                    Uri.parse("duoyi://tab/todo")
-                )
-            )
+            // 空行也只在组件内重绘，不打开 App。
+            DuoyiWidgetNavigation.bindRefresh(context, views, target, intArrayOf(itemViewId))
             return
         }
-        val encodedTodoId = Uri.encode(todoId)
         views.setViewVisibility(doneViewId, View.VISIBLE)
-        views.setOnClickPendingIntent(
-            itemViewId,
-            HomeWidgetLaunchIntent.getActivity(
-                context,
-                MainActivity::class.java,
-                Uri.parse("duoyi://todo/$encodedTodoId")
-            )
-        )
-        // “完成待办”直接在后台执行，不打开 App；行本身仍作为浏览入口。
+        // 行标题只本地重绘：点标题不会自动完成待办，也不打开 App。
+        DuoyiWidgetNavigation.bindRefresh(context, views, target, intArrayOf(itemViewId))
+        // “完成待办”直接在后台执行，不打开 App。
         views.setOnClickPendingIntent(
             doneViewId,
             HomeWidgetBackgroundIntent.getBroadcast(

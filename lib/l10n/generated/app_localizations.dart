@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @widgetTodoPreviewDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'展示前三个今日任务，支持组件内切页和后台完成'**
+  String get widgetTodoPreviewDescription;
+
   /// No description provided for @stateError.
   ///
   /// In zh, this message translates to:

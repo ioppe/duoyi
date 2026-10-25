@@ -9,6 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get widgetTodoPreviewDescription =>
+      'Show the top three tasks today, with widget tabs and background completion.';
+
+  @override
   String get stateError => 'Something went wrong';
 
   @override

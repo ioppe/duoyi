@@ -9,6 +9,9 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get widgetTodoPreviewDescription => '展示前三个今日任务，支持组件内切页和后台完成';
+
+  @override
   String get stateError => '出错了';
 
   @override

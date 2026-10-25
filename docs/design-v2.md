@@ -47,7 +47,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 | TimeEntry + TimeAuditProvider | 已实现 | 模型/CRUD/dedupeKey/分类，番茄/待办/日历入口写入 |
 | Workspace + ShareProvider | 已实现 | 模型/角色/邀请码/评论/提及/负责人/排行榜 |
 | FocusSoundService | 已实现 | 13 条单音轨，循环/淡入/淡出，自定义音轨播放 |
-| HomeWidgetService | 已实现 | 10 个可见独立 Android 小组件数据推送和点击流 |
+| HomeWidgetService | 已实现 | 9 个可见独立 Android 小组件数据推送、核心四页组件内切换及后台动作 |
 | HolidayCalendar | 已实现 | 2024-2026 内置数据，updateFrom 扩展口 |
 | FeatureFlags | 已实现 | 4 个开关，全部默认 true |
 | AudioService (deprecated) | 保留 | 转发到 FocusSoundService 的 shim |
@@ -61,7 +61,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 5. ShareProvider 后端 workspace API、邀请 UI、viewer 权限、任务负责人、空间/任务评论、@ 提及、成员排行榜、共享目标/本地共享日程和同步冲突记录已落地；仍需字段级冲突解释和多账号端到端回归。
 6. AchievementProvider 已补解锁反馈、时光币、成长等级、挑战和奖励商店；后续可继续补更强的解锁动效和目标里程碑奖励。
 7. 倒数日、纪念日、课程表与日历/提醒已有深度联动；仍需强提醒、农历生日和课程深链真机回归。
-8. Android 已暴露 10 个可见独立小组件，待办勾选、快捷添加、习惯打卡和 deep-link 已接入；iOS 已补 10 个 WidgetKit kind、App Group 数据契约、Runner URL scheme、Xcode Extension target、待办详情/完成、快捷添加、习惯打卡、开始专注和底部导航 Link，仍缺开发者账号签名/App Group capability 真机确认、iOS 真机添加和 Android launcher 尺寸拖拽真机回归。
+8. Android 已暴露 9 个可见独立小组件，核心待办/习惯/月历/专注及历史兼容综合实例支持组件内四页切换，待办完成、习惯打卡和开始专注保留后台执行；iOS 已补 WidgetKit kind、App Group 数据契约、Runner URL scheme、Xcode Extension target、待办详情/完成、快捷添加、习惯打卡、开始专注和底部导航 Link，仍缺开发者账号签名/App Group capability 真机确认、iOS 真机添加和 Android launcher 尺寸拖拽真机回归。
 9. 中文自然语言日期解析、看板、专注 DND、专注标签统计、习惯弹性规则、周/月/年报告、通知栏快捷添加、Flutter gen-l10n/ARB 和 HolidayCalendar 2026 数据已落地；剩余以真机验证、逐页硬编码文案迁移和深度扩展为主。
 10. TodoProvider/GoalProvider 已可注入 ReminderScheduler 并在关键写路径直接重同步；常规路径仍保留 main.dart listener 兜底。
 11. deprecated AudioService shim 仍保留以兼容旧调用，后续确认无引用后可移除。
@@ -125,7 +125,9 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 
 ### 2.10 Android 小组件与系统日历
 
-- 小组件完成待办、快捷打卡、开始专注通过 `HomeWidgetBackgroundIntent` 进入后台 Dart 回调，先校验登录态与服务器/账号 owner，再调用业务 Provider 和刷新小组件；原生层不直接修改业务 JSON。导航、详情和“+ 添加”仍使用 Activity Intent。
+- 小组件完成待办、快捷打卡、开始专注通过 `HomeWidgetBackgroundIntent` 进入后台 Dart 回调，先校验登录态与服务器/账号 owner，再调用业务 Provider 和刷新小组件；原生层不直接修改业务 JSON。
+- Android 核心待办、习惯、月历、专注（含尺寸变体）及历史兼容综合小组件的底部四标签使用原生广播，只保存当前 `appWidgetId` 的选中页并重绘 `RemoteViews`，不启动 Activity 或业务后台回调。各实例独立保存页签，常规刷新、包更新与尺寸变化后保留选择，删除实例时清理状态；失效 ID、非法页签或不匹配的实际 Provider 广播不生效。
+- 上述核心小组件只有空白根区域通过 Activity 深链打开当前内容对应的 App 页面；标题、只读行、“今天”和倒计时查看停留组件内。原“打开 App”和“+ 添加”按钮收起；首次简洁样式保持隐藏底栏，已进入组件内切页的实例保留底栏以便返回。其他独立模块小组件和 iOS 既有对象深链入口保持其契约。
 - 任务详情有截止日期时提供系统日历创建入口，`duoyi/system_calendar` 通道使用 `ACTION_INSERT` 预填任务标题、备注、应用时区和起止时间；纯日期创建全天草稿，具体时刻创建一小时草稿。用户在系统页面确认保存；多仪不申请日历读写权限、不保存事件 ID、不接管后续修改或删除，无法打开日历时显示失败提示。
 
 ## 3. 目标架构（v2）
@@ -620,7 +622,9 @@ Android 待办小组件的完成按钮使用 `HomeWidgetBackgroundIntent.getBroa
 
 主引擎存在时通过 isolate 消息把动作交给它已加载的 Provider，并等待执行及 payload 推送完成；已转交的请求即使失败或超时也不再回退到第二次冷后台执行。没有主引擎时，后台先重载偏好并初始化应用时区，再执行业务操作、记录本地同步变更标记，按最新状态重算待办 Top3、习惯进度/下个打卡目标或专注倒计时，最后刷新原生小组件。
 
-按钮类动作不启动主界面，原生层不直接修改业务 JSON；详情和导航继续由 Activity 深链处理。回调保留带文字 `quick_todo` 请求的解析能力，但当前桌面“+ 添加”没有预填文字入口，仍打开完整任务表单。
+核心四页小组件不再依赖其最初添加的类型决定当前显示页。冷后台任一种动作后均刷新待办、习惯、月历、专注的标准/简洁/详细宿主及历史兼容综合宿主，共 13 个 Provider 目标，防止切到待办页的综合或习惯宿主显示旧摘要。刷新保持实例选中页，业务 owner 和重复操作规则不变。
+
+核心页签与只读刷新由原生广播处理，只有空白根区域打开当前 App 页面；完成、打卡、开始专注按钮仍走经校验的后台业务链路。`quick_todo` 带文字请求和 Flutter 深链解析能力保留供已有入口使用，但 Android 核心小组件不显示“+ 添加”，不提供原生输入框或带文字的后台创建入口。
 
 #### 4.8.2 Widget Deep-link
 
@@ -984,7 +988,7 @@ class QuickActionService {
 
 #### 4.14.2 Widget 快速添加
 
-独立待办小组件的“+ 添加”按钮通过 `HomeWidgetLaunchIntent.getActivity` 打开 `duoyi://action/quick_todo`。Flutter 按该深链打开完整任务创建表单，等待用户输入和保存；当前小组件不提供带文字的后台快捷添加入口。
+Android 核心待办小组件收起“+ 添加”按钮，避免在组件内浏览时拉起 App；点击空白区域进入待办页后使用应用内完整创建表单。`duoyi://action/quick_todo` 的 Flutter 路由保留，iOS 和通知等现有调用入口继续使用；当前 Android 小组件不提供原生文字输入或带文字的后台快捷添加入口。
 
 #### 4.14.3 模板快速创建
 

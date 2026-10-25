@@ -87,6 +87,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_todo_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -115,6 +116,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_habit_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -143,6 +145,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_pomodoro_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -159,7 +162,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="6dp"
-        android:weightSum="2">
+        android:weightSum="1">
 
         <TextView
             android:id="@+id/widget_quick_pomodoro"

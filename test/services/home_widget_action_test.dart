@@ -82,6 +82,22 @@ List<String> _updatedAndroidNames() => [
     if (call.method == 'updateWidget') '${(call.arguments as Map)['android']}',
 ];
 
+/// 冷后台动作后必须重绘的全部可切页宿主（核心 4 页 × 三档样式 + 历史综合）。
+const Set<String> _switchableWidgetHosts = <String>{
+  'DuoyiTodoWidgetProvider',
+  'DuoyiTodoCompactWidgetProvider',
+  'DuoyiTodoDetailedWidgetProvider',
+  'DuoyiHabitWidgetProvider',
+  'DuoyiHabitCompactWidgetProvider',
+  'DuoyiHabitDetailedWidgetProvider',
+  'DuoyiCalendarWidgetProvider',
+  'DuoyiCalendarCompactWidgetProvider',
+  'DuoyiCalendarDetailedWidgetProvider',
+  'DuoyiFocusHabitWidgetProvider',
+  'DuoyiFocusHabitCompactWidgetProvider',
+  'DuoyiFocusHabitDetailedWidgetProvider',
+  'DuoyiWidgetProvider',
+};
 HomeWidgetActionRequest _request(String uri) =>
     HomeWidgetActionRequest.parse(Uri.parse(uri))!;
 
@@ -259,11 +275,53 @@ void main() {
         expect(updateIndexes, isNotEmpty);
         expect(saveIndexes.reduce(max), lessThan(updateIndexes.reduce(min)));
         expect(_updatedAndroidNames(), contains('DuoyiHabitWidgetProvider'));
+        // 实例内切页让每个宿主都可能正在显示习惯页：13 个宿主都要刷新。
+        expect(_updatedAndroidNames().toSet(), _switchableWidgetHosts);
 
         // 冷后台留下本地待同步标记（不启动网络同步）。
         await pumpEventQueue();
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.getBool('sync_pending_local_changes'), isTrue);
+      },
+    );
+
+    test(
+      'every cold action repaints all switchable hosts, including legacy and calendar',
+      () async {
+        SharedPreferences.setMockInitialValues(_accountPrefs());
+        final seedTodos = TodoProvider();
+        await seedTodos.loadFromStorage();
+        await seedTodos.addTodo(
+          TodoItem(id: 't1', title: '写报告'),
+          waitForReminderSync: false,
+        );
+        final seedHabits = HabitProvider();
+        await seedHabits.loadFromStorage();
+        await seedHabits.addHabit(Habit(id: 'h1', name: '阅读'));
+        final seedPomodoro = PomodoroProvider();
+        await seedPomodoro.loadFromStorage();
+        seedPomodoro.dispose();
+
+        // 四个动作的刷新列表必须完全一致：任一宿主都可能正在显示被动作修改的页。
+        for (final kind in HomeWidgetActionKind.values) {
+          final names = HomeWidgetService.androidProviderNamesForAction(kind);
+          expect(names, hasLength(13), reason: '${kind.name} 需要刷新全部可切页宿主');
+          expect(names.toSet(), _switchableWidgetHosts, reason: kind.name);
+        }
+
+        // 真实冷后台动作同样覆盖历史综合与月历宿主。
+        _widgetCalls.clear();
+        expect(
+          await HomeWidgetService.runBackgroundAction(
+            _request('duoyi://action/complete_todo?id=t1'),
+          ),
+          isTrue,
+        );
+        final refreshed = _updatedAndroidNames();
+        expect(refreshed, hasLength(13));
+        expect(refreshed.toSet(), _switchableWidgetHosts);
+        expect(refreshed, contains('DuoyiWidgetProvider'));
+        expect(refreshed, contains('DuoyiCalendarWidgetProvider'));
       },
     );
   });

@@ -175,10 +175,10 @@ class _WidgetScreenState extends State<WidgetScreen>
                     onOpenSettings: _openWidgetSettings,
                   ),
                   const SizedBox(height: 12),
-                  const _WidgetCatalogTile(
+                  _WidgetCatalogTile(
                     icon: Icons.checklist_rtl_outlined,
                     title: '今日待办',
-                    subtitle: '展示前三个今日任务，可打开完成流程或快速添加',
+                    subtitle: I18n.tr('widget.todo_preview_description'),
                     color: Colors.blue,
                   ),
                   const SizedBox(height: 10),
@@ -1291,8 +1291,6 @@ class _WidgetPreviewTodoBody extends StatelessWidget {
         if (maxLines >= 3) ...[
           const SizedBox(height: 7),
           const _WidgetPreviewTodoRow(text: '晚间运动 30 分钟'),
-          const SizedBox(height: 6),
-          const _WidgetPreviewQuickAdd(label: '+ 添加待办'),
           const SizedBox(height: 5),
           const _WidgetPreviewLine(
             icon: Icons.subdirectory_arrow_right,
@@ -1702,42 +1700,6 @@ class _WidgetPreviewLineList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [for (final line in lines.take(maxLines)) line],
-    );
-  }
-}
-
-class _WidgetPreviewQuickAdd extends StatelessWidget {
-  final String label;
-
-  const _WidgetPreviewQuickAdd({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        height: 24,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.blue.withValues(alpha: 0.28),
-            width: 0.45,
-          ),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.blue,
-            fontSize: 11,
-            fontWeight: DesignTokens.fontWeightStrong,
-          ),
-        ),
-      ),
     );
   }
 }
