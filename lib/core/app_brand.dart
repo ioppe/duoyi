@@ -76,37 +76,37 @@ TextTheme _textTheme({
 
   return TextTheme(
     displayLarge: style(
-      38,
+      32,
       headingColor,
       height: 1.12,
       weight: DesignTokens.fontWeightStrong,
     ),
     displayMedium: style(
-      32,
+      28,
       headingColor,
       height: 1.16,
       weight: DesignTokens.fontWeightStrong,
     ),
     displaySmall: style(
-      27,
+      24,
       headingColor,
       height: 1.2,
       weight: DesignTokens.fontWeightStrong,
     ),
     headlineLarge: style(
-      24,
+      22,
       headingColor,
       height: 1.22,
       weight: DesignTokens.fontWeightStrong,
     ),
     headlineMedium: style(
-      21,
+      20,
       headingColor,
       height: 1.24,
       weight: DesignTokens.fontWeightStrong,
     ),
     headlineSmall: style(
-      19,
+      18,
       headingColor,
       height: 1.28,
       weight: DesignTokens.fontWeightStrong,

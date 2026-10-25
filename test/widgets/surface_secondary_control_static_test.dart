@@ -314,7 +314,7 @@ void main() {
     expect(source, isNot(contains('minWidth: 320,')));
     expect(source, isNot(contains('maxWidth: maxWidth,\n        maxHeight')));
     expect(source, contains('scrollable: true'));
-    expect(source, contains('fontSize: 16'));
+    expect(source, contains('fontSize: DesignTokens.fontSizeBody'));
     expect(source, isNot(contains('fontSize: 22')));
     expect(source, isNot(contains('theme.textTheme.titleLarge')));
     expect(source, contains('(viewInsets.bottom * 0.42).clamp(56.0, 128.0)'));

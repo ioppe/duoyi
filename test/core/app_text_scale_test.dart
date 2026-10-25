@@ -14,7 +14,7 @@ void main() {
   test('八档字号保留旧三档，标准为第二档', () {
     expect(AppTextScale.options, [.85, 1.0, 1.15, 1.3, 1.45, 1.6, 1.75, 1.9]);
     expect(AppTextScale.standardIndex, 1);
-    expect(AppTextScale.defaultScale, AppTextScale.small);
+    expect(AppTextScale.defaultScale, AppTextScale.standard);
     for (final value in AppTextScale.options) {
       expect(AppTextScale.normalize(value), value);
     }
@@ -25,7 +25,7 @@ void main() {
 
   test('异常值安全回退，有限正数归一到最近档位', () {
     for (final value in [null, double.nan, double.infinity, -1.0, 0.0]) {
-      expect(AppTextScale.normalize(value), AppTextScale.small);
+      expect(AppTextScale.normalize(value), AppTextScale.standard);
     }
     expect(AppTextScale.normalize(.4), .85);
     expect(AppTextScale.normalize(5), 1.9);

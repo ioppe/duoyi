@@ -36,7 +36,7 @@ class DesignTokens {
   static const double authPageMaxWidth = 1120;
   static const double authFormMaxWidth = 440;
   static const double authWideBreakpoint = 960;
-  static const double authHeroSize = 42;
+  static const double authHeroSize = 36;
   static const double authLogoSize = 44;
   static const double authCardHeightMobile = 484;
   static const double authCardHeightWide = 508;
@@ -51,12 +51,12 @@ class DesignTokens {
   // ----- Home preview specification -----
   static const double homeContentMaxWidth = 720;
   static const double homeTopInset = 28;
-  static const double homeHeadingSize = 20;
-  static const double homeTaskTitleSize = 16;
-  static const double homeCaptionSize = 12;
-  static const double homeCounterSize = 12;
+  static const double homeHeadingSize = fontSizePageTitle;
+  static const double homeTaskTitleSize = fontSizeBody;
+  static const double homeCaptionSize = fontSizeCaption;
+  static const double homeCounterSize = fontSizeCaption;
   static const double homeTabIndicatorWidth = 22;
-  static const double homeStatusSize = 21;
+  static const double homeStatusSize = fontSizePageTitle;
   static const double homeItemLeadingGap = space3xl;
   static const double homeQuadrantDotSize = 10;
   static const double homeQuadrantTitleGap = spaceSm;
@@ -146,25 +146,25 @@ class DesignTokens {
   );
 
   // ----- Typography scale（与 ThemeData TextTheme 协同，提供字号常量） -----
-  static const double fontSizeXs = 12;
-  static const double fontSizeSm = 14;
-  static const double fontSizeBase = 16;
-  static const double fontSizeSection = 16;
-  static const double fontSizeMd = 16;
-  static const double fontSizeLg = 18;
-  static const double fontSizeXl = 22;
-  static const double fontSizeXxl = 28;
+  static const double fontSizeXs = 11;
+  static const double fontSizeSm = 12;
+  static const double fontSizeBase = 14;
+  static const double fontSizeSection = 14;
+  static const double fontSizeMd = 14;
+  static const double fontSizeLg = 16;
+  static const double fontSizeXl = 20;
+  static const double fontSizeXxl = 24;
 
   static const double fontSizeCaption = fontSizeXs;
   static const double fontSizeSecondary = fontSizeSm;
   static const double fontSizeBody = fontSizeBase;
   static const double fontSizeListTitle = fontSizeSection;
   static const double fontSizeCardTitle = fontSizeMd;
-  static const double fontSizeNavigationTitle = 20;
-  static const double fontSizePageTitle = 20;
-  static const double fontSizeNumericHighlight = 26;
-  static const double fontSizeButton = 14;
-  static const double fontSizeBottomNavLabel = 12;
+  static const double fontSizeNavigationTitle = 18;
+  static const double fontSizePageTitle = 18;
+  static const double fontSizeNumericHighlight = 24;
+  static const double fontSizeButton = 12;
+  static const double fontSizeBottomNavLabel = 11;
 
   /// 全局 UI 字体：随应用打包的 Noto Sans SC 变量字库。
   ///

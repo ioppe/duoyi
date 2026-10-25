@@ -61,13 +61,11 @@ void main() {
       find.textContaining('Only changes text inside Duoyi'),
       findsOneWidget,
     );
-    expect(find.text('Small (85%)'), findsOneWidget);
-
-    await tester.runAsync(
-      () => preferences.setTextScale(AppTextScale.standard),
-    );
-    await tester.pumpAndSettle();
     expect(find.text('Standard (100%)'), findsOneWidget);
+
+    await tester.runAsync(() => preferences.setTextScale(AppTextScale.small));
+    await tester.pumpAndSettle();
+    expect(find.text('Small (85%)'), findsOneWidget);
     expect(
       find.textContaining('Only changes text inside Duoyi'),
       findsOneWidget,
@@ -82,7 +80,7 @@ void main() {
     expect(find.text('显示与行为'), findsOneWidget);
     expect(find.text('界面语言'), findsOneWidget);
     expect(find.text('应用字体大小'), findsOneWidget);
-    expect(find.text('标准（100%）'), findsOneWidget);
+    expect(find.text('小（85%）'), findsOneWidget);
     expect(find.textContaining('2026年6月1日'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

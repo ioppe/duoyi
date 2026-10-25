@@ -212,8 +212,6 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
   static const _kTextScale = 'pref_text_scale';
   static const _kTextScaleOwner = 'pref_text_scale_owner_v1';
-  static const _kTextScaleDefaultMigration =
-      'device_text_scale_default_migration_v2';
 
   Future<void> Function()? onAppTimeZoneChanged;
 
@@ -562,33 +560,10 @@ class PreferencesProvider extends ChangeNotifier {
     _haptic = p.getBool(_kHapticFeedback) ?? true;
     _showLunar = p.getBool(_kShowLunar) ?? true;
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
-    final storedTextScale = p.getDouble(_kTextScale);
-    final textScaleMigrationDone =
-        p.getBool(_kTextScaleDefaultMigration) ?? false;
-    if (!textScaleMigrationDone) {
-      final normalized = AppTextScale.normalize(storedTextScale);
-      // 旧版的 100% 是默认值；用户已选的小/大档位保持不变。
-      final migratedTextScale =
-          storedTextScale == null || normalized == AppTextScale.standard
-          ? AppTextScale.defaultScale
-          : normalized;
-      try {
-        // 先把迁移值落盘再标记完成，否则下次载入会退回旧默认档。
-        if (!await p.setDouble(_kTextScale, migratedTextScale) ||
-            !await p.setBool(_kTextScaleDefaultMigration, true)) {
-          throw StateError('Unable to persist text scale default migration');
-        }
-      } catch (_) {
-        // Legacy SharedPreferences 先改缓存再写平台，失败后必须回读快照，
-        // 避免失败草稿在重载时被当成已保存值，也避免提前标记迁移成功。
-        await p.reload();
-        rethrow;
-      }
-      if (_isStaleLoad(generation, mutationVersion)) return;
-      _textScale = migratedTextScale;
-    } else {
-      _textScale = AppTextScale.normalize(storedTextScale);
-    }
+    // 已保存的档位一律按原值恢复：本机不区分“自动写入的默认档”与
+    // “用户主动选择”，任何改写都会覆盖真实选择。旧版遗留的迁移标记
+    // 只留在磁盘上，不再读取也不再写入。
+    _textScale = AppTextScale.normalize(p.getDouble(_kTextScale));
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
     final storedTextScaleOwner = p.getString(_kTextScaleOwner)?.trim();
     _textScaleOwner =

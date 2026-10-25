@@ -72,7 +72,7 @@ void main() {
       p.dispose();
     });
 
-    test('字号默认迁移${throwing ? '抛异常' : '返回false'}时不标记完成，恢复后可重试', () async {
+    test('底层${throwing ? '抛异常' : '返回false'}时载入仍读取已存的 100%，且不写迁移标记', () async {
       final store = _FailingStore(
         throwOnFailure: throwing,
         migrationDone: false,
@@ -80,23 +80,23 @@ void main() {
       SharedPreferencesStorePlatform.instance = store;
       final p = PreferencesProvider();
       store.failWrites = true;
-      await expectLater(p.loadFromStorage(), throwsStateError);
+      await p.loadFromStorage();
       final cached = await SharedPreferences.getInstance();
-      // 迁移值写失败：磁盘与缓存都还是旧的 100%，也没有完成标记。
-      expect(cached.getDouble('pref_text_scale'), 1.0);
+      expect(p.textScale, AppTextScale.standard);
+      expect(cached.getDouble('pref_text_scale'), AppTextScale.standard);
+      // 载入不再做默认档迁移：既不改写档位，也不写旧版完成标记。
       expect(cached.getBool('device_text_scale_default_migration_v2'), isNull);
 
       store.failWrites = false;
       await p.loadFromStorage();
-      expect(p.textScale, AppTextScale.defaultScale);
-      expect(cached.getDouble('pref_text_scale'), AppTextScale.defaultScale);
-      expect(cached.getBool('device_text_scale_default_migration_v2'), isTrue);
+      expect(p.textScale, AppTextScale.standard);
+      expect(cached.getDouble('pref_text_scale'), AppTextScale.standard);
+      expect(cached.getBool('device_text_scale_default_migration_v2'), isNull);
 
-      // 迁移真正落盘后，重启的 provider 读到的是默认真档而不是 100%。
       SharedPreferences.resetStatic();
       final restarted = PreferencesProvider();
       await restarted.loadFromStorage();
-      expect(restarted.textScale, AppTextScale.defaultScale);
+      expect(restarted.textScale, AppTextScale.standard);
       p.dispose();
       restarted.dispose();
     });

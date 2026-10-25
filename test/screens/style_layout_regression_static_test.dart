@@ -713,7 +713,7 @@ void main() {
     expect(metadataIndex, greaterThan(nameTextIndex));
     final mineProfileHeader = mine.substring(nameTextStart, metadataIndex);
     final mainRegularSize = _requiredFontSize(mineProfileHeader);
-    expect(mainRegularSize, equals(16));
+    expect(mainRegularSize, equals(14));
 
     final controlText = surfaceComponents.substring(
       surfaceComponents.indexOf('TextStyle appSecondaryControlTextStyle'),

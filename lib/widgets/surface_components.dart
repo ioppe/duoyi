@@ -1504,7 +1504,7 @@ class AppDialog extends StatelessWidget {
               style: (theme.textTheme.titleMedium ?? const TextStyle())
                   .copyWith(
                     color: cs.onSurface,
-                    fontSize: 16,
+                    fontSize: DesignTokens.fontSizeBody,
                     fontWeight: DesignTokens.fontWeightStrong,
                     height: 1.2,
                   ),

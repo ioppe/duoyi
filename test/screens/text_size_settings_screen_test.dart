@@ -143,7 +143,8 @@ void main() {
     await mount(tester, p);
     final storage = await SharedPreferences.getInstance();
     final initialStored = storage.getDouble('pref_text_scale');
-    expect(initialStored, AppTextScale.defaultScale);
+    // 载入不再写盘：首次进入页面时磁盘上还没有字号记录。
+    expect(initialStored, isNull);
     expect(tester.widget<Slider>(find.byType(Slider)).divisions, 7);
     for (var index = 0; index < 8; index++) {
       await choose(tester, index);

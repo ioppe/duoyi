@@ -146,22 +146,22 @@ void main() {
   });
 
   test('字号层级符合常见手机 App 档位', () {
-    expect(DesignTokens.fontSizeXs, 12);
-    expect(DesignTokens.fontSizeSm, 14);
-    expect(DesignTokens.fontSizeBase, 16);
-    expect(DesignTokens.fontSizeSection, 16);
-    expect(DesignTokens.fontSizeMd, 16);
-    expect(DesignTokens.fontSizeLg, 18);
-    expect(DesignTokens.fontSizeXl, 22);
-    expect(DesignTokens.fontSizeXxl, 28);
-    expect(DesignTokens.fontSizePageTitle, 20);
-    expect(DesignTokens.fontSizeNavigationTitle, 20);
-    expect(DesignTokens.fontSizeButton, 14);
-    expect(DesignTokens.fontSizeBottomNavLabel, 12);
-    expect(DesignTokens.homeHeadingSize, 20);
-    expect(DesignTokens.homeTaskTitleSize, 16);
-    expect(DesignTokens.homeCaptionSize, 12);
-    expect(DesignTokens.homeCounterSize, 12);
+    expect(DesignTokens.fontSizeXs, 11);
+    expect(DesignTokens.fontSizeSm, 12);
+    expect(DesignTokens.fontSizeBase, 14);
+    expect(DesignTokens.fontSizeSection, 14);
+    expect(DesignTokens.fontSizeMd, 14);
+    expect(DesignTokens.fontSizeLg, 16);
+    expect(DesignTokens.fontSizeXl, 20);
+    expect(DesignTokens.fontSizeXxl, 24);
+    expect(DesignTokens.fontSizePageTitle, 18);
+    expect(DesignTokens.fontSizeNavigationTitle, 18);
+    expect(DesignTokens.fontSizeButton, 12);
+    expect(DesignTokens.fontSizeBottomNavLabel, 11);
+    expect(DesignTokens.homeHeadingSize, 18);
+    expect(DesignTokens.homeTaskTitleSize, 14);
+    expect(DesignTokens.homeCaptionSize, 11);
+    expect(DesignTokens.homeCounterSize, 11);
 
     expect(DesignTokens.fontSizeXs, lessThanOrEqualTo(DesignTokens.fontSizeSm));
     expect(DesignTokens.fontSizeSm, lessThan(DesignTokens.fontSizeBase));

@@ -51,7 +51,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final preferences = PreferencesProvider();
     await preferences.loadFromStorage();
-    expect(preferences.textScale, AppTextScale.small);
+    expect(preferences.textScale, AppTextScale.standard);
 
     await preferences.setTextScale(0.9);
     expect(preferences.textScale, AppTextScale.small);
@@ -91,24 +91,60 @@ void main() {
     preferences.dispose();
   });
 
-  test('旧版默认字号首次载入即落盘迁移，重启后仍是默认档', () async {
+  test('已保存的 100% 载入后原样保留，不再被默认档改写', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'pref_text_scale': AppTextScale.standard,
     });
     final preferences = PreferencesProvider();
     await preferences.loadFromStorage();
-    expect(preferences.textScale, AppTextScale.defaultScale);
+    expect(preferences.textScale, AppTextScale.standard);
     final stored = await SharedPreferences.getInstance();
-    expect(stored.getDouble('pref_text_scale'), AppTextScale.defaultScale);
-    expect(stored.getBool('device_text_scale_default_migration_v2'), isTrue);
+    expect(stored.getDouble('pref_text_scale'), AppTextScale.standard);
+    // 载入本身不写盘：旧版迁移标记既不写也不读。
+    expect(stored.getBool('device_text_scale_default_migration_v2'), isNull);
 
     // 模拟重启：丢弃 SharedPreferences 缓存，重新从磁盘快照载入。
     SharedPreferences.resetStatic();
     final restarted = PreferencesProvider();
     await restarted.loadFromStorage();
-    expect(restarted.textScale, AppTextScale.defaultScale);
+    expect(restarted.textScale, AppTextScale.standard);
+    preferences.dispose();
+    restarted.dispose();
+  });
 
-    // 用户主动选回 100% 后，重启不能被迁移逻辑改回默认档。
+  test('已保存的非默认档位跨重启保留，不被改写', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': 1.6,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, 1.6);
+    final stored = await SharedPreferences.getInstance();
+    expect(stored.getDouble('pref_text_scale'), 1.6);
+    expect(stored.getBool('device_text_scale_default_migration_v2'), isNull);
+
+    SharedPreferences.resetStatic();
+    final restarted = PreferencesProvider();
+    await restarted.loadFromStorage();
+    expect(restarted.textScale, 1.6);
+    preferences.dispose();
+    restarted.dispose();
+  });
+
+  test('旧版小档与迁移标记不决定档位，主动选 100% 后重启仍是 100%', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': AppTextScale.small,
+      'device_text_scale_default_migration_v2': true,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.small);
+
+    SharedPreferences.resetStatic();
+    final restarted = PreferencesProvider();
+    await restarted.loadFromStorage();
+    expect(restarted.textScale, AppTextScale.small);
+
     await restarted.setTextScale(AppTextScale.standard);
     expect(restarted.textScale, AppTextScale.standard);
     SharedPreferences.resetStatic();
@@ -118,25 +154,6 @@ void main() {
     preferences.dispose();
     restarted.dispose();
     afterExplicitChoice.dispose();
-  });
-
-  test('旧版非默认字号迁移后落盘并跨重启保留', () async {
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'pref_text_scale': 1.6,
-    });
-    final preferences = PreferencesProvider();
-    await preferences.loadFromStorage();
-    expect(preferences.textScale, 1.6);
-    final stored = await SharedPreferences.getInstance();
-    expect(stored.getDouble('pref_text_scale'), 1.6);
-    expect(stored.getBool('device_text_scale_default_migration_v2'), isTrue);
-
-    SharedPreferences.resetStatic();
-    final restarted = PreferencesProvider();
-    await restarted.loadFromStorage();
-    expect(restarted.textScale, 1.6);
-    preferences.dispose();
-    restarted.dispose();
   });
 
   test('个性设置页提供独立字号预览页入口', () {
