@@ -117,7 +117,24 @@ jobs:
       - name: Run tests (if any)
         run: |
           if [ -d test ] && [ -n "$(ls -A test 2>/dev/null)" ]; then
-            python3 scripts/flutter_with_config.py test --no-pub
+            set -o pipefail
+            if python3 scripts/flutter_with_config.py test --no-pub --reporter expanded 2>&1 | tee "$RUNNER_TEMP/flutter-tests.log"; then
+              exit 0
+            fi
+            python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          lines = (Path(os.environ['RUNNER_TEMP']) / 'flutter-tests.log').read_text(errors='replace').splitlines()
+          failures = [index for index, line in enumerate(lines) if '[E]' in line or 'EXCEPTION CAUGHT' in line]
+          if not failures:
+              failures = [max(0, len(lines) - 1)]
+          for index in failures[:10]:
+              excerpt = '\n'.join(lines[max(0, index - 35):index + 25])[:20000]
+              escaped = excerpt.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title=Flutter test failure details::{escaped}')
+          PY
+            exit 1
           else
             echo "No tests found, skipping."
           fi
