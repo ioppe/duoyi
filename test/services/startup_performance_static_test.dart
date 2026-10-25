@@ -63,12 +63,36 @@ void main() {
         reason: '30 秒附近不能再启动重型同步、通知或小组件任务。',
       );
       expect(main, contains('achievementProvider.resumeUnlockFeedback'));
-      expect(main, contains('Timer(const Duration(milliseconds: 2200)'));
-      expect(main, contains('var homeWidgetPushInFlight = false'));
-      expect(main, contains('homeWidgetPushQueued = true'));
+      expect(
+        main,
+        contains('debounce: const Duration(milliseconds: 2200)'),
+        reason: '小组件推送保持 2200ms 合并窗口，不能在启动与连续数据变化时抢 UI。',
+      );
+      final homeWidgetPushScheduler = File(
+        'lib/services/home_widget_push_scheduler.dart',
+      ).readAsStringSync();
+      expect(
+        main,
+        contains('final homeWidgetPushScheduler = HomeWidgetPushScheduler('),
+      );
+      expect(main, contains('observeLifecycle: true'));
+      expect(
+        homeWidgetPushScheduler,
+        contains('var homeWidgetPushInFlight = false'),
+      );
+      expect(homeWidgetPushScheduler, contains('homeWidgetPushQueued = true'));
+      expect(
+        homeWidgetPushScheduler,
+        contains('Duration(milliseconds: 2200)'),
+        reason: '串行排程器默认合并窗口必须与 main 一致。',
+      );
       expect(main, contains('var deferredLocalStorageHydrated = false'));
       expect(main, contains('deferredLocalStorageHydrated = true'));
-      expect(main, contains('if (!deferredLocalStorageHydrated) return;'));
+      expect(
+        main,
+        contains('isReady: () => deferredLocalStorageHydrated'),
+        reason: '未完成 deferred hydration 时排程器只保留 dirty，不能写空快照。',
+      );
       expect(main, contains('bool allowBeforeDeferredHydration = false'));
       expect(main, contains('queueNotificationQuickAddSync();'));
 

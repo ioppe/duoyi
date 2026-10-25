@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
 
+import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
@@ -540,6 +541,67 @@ void main() {
       );
       expect(forwarded, 0);
       expect(localRuns, 0);
+    });
+  });
+
+  group('push snapshot signature caching', () {
+    // 与 accountPayloadDefaults 对齐的最小主题：只为触发 push 的 signature 计算。
+    const theme = HomeWidgetThemePayload(
+      brandId: 'defaultBrand',
+      cardSkinId: 'plain_card',
+      dark: false,
+      primary: Color(0xFFFF6B6B),
+      background: Color(0xFFFFFFFF),
+      surface: Color(0xFFFFFFFF),
+      navBackground: Color(0xFFFFF6F2),
+      border: Color(0x22FF6B6B),
+      text: Color(0xFF333333),
+      mutedText: Color(0xFF666666),
+      onPrimary: Color(0xFFFFFFFF),
+      accentStart: Color(0xFFFF6B6B),
+      accentEnd: Color(0xFFFFB088),
+      backgroundAssetKey: '',
+      cornerRadiusDp: 13,
+      controlRadiusDp: 8,
+      borderWidthDp: 0,
+    );
+
+    Future<bool> pushSnapshot() => HomeWidgetService.push(
+      todoCount: 3,
+      habitPercent: 50,
+      pomodoroToday: 1,
+      focusMinutesToday: 25,
+      strings: AppBrands.defaultBrand.strings,
+      theme: theme,
+    );
+
+    test('原生 0 命中不算成功，同 payload 必须重试，真刷新后才去重', () async {
+      var refreshes = 0;
+      HomeWidgetService.debugRefreshAllWidgetsOverride = () async {
+        refreshes++;
+        // 第一次原生 0 命中（无桌面实例被重建），之后真正刷到实例。
+        return refreshes == 1 ? 0 : 2;
+      };
+      addTearDown(
+        () => HomeWidgetService.debugRefreshAllWidgetsOverride = null,
+      );
+
+      expect(
+        await pushSnapshot(),
+        isFalse,
+        reason: '0 命中说明没有实例被刷新，不能当成功（否则会缓存 signature）',
+      );
+      expect(refreshes, 1);
+
+      expect(
+        await pushSnapshot(),
+        isTrue,
+        reason: '0 命中之后同 payload 必须重试而不是被 signature 去重',
+      );
+      expect(refreshes, 2);
+
+      expect(await pushSnapshot(), isTrue);
+      expect(refreshes, 2, reason: '真正刷新成功后，同 payload 才允许走 signature 去重');
     });
   });
 }

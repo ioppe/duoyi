@@ -62,6 +62,7 @@ import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
 import 'services/home_widget_action.dart';
 import 'services/home_widget_action_bridge.dart';
+import 'services/home_widget_push_scheduler.dart';
 import 'services/ai_service.dart';
 import 'services/app_update_service.dart';
 import 'services/backend_reminder_email_sink.dart';
@@ -1677,43 +1678,28 @@ void main() async {
     themeProvider,
   );
 
-  Timer? homeWidgetPushDebounce;
   Timer? homeWidgetThemeDebounce;
   String lastHomeWidgetThemeSignature = '';
-  var homeWidgetPushInFlight = false;
-  var homeWidgetPushQueued = false;
+
+  // 小组件快照推送统一交给串行排程器：数据变化只标记 dirty 并按 2200ms 合并，
+  // 退到后台/暂停时立即 flush 最新状态。旧实现在 deferred hydration 未完成时
+  // 直接丢弃 push，且退出/暂停时没有 flush，会漏掉合并窗口内的最后一次更新。
+  final homeWidgetPushScheduler = HomeWidgetPushScheduler(
+    push: pushHomeWidgetNow,
+    isReady: () => deferredLocalStorageHydrated,
+    ensureReady: ensureDeferredLocalStorageStartup,
+    debounce: const Duration(milliseconds: 2200),
+    observeLifecycle: true,
+  );
+
   Future<void> runQueuedHomeWidgetPush() async {
-    if (homeWidgetPushInFlight) {
-      homeWidgetPushQueued = true;
-      return;
-    }
-    homeWidgetPushInFlight = true;
-    try {
-      final pushed = await pushHomeWidgetNow();
-      if (!pushed) {
-        debugPrint('[HomeWidget] queued push completed with failures');
-      }
-    } catch (e, st) {
-      debugPrint('[HomeWidget] queued push failed: $e\n$st');
-    } finally {
-      homeWidgetPushInFlight = false;
-    }
-    if (homeWidgetPushQueued) {
-      homeWidgetPushQueued = false;
-      homeWidgetPushDebounce?.cancel();
-      homeWidgetPushDebounce = Timer(const Duration(milliseconds: 2200), () {
-        unawaited(runQueuedHomeWidgetPush());
-      });
+    final pushed = await homeWidgetPushScheduler.flush();
+    if (!pushed) {
+      debugPrint('[HomeWidget] queued push completed with failures');
     }
   }
 
-  void queueHomeWidgetPush() {
-    if (!deferredLocalStorageHydrated) return;
-    homeWidgetPushDebounce?.cancel();
-    homeWidgetPushDebounce = Timer(const Duration(milliseconds: 2200), () {
-      unawaited(runQueuedHomeWidgetPush());
-    });
-  }
+  void queueHomeWidgetPush() => homeWidgetPushScheduler.schedule();
 
   String homeWidgetThemeSignature() {
     final payload = HomeWidgetThemePayload.fromThemeProvider(themeProvider);
@@ -1822,8 +1808,8 @@ void main() async {
         signedIn: authProvider.state.isLoggedIn,
       );
       if (!changed) return HomeWidgetActionAck.skipped;
-      // 沿用常规推送：payload、提醒与云同步 dirty 监听都走同一条路径。
-      final pushed = await pushHomeWidgetNow();
+      // 回执等待同一串行队列补推，避免后台动作与在途常规快照并发写入。
+      final pushed = await homeWidgetPushScheduler.flush(force: true);
       return pushed ? HomeWidgetActionAck.done : HomeWidgetActionAck.failed;
     });
   }

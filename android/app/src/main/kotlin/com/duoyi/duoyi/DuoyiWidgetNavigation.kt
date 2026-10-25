@@ -20,10 +20,10 @@ import es.antonborri.home_widget.HomeWidgetPlugin
  * - 只做原生切页：不发 Activity（不打开 App），也不触发 Flutter 后台动作回调；
  * - 每个实例的 tab 和“真实拥有者 provider”写在 home_widget prefs 的独立键里，
  *   不写业务 JSON、账号信息或应用内全局导航状态；
- * - 完成待办 / 打卡习惯 / 开始专注仍然沿用既有后台业务动作链路。
+ * - 旧完成 / 打卡 / 专注后台动作继续由 Flutter 兼容；当前上方入口进入 App；
  *
- * 广播目标必须指向 `AppWidgetManager.getAppWidgetInfo(id).provider`：当前
- * RemoteViews 的渲染类可能是别的 provider（切页后内容页和宿主 provider 不再一致）。
+ * 广播目标必须来自系统确认的真实宿主：优先 getAppWidgetInfo，暂缺时核验
+ * getAppWidgetIds 的实例归属；当前内容页渲染类不能作为物理宿主。
  */
 object DuoyiWidgetNavigation {
     const val ACTION_NAVIGATE = "com.duoyi.duoyi.action.WIDGET_NAVIGATE"
@@ -85,7 +85,7 @@ object DuoyiWidgetNavigation {
         val prefs = HomeWidgetPlugin.getData(context)
         return when (action) {
             ACTION_NAVIGATE -> {
-                val resolved = resolveInstance(intent, manager, receivingName, ACTION_NAVIGATE)
+                val resolved = resolveInstance(context, intent, manager, receivingName, ACTION_NAVIGATE)
                 val tab = resolved?.tab
                 if (resolved != null && tab != null && isSupportedTab(tab)) {
                     val id = resolved.target.appWidgetId
@@ -99,7 +99,7 @@ object DuoyiWidgetNavigation {
             }
 
             ACTION_REFRESH -> {
-                val resolved = resolveInstance(intent, manager, receivingName, ACTION_REFRESH)
+                val resolved = resolveInstance(context, intent, manager, receivingName, ACTION_REFRESH)
                 if (resolved == null) {
                     Log.i(tag, "refresh_rejected provider=$receivingName data=${intent.data}")
                 } else {
@@ -142,10 +142,10 @@ object DuoyiWidgetNavigation {
         val tabbedIds = LinkedHashMap<String, MutableList<Int>>()
         for (appWidgetId in requestedIds) {
             if (appWidgetId <= 0) continue
-            // 只处理确实属于当前接收组件的实例；不要用别的组件 ID 去更新错实例。
-            val info = manager.getAppWidgetInfo(appWidgetId) ?: continue
-            val ownerProvider = info.provider?.className ?: continue
-            if (ownerProvider != receivingName) continue
+            // info 暂缺时仍须通过系统实例列表核验归属，再读取原有选中页。
+            val ownerProvider = verifiedProviderName(
+                context, manager, appWidgetId, receivingName,
+            ) ?: continue
             val tab = selectionFor(prefs, appWidgetId, ownerProvider)
             if (tab == null) {
                 defaultIds += appWidgetId
@@ -221,6 +221,7 @@ object DuoyiWidgetNavigation {
     // ---------------------------------------------------------------- 目标校验
 
     private fun resolveInstance(
+        context: Context,
         intent: Intent,
         manager: AppWidgetManager,
         receivingName: String,
@@ -243,11 +244,9 @@ object DuoyiWidgetNavigation {
         val extraProviderValue = intent.getStringExtra(extraProvider)
         if (!extraProviderValue.isNullOrBlank() && extraProviderValue != uriProvider) return null
 
-        val info = manager.getAppWidgetInfo(uriId) ?: return null
-        val actualProvider = info.provider?.className ?: return null
+        val actualProvider = verifiedProviderName(context, manager, uriId, receivingName) ?: return null
         if (actualProvider != uriProvider) return null
         if (actualProvider != receivingName) return null
-        if (!isSupportedProvider(actualProvider)) return null
 
         val uriTab = data.getQueryParameter(queryTab)?.takeIf { it.isNotBlank() }
         val extraTabValue = intent.getStringExtra(extraTab)?.takeIf { it.isNotBlank() }
@@ -269,15 +268,45 @@ object DuoyiWidgetNavigation {
         return coreKinds.contains(kind)
     }
 
+    /** 只接受系统确认归属的实例；info 存在但不匹配时绝不降级恢复。 */
+    private fun verifiedProviderName(
+        context: Context,
+        manager: AppWidgetManager,
+        appWidgetId: Int,
+        expectedProviderName: String? = null,
+    ): String? {
+        if (appWidgetId <= 0) return null
+        val info = manager.getAppWidgetInfo(appWidgetId)
+        if (info != null) {
+            val provider = info.provider ?: return null
+            if (provider.packageName != context.packageName) return null
+            val name = provider.className
+            if (!isSupportedProvider(name)) return null
+            if (expectedProviderName != null && name != expectedProviderName) return null
+            return name
+        }
+        val provider = if (expectedProviderName != null) {
+            if (!isSupportedProvider(expectedProviderName)) return null
+            val component = ComponentName(context, expectedProviderName)
+            if (!manager.getAppWidgetIds(component).contains(appWidgetId)) return null
+            component
+        } else {
+            DuoyiWidgetProviderRegistry.findProviderForWidget(context, appWidgetId) ?: return null
+        }
+        val name = provider.className
+        if (!isSupportedProvider(name)) return null
+        Log.i(tag, "recover_owner widgetId=$appWidgetId provider=$name")
+        return name
+    }
+
     /**
      * 实例真实拥有者；不在核心 4 页 / 历史综合范围内时返回 null，调用方不绑定
      * 任何本地切页手势，其他业务小组件行为完全不变。
      */
     fun targetFor(context: Context, appWidgetId: Int): Target? {
         if (appWidgetId <= 0) return null
-        val info = AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId) ?: return null
-        val providerName = info.provider?.className ?: return null
-        if (!isSupportedProvider(providerName)) return null
+        val manager = AppWidgetManager.getInstance(context)
+        val providerName = verifiedProviderName(context, manager, appWidgetId) ?: return null
         return Target(appWidgetId, providerName)
     }
 

@@ -10,7 +10,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
@@ -133,7 +132,7 @@ class DuoyiWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_nav_calendar, tabCalendar)
             views.setTextViewText(R.id.widget_nav_focus, tabFocus)
 
-            // 底部四项直接切换小组件内容；空白 root 才是打开 App 的入口。
+            // 底部四项直接切换小组件内容；其余区域全部进入 App 对应分页。
             val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
             DuoyiWidgetNavigation.bindBottomTabs(
                 context = context,
@@ -150,55 +149,44 @@ class DuoyiWidgetProvider : AppWidgetProvider() {
                     DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_nav_focus,
                 ),
             )
-            // 只有空白区打开 App，历史综合组件默认落在日历页。
-            val openAppIntent: PendingIntent = HomeWidgetLaunchIntent.getActivity(
-                context,
-                MainActivity::class.java,
-                Uri.parse("duoyi://tab/calendar")
-            )
-            views.setOnClickPendingIntent(R.id.widget_root, openAppIntent)
-            // 标题 / 摘要 / 统计说明是只读信息：点击只本地重绘，不开 App。
-            DuoyiWidgetNavigation.bindRefresh(
-                context,
-                views,
-                navTarget,
-                intArrayOf(
-                    R.id.widget_title,
-                    R.id.widget_date,
-                    R.id.widget_today_event,
-                    R.id.widget_goal_summary,
-                    R.id.widget_anniversary_summary,
-                    R.id.widget_course_summary,
-                    R.id.widget_todo_caption,
-                    R.id.widget_habit_caption,
-                    R.id.widget_pomodoro_caption,
-                ),
-            )
-            // 三个统计也能本地切到对应内容页。
-            DuoyiWidgetNavigation.bindTabButton(
-                context, views, navTarget, R.id.widget_todo_count,
-                DuoyiWidgetNavigation.TAB_TODO,
-            )
-            DuoyiWidgetNavigation.bindTabButton(
-                context, views, navTarget, R.id.widget_habit_progress,
-                DuoyiWidgetNavigation.TAB_HABIT,
-            )
-            DuoyiWidgetNavigation.bindTabButton(
-                context, views, navTarget, R.id.widget_pomodoro_count,
-                DuoyiWidgetNavigation.TAB_FOCUS,
-            )
-            // “打开 App”文案按钮收起（资源 ID 保留）：编辑仍需点空白区进 App。
+            // 三个统计数字与说明分别进入 App 的待办 / 习惯 / 专注页。
+            val openTodoPage = appPageIntent(context, Uri.parse("duoyi://tab/todo"))
+            intArrayOf(
+                R.id.widget_todo_count,
+                R.id.widget_todo_caption,
+            ).forEach { views.setOnClickPendingIntent(it, openTodoPage) }
+            val openHabitPage = appPageIntent(context, Uri.parse("duoyi://tab/habit"))
+            intArrayOf(
+                R.id.widget_habit_progress,
+                R.id.widget_habit_caption,
+            ).forEach { views.setOnClickPendingIntent(it, openHabitPage) }
+            val openFocusPage = appPageIntent(context, Uri.parse("duoyi://tab/focus"))
+            intArrayOf(
+                R.id.widget_pomodoro_count,
+                R.id.widget_pomodoro_caption,
+                R.id.widget_quick_pomodoro,
+            ).forEach { views.setOnClickPendingIntent(it, openFocusPage) }
+            // 历史综合组件的其余摘要与空白区域默认进入 App 日历页。
+            val openCalendarPage = appPageIntent(context, Uri.parse("duoyi://tab/calendar"))
+            intArrayOf(
+                R.id.widget_root,
+                R.id.widget_brand_logo,
+                R.id.widget_title,
+                R.id.widget_date,
+                R.id.widget_today_event,
+                R.id.widget_goal_summary,
+                R.id.widget_anniversary_summary,
+                R.id.widget_course_summary,
+            ).forEach { views.setOnClickPendingIntent(it, openCalendarPage) }
+            // “打开 App”文案按钮收起（资源 ID 保留）：编辑从上面的入口进 App。
             views.setViewVisibility(R.id.widget_quick_open, View.GONE)
-
-            // Quick start pomodoro：在后台直接开始专注，不打开 App。
-            val quickPomodoroIntent: PendingIntent = HomeWidgetBackgroundIntent.getBroadcast(
-                context,
-                Uri.parse("duoyi://action/start_pomodoro")
-            )
-            views.setOnClickPendingIntent(R.id.widget_quick_pomodoro, quickPomodoroIntent)
 
             appWidgetManager.updateAppWidget(id, views)
         }
+    }
+
+    private fun appPageIntent(context: Context, uri: Uri): PendingIntent {
+        return HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, uri)
     }
 
     companion object {

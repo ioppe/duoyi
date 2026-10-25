@@ -1,14 +1,14 @@
 package com.duoyi.duoyi
 
-import android.appwidget.AppWidgetManager
+import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.view.View
+import android.appwidget.AppWidgetManager
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
@@ -122,32 +122,40 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
                 "今日待办 · ${prefs.getInt("todo_top3_count", 0)} 项"
             )
             val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
-            bindTodoRow(context, views, prefs, navTarget, 1, R.id.widget_todo_item_1, R.id.widget_todo_done_1)
-            bindTodoRow(context, views, prefs, navTarget, 2, R.id.widget_todo_item_2, R.id.widget_todo_done_2)
-            bindTodoRow(context, views, prefs, navTarget, 3, R.id.widget_todo_item_3, R.id.widget_todo_done_3)
+            // 顶部区域（品牌 logo / 标题 / 数量 / 统计）进入 App 待办页，不再在组件内只读刷新。
+            val openTodoPage = appPageIntent(context, Uri.parse("duoyi://tab/todo"))
+            intArrayOf(
+                R.id.widget_todo_root,
+                R.id.widget_brand_logo,
+                R.id.widget_todo_title,
+                R.id.widget_todo_count,
+                R.id.widget_todo_today_summary,
+            ).forEach { views.setOnClickPendingIntent(it, openTodoPage) }
+            // 行详情最后绑定：具体任务覆盖上面的整页跳转，避免通用绑定遮蔽详情。
+            bindTodoRow(
+                context, views, prefs, openTodoPage, 1,
+                intArrayOf(R.id.widget_todo_row_1, R.id.widget_todo_item_1),
+                R.id.widget_todo_done_1
+            )
+            bindTodoRow(
+                context, views, prefs, openTodoPage, 2,
+                intArrayOf(R.id.widget_todo_row_2, R.id.widget_todo_item_2),
+                R.id.widget_todo_done_2
+            )
+            bindTodoRow(
+                context, views, prefs, openTodoPage, 3,
+                intArrayOf(R.id.widget_todo_row_3, R.id.widget_todo_item_3),
+                R.id.widget_todo_done_3
+            )
             val secondRowVisibility = DuoyiWidgetDisplayMode.standardOrDetailedVisibility(prefs, id)
             val thirdRowVisibility = DuoyiWidgetDisplayMode.detailedVisibility(prefs, id)
             views.setViewVisibility(R.id.widget_todo_row_2, secondRowVisibility)
-            views.setViewVisibility(
-                R.id.widget_todo_done_2,
-                if ((prefs.getString("todo_top3_2_id", "") ?: "").isBlank()) View.GONE else secondRowVisibility
-            )
             views.setViewVisibility(R.id.widget_todo_row_3, thirdRowVisibility)
-            views.setViewVisibility(
-                R.id.widget_todo_done_3,
-                if ((prefs.getString("todo_top3_3_id", "") ?: "").isBlank()) View.GONE else thirdRowVisibility
-            )
             views.setViewVisibility(
                 R.id.widget_todo_today_summary,
                 DuoyiWidgetDisplayMode.detailedVisibility(prefs, id)
             )
 
-            // 只有空白 root 打开 App 的待办页；标题、统计、内容行都留在组件内。
-            val openTodoPage = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java,
-                Uri.parse("duoyi://tab/todo")
-            )
-            views.setOnClickPendingIntent(R.id.widget_todo_root, openTodoPage)
             // 底部四项直接切换小组件内容；切过页的实例即使 compact 也保留底栏。
             DuoyiWidgetNavigation.bindBottomTabs(
                 context = context,
@@ -166,53 +174,37 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
             )
             // “+ 添加”需要完整表单：收起按钮（资源 ID 保留），编辑从待办页进入。
             views.setViewVisibility(R.id.widget_todo_quick_add, View.GONE)
-            // 标题 / 数量 / 行 / 统计都是只读信息：点击只本地重绘。
-            DuoyiWidgetNavigation.bindRefresh(
-                context,
-                views,
-                navTarget,
-                intArrayOf(
-                    R.id.widget_todo_title,
-                    R.id.widget_todo_count,
-                    R.id.widget_todo_row_1,
-                    R.id.widget_todo_row_2,
-                    R.id.widget_todo_row_3,
-                    R.id.widget_todo_today_summary,
-                ),
-            )
 
             appWidgetManager.updateAppWidget(id, views)
         }
+    }
+
+    private fun appPageIntent(context: Context, uri: Uri): PendingIntent {
+        return HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, uri)
     }
 
     private fun bindTodoRow(
         context: Context,
         views: RemoteViews,
         prefs: SharedPreferences,
-        target: DuoyiWidgetNavigation.Target?,
+        openTodoPage: PendingIntent,
         index: Int,
-        itemViewId: Int,
+        rowViewIds: IntArray,
         doneViewId: Int
     ) {
         val todoId = prefs.getString("todo_top3_${index}_id", "") ?: ""
-        val encodedTodoId = Uri.encode(todoId)
         if (todoId.isBlank()) {
             views.setViewVisibility(doneViewId, View.GONE)
-            // 空行也只在组件内重绘，不打开 App。
-            DuoyiWidgetNavigation.bindRefresh(context, views, target, intArrayOf(itemViewId))
+            // 没有有效 ID 的占位行：整行进入 App 待办页。
+            rowViewIds.forEach { views.setOnClickPendingIntent(it, openTodoPage) }
             return
         }
-        views.setViewVisibility(doneViewId, View.VISIBLE)
-        // 行标题只本地重绘：点标题不会自动完成待办，也不打开 App。
-        DuoyiWidgetNavigation.bindRefresh(context, views, target, intArrayOf(itemViewId))
-        // “完成待办”直接在后台执行，不打开 App。
-        views.setOnClickPendingIntent(
-            doneViewId,
-            HomeWidgetBackgroundIntent.getBroadcast(
-                context,
-                Uri.parse("duoyi://action/complete_todo?id=$encodedTodoId")
-            )
-        )
+        val encodedTodoId = Uri.encode(todoId)
+        views.setViewVisibility(doneViewId, View.GONE)
+        // 具体任务（含原完成圈）进入 App 详情：不带 confirm 参数，也不在后台直接完成。
+        val todoDetailPage = appPageIntent(context, Uri.parse("duoyi://todo/$encodedTodoId"))
+        rowViewIds.forEach { views.setOnClickPendingIntent(it, todoDetailPage) }
+        views.setOnClickPendingIntent(doneViewId, todoDetailPage)
     }
 
     private fun cleanTodoTitle(raw: String): String {

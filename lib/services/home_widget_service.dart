@@ -167,6 +167,12 @@ class HomeWidgetService {
   @visibleForTesting
   static bool debugForceSupported = false;
 
+  /// 测试用：替换原生 `refreshAllWidgets` 并强制走 Android 刷新分支，宿主测试
+  /// 没有真实桌面实例时也能覆盖“0 命中 / 失败 / 命中”三种刷新结果；生产环境
+  /// 仍由 [PlatformInfo] 与 [AndroidWidgetManager] 决定。
+  @visibleForTesting
+  static Future<int?> Function()? debugRefreshAllWidgetsOverride;
+
   static bool get _supported {
     if (kIsWeb) return false;
     if (debugForceSupported) return true;
@@ -606,14 +612,21 @@ class HomeWidgetService {
   }
 
   static Future<bool> _updateAllWidgets() async {
-    if (PlatformInfo.isAndroid) {
-      final updated = await AndroidWidgetManager.refreshAllWidgets();
+    final refreshOverride = debugRefreshAllWidgetsOverride;
+    if (PlatformInfo.isAndroid || refreshOverride != null) {
+      final updated = refreshOverride != null
+          ? await refreshOverride()
+          : await AndroidWidgetManager.refreshAllWidgets();
       if (updated == null) {
         debugPrint('[HomeWidget] Android refreshAllWidgets failed');
         return false;
       }
       if (updated == 0) {
+        // 0 命中说明没有任何桌面实例被重建（未添加小组件或 provider 未注册），
+        // 不能当成功返回：否则 push() 会缓存 signature，后续同 payload 直接被
+        // 去重丢掉，真机上表现为“新增任务后小组件不更新”。
         debugPrint('[HomeWidget] Android refreshAllWidgets updated 0 widgets');
+        return false;
       }
       return true;
     }

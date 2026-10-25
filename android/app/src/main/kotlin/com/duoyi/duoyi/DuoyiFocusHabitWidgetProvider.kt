@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.RemoteViews
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
@@ -169,11 +168,22 @@ open class DuoyiFocusHabitWidgetProvider : DuoyiStyledWidgetProvider() {
             views.setTextViewText(R.id.widget_focus_nav_focus, tabFocus)
 
             val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
-            // 只有空白 root 打开 App 的专注页。
-            val openFocus = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/focus")
-            )
-            views.setOnClickPendingIntent(R.id.widget_focus_habit_root, openFocus)
+            // 顶部区域（品牌 logo / 标题 / 日期 / 统计 / 倒计时说明 / 启动按钮）进入 App 专注页。
+            val openFocusPage = appPageIntent(context, Uri.parse("duoyi://tab/focus"))
+            intArrayOf(
+                R.id.widget_focus_habit_root,
+                R.id.widget_brand_logo,
+                R.id.widget_focus_habit_title,
+                R.id.widget_focus_habit_date,
+                R.id.widget_focus_count,
+                R.id.widget_focus_habit_progress,
+                R.id.widget_focus_streak_count,
+                R.id.widget_focus_timer_caption,
+                R.id.widget_focus_summary,
+                R.id.widget_focus_habit_summary,
+                R.id.widget_focus_streak_summary,
+                R.id.widget_focus_quick_start,
+            ).forEach { views.setOnClickPendingIntent(it, openFocusPage) }
             // 底部四项直接切换小组件内容。
             DuoyiWidgetNavigation.bindBottomTabs(
                 context = context,
@@ -190,39 +200,6 @@ open class DuoyiFocusHabitWidgetProvider : DuoyiStyledWidgetProvider() {
                     DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_focus_nav_focus,
                 ),
             )
-            // 标题 / 日期 / 统计 / 倒计时说明都是只读信息：点击只本地重绘。
-            DuoyiWidgetNavigation.bindRefresh(
-                context,
-                views,
-                navTarget,
-                intArrayOf(
-                    R.id.widget_focus_habit_title,
-                    R.id.widget_focus_habit_date,
-                    R.id.widget_focus_count,
-                    R.id.widget_focus_habit_progress,
-                    R.id.widget_focus_streak_count,
-                    R.id.widget_focus_timer_caption,
-                    R.id.widget_focus_summary,
-                    R.id.widget_focus_habit_summary,
-                    R.id.widget_focus_streak_summary,
-                ),
-            )
-            if (timerRunning) {
-                // 已在倒计时：本地重算当前剩余时间，不拉 App，也不重复启动。
-                DuoyiWidgetNavigation.bindRefresh(
-                    context,
-                    views,
-                    navTarget,
-                    intArrayOf(R.id.widget_focus_quick_start),
-                )
-            } else {
-                // “开始专注”直接在后台启动，不打开 App。
-                val startFocus: PendingIntent = HomeWidgetBackgroundIntent.getBroadcast(
-                    context,
-                    Uri.parse("duoyi://action/start_pomodoro")
-                )
-                views.setOnClickPendingIntent(R.id.widget_focus_quick_start, startFocus)
-            }
 
             appWidgetManager.updateAppWidget(id, views)
         }
@@ -278,6 +255,10 @@ open class DuoyiFocusHabitWidgetProvider : DuoyiStyledWidgetProvider() {
             is String -> value.toLongOrNull() ?: 0L
             else -> 0L
         }
+    }
+
+    private fun appPageIntent(context: Context, uri: Uri): PendingIntent {
+        return HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, uri)
     }
 
     companion object {

@@ -1,5 +1,6 @@
 package com.duoyi.duoyi
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -8,7 +9,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.RemoteViews
 import android.view.View
-import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
@@ -103,11 +103,18 @@ open class DuoyiHabitWidgetProvider : DuoyiStyledWidgetProvider() {
             views.setTextViewText(R.id.widget_habit_nav_focus, tabFocus)
 
             val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
-            // 只有空白 root 打开 App 的习惯页。
-            val openHabit = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/habit")
-            )
-            views.setOnClickPendingIntent(R.id.widget_habit_root, openHabit)
+            // 顶部区域（品牌 logo / 标题 / 百分比 / 聚合摘要 / 连续天数）进入 App 习惯页。
+            val openHabitPage = appPageIntent(context, Uri.parse("duoyi://tab/habit"))
+            intArrayOf(
+                R.id.widget_habit_root,
+                R.id.widget_brand_logo,
+                R.id.widget_habit_title,
+                R.id.widget_habit_subtitle,
+                R.id.widget_habit_percent,
+                R.id.widget_habit_summary,
+                R.id.widget_habit_streak,
+                R.id.widget_habit_hint,
+            ).forEach { views.setOnClickPendingIntent(it, openHabitPage) }
             // 底部四项直接切换小组件内容。
             DuoyiWidgetNavigation.bindBottomTabs(
                 context = context,
@@ -124,37 +131,28 @@ open class DuoyiHabitWidgetProvider : DuoyiStyledWidgetProvider() {
                     DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_habit_nav_focus,
                 ),
             )
-            // 标题 / 百分比 / 摘要 / 连续天数是只读信息：点击只本地重绘。
-            DuoyiWidgetNavigation.bindRefresh(
-                context,
-                views,
-                navTarget,
-                intArrayOf(
-                    R.id.widget_habit_title,
-                    R.id.widget_habit_subtitle,
-                    R.id.widget_habit_percent,
-                    R.id.widget_habit_summary,
-                    R.id.widget_habit_streak,
-                ),
-            )
             if (habitQuickCheckId.isNotBlank()) {
-                // 有可打卡习惯时直接在后台打卡，不打开 App。
-                val quickCheckHabit = HomeWidgetBackgroundIntent.getBroadcast(
+                // 具体习惯提示进入该习惯的打卡详情，不发后台打卡广播。
+                val habitDetailPage = appPageIntent(
                     context,
-                    Uri.parse("duoyi://action/checkin_habit?id=${Uri.encode(habitQuickCheckId)}")
+                    Uri.parse("duoyi://habit/${Uri.encode(habitQuickCheckId)}")
                 )
-                views.setOnClickPendingIntent(R.id.widget_habit_hint, quickCheckHabit)
+                views.setOnClickPendingIntent(R.id.widget_habit_hint, habitDetailPage)
                 views.setViewVisibility(
                     R.id.widget_habit_hint,
                     DuoyiWidgetDisplayMode.standardOrDetailedVisibility(prefs, id)
                 )
             } else {
-                // 没有可打卡习惯：提示隐藏且不绑定任何手势，不退回打开 App。
+                // 没有具体习惯 ID：提示隐藏，点击仍回退到上面的习惯页。
                 views.setViewVisibility(R.id.widget_habit_hint, View.GONE)
             }
 
             appWidgetManager.updateAppWidget(id, views)
         }
+    }
+
+    private fun appPageIntent(context: Context, uri: Uri): PendingIntent {
+        return HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, uri)
     }
 
     companion object {

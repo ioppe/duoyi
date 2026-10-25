@@ -350,6 +350,16 @@ object DuoyiWidgetProviderRegistry {
         return requestUpdate(context, allWidgetProviderClasses())
     }
 
+    /** info 暂缺时从系统实例列表恢复真实宿主，不使用当前内容页渲染器推断。 */
+    fun findProviderForWidget(context: Context, appWidgetId: Int): ComponentName? {
+        if (appWidgetId <= 0) return null
+        val manager = AppWidgetManager.getInstance(context)
+        return allWidgetProviderClasses()
+            .asSequence()
+            .map { ComponentName(context, it) }
+            .firstOrNull { component -> manager.getAppWidgetIds(component).contains(appWidgetId) }
+    }
+
     fun requestUpdate(context: Context, providerClasses: List<Class<out AppWidgetProvider>>): Int {
         val components = providerClasses.map { ComponentName(context, it) }
         return requestUpdateComponents(context, components)

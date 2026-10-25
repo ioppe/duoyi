@@ -35,6 +35,15 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <ImageView
+            android:id="@+id/widget_brand_logo"
+            android:layout_width="0dp"
+            android:layout_height="24dp"
+            android:layout_weight="1"
+            android:contentDescription="@string/app_name"
+            android:scaleType="fitStart"
+            android:src="@drawable/duoyi_widget_logo" />
+
         <TextView
             android:id="@+id/widget_focus_habit_title"
             android:layout_width="0dp"
@@ -45,7 +54,8 @@
             android:text="专注"
             android:textColor="#7E57C2"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widget_focus_habit_date"

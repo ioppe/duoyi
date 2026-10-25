@@ -10,7 +10,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetTodoPreviewDescription =>
-      'Show the top three tasks today, with widget tabs and background completion.';
+      'Show the top three tasks today. Switch widget tabs below; tap a task for details.';
+
+  @override
+  String get widgetFocusPreviewDescription =>
+      'Today’s focus sessions and duration. Tap to open Focus.';
 
   @override
   String get stateError => 'Something went wrong';

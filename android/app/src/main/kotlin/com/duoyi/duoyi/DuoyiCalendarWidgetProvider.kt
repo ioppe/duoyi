@@ -1,5 +1,6 @@
 package com.duoyi.duoyi
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -77,11 +78,8 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
             val detailed = DuoyiWidgetDisplayMode.isDetailed(prefs, id)
             val monthPattern = if (compact) "M月" else "yyyy年M月"
             val monthTitle = SimpleDateFormat(monthPattern, Locale.getDefault()).format(now.time)
-
-            views.setViewVisibility(
-                R.id.widget_calendar_title,
-                if (compact) View.GONE else View.VISIBLE
-            )
+            // 左上品牌文字已由 logo 图片取代：旧标题任何密度下都保持隐藏。
+            views.setViewVisibility(R.id.widget_calendar_title, View.GONE)
             views.setTextViewText(
                 R.id.widget_calendar_title,
                 prefs.getString("brand_app_title", "多仪") ?: "多仪"
@@ -112,11 +110,17 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
             views.setTextViewText(R.id.widget_calendar_nav_focus, tabFocus)
 
             val navTarget = DuoyiWidgetNavigation.targetFor(context, id)
-            // 只有空白 root 打开 App 的日历页。
-            val openCalendar = HomeWidgetLaunchIntent.getActivity(
-                context, MainActivity::class.java, Uri.parse("duoyi://tab/calendar")
-            )
-            views.setOnClickPendingIntent(R.id.widget_calendar_root, openCalendar)
+            // 顶部区域（品牌 logo / 标题 / 月份 / 网格 / 摘要 / 今天按钮）进入 App 日历页。
+            val openCalendarPage = appPageIntent(context, Uri.parse("duoyi://tab/calendar"))
+            intArrayOf(
+                R.id.widget_calendar_root,
+                R.id.widget_brand_logo,
+                R.id.widget_calendar_title,
+                R.id.widget_calendar_month,
+                R.id.widget_calendar_grid,
+                R.id.widget_calendar_summary,
+                R.id.widget_calendar_today_button,
+            ).forEach { views.setOnClickPendingIntent(it, openCalendarPage) }
             // 底部四项直接切换小组件内容。
             DuoyiWidgetNavigation.bindBottomTabs(
                 context = context,
@@ -131,19 +135,6 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
                     DuoyiWidgetNavigation.TAB_HABIT to R.id.widget_calendar_nav_habit,
                     DuoyiWidgetNavigation.TAB_CALENDAR to R.id.widget_calendar_nav_calendar,
                     DuoyiWidgetNavigation.TAB_FOCUS to R.id.widget_calendar_nav_focus,
-                ),
-            )
-            // 标题 / 月份 / 网格 / 摘要 / “今天”都只本地重绘当前实例。
-            DuoyiWidgetNavigation.bindRefresh(
-                context,
-                views,
-                navTarget,
-                intArrayOf(
-                    R.id.widget_calendar_title,
-                    R.id.widget_calendar_month,
-                    R.id.widget_calendar_grid,
-                    R.id.widget_calendar_summary,
-                    R.id.widget_calendar_today_button,
                 ),
             )
 
@@ -172,6 +163,10 @@ open class DuoyiCalendarWidgetProvider : DuoyiStyledWidgetProvider() {
             lines += cells.subList(week * 7, week * 7 + 7).joinToString(" ")
         }
         return lines.joinToString("\n")
+    }
+
+    private fun appPageIntent(context: Context, uri: Uri): PendingIntent {
+        return HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, uri)
     }
 
     companion object {

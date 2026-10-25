@@ -101,8 +101,14 @@ abstract class AppLocalizations {
   /// No description provided for @widgetTodoPreviewDescription.
   ///
   /// In zh, this message translates to:
-  /// **'展示前三个今日任务，支持组件内切页和后台完成'**
+  /// **'展示前三个今日任务，底栏切页，点击任务进入详情'**
   String get widgetTodoPreviewDescription;
+
+  /// No description provided for @widgetFocusPreviewDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日专注次数和时长，点击进入专注'**
+  String get widgetFocusPreviewDescription;
 
   /// No description provided for @stateError.
   ///

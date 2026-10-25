@@ -6,15 +6,12 @@
     android:padding="12dp"
     android:background="@drawable/widget_bg">
 
-    <TextView
+    <ImageView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="多仪 · 详细"
-        android:textColor="#FF6B6B"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:layout_height="24dp"
+        android:contentDescription="@string/app_name"
+        android:scaleType="fitStart"
+        android:src="@drawable/duoyi_widget_logo" />
 
     <TextView
         android:layout_width="match_parent"

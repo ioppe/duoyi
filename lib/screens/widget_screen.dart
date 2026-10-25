@@ -86,7 +86,7 @@ class _WidgetScreenState extends State<WidgetScreen>
         );
     if (!mounted) return;
     final nativeSynced = appliedCount != null;
-    final message = !homeWidgetSynced || !nativeSynced
+    final message = !nativeSynced || (!homeWidgetSynced && appliedCount != 0)
         ? '应用内样式已保存，但桌面小组件同步失败；请稍后重试或重新添加小组件'
         : appliedCount > 0
         ? '小组件样式已设为${mode.label}，已同步 $appliedCount 个桌面实例；桌面格子大小仍由启动器控制'
@@ -193,10 +193,10 @@ class _WidgetScreenState extends State<WidgetScreen>
                     onPinSupportChanged: _setPinSupport,
                   ),
                   const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
+                  _WidgetCatalogTile(
                     icon: Icons.timer_outlined,
                     title: '专注',
-                    subtitle: '今日专注次数、专注时长和快速开始',
+                    subtitle: I18n.tr('widget.focus_preview_description'),
                     color: Colors.redAccent,
                   ),
                   const SizedBox(height: 10),
@@ -1080,29 +1080,11 @@ class WidgetPreviewCard extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  switch (kind) {
-                                    WidgetPreviewKind.todo =>
-                                      Icons.checklist_rtl_outlined,
-                                    WidgetPreviewKind.focus =>
-                                      Icons.timer_outlined,
-                                    WidgetPreviewKind.habit =>
-                                      Icons.self_improvement_outlined,
-                                    WidgetPreviewKind.calendar =>
-                                      Icons.calendar_month_outlined,
-                                    WidgetPreviewKind.schedule =>
-                                      Icons.event_note_outlined,
-                                    WidgetPreviewKind.goal =>
-                                      Icons.flag_outlined,
-                                    WidgetPreviewKind.course =>
-                                      Icons.school_outlined,
-                                    WidgetPreviewKind.note =>
-                                      Icons.edit_note_outlined,
-                                    WidgetPreviewKind.anniversary =>
-                                      Icons.event_available_outlined,
-                                  },
-                                  size: 18,
-                                  color: accent,
+                                Image.asset(
+                                  'assets/logo/duoyi_web_logo_512.png',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(

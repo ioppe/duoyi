@@ -1,6 +1,7 @@
 {
   "@@locale": "zh",
-  "widgetTodoPreviewDescription": "展示前三个今日任务，支持组件内切页和后台完成",
+  "widgetTodoPreviewDescription": "展示前三个今日任务，底栏切页，点击任务进入详情",
+  "widgetFocusPreviewDescription": "今日专注次数和时长，点击进入专注",
   "stateError": "出错了",
   "stateLoadFailed": "加载失败",
   "calendarProjectEmpty": "这个项目暂无任务",
