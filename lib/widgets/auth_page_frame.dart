@@ -240,11 +240,16 @@ class AuthFormFieldTheme extends StatelessWidget {
 
   const AuthFormFieldTheme({super.key, required this.child});
 
-  static double heightOf(BuildContext context) => math.max(
-    DesignTokens.formFieldMinHeight,
-    MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeMd) * 1.5 +
-        DesignTokens.spaceLg * 2,
-  );
+  static double heightOf(BuildContext context) {
+    final contentHeight =
+        MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeMd) * 1.5 +
+        DesignTokens.spaceLg * 2;
+    // Whole logical pixels keep Linux text metrics and visible borders aligned
+    // when a text scale would otherwise produce a fractional row height.
+    return math
+        .max(DesignTokens.formFieldMinHeight, contentHeight)
+        .ceilToDouble();
+  }
 
   @override
   Widget build(BuildContext context) => AppFormFieldTheme(
