@@ -351,6 +351,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreateReminderIssueTitle => '待办提醒注册失败';
 
   @override
+  String get todoSystemCalendarAdd => '添加到系统日历';
+
+  @override
+  String get todoSystemCalendarOpened => '已打开系统日历，请点击保存';
+
+  @override
+  String get todoSystemCalendarFailed => '无法打开系统日历';
+
+  @override
   String get featureUnavailable => '此功能已不可用';
 
   @override

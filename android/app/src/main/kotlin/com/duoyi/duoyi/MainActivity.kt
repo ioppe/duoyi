@@ -18,6 +18,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.provider.CalendarContract
 import android.provider.Settings
 import android.provider.OpenableColumns
 import android.util.Log
@@ -44,6 +45,7 @@ class MainActivity : FlutterActivity() {
     private val locationGeofenceChannel = "duoyi/location_geofence"
     private val noteAttachmentPickerChannel = "duoyi/note_attachment_picker"
     private val deepLinksChannel = "duoyi/deep_links"
+    private val systemCalendarChannel = "duoyi/system_calendar"
     private val pickNoteAttachmentRequest = 7301
     private var pendingNoteAttachmentPick: MethodChannel.Result? = null
     private var deepLinksMethodChannel: MethodChannel? = null
@@ -197,6 +199,15 @@ class MainActivity : FlutterActivity() {
                         } catch (e: Exception) {
                             result.error("install_failed", "打开安装器失败: ${e.message}", null)
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, systemCalendarChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "createEvent" -> {
+                        result.success(openSystemCalendarCreate(call.arguments as? Map<*, *>))
                     }
                     else -> result.notImplemented()
                 }
@@ -774,6 +785,35 @@ class MainActivity : FlutterActivity() {
         return uri.lastPathSegment ?: "附件"
     }
 
+    private fun openSystemCalendarCreate(arguments: Map<*, *>?): Boolean {
+        val title = arguments?.get("title")?.toString()?.trim().orEmpty()
+        val description = arguments?.get("description")?.toString().orEmpty()
+        val begin = (arguments?.get("startAtMillis") as? Number)?.toLong()
+        val end = (arguments?.get("endAtMillis") as? Number)?.toLong()
+        val allDay = arguments?.get("allDay") as? Boolean ?: false
+        val timeZone = arguments?.get("timeZone")?.toString()?.trim().orEmpty()
+        if (title.isEmpty() || begin == null || end == null || end <= begin) {
+            return false
+        }
+        val intent = Intent(Intent.ACTION_INSERT).apply {
+            data = CalendarContract.Events.CONTENT_URI
+            putExtra(CalendarContract.Events.TITLE, title)
+            putExtra(CalendarContract.Events.DESCRIPTION, description)
+            putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
+            putExtra(CalendarContract.EXTRA_EVENT_END_TIME, end)
+            putExtra(CalendarContract.Events.ALL_DAY, allDay)
+            if (timeZone.isNotEmpty()) {
+                putExtra(CalendarContract.Events.EVENT_TIMEZONE, timeZone)
+            }
+        }
+        return try {
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.w("SystemCalendar", "calendar create intent unavailable", e)
+            false
+        }
+    }
     private fun openAppNotificationSettings(): Boolean {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)

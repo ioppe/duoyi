@@ -377,6 +377,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Task reminder registration failed';
 
   @override
+  String get todoSystemCalendarAdd => 'Add to system calendar';
+
+  @override
+  String get todoSystemCalendarOpened =>
+      'System calendar opened. Tap Save to create it.';
+
+  @override
+  String get todoSystemCalendarFailed => 'Unable to open the system calendar';
+
+  @override
   String get featureUnavailable => 'This feature is no longer available.';
 
   @override

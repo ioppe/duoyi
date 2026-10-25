@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -18,6 +19,7 @@ import '../models/goal.dart' show ReminderKind, ReminderPlan;
 import '../models/location_reminder.dart';
 import '../models/note.dart' show NoteAttachment, NoteBlock, NoteBlockType;
 import '../models/todo.dart';
+import '../core/local_timezone_resolver.dart';
 import '../models/list_group.dart';
 import '../models/workspace.dart';
 import '../services/account_local_data_cleaner.dart';
@@ -26,7 +28,9 @@ import '../services/alarm_service.dart';
 import '../services/local_notifications.dart';
 import '../services/note_attachment_picker.dart';
 import '../services/reminder_scheduler.dart';
+import '../services/system_calendar_service.dart';
 import '../providers/location_reminder_provider.dart';
+import '../core/platform_info.dart';
 import '../providers/auth_provider.dart';
 import '../providers/list_group_provider.dart';
 import '../providers/notification_service.dart';
@@ -593,6 +597,51 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     }
   }
 
+  Future<void> _openSystemCalendar() async {
+    final rawDueDate = _todo.dueDate;
+    if (rawDueDate == null) return;
+    final localDueDate = _todo.localDueDate ?? AppClock.toLocal(rawDueDate);
+    // 带时区的 00:00 是具体时刻，只有无时区的零点才是 date-only
+    // （与 lib/core/todo_filters.dart 的判定保持一致）。
+    final isAllDay =
+        !rawDueDate.isUtc &&
+        rawDueDate is! tz.TZDateTime &&
+        rawDueDate.hour == 0 &&
+        rawDueDate.minute == 0 &&
+        rawDueDate.second == 0 &&
+        rawDueDate.millisecond == 0 &&
+        rawDueDate.microsecond == 0;
+    final start = isAllDay
+        ? DateTime(localDueDate.year, localDueDate.month, localDueDate.day)
+        : localDueDate;
+    // 全天事件用日历日 +1 作为次日零点，避免设备 DST 下 24 小时没有跨日。
+    final end = isAllDay
+        ? DateTime(start.year, start.month, start.day + 1)
+        : start.add(const Duration(hours: 1));
+    final title = _titleCtrl.text.trim().isEmpty
+        ? _todo.title.trim()
+        : _titleCtrl.text.trim();
+    final opened = await SystemCalendarService.openCreateEvent(
+      title: title,
+      description: _notesCtrl.text.trim(),
+      start: start,
+      end: end,
+      allDay: isAllDay,
+      timeZone: LocalTimezoneResolver.currentIana,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          opened
+              ? I18n.tr('todo.system_calendar.opened')
+              : I18n.tr('todo.system_calendar.failed'),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _pickRecurrence() async {
     final r = await RecurrencePicker.show(context, initial: _todo.recurrence);
     if (!mounted) return;
@@ -999,6 +1048,24 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                                   ),
                             onTap: _pickDueDate,
                           ),
+                          if (PlatformInfo.isAndroid && _todo.dueDate != null)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: DesignTokens.spaceSm,
+                              ),
+                              child: OutlinedButton.icon(
+                                key: const ValueKey(
+                                  'todo_add_to_system_calendar',
+                                ),
+                                onPressed: _openSystemCalendar,
+                                icon: const Icon(
+                                  Icons.event_available_outlined,
+                                ),
+                                label: Text(
+                                  I18n.tr('todo.system_calendar.add'),
+                                ),
+                              ),
+                            ),
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(Icons.repeat),

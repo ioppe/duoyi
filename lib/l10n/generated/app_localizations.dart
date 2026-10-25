@@ -776,6 +776,24 @@ abstract class AppLocalizations {
   /// **'待办提醒注册失败'**
   String get todoCreateReminderIssueTitle;
 
+  /// No description provided for @todoSystemCalendarAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加到系统日历'**
+  String get todoSystemCalendarAdd;
+
+  /// No description provided for @todoSystemCalendarOpened.
+  ///
+  /// In zh, this message translates to:
+  /// **'已打开系统日历，请点击保存'**
+  String get todoSystemCalendarOpened;
+
+  /// No description provided for @todoSystemCalendarFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开系统日历'**
+  String get todoSystemCalendarFailed;
+
   /// No description provided for @featureUnavailable.
   ///
   /// In zh, this message translates to:

@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
@@ -216,11 +217,11 @@ open class DuoyiTodoWidgetProvider : DuoyiStyledWidgetProvider() {
                 Uri.parse("duoyi://todo/$encodedTodoId")
             )
         )
+        // “完成待办”直接在后台执行，不打开 App；行本身仍作为浏览入口。
         views.setOnClickPendingIntent(
             doneViewId,
-            HomeWidgetLaunchIntent.getActivity(
+            HomeWidgetBackgroundIntent.getBroadcast(
                 context,
-                MainActivity::class.java,
                 Uri.parse("duoyi://action/complete_todo?id=$encodedTodoId")
             )
         )

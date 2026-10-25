@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
@@ -183,9 +184,9 @@ open class DuoyiFocusHabitWidgetProvider : DuoyiStyledWidgetProvider() {
             val openCalendar = HomeWidgetLaunchIntent.getActivity(
                 context, MainActivity::class.java, Uri.parse("duoyi://tab/calendar")
             )
-            val startFocus: PendingIntent = HomeWidgetLaunchIntent.getActivity(
+            // “开始专注”直接在后台启动，不打开 App；其余区域仍是浏览入口。
+            val startFocus: PendingIntent = HomeWidgetBackgroundIntent.getBroadcast(
                 context,
-                MainActivity::class.java,
                 Uri.parse("duoyi://action/start_pomodoro")
             )
 

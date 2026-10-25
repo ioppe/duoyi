@@ -1,11 +1,41 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../core/app_clock.dart';
 import '../core/brand_strings.dart';
 import '../core/i18n.dart';
+import '../core/iterable_extensions.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/platform_info.dart';
+import '../core/smart_todo_draft.dart';
+import '../models/habit.dart' show HabitKind;
+import '../models/pomodoro.dart' show PomodoroType;
+import '../models/todo.dart' show TodoPriorityX;
+import '../providers/cloud_sync_provider.dart';
+import '../providers/habit_provider.dart';
+import '../providers/pomodoro_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/todo_provider.dart';
 import 'android_widget_manager.dart';
+import 'home_widget_action.dart';
+import 'home_widget_action_bridge.dart';
+
+/// 桌面动作执行时使用的一组业务 Provider。
+///
+/// 主 isolate 传入存活的实例；冷后台传入按 prefs 重新加载的实例。
+class HomeWidgetLiveProviders {
+  final TodoProvider todos;
+  final HabitProvider habits;
+  final PomodoroProvider pomodoro;
+
+  const HomeWidgetLiveProviders({
+    required this.todos,
+    required this.habits,
+    required this.pomodoro,
+  });
+}
 
 /// Pushes today's stats and brand strings out to Android/iOS home widgets.
 /// 在 web / 其他平台下为空实现。
@@ -130,19 +160,53 @@ class HomeWidgetService {
   static String _lastThemeSignature = '';
   static String _lastPushSignature = '';
   static Future<bool>? _accountPayloadClearInFlight;
+  static bool _interactivityRegistered = false;
+
+  /// 测试用：按“支持小组件的移动端”执行后台动作，便于在宿主机覆盖 payload
+  /// 重算与刷新顺序；生产环境仍由 [PlatformInfo] 决定。
+  @visibleForTesting
+  static bool debugForceSupported = false;
 
   static bool get _supported {
     if (kIsWeb) return false;
+    if (debugForceSupported) return true;
     return PlatformInfo.isAndroid || PlatformInfo.isIOS;
   }
+
+  /// 主 isolate 是否需要注册后台动作转发端口（web/桌面端不注册）。
+  static bool get supportsBackgroundActions => _supported;
+
+  /// 后台动作刷新原生组件用的 Android 原生通道。
+  static bool get _androidBackgroundSupported =>
+      PlatformInfo.isAndroid || debugForceSupported;
 
   static Future<bool> init() async {
     if (!_supported) return true;
     try {
       await HomeWidget.setAppGroupId(_appGroupId);
+      await registerBackgroundActions();
       return true;
     } catch (e, st) {
       debugPrint('[HomeWidget] init failed: $e\n$st');
+      return false;
+    }
+  }
+
+  /// 注册桌面小组件后台动作回调（每进程只注册一次）。
+  ///
+  /// [homeWidgetBackgroundCallback] 运行在 `home_widget` 创建的独立
+  /// FlutterEngine 里，不共享主 isolate 的 Provider/BuildContext。
+  static Future<bool> registerBackgroundActions() async {
+    if (!_supported) return true;
+    if (_interactivityRegistered) return true;
+    try {
+      final registered = await HomeWidget.registerInteractivityCallback(
+        homeWidgetBackgroundCallback,
+      );
+      _interactivityRegistered = registered != false;
+      return _interactivityRegistered;
+    } catch (e, st) {
+      debugPrint('[HomeWidget] register background callback failed: $e\n$st');
       return false;
     }
   }
@@ -189,7 +253,7 @@ class HomeWidgetService {
       final initialized = await init();
       if (!initialized) return false;
       await Future.wait(
-        accountPayloadDefaults.entries.map(_saveAccountPayloadDefault),
+        accountPayloadDefaults.entries.map(_saveWidgetPayloadEntry),
       );
       return await _updateAllWidgets();
     } catch (e, st) {
@@ -210,9 +274,7 @@ class HomeWidgetService {
     }
   }
 
-  static Future<bool?> _saveAccountPayloadDefault(
-    MapEntry<String, Object> entry,
-  ) {
+  static Future<bool?> _saveWidgetPayloadEntry(MapEntry<String, Object> entry) {
     final value = entry.value;
     if (value is bool) {
       return HomeWidget.saveWidgetData<bool>(entry.key, value);
@@ -592,6 +654,351 @@ class HomeWidgetService {
     return ok;
   }
 
+  /// 执行桌面小组件动作。
+  ///
+  /// 两个入口共用同一套动作规则：
+  /// - 主 isolate 转发（[live] 非空）：直接写仍然存活的 Provider，payload 刷新
+  ///   交给主 isolate 的常规推送，避免后台副本整表覆盖主 isolate 的改动；
+  /// - 冷后台（[live] 为空）：先恢复应用时区与语言，再重新加载 Provider 执行，
+  ///   成功后重算受影响的 payload 并刷新原生组件。
+  ///
+  /// 约束（两个入口一致）：
+  /// - 只调用现有 Provider 方法写业务数据，不直接改 `todos` / `habits` 的 JSON，
+  ///   因此 owner、存储 generation 与内存 Provider 的校验照旧生效；
+  /// - 登录态或账号 owner 与当前账号不一致时 no-op，不写旧账号数据；
+  /// - 后台没有 ScaffoldMessenger，失败只写 debug 日志。
+  ///
+  /// 返回是否真的写入了数据。
+  static Future<bool> runBackgroundAction(
+    HomeWidgetActionRequest request, {
+    HomeWidgetLiveProviders? live,
+    bool? signedIn,
+  }) async {
+    if (!_supported) return false;
+    final cold = live == null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (cold) {
+        // 后台引擎的 prefs 缓存可能停在上一个会话，先拉取最新值再判定边界。
+        await prefs.reload();
+        await _prepareColdIsolate();
+      }
+      final blocked = await _resolveBlockReason(prefs, signedIn: signedIn);
+      if (blocked != HomeWidgetActionBlockReason.none) {
+        debugPrint(
+          '[HomeWidget] ${request.kind.name} skipped: ${blocked.name}',
+        );
+        return false;
+      }
+      final providers = live ?? await _loadColdProviders();
+      // Provider 加载期间可能发生切号/登出：写盘前用最新 prefs 再判定一次。
+      final recheck = await _resolveBlockReason(prefs, signedIn: signedIn);
+      if (recheck != HomeWidgetActionBlockReason.none) {
+        debugPrint(
+          '[HomeWidget] ${request.kind.name} skipped: ${recheck.name}',
+        );
+        return false;
+      }
+      final changed = await _applyBackgroundAction(request, providers);
+      if (!changed) return false;
+      if (cold) {
+        // 冷引擎没有主 isolate 的监听链，这里补本地待同步元数据与 payload。
+        _markColdLocalChange();
+        await _refreshColdActionPayload(request.kind, providers);
+      }
+      return true;
+    } catch (e, st) {
+      debugPrint('[HomeWidget] ${request.kind.name} failed: $e\n$st');
+      return false;
+    }
+  }
+
+  /// 写入前的账号边界判定：读最新 prefs。
+  ///
+  /// [signedIn] 只在主 isolate 有内存登录态时传入，冷后台由 prefs 里的登录态决定。
+  static Future<HomeWidgetActionBlockReason> _resolveBlockReason(
+    SharedPreferences prefs, {
+    bool? signedIn,
+  }) async {
+    await prefs.reload();
+    if (signedIn == false) return HomeWidgetActionBlockReason.signedOut;
+    return HomeWidgetAccountScope.fromPreferences(prefs).blockReason;
+  }
+
+  /// 冷后台引擎的进程级初始化：应用时区与语言。
+  ///
+  /// 不初始化时区时 `AppClock` 会按系统时区算“今天”，打卡日期会偏移；
+  /// 不恢复语言时小组件文案会回退到默认语言。
+  static Future<void> _prepareColdIsolate() async {
+    try {
+      await LocalTimezoneResolver.init();
+    } catch (e, st) {
+      debugPrint('[HomeWidget] cold timezone init failed: $e\n$st');
+    }
+    try {
+      await LocaleProvider().loadFromStorage();
+    } catch (e, st) {
+      debugPrint('[HomeWidget] cold locale restore failed: $e\n$st');
+    }
+  }
+
+  static Future<HomeWidgetLiveProviders> _loadColdProviders() async {
+    final providers = HomeWidgetLiveProviders(
+      todos: TodoProvider(),
+      habits: HabitProvider(),
+      pomodoro: PomodoroProvider(),
+    );
+    await providers.todos.loadFromStorage();
+    await providers.habits.loadFromStorage();
+    await providers.pomodoro.loadFromStorage();
+    return providers;
+  }
+
+  /// 冷后台写盘后补本地待同步标记（只写 prefs 元数据，不启动网络同步）。
+  static void _markColdLocalChange() {
+    try {
+      final cloudSync = CloudSyncProvider();
+      // 新建实例默认抑制脏标记，本次就是要记录“本地有改动”。
+      cloudSync.dirtyMarkEnabled = true;
+      cloudSync.markPendingLocalChange();
+    } catch (e, st) {
+      debugPrint('[HomeWidget] cold dirty metadata failed: $e\n$st');
+    }
+  }
+
+  /// 冷后台动作后重算受影响的 payload，再请求原生组件刷新。
+  static Future<void> _refreshColdActionPayload(
+    HomeWidgetActionKind kind,
+    HomeWidgetLiveProviders providers,
+  ) async {
+    try {
+      final payload = buildHomeWidgetActionPayload(
+        kind: kind,
+        todos: providers.todos,
+        habits: providers.habits,
+        pomodoro: providers.pomodoro,
+      );
+      // 顺序固定：先落 payload 再刷新原生组件，否则组件读到的是旧数据。
+      await Future.wait(payload.entries.map(_saveWidgetPayloadEntry));
+    } catch (e, st) {
+      debugPrint('[HomeWidget] cold payload update failed: $e\n$st');
+    }
+    await _refreshWidgetsAfterAction(kind);
+  }
+
+  /// 后台动作的真实写入。目标实体不存在、已完成或不适用于桌面动作时不写。
+  static Future<bool> _applyBackgroundAction(
+    HomeWidgetActionRequest request,
+    HomeWidgetLiveProviders providers,
+  ) async {
+    switch (request.kind) {
+      case HomeWidgetActionKind.completeTodo:
+        final id = request.targetId;
+        if (id == null) return false;
+        final todos = providers.todos;
+        final target = todos.todos.where((todo) => todo.id == id).firstOrNull;
+        if (homeWidgetTodoTargetState(target) !=
+            HomeWidgetTodoTargetState.ready) {
+          debugPrint('[HomeWidget] complete_todo skipped: target unavailable');
+          return false;
+        }
+        return await todos.completeTodos([id]) > 0;
+      case HomeWidgetActionKind.checkinHabit:
+        final id = request.targetId;
+        if (id == null) return false;
+        final habits = providers.habits;
+        final target = habits.habits
+            .where((habit) => habit.id == id)
+            .firstOrNull;
+        if (homeWidgetHabitTargetState(target) !=
+            HomeWidgetHabitTargetState.ready) {
+          debugPrint('[HomeWidget] checkin_habit skipped: target unavailable');
+          return false;
+        }
+        final habit = target!;
+        final before = habit.todayCount();
+        await habits.incrementHabit(id);
+        return habit.todayCount() > before;
+      case HomeWidgetActionKind.startPomodoro:
+        final pomodoro = providers.pomodoro;
+        if (pomodoro.state.isRunning) return false;
+        pomodoro.startIfIdle();
+        return pomodoro.state.isRunning;
+      case HomeWidgetActionKind.quickTodo:
+        final text = request.text;
+        if (text == null) return false;
+        final todos = providers.todos;
+        final before = todos.todos.length;
+        await todos.addTodo(SmartTodoDraftBuilder.fromText(text).toTodo());
+        return todos.todos.length > before;
+    }
+  }
+
+  /// 桌面动作之后需要重算的小组件 payload。
+  ///
+  /// 只包含被动作影响的键，避免覆盖主题、日程等无关内容；取值规则必须与
+  /// `main.dart` 的 `_pushHomeWidget` 一致，否则后台动作后小组件会跳变。
+  @visibleForTesting
+  static Map<String, Object> buildHomeWidgetActionPayload({
+    required HomeWidgetActionKind kind,
+    required TodoProvider todos,
+    required HabitProvider habits,
+    required PomodoroProvider pomodoro,
+    DateTime? now,
+  }) {
+    switch (kind) {
+      case HomeWidgetActionKind.completeTodo:
+      case HomeWidgetActionKind.quickTodo:
+        return todoHomeWidgetActionPayload(todos, now: now);
+      case HomeWidgetActionKind.checkinHabit:
+        return habitHomeWidgetActionPayload(habits);
+      case HomeWidgetActionKind.startPomodoro:
+        return focusHomeWidgetActionPayload(pomodoro);
+    }
+  }
+
+  /// 待办相关 payload：与 `_pushHomeWidget` 的可见性/排序一致。
+  @visibleForTesting
+  static Map<String, Object> todoHomeWidgetActionPayload(
+    TodoProvider todos, {
+    DateTime? now,
+  }) {
+    final visible = todos.visibleTodayTodos(now ?? AppClock.now())
+      ..sort((a, b) {
+        // 按优先级倒序，其次按手动排序（同 `_pushHomeWidget`）。
+        final byPriority = b.priority.rank.compareTo(a.priority.rank);
+        if (byPriority != 0) return byPriority;
+        return a.sortOrder.compareTo(b.sortOrder);
+      });
+    final top3 = visible.take(3).toList();
+    return <String, Object>{
+      'todo_count': visible.length,
+      'todo_top3_count': visible.length,
+      'todo_top3_1': top3.isNotEmpty
+          ? '· ${top3[0].title}'
+          : I18n.tr('widget.todo_top3_empty'),
+      'todo_top3_1_id': top3.isNotEmpty ? top3[0].id : '',
+      'todo_top3_2': top3.length > 1 ? '· ${top3[1].title}' : '',
+      'todo_top3_2_id': top3.length > 1 ? top3[1].id : '',
+      'todo_top3_3': top3.length > 2 ? '· ${top3[2].title}' : '',
+      'todo_top3_3_id': top3.length > 2 ? top3[2].id : '',
+    };
+  }
+
+  /// 习惯相关 payload：完成率、摘要与“下一项快捷打卡”。
+  @visibleForTesting
+  static Map<String, Object> habitHomeWidgetActionPayload(
+    HabitProvider habits,
+  ) {
+    final percent = (habits.todayCompletionRate * 100).round();
+    final pending =
+        habits.habits
+            .where(
+              (habit) =>
+                  habit.kind == HabitKind.positive &&
+                  habit.isActiveToday() &&
+                  !habit.isCompletedToday(),
+            )
+            .toList()
+          ..sort((a, b) {
+            final byOrder = a.sortOrder.compareTo(b.sortOrder);
+            if (byOrder != 0) return byOrder;
+            return a.createdAt.compareTo(b.createdAt);
+          });
+    final quick = pending.isEmpty ? null : pending.first;
+    return <String, Object>{
+      'habit_percent': percent,
+      'habit_summary': percent >= 100
+          ? I18n.tr('widget.habit_all_done')
+          : '${I18n.tr('widget.habit_progress_prefix')}$percent'
+                '${I18n.tr('widget.habit_progress_suffix')}',
+      'habit_quick_check_id': quick?.id ?? '',
+      'habit_quick_check_label': quick == null
+          ? I18n.tr('widget.habit_quick_check_hint')
+          : '${I18n.tr('widget.habit_checkin_prefix')}${quick.name}',
+    };
+  }
+
+  /// 专注相关 payload：倒计时毫秒用真实 `DateTime.now()` 计算，与主推送一致。
+  @visibleForTesting
+  static Map<String, Object> focusHomeWidgetActionPayload(
+    PomodoroProvider pomodoro,
+  ) {
+    final state = pomodoro.state;
+    final endsAtMillis = state.isRunning && !state.isCountUp
+        ? DateTime.now()
+              .add(Duration(seconds: state.remainingSeconds))
+              .millisecondsSinceEpoch
+        : 0;
+    final label = switch (state.type) {
+      PomodoroType.focus =>
+        state.isCountUp
+            ? I18n.tr('widget.focus_counting_up')
+            : I18n.tr('widget.focus_countdown'),
+      PomodoroType.shortBreak => I18n.tr('widget.short_break_countdown'),
+      PomodoroType.longBreak => I18n.tr('widget.long_break_countdown'),
+    };
+    final sessions = pomodoro.sessionCountToday;
+    return <String, Object>{
+      'focus_timer_running': state.isRunning,
+      'focus_timer_remaining_seconds': state.remainingSeconds,
+      'focus_timer_total_seconds': state.totalSeconds,
+      'focus_timer_ends_at_millis': endsAtMillis,
+      'focus_timer_label': label,
+      'focus_summary': sessions == 0
+          ? I18n.tr('widget.focus_not_started')
+          : '${I18n.tr('widget.focus_today_prefix')}$sessions'
+                '${I18n.tr('widget.focus_today_suffix')}',
+    };
+  }
+
+  static Future<void> _refreshWidgetsAfterAction(
+    HomeWidgetActionKind kind,
+  ) async {
+    if (!_androidBackgroundSupported) return;
+    for (final providerName in androidProviderNamesForAction(kind)) {
+      try {
+        // 走 home_widget 原生通道：后台 isolate 没有主 isolate 的
+        // `duoyi/widgets` 通道，`AndroidWidgetManager` 在那里不可用。
+        await HomeWidget.updateWidget(
+          name: providerName,
+          androidName: providerName,
+        );
+      } catch (e, st) {
+        debugPrint('[HomeWidget] refresh $providerName failed: $e\n$st');
+      }
+    }
+  }
+
+  /// 动作影响的原生小组件类名。compact / detailed 变体继承标准 provider，
+  /// 但各自是独立 AppWidget 组件，必须逐个请求刷新。
+  @visibleForTesting
+  static List<String> androidProviderNamesForAction(HomeWidgetActionKind kind) {
+    final primaryProviders = switch (kind) {
+      HomeWidgetActionKind.completeTodo ||
+      HomeWidgetActionKind.quickTodo => const [_androidTodoProviderName],
+      HomeWidgetActionKind.checkinHabit => const [_androidHabitProviderName],
+      HomeWidgetActionKind.startPomodoro => const [
+        _androidFocusProviderName,
+        'DuoyiWidgetProvider',
+      ],
+    };
+    return [
+      for (final provider in primaryProviders) ...[
+        provider,
+        ..._androidWidgetVariants(provider),
+      ],
+    ];
+  }
+
+  static List<String> _androidWidgetVariants(String provider) {
+    if (provider == 'DuoyiWidgetProvider') return const <String>[];
+    return [
+      provider.replaceFirst('WidgetProvider', 'CompactWidgetProvider'),
+      provider.replaceFirst('WidgetProvider', 'DetailedWidgetProvider'),
+    ];
+  }
+
   static Stream<Uri?> get widgetClickedStream {
     if (!_supported) return const Stream.empty();
     return HomeWidget.widgetClicked;
@@ -939,3 +1346,34 @@ const List<_HomeWidgetUpdateTarget> _widgetUpdateTargets = [
     iOSName: HomeWidgetService._iosAnniversaryWidgetName,
   ),
 ];
+
+/// 桌面小组件后台动作入口。
+///
+/// `home_widget` 的 `HomeWidgetBackgroundReceiver`（见 `AndroidManifest.xml`）
+/// 会把它交给独立的 FlutterEngine 执行，因此这里拿不到主 isolate 的 Provider、
+/// BuildContext 或 Navigator：只做数据变更与原生小组件刷新，不触发页面导航。
+///
+/// 主 isolate 还活着时先转发过去：那里有唯一可信的内存 Provider，避免后台
+/// 副本用陈旧数据整表覆盖主 isolate 的改动。转发结果（含失败/超时）都视为
+/// “已被接管”，不再本地重跑，防止重复写盘与重复打卡。
+@visibleForTesting
+Future<void> handleHomeWidgetBackgroundUri(
+  Uri? uri, {
+  Future<bool> Function(Uri uri)? forwardToMain,
+  Future<bool> Function(HomeWidgetActionRequest request)? runLocally,
+}) async {
+  final request = HomeWidgetActionRequest.parse(uri);
+  if (request == null || uri == null) {
+    // URI 可能带用户输入文本，日志只记录 host，不打印完整链接。
+    debugPrint('[HomeWidget] background callback ignored: ${uri?.host ?? '-'}');
+    return;
+  }
+  final forwarded =
+      await (forwardToMain ?? HomeWidgetActionBridge.forwardToMainIsolate)(uri);
+  if (forwarded) return;
+  await (runLocally ?? HomeWidgetService.runBackgroundAction)(request);
+}
+
+@pragma('vm:entry-point')
+Future<void> homeWidgetBackgroundCallback(Uri? uri) =>
+    handleHomeWidgetBackgroundUri(uri);

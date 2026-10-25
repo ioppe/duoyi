@@ -13,8 +13,8 @@ class AppTextScale {
   static const double standard = 1.0;
   static const double large = 1.15;
 
-  /// 默认档位：标准（100%），位于滑块第二档。
-  static const double defaultScale = standard;
+  /// 默认档位：小（85%），让新安装和旧版默认字号更紧凑。
+  static const double defaultScale = small;
 
   /// 可选档位，按从小到大的顺序排列；索引即滑块刻度位置。
   static const List<double> options = <double>[
@@ -34,7 +34,7 @@ class AppTextScale {
   /// 把任意输入归一化到 [options] 中的一档。
   ///
   /// 合法档位原样保留；有限正数吸附到最近档位（超出范围时取最近边界）；
-  /// null / NaN / infinity / 非正数回落到标准档。
+  /// null / NaN / infinity / 非正数回落到默认小档。
   static double normalize(double? value) {
     if (value == null || !value.isFinite || value <= 0) return defaultScale;
     var snapped = options.first;
@@ -49,7 +49,7 @@ class AppTextScale {
     return snapped;
   }
 
-  /// 档位在 [options] 中的索引；非法输入返回标准档索引。
+  /// 档位在 [options] 中的索引；非法输入归一化到默认小档。
   static int indexOf(double value) {
     final index = options.indexOf(normalize(value));
     return index < 0 ? standardIndex : index;

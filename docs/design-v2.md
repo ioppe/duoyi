@@ -120,8 +120,13 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 - 全局 Material 滚动配置启用拖动收键盘；共享弹层打开、路由切换和一级导航切换清理离开页面的焦点，返回时不恢复已离开的输入状态。新页面主动聚焦的输入框仍可唤起键盘。
 - 设置页的填充、描边、文字按钮使用相同最小高度、内边距和标准密度；同组菜单入口等宽，设置下拉框等宽。`AppSettingsTile` 不缩放尾部操作；窄屏和大字号时操作区移到文字下方，控件可随文本自然增高。
 - 应用字体大小使用独立页面：顶部返回、标题与“完成”，可滚动的气泡文字预览区，底部安全区固定八档刻度滑块与标准档标记。拖动只修改预览；“完成”保存并应用，返回取消。控制区按系统字号呈现，预览只叠加一次应用档位，最大档仍能触达滑块和完成按钮。
-- 字号在普通重启、会话失效及同账号重新登录后保留，只有确认服务器/用户身份变更时恢复标准；首次绑定接纳升级前字号。新账号不能保存旧账号遗留的预览草稿，其他本机偏好和私有数据隔离策略保持各自约定。
+- 应用字号默认小（85%）；首次升级时，缺失或保存为旧标准档 100% 的值一次性迁移并保存为 85%，其它档位保留。旧版没有显式选择标记，主动保存的 100% 同样迁移，升级后重新选择 100% 则正常保留。字号在普通重启、会话失效及同账号重新登录后保留，只有确认服务器/用户身份变更时恢复默认小（85%）；首次绑定接纳升级前字号。新账号不能保存旧账号遗留的预览草稿，其他本机偏好和私有数据隔离策略保持各自约定。
 - 严格专注的分心应用设置使用可启动应用扫描选择器，不要求用户手填包名；黑名单模式只记录勾选项，白名单模式把勾选项视为无关应用并将未勾选可启动应用转换为拦截集合。选择器支持搜索、草稿取消、完成保存、空结果/失败重试和窄屏大字号滚动；白名单扫描失败必须 fail-safe，不能静默放行。
+
+### 2.10 Android 小组件与系统日历
+
+- 小组件完成待办、快捷打卡、开始专注通过 `HomeWidgetBackgroundIntent` 进入后台 Dart 回调，先校验登录态与服务器/账号 owner，再调用业务 Provider 和刷新小组件；原生层不直接修改业务 JSON。导航、详情和“+ 添加”仍使用 Activity Intent。
+- 任务详情有截止日期时提供系统日历创建入口，`duoyi/system_calendar` 通道使用 `ACTION_INSERT` 预填任务标题、备注、应用时区和起止时间；纯日期创建全天草稿，具体时刻创建一小时草稿。用户在系统页面确认保存；多仪不申请日历读写权限、不保存事件 ID、不接管后续修改或删除，无法打开日历时显示失败提示。
 
 ## 3. 目标架构（v2）
 
@@ -609,31 +614,13 @@ CalendarEventSheet 中 course 类型的 `_open` 已导航到
 
 #### 4.8.1 Widget 完成操作
 
-Android 端 `DuoyiTodoWidgetProvider.kt` 在待办项旁增加完成按钮：
+Android 待办小组件的完成按钮使用 `HomeWidgetBackgroundIntent.getBroadcast`，URI 为 `duoyi://action/complete_todo?id=<todoId>`。习惯打卡和开始专注分别使用 `checkin_habit`、`start_pomodoro` 动作。
 
-```kotlin
-// 点击完成 → 发送 Intent action = "com.duoyi.COMPLETE_TODO"
-//           extra = todoId
-// BroadcastReceiver 接收后：
-//   1. 调用 HomeWidget.getWidgetData("todo_top3_1_id") 获取 id
-//   2. 通过 MethodChannel 调用 Flutter 端 TodoProvider.toggleTodo(id)
-//   3. 触发 HomeWidgetService.push() 刷新
-```
+`HomeWidgetService` 注册顶层 `homeWidgetBackgroundCallback`；后台回调经 `HomeWidgetActionRequest.parse` 和 `HomeWidgetAccountScope.blockReason` 校验 URI、登录态与服务器/账号数据归属后，调用 `HomeWidgetService.runBackgroundAction`。完成待办使用 `TodoProvider.completeTodos([id])`，重复点击不会把已完成任务反向切换为未完成；操作后刷新小组件。
 
-Flutter 端注册 background callback：
+主引擎存在时通过 isolate 消息把动作交给它已加载的 Provider，并等待执行及 payload 推送完成；已转交的请求即使失败或超时也不再回退到第二次冷后台执行。没有主引擎时，后台先重载偏好并初始化应用时区，再执行业务操作、记录本地同步变更标记，按最新状态重算待办 Top3、习惯进度/下个打卡目标或专注倒计时，最后刷新原生小组件。
 
-```dart
-// main.dart
-HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
-
-@pragma('vm:entry-point')
-Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
-  if (uri?.host == 'complete-todo') {
-    final todoId = uri!.pathSegments.first;
-    // 读取 SharedPreferences → toggle todo → push widget update
-  }
-}
-```
+按钮类动作不启动主界面，原生层不直接修改业务 JSON；详情和导航继续由 Activity 深链处理。回调保留带文字 `quick_todo` 请求的解析能力，但当前桌面“+ 添加”没有预填文字入口，仍打开完整任务表单。
 
 #### 4.8.2 Widget Deep-link
 
@@ -997,12 +984,7 @@ class QuickActionService {
 
 #### 4.14.2 Widget 快速添加
 
-HomeWidgetService 在独立待办小组件中增加"+"按钮：
-
-```kotlin
-// 点击"+" → 启动 Flutter Activity，传入 intent extra quickAdd=true
-// Flutter 端检测后直接弹出 _quickTodo 对话框
-```
+独立待办小组件的“+ 添加”按钮通过 `HomeWidgetLaunchIntent.getActivity` 打开 `duoyi://action/quick_todo`。Flutter 按该深链打开完整任务创建表单，等待用户输入和保存；当前小组件不提供带文字的后台快捷添加入口。
 
 #### 4.14.3 模板快速创建
 
@@ -1236,7 +1218,7 @@ void _afterMutation() {
 |----------|------|
 | Pomodoro → TimeEntry | 完成专注后 TimeAuditProvider 自动新增 |
 | Todo 完成 → Achievement | 完成第 10 个 todo 后 achievement 解锁 |
-| Widget 完成 | Android widget background callback 正确 toggle |
+| Widget 完成 | Android widget background callback 校验账号后完成待办，重复点击不反向取消 |
 | Snooze 端到端 | 通知 action → ReminderScheduler.snooze → 延后触发 |
 | Share invite 流程 | 创建邀请码 → 另一用户接受 → 成员列表更新 |
 
@@ -1262,7 +1244,7 @@ void _afterMutation() {
 | 2026 节假日预估不准 | 日历标注错误 | updateFrom 动态覆盖，正式公告后更新内置 |
 | i18n 工作量大 | 延期 | 分阶段：先基础框架，后逐页替换 |
 | 看板拖拽性能 | 大量 todo 时卡顿 | 虚拟化列表，限制单列显示数 |
-| Widget background callback | 进程被系统 kill 后无法执行 | Fallback 到打开 App 后同步状态 |
+| Widget background callback | 系统后台限制可能导致按钮操作不生效 | 回调记录失败日志；随后打开 App 核对实际状态，ROM 行为留待实机验证 |
 | 共享空间后端稳定性 | 同步失败 | 离线模式优先，sync 失败不阻塞本地操作 |
 | AudioService 清理遗漏 | 编译失败 | CI 全量构建验证 |
 | Snooze 通知 id 冲突 | 覆盖正常通知 | snooze 使用独立 id namespace |

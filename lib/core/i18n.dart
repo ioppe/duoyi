@@ -1114,6 +1114,9 @@ const Map<String, String> _zh = <String, String>{
   'todo.create.created_web_reminder':
       '待办和提醒配置已保存；Web 暂不支持本地系统通知，可在安装客户端同步后接收提醒。',
   'todo.create.reminder_issue_title': '待办提醒注册失败',
+  'todo.system_calendar.add': '添加到系统日历',
+  'todo.system_calendar.opened': '已打开系统日历，请点击保存',
+  'todo.system_calendar.failed': '无法打开系统日历',
   'todo.matrix': '四象限',
   'todo.list': '列表',
   'todo.postpone': '顺延',
@@ -2596,6 +2599,10 @@ const Map<String, String> _en = <String, String>{
   'todo.create.created_web_reminder':
       'Task and reminder settings saved. Web does not support local system notifications; sync with an installed client to receive reminders.',
   'todo.create.reminder_issue_title': 'Task reminder registration failed',
+  'todo.system_calendar.add': 'Add to system calendar',
+  'todo.system_calendar.opened':
+      'System calendar opened. Tap Save to create it.',
+  'todo.system_calendar.failed': 'Unable to open the system calendar',
   'todo.matrix': 'Matrix',
   'todo.list': 'List',
   'todo.postpone': 'Postpone',

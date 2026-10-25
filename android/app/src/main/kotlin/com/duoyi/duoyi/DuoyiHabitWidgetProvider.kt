@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
@@ -121,9 +122,9 @@ open class DuoyiHabitWidgetProvider : DuoyiStyledWidgetProvider() {
                 context, MainActivity::class.java, Uri.parse("duoyi://tab/focus")
             )
             val quickCheckHabit = if (habitQuickCheckId.isNotBlank()) {
-                HomeWidgetLaunchIntent.getActivity(
+                // 有可打卡习惯时直接在后台打卡，不打开 App。
+                HomeWidgetBackgroundIntent.getBroadcast(
                     context,
-                    MainActivity::class.java,
                     Uri.parse("duoyi://action/checkin_habit?id=${Uri.encode(habitQuickCheckId)}")
                 )
             } else {

@@ -134,18 +134,18 @@ void main() {
     expect(p.textScale, .85);
     await auth.logout();
     await auth.login(username: 'b', password: 'pw');
-    expect(p.textScale, AppTextScale.standard);
+    expect(p.textScale, AppTextScale.defaultScale);
     expect(p.dateFormat, 'dd/MM/yyyy');
     expect(p.haptic, isFalse);
     expect(
       (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
-      1,
+      AppTextScale.defaultScale,
     );
     await p.setTextScale(1.6);
     await auth.logout();
     await auth.configureServer('https://other.test');
     await auth.login(username: 'b', password: 'pw');
-    expect(p.textScale, 1);
+    expect(p.textScale, AppTextScale.defaultScale);
     auth.dispose();
     p.dispose();
   });
@@ -174,16 +174,16 @@ void main() {
     final oldWrite = p.setTextScale(1.75);
     final switchToB = bind(p, 'b');
     await Future.wait([oldWrite, switchToB]);
-    expect(p.textScale, 1);
+    expect(p.textScale, AppTextScale.defaultScale);
     final switchToC = bind(p, 'c');
     final stale = p.setTextScale(1.9);
     final rejected = expectLater(stale, throwsStateError);
     await switchToC;
     await rejected;
-    expect(p.textScale, 1);
+    expect(p.textScale, AppTextScale.defaultScale);
     expect(
       (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
-      1,
+      AppTextScale.defaultScale,
     );
     await p.setTextScale(1.3);
     await p.loadFromStorage();

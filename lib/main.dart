@@ -60,6 +60,8 @@ import 'services/calendar_sync_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
+import 'services/home_widget_action.dart';
+import 'services/home_widget_action_bridge.dart';
 import 'services/ai_service.dart';
 import 'services/app_update_service.dart';
 import 'services/backend_reminder_email_sink.dart';
@@ -1798,6 +1800,34 @@ void main() async {
     debugPrint('[startup] home widget stream failed: $e\n$st');
   }
 
+  // 桌面小组件动作：主 isolate 仍然存活时由后台引擎转发到这里执行，写的是
+  // 同一批内存 Provider，随后的普通编辑不会用陈旧副本回滚完成态/打卡。
+  if (HomeWidgetService.supportsBackgroundActions) {
+    HomeWidgetActionBridge.registerMainHandler((uri) async {
+      final request = HomeWidgetActionRequest.parse(uri);
+      if (request == null) return HomeWidgetActionAck.skipped;
+      // 换号/登出后内存登录态立即失效，不能再用旧对象执行动作。
+      if (!authProvider.state.isLoggedIn) {
+        debugPrint('[HomeWidget] live ${request.kind.name} skipped: signedOut');
+        return HomeWidgetActionAck.skipped;
+      }
+      await ensureDeferredLocalStorageStartup();
+      final changed = await HomeWidgetService.runBackgroundAction(
+        request,
+        live: HomeWidgetLiveProviders(
+          todos: todoProvider,
+          habits: habitProvider,
+          pomodoro: pomodoroProvider,
+        ),
+        signedIn: authProvider.state.isLoggedIn,
+      );
+      if (!changed) return HomeWidgetActionAck.skipped;
+      // 沿用常规推送：payload、提醒与云同步 dirty 监听都走同一条路径。
+      final pushed = await pushHomeWidgetNow();
+      return pushed ? HomeWidgetActionAck.done : HomeWidgetActionAck.failed;
+    });
+  }
+
   Future<void> runPostFrameStartupTasks() async {
     unawaited(
       Future<void>.delayed(const Duration(seconds: 14), () async {
@@ -3062,42 +3092,39 @@ void _handleWidgetUri(
       state.navigateTo(1, allowHidden: true);
       final todos = Provider.of<TodoProvider>(ctx, listen: false);
       final target = todos.todos.where((todo) => todo.id == id).firstOrNull;
-      if (target == null) {
-        _showWidgetActionFeedback(ctx, '这个任务不存在或已被删除');
-        return;
+      // 与后台动作共用同一套目标校验，避免两处判断漂移。
+      switch (homeWidgetTodoTargetState(target)) {
+        case HomeWidgetTodoTargetState.missing:
+          _showWidgetActionFeedback(ctx, '这个任务不存在或已被删除');
+        case HomeWidgetTodoTargetState.alreadyCompleted:
+          _showWidgetActionFeedback(ctx, '“${target!.title}”已经完成');
+        case HomeWidgetTodoTargetState.ready:
+          unawaited(_completeTodoFromWidgetAction(ctx, todos, target!));
       }
-      if (target.isCompleted) {
-        _showWidgetActionFeedback(ctx, '“${target.title}”已经完成');
-        return;
-      }
-      unawaited(_completeTodoFromWidgetAction(ctx, todos, target));
     } else if (action == 'checkin_habit' && ctx != null) {
       final id = uri.queryParameters['id'];
       state.navigateTo(2, allowHidden: true);
       if (id == null || id.isEmpty) return;
       final habits = Provider.of<HabitProvider>(ctx, listen: false);
       final target = habits.habits.where((habit) => habit.id == id).firstOrNull;
-      if (target == null) {
-        _showWidgetActionFeedback(ctx, '这个习惯不存在或已被删除');
-        return;
+      // 与后台动作共用同一套目标校验，避免两处判断漂移。
+      switch (homeWidgetHabitTargetState(target)) {
+        case HomeWidgetHabitTargetState.missing:
+          _showWidgetActionFeedback(ctx, '这个习惯不存在或已被删除');
+        case HomeWidgetHabitTargetState.unsupportedKind:
+          _showWidgetActionFeedback(ctx, '这个习惯不支持快捷打卡');
+        case HomeWidgetHabitTargetState.notActiveToday:
+          _showWidgetActionFeedback(ctx, '“${target!.name}”今天不需要打卡');
+        case HomeWidgetHabitTargetState.alreadyCompleted:
+          _showWidgetActionFeedback(ctx, '“${target!.name}”今天已经完成');
+        case HomeWidgetHabitTargetState.ready:
+          final habit = target!;
+          unawaited(
+            habits.incrementHabit(id).then((_) {
+              _showWidgetActionFeedbackFromShell('已打卡：${habit.name}');
+            }),
+          );
       }
-      if (target.kind != HabitKind.positive) {
-        _showWidgetActionFeedback(ctx, '这个习惯不支持快捷打卡');
-        return;
-      }
-      if (!target.isActiveToday()) {
-        _showWidgetActionFeedback(ctx, '“${target.name}”今天不需要打卡');
-        return;
-      }
-      if (target.isCompletedToday()) {
-        _showWidgetActionFeedback(ctx, '“${target.name}”今天已经完成');
-        return;
-      }
-      unawaited(
-        habits.incrementHabit(id).then((_) {
-          _showWidgetActionFeedbackFromShell('已打卡：${target.name}');
-        }),
-      );
     }
   } else {
     debugPrint('[DeepLink] unknown duoyi host: ${uri.host} uri=$uri');

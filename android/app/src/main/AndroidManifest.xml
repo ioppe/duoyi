@@ -183,6 +183,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- home_widget 后台动作：完成待办 / 快捷打卡 / 开始专注 / 快捷添加
+             在独立 FlutterEngine 里执行，不启动 Activity。 -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="false" />
+        <service
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <!-- 历史兼容总览小组件：保留升级前已添加到桌面的旧实例。 -->
         <receiver
             android:name=".DuoyiWidgetProvider"

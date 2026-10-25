@@ -898,10 +898,7 @@ void main() {
       ).readAsStringSync();
       expect(homeWidgetService, contains('HomeWidget.saveWidgetData<int>('));
       expect(homeWidgetService, contains("'focus_minutes_today'"));
-      expect(
-        providerSources['focus'],
-        isNot(contains('HomeWidgetBackgroundIntent')),
-      );
+      expect(providerSources['focus'], contains('HomeWidgetBackgroundIntent'));
     });
 
     test('待办小组件未完成任务使用 o 圆圈并保留交互按钮', () {

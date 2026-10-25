@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
@@ -174,10 +175,9 @@ class DuoyiWidgetProvider : AppWidgetProvider() {
                 )
             )
 
-            // Quick start pomodoro: launch into focus tab with auto-start flag.
-            val quickPomodoroIntent: PendingIntent = HomeWidgetLaunchIntent.getActivity(
+            // Quick start pomodoro：在后台直接开始专注，不打开 App。
+            val quickPomodoroIntent: PendingIntent = HomeWidgetBackgroundIntent.getBroadcast(
                 context,
-                MainActivity::class.java,
                 Uri.parse("duoyi://action/start_pomodoro")
             )
             views.setOnClickPendingIntent(R.id.widget_quick_pomodoro, quickPomodoroIntent)

@@ -142,6 +142,8 @@ void main() {
     addTearDown(p.dispose);
     await mount(tester, p);
     final storage = await SharedPreferences.getInstance();
+    final initialStored = storage.getDouble('pref_text_scale');
+    expect(initialStored, AppTextScale.defaultScale);
     expect(tester.widget<Slider>(find.byType(Slider)).divisions, 7);
     for (var index = 0; index < 8; index++) {
       await choose(tester, index);
@@ -152,8 +154,8 @@ void main() {
         MediaQuery.textScalerOf(preview).scale(16),
         closeTo(16 * AppTextScale.options[index], .001),
       );
-      expect(p.textScale, 1);
-      expect(storage.getDouble('pref_text_scale'), isNull);
+      expect(p.textScale, AppTextScale.defaultScale);
+      expect(storage.getDouble('pref_text_scale'), initialStored);
       if ([0, 1, 7].contains(index)) {
         await capture(
           tester,
@@ -227,13 +229,16 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(tester.widget<Slider>(find.byType(Slider)).value, 1);
+    expect(
+      tester.widget<Slider>(find.byType(Slider)).value,
+      AppTextScale.indexOf(AppTextScale.defaultScale).toDouble(),
+    );
     await tester.tap(find.byKey(const ValueKey('text_size_done_button')));
     await tester.pumpAndSettle();
-    expect(p.textScale, 1);
+    expect(p.textScale, AppTextScale.defaultScale);
     expect(
       (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
-      1,
+      AppTextScale.defaultScale,
     );
   });
 
@@ -249,7 +254,7 @@ void main() {
       find.text(I18n.tr('preferences.text_scale.save_failed')),
       findsOneWidget,
     );
-    expect(p.textScale, 1);
+    expect(p.textScale, AppTextScale.defaultScale);
     p.fail = false;
     await tester.tap(find.byKey(const ValueKey('text_size_done_button')));
     await tester.pumpAndSettle();
