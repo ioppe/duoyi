@@ -1169,7 +1169,6 @@ class HomeWidgetService {
   }
 
   /// 习惯相关 payload：完成率、摘要与“下一项快捷打卡”。
-  @visibleForTesting
   static Map<String, Object> habitHomeWidgetActionPayload(
     HabitProvider habits,
   ) {

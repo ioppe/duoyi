@@ -2162,6 +2162,7 @@ Future<bool> _pushHomeWidget(
           (sum, session) => sum + session.durationSeconds,
         ) ~/
         60,
+    todoItemsJson: todoItemsJson,
     strings: tp.brand.strings,
     todoTop3: top3,
     todoTop3Ids: top3Ids,
