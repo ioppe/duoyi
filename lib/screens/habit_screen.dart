@@ -671,13 +671,13 @@ class _HabitScreenState extends State<HabitScreen>
     final todayScrollView = CustomScrollView(
       key: const ValueKey('habit_today_scroll_view'),
       slivers: [
+        const SliverToBoxAdapter(child: HabitWeeklyCard()),
         SliverToBoxAdapter(
           child: KeyedSubtree(
             key: const ValueKey('habit_insight_before_today_list'),
             child: _HabitInsightSection(habits: provider.habits),
           ),
         ),
-        const SliverToBoxAdapter(child: HabitWeeklyCard()),
         if (activeHabits.isEmpty)
           SliverToBoxAdapter(
             key: const ValueKey('habit_today_empty_state_sliver'),
