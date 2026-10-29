@@ -2201,10 +2201,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSectionStylesSubtitle => '切换后会同步全局主题';
 
   @override
-  String get themeStyleDefaultName => '多仪';
+  String get themeStyleDefaultName => '苹果简约';
 
   @override
-  String get themeStyleDefaultDescription => '简洁原版 · 暖橙基调';
+  String get themeStyleDefaultDescription => '雾灰画布 · 珊瑚红点缀';
 
   @override
   String get themeStyleRe0Name => '从零开始';
@@ -3293,13 +3293,91 @@ class AppLocalizationsZh extends AppLocalizations {
   String get widgetScheduleTimezoneHint => '提醒会跟随系统时区';
 
   @override
-  String get widgetCalendarMonthSummary => '本月日期 · 今日已标记';
+  String get widgetCalendarMonthSummary => '右上角为当天事项数';
+
+  @override
+  String get widgetCalendarWeekdayMon => '一';
+
+  @override
+  String get widgetCalendarWeekdayTue => '二';
+
+  @override
+  String get widgetCalendarWeekdayWed => '三';
+
+  @override
+  String get widgetCalendarWeekdayThu => '四';
+
+  @override
+  String get widgetCalendarWeekdayFri => '五';
+
+  @override
+  String get widgetCalendarWeekdaySat => '六';
+
+  @override
+  String get widgetCalendarWeekdaySun => '日';
+
+  @override
+  String widgetCalendarDayCountLabel(Object count, Object date) {
+    return '$date，$count项';
+  }
+
+  @override
+  String widgetCalendarMonthTitle(Object month, Object year) {
+    return '$year年$month月';
+  }
 
   @override
   String get widgetHabitPending => '今日习惯待打卡';
 
   @override
   String get widgetStreakRecordPrefix => '连续记录 ';
+
+  @override
+  String widgetTodoEmptyHint(Object tab) {
+    return '打开$tab，安排下一件事';
+  }
+
+  @override
+  String get widgetTodoCountUnit => '项';
+
+  @override
+  String get widgetHabitTodayLabel => '今日完成率';
+
+  @override
+  String get widgetFocusCountLabel => '次数';
+
+  @override
+  String get widgetFocusMinutesLabel => '分钟';
+
+  @override
+  String get widgetFocusNextLabel => '下轮专注（分钟）';
+
+  @override
+  String get widgetFocusRemainingLabel => '剩余时间';
+
+  @override
+  String get widgetFocusOpenLabel => '前往专注';
+
+  @override
+  String get widgetFocusRunningLabel => '查看倒计时';
+
+  @override
+  String get widgetFocusStartLabel => '开始';
+
+  @override
+  String get widgetFocusResumeLabel => '继续';
+
+  @override
+  String get widgetFocusPauseLabel => '暂停';
+
+  @override
+  String get widgetFocusStopLabel => '停止';
+
+  @override
+  String get widgetFocusPausedLabel => '已暂停';
+
+  @override
+  String get widgetTodayLabel => '今天';
 
   @override
   String get timeAuditTitle => '时间足迹';
@@ -3720,6 +3798,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get widgetStyleSaved => '小组件样式已保存在此设备';
+
+  @override
+  String get widgetAndroidPickerHint =>
+      '请从系统小组件列表选择待办、专注、习惯或月历，添加后在桌面拖动边缘调整大小。';
+
+  @override
+  String get widgetAndroidCatalogDensityHint =>
+      '这里选择的是新添加小组件的默认显示密度；系统小组件列表只有待办、专注、习惯、月历四个入口，添加后在桌面拖动边缘调整大小。';
+
+  @override
+  String get widgetMobilePickerHint =>
+      '请在手机的系统小组件列表中查找多仪：Android 添加后拖动边缘调整大小，iOS 可在小组件库选择尺寸。';
 
   @override
   String get preferencesNavWebSubtitle => '默认显示今日、待办、习惯和我的，小组件在设置中管理';

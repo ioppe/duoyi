@@ -59,9 +59,10 @@ List<Subtask> _items() => [
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    await (FontLoader(DesignTokens.fontFamily)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
   });
   setUp(() => I18n.setLocale(AppLocale.zh));
 

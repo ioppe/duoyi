@@ -59,9 +59,10 @@ Future<void> _pump(
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    await (FontLoader(DesignTokens.fontFamily)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
   });
 
   testWidgets('自适应图表填满绘图区，宽屏格子可超过原18px且不拉伸文字', (tester) async {

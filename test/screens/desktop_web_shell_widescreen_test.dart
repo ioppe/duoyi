@@ -254,9 +254,9 @@ void main() {
       (const Size(320, 720), 1.5),
     ]) {
       testWidgets('${brand.id} $size ×$scale 五个一级页面共用导航字体', (tester) async {
-        await (FontLoader(
-              DesignTokens.fontFamily,
-            )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf')))
+        await (FontLoader(DesignTokens.fontFamily)..addFont(
+              rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+            ))
             .load();
         tester.view.padding = const FakeViewPadding(bottom: 24);
         await _pumpShellAt(tester, brand.theme, size, textScale: scale);

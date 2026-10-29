@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  待办小组件（Apple 风）：24dp 圆角外框、14dp 内边距（运行时按整行预算调整）、
+  18dp logo + 13sp 模块名 + 右侧大数量；内容区在 dataList（任务行）与
+  emptyGroup（空状态装饰 + 文案）之间二选一，二者都由 provider 决定可见性。
+  旧 widget_todo_title 品牌文字保留但始终 GONE。
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_todo_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_round_16"
+    android:background="@drawable/widget_apple_bg_light"
     android:clipToOutline="true"
     android:outlineProvider="background">
 
@@ -19,254 +25,434 @@
         android:id="@+id/widget_theme_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:maxLines="1"
         android:ellipsize="end"
+        android:maxLines="1"
         android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/widget_todo_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        <LinearLayout
+            android:id="@+id/widget_todo_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/widget_brand_logo"
-            android:layout_width="0dp"
-            android:layout_height="24dp"
-            android:layout_weight="1"
-            android:contentDescription="@string/app_name"
-            android:scaleType="fitStart"
-            android:src="@drawable/duoyi_widget_logo" />
+            <ImageView
+                android:id="@+id/widget_brand_logo"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitStart"
+                android:src="@drawable/duoyi_widget_logo" />
+
+            <!-- 旧品牌文字：ID 保留、永远 GONE，模块名改用 widget_module_title。 -->
+            <TextView
+                android:id="@+id/widget_todo_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="多仪"
+                android:textColor="#FF6B6B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/widget_module_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="待办"
+                android:textColor="#1C1C1E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_todo_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="52dp"
+                android:text="0"
+                android:textColor="#C95455"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_todo_count_unit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="项"
+                android:textColor="#6E6E73"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/widget_todo_quick_add"
+                android:layout_width="54dp"
+                android:layout_height="24dp"
+                android:layout_marginLeft="8dp"
+                android:background="@drawable/widget_nav_bg"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="+ 添加"
+                android:textColor="#1E88E5"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- 内容区：容器只占 weight，内部文字全部 wrap_content，绝不半行裁切。 -->
+        <FrameLayout
+            android:id="@+id/widget_todo_body"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1">
+
+            <!-- 正文集合：framework ListView，行由 RemoteViewsService 提供；
+                 与下方 emptyGroup 互斥（provider 控制可见性），底栏不参与滚动。 -->
+            <ListView
+                android:id="@+id/widget_todo_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:cacheColorHint="@null"
+                android:divider="@drawable/widget_apple_divider"
+                android:dividerHeight="1dp"
+                android:scrollbars="none" />
+
+            <!-- 旧三行容器：ID / 类型保留给升级兼容，provider 始终 GONE，不参与可见布局。 -->
+            <LinearLayout
+                android:id="@+id/widget_todo_data_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/widget_todo_row_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="28dp"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widget_todo_marker_1"
+                            android:layout_width="3dp"
+                            android:layout_height="13dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/widget_apple_divider" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_item_1"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="· …"
+                            android:textColor="#1C1C1E"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_done_1"
+                            android:layout_width="28dp"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/widget_nav_bg"
+                            android:ellipsize="end"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:minHeight="20dp"
+                            android:text="o"
+                            android:textColor="#1E88E5"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/widget_apple_divider" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widget_todo_row_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="28dp"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widget_todo_marker_2"
+                            android:layout_width="3dp"
+                            android:layout_height="13dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/widget_apple_divider" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_item_2"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="· …"
+                            android:textColor="#1C1C1E"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_done_2"
+                            android:layout_width="28dp"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/widget_nav_bg"
+                            android:ellipsize="end"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:minHeight="20dp"
+                            android:text="o"
+                            android:textColor="#1E88E5"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/widget_apple_divider" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/widget_todo_row_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="28dp"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/widget_todo_marker_3"
+                            android:layout_width="3dp"
+                            android:layout_height="13dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/widget_apple_divider" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_item_3"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:text="· …"
+                            android:textColor="#1C1C1E"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/widget_todo_done_3"
+                            android:layout_width="28dp"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/widget_nav_bg"
+                            android:ellipsize="end"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:minHeight="20dp"
+                            android:text="o"
+                            android:textColor="#1E88E5"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="2dp"
+                        android:background="@drawable/widget_apple_divider" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 空状态：装饰 check 无按钮语义，高度不够时先隐藏装饰/hint，不裁文字。 -->
+            <LinearLayout
+                android:id="@+id/widget_todo_empty_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/widget_todo_empty_check"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/widget_apple_empty_check" />
+
+                <TextView
+                    android:id="@+id/widget_todo_empty_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="2"
+                    android:text="今天没有未完成待办"
+                    android:textColor="#1C1C1E"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_todo_empty_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="打开待办，安排下一件事"
+                    android:textColor="#6E6E73"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </FrameLayout>
 
         <TextView
-            android:id="@+id/widget_todo_title"
-            android:layout_width="0dp"
+            android:id="@+id/widget_todo_today_summary"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_marginTop="6dp"
             android:ellipsize="end"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="多仪"
-            android:textColor="#FF6B6B"
-            android:textSize="14sp"
-            android:textStyle="bold"
+            android:text="今日待办 · 5 项"
+            android:textColor="#6E6E73"
+            android:textSize="10sp"
             android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/widget_todo_count"
-            android:layout_width="wrap_content"
+        <FrameLayout
+            android:id="@+id/widget_todo_spacer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/widget_todo_bottom_nav"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxWidth="44dp"
-            android:maxLines="1"
-            android:text="0"
-            android:textColor="#1E88E5"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text=" 项"
-            android:textColor="#888888"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/widget_todo_quick_add"
-            android:layout_width="54dp"
-            android:layout_height="24dp"
-            android:layout_marginLeft="8dp"
-            android:background="@drawable/widget_nav_bg"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_apple_track_light"
             android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="+ 添加"
-            android:textColor="#1E88E5"
-            android:textSize="10sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            android:minHeight="28dp"
+            android:orientation="horizontal"
+            android:paddingLeft="3dp"
+            android:paddingTop="2dp"
+            android:paddingRight="3dp"
+            android:paddingBottom="2dp"
+            android:weightSum="4">
 
-    <LinearLayout
-        android:id="@+id/widget_todo_row_1"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+            <TextView
+                android:id="@+id/widget_todo_nav_todo"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="待办"
+                android:textColor="#C95455"
+                android:textSize="10sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/widget_todo_item_1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="· …"
-            android:textColor="#333333"
-            android:textSize="12sp" />
+            <TextView
+                android:id="@+id/widget_todo_nav_habit"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="习惯"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
 
-        <TextView
-            android:id="@+id/widget_todo_done_1"
-            android:layout_width="28dp"
-            android:layout_height="24dp"
-            android:background="@drawable/widget_nav_bg"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="o"
-            android:textColor="#1E88E5"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            <TextView
+                android:id="@+id/widget_todo_nav_calendar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="日历"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
 
-    <LinearLayout
-        android:id="@+id/widget_todo_row_2"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="4dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/widget_todo_item_2"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="· …"
-            android:textColor="#333333"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/widget_todo_done_2"
-            android:layout_width="28dp"
-            android:layout_height="24dp"
-            android:background="@drawable/widget_nav_bg"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="o"
-            android:textColor="#1E88E5"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/widget_todo_row_3"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="4dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/widget_todo_item_3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="· …"
-            android:textColor="#333333"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/widget_todo_done_3"
-            android:layout_width="28dp"
-            android:layout_height="24dp"
-            android:background="@drawable/widget_nav_bg"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="o"
-            android:textColor="#1E88E5"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/widget_todo_bottom_nav"
-        android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/widget_nav_bg"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingLeft="4dp"
-        android:paddingRight="4dp"
-        android:weightSum="4">
-
-        <TextView
-            android:id="@+id/widget_todo_nav_todo"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="待办"
-            android:textColor="#FF6B6B"
-            android:textSize="10sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widget_todo_nav_habit"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="习惯"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_todo_nav_calendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="日历"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_todo_nav_focus"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="专注"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_todo_today_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="今日待办 · 5 项"
-        android:textColor="#666666"
-        android:textSize="10sp" />
-
+            <TextView
+                android:id="@+id/widget_todo_nav_focus"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="专注"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

@@ -381,6 +381,10 @@ void main() {
       final before = HomeWidgetService.habitHomeWidgetActionPayload(habits);
       expect(before['habit_percent'], 0);
       expect(before['habit_quick_check_id'], 'h1');
+      expect(before['habit_highlight_1'], '· 阅读 0%');
+      expect(before['habit_highlight_1_id'], 'h1');
+      expect(before['habit_highlight_2'], '· 拉伸 0%');
+      expect(before['habit_highlight_2_id'], 'h2');
       expect(
         before['habit_quick_check_label'],
         '${I18n.tr('widget.habit_checkin_prefix')}阅读',
@@ -390,6 +394,26 @@ void main() {
       final after = HomeWidgetService.habitHomeWidgetActionPayload(habits);
       expect(after['habit_percent'], 50);
       expect(after['habit_quick_check_id'], 'h2');
+      expect(after['habit_highlight_1'], '· 阅读 100%');
+      expect(after['habit_highlight_1_id'], 'h1');
+    });
+
+    test('计数型习惯打卡会更新具体习惯进度 payload', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final habits = HabitProvider();
+      await habits.loadFromStorage();
+      addTearDown(habits.dispose);
+      await habits.addHabit(Habit(id: 'counting', name: '喝水', targetCount: 3));
+
+      final before = HomeWidgetService.habitHomeWidgetActionPayload(habits);
+      await habits.incrementHabit('counting');
+      final after = HomeWidgetService.habitHomeWidgetActionPayload(habits);
+
+      expect(before['habit_percent'], 0);
+      expect(after['habit_percent'], 0);
+      expect(before['habit_highlight_1'], '· 喝水 0%');
+      expect(after['habit_highlight_1'], '· 喝水 33%');
+      expect(after['habit_highlight_1_id'], 'counting');
     });
 
     test(

@@ -32,8 +32,8 @@ class HomeWidgetActionBridge {
 
   /// 测试用：替换名称服务查找（默认走 [IsolateNameServer]）。
   @visibleForTesting
-  static SendPort? Function(String name) debugLookupPort =
-      IsolateNameServer.lookupPortByName;
+  static SendPort? Function(String name) debugLookupPort = (String name) =>
+      IsolateNameServer.lookupPortByName(name);
 
   /// 主 isolate 是否已经注册处理器；用于断言热重启/重复初始化不会叠加。
   @visibleForTesting

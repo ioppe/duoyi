@@ -23,6 +23,7 @@ import '../services/app_update_service.dart';
 import '../widgets/brand_background.dart';
 import '../widgets/cached_avatar_image.dart';
 import '../widgets/stats_overview_cards.dart';
+import '../widgets/apple_page_frame.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/sync_status_card.dart';
 import '../widgets/weekly_productivity_card.dart';
@@ -189,9 +190,11 @@ class MineScreen extends StatelessWidget {
             profile.avatarInitials,
           ])
         : _firstNonEmpty([profile.avatarUrl, profile.avatarInitials]);
+    // 默认主题：个人摘要块加大内留白、与内容列同宽，形成左对齐的个人块。
+    final appleLayout = usesApplePageLayout(context);
     final mineHeader = AppSurfaceCard(
-      margin: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.fromLTRB(16, appleLayout ? 8 : 2, 16, 10),
+      padding: EdgeInsets.all(appleLayout ? 18 : 14),
       borderRadius: BorderRadius.circular(DesignTokens.radiusCard),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -925,6 +928,167 @@ class MineScreen extends StatelessWidget {
       );
     }
 
+    if (appleLayout) {
+      return Scaffold(
+        backgroundColor: scaffoldBackground,
+        // 默认主题：没有 AppBar，标题与搜索进入页面内容流。
+        body: SafeArea(
+          top: appleLayout,
+          child: ApplePageFrame(
+            horizontalInset: 0,
+            child: Column(
+              children: [
+                if (appleLayout)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.spaceLg,
+                      ApplePageFrame.pageTop,
+                      DesignTokens.spaceXs,
+                      DesignTokens.spaceXs,
+                    ),
+                    child: ApplePageHeader(
+                      title: s.mineTitle,
+                      trailing: IconButton(
+                        tooltip: I18n.tr('quick.menu.search'),
+                        icon: const Icon(Icons.search),
+                        onPressed: () =>
+                            _openBrandedRoute(context, const SearchScreen()),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: ListView(
+                    key: const PageStorageKey<String>('mine_screen_list'),
+                    restorationId: 'mine_screen_list',
+                    padding: const EdgeInsets.only(
+                      bottom: DesignTokens.spaceXxl,
+                    ),
+                    children: [
+                      capped(mineHeader),
+                      capped(
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            DesignTokens.spaceMd,
+                            0,
+                            DesignTokens.spaceMd,
+                            DesignTokens.spaceMd,
+                          ),
+                          child: WeeklyProductivityCard(
+                            key: const ValueKey('mine_weekly_productivity'),
+                            onTap: () => _openBrandedRoute(
+                              context,
+                              const StatisticsScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (appleLayout)
+                        AppleSectionHeader(
+                          title: I18n.tr('mine.tile.statistics'),
+                          padding: const EdgeInsets.fromLTRB(
+                            DesignTokens.spaceLg,
+                            DesignTokens.spaceSm,
+                            DesignTokens.spaceLg,
+                            DesignTokens.spaceXs,
+                          ),
+                        ),
+                      capped(mineStats),
+                      SizedBox(
+                        height: appleLayout
+                            ? DesignTokens.spaceSm
+                            : DesignTokens.spaceLg,
+                      ),
+                      AppleSectionHeader(
+                        title: I18n.tr('mine.menu.title'),
+                        padding: const EdgeInsets.fromLTRB(
+                          DesignTokens.spaceLg,
+                          DesignTokens.spaceSm,
+                          DesignTokens.spaceLg,
+                          DesignTokens.spaceXs,
+                        ),
+                      ),
+                      AppleGroupedList(
+                        margin: const EdgeInsets.fromLTRB(
+                          DesignTokens.spaceMd,
+                          0,
+                          DesignTokens.spaceMd,
+                          DesignTokens.spaceMd,
+                        ),
+                        dividerIndent: 40,
+                        children: [
+                          AppleRow(
+                            key: const ValueKey('mine_apps_entry'),
+                            leading: _MineRowIcon(
+                              icon: Icons.apps_outlined,
+                              color: cs.primary,
+                            ),
+                            title: I18n.tr('mine.menu.apps'),
+                            subtitle: I18n.tr('mine.menu.apps.subtitle'),
+                            onTap: () => _openMenuPage(context, _MineMenu.apps),
+                          ),
+                          AppleRow(
+                            key: const ValueKey('mine_appearance_entry'),
+                            leading: _MineRowIcon(
+                              icon: Icons.palette_outlined,
+                              color: cs.secondary,
+                            ),
+                            title: I18n.tr('mine.menu.appearance'),
+                            subtitle: I18n.tr('mine.menu.appearance.subtitle'),
+                            trailing: Text(
+                              theme.brandName,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: DesignTokens.fontSizeSecondary,
+                              ),
+                            ),
+                            onTap: () => _openBrandedRoute(
+                              context,
+                              const ThemePickerScreen(),
+                            ),
+                          ),
+                          AppleRow(
+                            key: const ValueKey('mine_settings_entry'),
+                            leading: _MineRowIcon(
+                              icon: Icons.settings_outlined,
+                              color: cs.primary,
+                            ),
+                            title: I18n.tr('mine.menu.settings'),
+                            subtitle: I18n.tr('mine.menu.settings.subtitle'),
+                            trailing: hasUnreadNotificationHistory
+                                ? const _UnreadDot()
+                                : null,
+                            onTap: () =>
+                                _openMenuPage(context, _MineMenu.settings),
+                          ),
+                          AppleRow(
+                            key: const ValueKey('mine_support_entry'),
+                            leading: _MineRowIcon(
+                              icon: Icons.help_outline,
+                              color: cs.secondary,
+                            ),
+                            title: I18n.tr('mine.menu.support'),
+                            subtitle: I18n.tr('mine.menu.support.subtitle'),
+                            trailing: updateHasUpdate
+                                ? _UpdateAvailableBadge(
+                                    version: updateLatestVersion,
+                                  )
+                                : null,
+                            onTap: () =>
+                                _openMenuPage(context, _MineMenu.support),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 其他主题：保留既有 AppBar 外壳与旧的卡片式菜单分组。
     return Scaffold(
       backgroundColor: scaffoldBackground,
       appBar: AppBar(
@@ -942,84 +1106,87 @@ class MineScreen extends StatelessWidget {
       ),
       body: SafeArea(
         top: false,
-        child: ListView(
-          key: const PageStorageKey<String>('mine_screen_list'),
-          restorationId: 'mine_screen_list',
-          padding: const EdgeInsets.only(bottom: DesignTokens.spaceXxl),
-          children: [
-            capped(mineHeader),
-            capped(
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.spaceMd,
-                  0,
-                  DesignTokens.spaceMd,
-                  DesignTokens.spaceMd,
-                ),
-                child: WeeklyProductivityCard(
-                  key: const ValueKey('mine_weekly_productivity'),
-                  onTap: () =>
-                      _openBrandedRoute(context, const StatisticsScreen()),
-                ),
-              ),
-            ),
-            capped(mineStats),
-            const SizedBox(height: DesignTokens.spaceLg),
-            capped(
-              _TileGroup(
-                columns: tileColumns,
-                title: I18n.tr('mine.menu.title'),
-                children: [
-                  _Tile(
-                    key: const ValueKey('mine_apps_entry'),
-                    icon: Icons.apps_outlined,
-                    label: I18n.tr('mine.menu.apps'),
-                    subtitle: I18n.tr('mine.menu.apps.subtitle'),
-                    color: cs.primary,
-                    onTap: () => _openMenuPage(context, _MineMenu.apps),
+        child: ApplePageFrame(
+          horizontalInset: 0,
+          child: ListView(
+            key: const PageStorageKey<String>('mine_screen_list'),
+            restorationId: 'mine_screen_list',
+            padding: const EdgeInsets.only(bottom: DesignTokens.spaceXxl),
+            children: [
+              capped(mineHeader),
+              capped(
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.spaceMd,
+                    0,
+                    DesignTokens.spaceMd,
+                    DesignTokens.spaceMd,
                   ),
-                  _Tile(
-                    key: const ValueKey('mine_appearance_entry'),
-                    icon: Icons.palette_outlined,
-                    label: I18n.tr('mine.menu.appearance'),
-                    subtitle: I18n.tr('mine.menu.appearance.subtitle'),
-                    color: cs.secondary,
-                    trailing: Text(
-                      theme.brandName,
-                      style: TextStyle(
-                        color: cs.onSurfaceVariant,
-                        fontSize: DesignTokens.fontSizeSecondary,
-                      ),
-                    ),
+                  child: WeeklyProductivityCard(
+                    key: const ValueKey('mine_weekly_productivity'),
                     onTap: () =>
-                        _openBrandedRoute(context, const ThemePickerScreen()),
+                        _openBrandedRoute(context, const StatisticsScreen()),
                   ),
-                  _Tile(
-                    key: const ValueKey('mine_settings_entry'),
-                    icon: Icons.settings_outlined,
-                    label: I18n.tr('mine.menu.settings'),
-                    subtitle: I18n.tr('mine.menu.settings.subtitle'),
-                    color: cs.primary,
-                    trailing: hasUnreadNotificationHistory
-                        ? const _UnreadDot()
-                        : null,
-                    onTap: () => _openMenuPage(context, _MineMenu.settings),
-                  ),
-                  _Tile(
-                    key: const ValueKey('mine_support_entry'),
-                    icon: Icons.help_outline,
-                    label: I18n.tr('mine.menu.support'),
-                    subtitle: I18n.tr('mine.menu.support.subtitle'),
-                    color: cs.secondary,
-                    trailing: updateHasUpdate
-                        ? _UpdateAvailableBadge(version: updateLatestVersion)
-                        : null,
-                    onTap: () => _openMenuPage(context, _MineMenu.support),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              capped(mineStats),
+              const SizedBox(height: DesignTokens.spaceLg),
+              capped(
+                _TileGroup(
+                  columns: tileColumns,
+                  title: I18n.tr('mine.menu.title'),
+                  children: [
+                    _Tile(
+                      key: const ValueKey('mine_apps_entry'),
+                      icon: Icons.apps_outlined,
+                      label: I18n.tr('mine.menu.apps'),
+                      subtitle: I18n.tr('mine.menu.apps.subtitle'),
+                      color: cs.primary,
+                      onTap: () => _openMenuPage(context, _MineMenu.apps),
+                    ),
+                    _Tile(
+                      key: const ValueKey('mine_appearance_entry'),
+                      icon: Icons.palette_outlined,
+                      label: I18n.tr('mine.menu.appearance'),
+                      subtitle: I18n.tr('mine.menu.appearance.subtitle'),
+                      color: cs.secondary,
+                      trailing: Text(
+                        theme.brandName,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: DesignTokens.fontSizeSecondary,
+                        ),
+                      ),
+                      onTap: () =>
+                          _openBrandedRoute(context, const ThemePickerScreen()),
+                    ),
+                    _Tile(
+                      key: const ValueKey('mine_settings_entry'),
+                      icon: Icons.settings_outlined,
+                      label: I18n.tr('mine.menu.settings'),
+                      subtitle: I18n.tr('mine.menu.settings.subtitle'),
+                      color: cs.primary,
+                      trailing: hasUnreadNotificationHistory
+                          ? const _UnreadDot()
+                          : null,
+                      onTap: () => _openMenuPage(context, _MineMenu.settings),
+                    ),
+                    _Tile(
+                      key: const ValueKey('mine_support_entry'),
+                      icon: Icons.help_outline,
+                      label: I18n.tr('mine.menu.support'),
+                      subtitle: I18n.tr('mine.menu.support.subtitle'),
+                      color: cs.secondary,
+                      trailing: updateHasUpdate
+                          ? _UpdateAvailableBadge(version: updateLatestVersion)
+                          : null,
+                      onTap: () => _openMenuPage(context, _MineMenu.support),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2254,6 +2421,28 @@ class _MineMenuScreen extends StatelessWidget {
   }
 }
 
+/// 扁平分组的行首图标块（28dp，Apple minimal 菜单行用）。
+class _MineRowIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+
+  const _MineRowIcon({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+      ),
+      child: Icon(icon, size: 16, color: color),
+    );
+  }
+}
+
 class _TileGroup extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -2276,18 +2465,26 @@ class _TileGroup extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-            child: Text(
-              title,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                height: 1.15,
-                fontWeight: DesignTokens.fontWeightStrong,
-                color: cs.onSurface.withValues(alpha: 0.62),
+          // 默认主题：分组标题走共享 Apple 分组标题（左对齐 + 明确层级）；其他主题
+          // 沿用既有的小号灰标题。
+          if (usesApplePageLayout(context))
+            AppleSectionHeader(
+              title: title,
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+              child: Text(
+                title,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 12,
+                  height: 1.15,
+                  fontWeight: DesignTokens.fontWeightStrong,
+                  color: cs.onSurface.withValues(alpha: 0.62),
+                ),
               ),
             ),
-          ),
           AppSurfaceCard(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: columns > 1

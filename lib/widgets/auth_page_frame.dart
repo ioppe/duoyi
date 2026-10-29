@@ -8,6 +8,7 @@ import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
 import 'brand_background.dart';
 import 'surface_components.dart';
+import 'widget_brand_logo.dart';
 
 /// Shared, stable-size authentication surface for Web and installed clients.
 class AuthPageFrame extends StatelessWidget {
@@ -156,17 +157,8 @@ class AuthPageFrame extends StatelessWidget {
                                 ),
                                 const SizedBox(width: DesignTokens.spaceSm),
                               ],
-                              Container(
-                                width: DesignTokens.authLogoSize,
-                                height: DesignTokens.authLogoSize,
-                                decoration: BoxDecoration(
-                                  color: cs.primary,
-                                  borderRadius: DesignTokens.borderRadiusLg,
-                                ),
-                                child: Icon(
-                                  Icons.space_dashboard_rounded,
-                                  color: cs.onPrimary,
-                                ),
+                              const WidgetBrandLogo(
+                                size: DesignTokens.authLogoSize,
                               ),
                               const SizedBox(width: DesignTokens.spaceMd),
                               Expanded(

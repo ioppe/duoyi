@@ -6,7 +6,9 @@ import 'design_tokens.dart';
 
 /// Shared visual contract for switching between pages inside one screen.
 TabBarThemeData appPageTabTheme(ThemeData theme) {
-  final reference = theme.extension<AppSurfaceStyle>() == AppSurfaceStyle.ios;
+  final reference = AppSurfaceStyle.isDefaultTheme(
+    theme.extension<AppSurfaceStyle>(),
+  );
   final accent = reference
       ? DesignTokens.homeAccent
       : theme.colorScheme.primary;

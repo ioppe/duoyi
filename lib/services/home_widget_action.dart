@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
+import '../models/pomodoro.dart' show PomodoroWidgetTimerState;
 import '../models/todo.dart';
 import '../providers/auth_provider.dart' show AuthProvider, AuthState;
 import 'account_local_data_cleaner.dart';
@@ -16,24 +17,63 @@ enum HomeWidgetActionKind {
   completeTodo,
   checkinHabit,
   startPomodoro,
+  pausePomodoro,
+  stopPomodoro,
   quickTodo,
 }
 
 /// `duoyi://action/...` 后台动作的解析结果。
+///
+/// 新版专注控制（start/pause/stop）可带一套绑定字段
+/// `session` / `revision` / `state` / `scope`：四个字段必须同时齐全且合法，
+/// 才算“绑定控制”；任意缺失、非法、过长或空值都拒绝解析。
+/// 完全不带这四个字段的 legacy `start_pomodoro` 仍按原登录 owner 规则执行。
 @immutable
 class HomeWidgetActionRequest {
   final HomeWidgetActionKind kind;
   final String? targetId;
   final String? text;
 
+  /// 绑定控制：不透明 session id。
+  final String? focusSessionId;
+
+  /// 绑定控制：单调 revision（>= 0）。
+  final int? focusRevision;
+
+  /// 绑定控制：发出按钮时的小组件快照状态。
+  final PomodoroWidgetTimerState? focusState;
+
+  /// 绑定控制：小组件所属账号/匿名 scope 身份。
+  final String? focusScope;
+
   const HomeWidgetActionRequest._({
     required this.kind,
     this.targetId,
     this.text,
+    this.focusSessionId,
+    this.focusRevision,
+    this.focusState,
+    this.focusScope,
   });
 
   static const String scheme = 'duoyi';
   static const String actionHost = 'action';
+
+  /// 绑定字段长度上限：超长的 ID/scope 直接拒绝，避免原生侧拼出异常 URI。
+  static const int maxFocusSessionIdLength = 128;
+  static const int maxFocusScopeLength = 256;
+
+  bool get isFocusControl =>
+      kind == HomeWidgetActionKind.startPomodoro ||
+      kind == HomeWidgetActionKind.pausePomodoro ||
+      kind == HomeWidgetActionKind.stopPomodoro;
+
+  /// 带完整绑定字段的专注控制（新版按钮）。
+  bool get isBoundFocusControl => isFocusControl && focusSessionId != null;
+
+  /// 允许未登录执行：只有完整的绑定 focus 控制（本地匿名专注）可以，
+  /// legacy 无绑定请求仍然需要登录 owner 校验。
+  bool get allowsSignedOutExecution => isBoundFocusControl;
 
   /// 解析后台动作；不是可后台执行的 `duoyi://action/...` 时返回 null。
   ///
@@ -44,27 +84,42 @@ class HomeWidgetActionRequest {
       return null;
     }
     final action = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
+    final query = uri.queryParameters;
     switch (action) {
       case 'complete_todo':
-        final id = _nonEmpty(uri.queryParameters['id']);
+        final id = _nonEmpty(query['id']);
         if (id == null) return null;
         return HomeWidgetActionRequest._(
           kind: HomeWidgetActionKind.completeTodo,
           targetId: id,
         );
       case 'checkin_habit':
-        final id = _nonEmpty(uri.queryParameters['id']);
+        final id = _nonEmpty(query['id']);
         if (id == null) return null;
         return HomeWidgetActionRequest._(
           kind: HomeWidgetActionKind.checkinHabit,
           targetId: id,
         );
       case 'start_pomodoro':
-        return const HomeWidgetActionRequest._(
-          kind: HomeWidgetActionKind.startPomodoro,
+        return _focusControlRequest(
+          HomeWidgetActionKind.startPomodoro,
+          query,
+          allowLegacy: true,
+        );
+      case 'pause_pomodoro':
+        return _focusControlRequest(
+          HomeWidgetActionKind.pausePomodoro,
+          query,
+          allowLegacy: false,
+        );
+      case 'stop_pomodoro':
+        return _focusControlRequest(
+          HomeWidgetActionKind.stopPomodoro,
+          query,
+          allowLegacy: false,
         );
       case 'quick_todo':
-        final text = _nonEmpty(uri.queryParameters['text']);
+        final text = _nonEmpty(query['text']);
         if (text == null) return null;
         return HomeWidgetActionRequest._(
           kind: HomeWidgetActionKind.quickTodo,
@@ -73,6 +128,58 @@ class HomeWidgetActionRequest {
       default:
         return null;
     }
+  }
+
+  /// 专注控制的绑定校验。
+  ///
+  /// 只要出现 session/revision/state/scope 任一字段，就必须四段齐全且合法；
+  /// 状态与动作不匹配（如 paused 发 pause、idle 发 stop）同样拒绝。
+  static HomeWidgetActionRequest? _focusControlRequest(
+    HomeWidgetActionKind kind,
+    Map<String, String> query, {
+    required bool allowLegacy,
+  }) {
+    final hasAnyBinding =
+        query.containsKey('session') ||
+        query.containsKey('revision') ||
+        query.containsKey('state') ||
+        query.containsKey('scope');
+    if (!hasAnyBinding) {
+      return allowLegacy ? HomeWidgetActionRequest._(kind: kind) : null;
+    }
+    final sessionId = _nonEmpty(query['session']);
+    if (sessionId == null || sessionId.length > maxFocusSessionIdLength) {
+      return null;
+    }
+    final rawRevision = _nonEmpty(query['revision']);
+    final revision = rawRevision == null ? null : int.tryParse(rawRevision);
+    if (revision == null || revision < 0) return null;
+    final state = PomodoroWidgetTimerState.fromWire(query['state']);
+    if (state == null) return null;
+    final scope = _nonEmpty(query['scope']);
+    if (scope == null || scope.length > maxFocusScopeLength) return null;
+    final allowedStates = switch (kind) {
+      HomeWidgetActionKind.startPomodoro => const <PomodoroWidgetTimerState>{
+        PomodoroWidgetTimerState.idle,
+        PomodoroWidgetTimerState.paused,
+      },
+      HomeWidgetActionKind.pausePomodoro => const <PomodoroWidgetTimerState>{
+        PomodoroWidgetTimerState.running,
+      },
+      HomeWidgetActionKind.stopPomodoro => const <PomodoroWidgetTimerState>{
+        PomodoroWidgetTimerState.running,
+        PomodoroWidgetTimerState.paused,
+      },
+      _ => const <PomodoroWidgetTimerState>{},
+    };
+    if (!allowedStates.contains(state)) return null;
+    return HomeWidgetActionRequest._(
+      kind: kind,
+      focusSessionId: sessionId,
+      focusRevision: revision,
+      focusState: state,
+      focusScope: scope,
+    );
   }
 }
 
@@ -168,6 +275,25 @@ class HomeWidgetAccountScope {
   }
 
   bool get isCurrentAccount => blockReason == HomeWidgetActionBlockReason.none;
+
+  /// 未登录且无任何账号残留时的固定 focus 控制 scope。
+  static const String localFocusControlScope = 'local';
+
+  /// 当前 focus 控制 scope 身份（新版绑定按钮必须与之相等）。
+  ///
+  /// - 已登录且 owner / 服务器 / 账号完全匹配：`jsonEncode([owner, server])`；
+  /// - 未登录且 token、accountIdentity、stored owner 全部为空：本地匿名固定值
+  ///   [localFocusControlScope]（与 App 本身可离线专注的能力对齐，只放行 focus）；
+  /// - owner 残留、ownerMissing、ownerMismatch、换号：null，绑定按钮全部失效。
+  String? get focusControlScope {
+    if (blockReason == HomeWidgetActionBlockReason.none) {
+      return jsonEncode(<String>[owner ?? '', sessionServer ?? '']);
+    }
+    if (!hasSession && owner == null && accountIdentity == null) {
+      return localFocusControlScope;
+    }
+    return null;
+  }
 }
 
 /// 与 `AuthProvider._stableAccountIdentity` 相同的账号身份格式。

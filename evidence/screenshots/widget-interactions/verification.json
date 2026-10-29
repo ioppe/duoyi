@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-27T09:12:53.280258Z",
+  "repository": {
+    "branch": "fix/android-input-settings-device-test",
+    "version_name": "1.1.54",
+    "version_code": 140020,
+    "production_change_for_this_verification": "android/app/src/main/AndroidManifest.xml: HomeWidgetBackgroundService exported false -> true; BIND_JOB_SERVICE retained"
+  },
+  "package": {
+    "path": "build/app/outputs/flutter-apk/app-debug.apk",
+    "bytes": 241078125,
+    "sha256": "84eeb8b3cfab751ec7f9171d70553a6398685343a267e73c62b0652a943bd3d5",
+    "installed_base_sha256": "84eeb8b3cfab751ec7f9171d70553a6398685343a267e73c62b0652a943bd3d5",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "debuggable": true
+  },
+  "device": {
+    "serial": "emulator-5554",
+    "profile": "duoyi_api35_arm64 / Pixel 5",
+    "api": 35,
+    "resolution_px": [1080, 2340],
+    "widget_root_bounds_px": [64, 466, 767, 1032],
+    "launcher": "com.google.android.apps.nexuslauncher",
+    "launcher_in_front_for_stable_checks": true,
+    "app_anrs": []
+  },
+  "widget_instances": [
+    {"id": 2, "provider": "com.duoyi.duoyi.DuoyiTodoWidgetProvider"},
+    {"id": 3, "provider": "com.duoyi.duoyi.DuoyiFocusHabitDetailedWidgetProvider"}
+  ],
+  "calendar": {
+    "status": "passed",
+    "observed_month": "2026-10",
+    "all_dates_once": 31,
+    "weekday_columns_correct": true,
+    "single_swipe_revealed_month": "2026-11",
+    "normal_refresh_preserves_other_month": true,
+    "today_returns_current_month": true,
+    "widget_size_px": [703, 566],
+    "screenshots": [
+      {"file": "calendar-current-final.png", "sha256": "c8f3d19b6b8225d9666a66b622a3bba59b7b013a7cf158dc051b34013f133679"},
+      {"file": "calendar-other-month-final.png", "sha256": "6b6ae21a2dadc5ac1388f53ec565e906e8bd2c87ccb630ac69fc74cfca36f684"},
+      {"file": "calendar-refresh-kept-final.png", "sha256": "7edc15743713d6f407dd9d8806d1051081f7a73eff557b1afa455fd9846a1491"},
+      {"file": "calendar-today-final.png", "sha256": "755ea59897072d1f9d06d617f85cce813f4022d7bf94a7656a37c84ec988eaf2"}
+    ]
+  },
+  "todo": {
+    "status": "passed",
+    "fixture_count": 12,
+    "quadrant_counts": {
+      "important_urgent": 3,
+      "not_important_urgent": 3,
+      "important_not_urgent": 3,
+      "not_important_not_urgent": 3
+    },
+    "display_order": [
+      "important_urgent",
+      "not_important_urgent",
+      "important_not_urgent",
+      "not_important_not_urgent"
+    ],
+    "top_visible_titles": ["组件滚动 Q1 条目 1", "组件滚动 Q1 条目 2", "组件滚动 Q1 条目 3"],
+    "bottom_visible_titles": ["组件滚动 Q4 条目 1", "组件滚动 Q4 条目 2", "组件滚动 Q4 条目 3"],
+    "screenshots": [
+      {"file": "todo-populated-top.png", "sha256": "20a0c4bf3e80fa04a14a930e2f7564a70215ea8243e08b3a695cec6a4e13af68"},
+      {"file": "todo-populated-bottom.png", "sha256": "d8c456d6515b29659af0bf6b847e6cbe1c5fe52109c1b8893409c311a7f2b242"},
+      {"file": "todo-cleaned-empty.png", "sha256": "b648810fec2f301a1ce5a251859c6b6f1b23d8c31fcfcf5e1a2469014e4b389f"}
+    ],
+    "cleanup": {"fixture_cleaned": true, "after_todo_count": 0, "signed_in": false}
+  },
+  "focus": {
+    "status": "passed",
+    "action_coordinates_px": {
+      "start_or_resume": [203, 786],
+      "pause": [415, 786],
+      "stop": [627, 786]
+    },
+    "sequence": [
+      {
+        "action": "start",
+        "state": "running",
+        "session": "focus-1793091903385472",
+        "revision": 1,
+        "running_snapshot_present": true,
+        "completed_focus_records": 0,
+        "launcher_in_front": true,
+        "screenshot": "clean-running.png",
+        "screenshot_sha256": "430ad05c93ebe14e9ad85ac7012b796a507c16a7b9b2db7c738fd67c262992cf"
+      },
+      {
+        "action": "pause",
+        "state": "paused",
+        "session": "focus-1793091903385472",
+        "revision": 2,
+        "paused_remaining_seconds": 1448,
+        "running_snapshot_present": false,
+        "completed_focus_records": 0,
+        "launcher_in_front": true,
+        "screenshot": "clean-paused.png",
+        "screenshot_sha256": "e165061a177c627be0f3739cbf1585d087f344c21dd6824f9ec7d221abf8df29"
+      },
+      {
+        "action": "paused_ui",
+        "start_button_text": "继续",
+        "pause_button_text": "暂停",
+        "stop_button_text": "停止",
+        "launcher_in_front": true,
+        "app_anrs": [],
+        "report": "clean-paused-buttons.json"
+      },
+      {
+        "action": "resume",
+        "observation": "direct FlutterSharedPreferences read after one tap; screenshot command timed out and is intentionally not counted",
+        "state": "running",
+        "session": "focus-1793091903385472",
+        "revision": 3,
+        "running_snapshot_present": true,
+        "completed_focus_records": 0
+      },
+      {
+        "action": "stop",
+        "state": "idle",
+        "session": "focus-1793092344693795",
+        "revision": 0,
+        "running_snapshot_present": false,
+        "completed_focus_records": 0,
+        "launcher_in_front": true,
+        "screenshot": "clean-stopped.png",
+        "screenshot_sha256": "e0bf9c9c7632bc1d9130b5bceeee83519090577834c3d5460887dd970603d366"
+      }
+    ],
+    "screenshots": [
+      {"file": "clean-before-pause.png", "sha256": "3ed70e7155651719b03fc88c75269d851bf820c3e28345b1b6b321ca7294b82a"},
+      {"file": "clean-running.png", "sha256": "430ad05c93ebe14e9ad85ac7012b796a507c16a7b9b2db7c738fd67c262992cf"},
+      {"file": "clean-paused.png", "sha256": "e165061a177c627be0f3739cbf1585d087f344c21dd6824f9ec7d221abf8df29"},
+      {"file": "clean-stopped.png", "sha256": "e0bf9c9c7632bc1d9130b5bceeee83519090577834c3d5460887dd970603d366"}
+    ]
+  },
+  "automated_checks": {
+    "post_fix_resource_test": {"command": "flutter test test/services/android_widget_resources_test.dart", "passed": 41, "failed": 0, "skipped": 0},
+    "post_fix_debug_apk_build": {"command": "flutter build apk --debug", "passed": true},
+    "pre_fix_full_dart_gate": {"real_tests": 174, "failed": 0, "skipped": 0, "analyze": "No issues found", "format_changed": 0, "diff_check_failed": 0},
+    "pre_fix_native_calendar_jvm": {"passed": 16, "failed": 0},
+    "post_fix_manifest_assertion": "HomeWidgetBackgroundService exported=true + BIND_JOB_SERVICE"
+  },
+  "excluded_observations": [
+    {"file": "focus-running-final.png", "reason": "actual state was idle; kept only as failed transition history"},
+    {"label": "focus-after-install-home", "reason": "old pending URI was safely rejected after session identity changed; not used as Start proof"},
+    {"label": "clean-resumed screenshot", "reason": "screencap timed out; Resume is represented only by direct persistence observation"}
+  ],
+  "known_limits": [
+    "Debug APK on one API 35 emulator; no signed release claim",
+    "No physical device or alternate Launcher/ROM claim",
+    "Web server was kept alive, but no logged-in Web widget preview E2E claim"
+  ]
+}

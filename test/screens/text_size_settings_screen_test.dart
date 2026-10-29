@@ -49,9 +49,10 @@ Future<void> _onPlatform(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    await (FontLoader(DesignTokens.fontFamily)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
     await (FontLoader(
       Icons.check.fontFamily!,
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -205,8 +206,8 @@ void main() {
       expect(slider.max, 6);
       expect(slider.divisions, 6);
       expect(percentLabel(tester), '100%');
-      // 默认档位叠加 Android 正文基准后仍是 10。
-      expect(previewBodySize(tester), closeTo(10, .001));
+      // 默认档位叠加 Android 正文基准后是 12。
+      expect(previewBodySize(tester), closeTo(12, .001));
       expect(p.textScale, AppTextScale.defaultScale);
 
       // 标准标识按 index / (len - 1) * 2 - 1 计算，七档时正好居中。
@@ -224,7 +225,7 @@ void main() {
     });
   });
 
-  testWidgets('Android 七档实际点击：55% 正文 5.5、100% 正文 10、145% 正文 14.5，遍历不写盘', (
+  testWidgets('Android 七档实际点击：55% 正文 6.6、100% 正文 12、145% 正文 17.4，遍历不写盘', (
     tester,
   ) async {
     await _onPlatform(TargetPlatform.android, () async {
@@ -236,10 +237,10 @@ void main() {
       for (var index = 0; index < _androidProfile.length; index++) {
         await choose(tester, index);
         final ratio = _androidProfile[index];
-        // 正文 14 先按 10 / 14 缩到 10，再乘用户档位：5.5 / 10 / 14.5。
+        // 正文 14 先按 12 / 14 缩到 12，再乘用户档位：6.6 / 12 / 17.4。
         expect(
           previewBodySize(tester),
-          closeTo(10 * ratio, .001),
+          closeTo(12 * ratio, .001),
           reason: '第 $index 档 ${(ratio * 100).round()}%',
         );
         expect(percentLabel(tester), '${(ratio * 100).round()}%');
@@ -253,11 +254,11 @@ void main() {
 
       // 最小 / 标准 / 最大档的正文实际字号。
       await choose(tester, 0);
-      expect(previewBodySize(tester), closeTo(5.5, .001));
+      expect(previewBodySize(tester), closeTo(6.6, .001));
       await choose(tester, 3);
-      expect(previewBodySize(tester), closeTo(10, .001));
+      expect(previewBodySize(tester), closeTo(12, .001));
       await choose(tester, 6);
-      expect(previewBodySize(tester), closeTo(14.5, .001));
+      expect(previewBodySize(tester), closeTo(17.4, .001));
       // 七档上限就是 145%，不会出现八档的 160 / 175 / 190。
       expect(percentLabel(tester), '145%');
       expect(tester.takeException(), isNull);
@@ -287,7 +288,7 @@ void main() {
       await mount(tester, restarted, androidBaseline: true);
       expect(tester.widget<Slider>(sliderFinder).value, 6);
       expect(percentLabel(tester), '145%');
-      expect(previewBodySize(tester), closeTo(14.5, .001));
+      expect(previewBodySize(tester), closeTo(17.4, .001));
       expect(tester.takeException(), isNull);
     });
   });
@@ -304,7 +305,7 @@ void main() {
       expect(p.textScale, 1.45);
       expect(tester.widget<Slider>(sliderFinder).value, 6);
       expect(percentLabel(tester), '145%');
-      expect(previewBodySize(tester), closeTo(14.5, .001));
+      expect(previewBodySize(tester), closeTo(17.4, .001));
       // 载入不写盘：磁盘保留升级前的历史值，下次读取再按范围吸附。
       expect(
         (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
@@ -314,7 +315,7 @@ void main() {
     });
   });
 
-  testWidgets('Android 已保存 145% 预览 14.5，草稿 130% 显示 13，取消保持 145%', (
+  testWidgets('Android 已保存 145% 预览 17.4，草稿 130% 显示 15.6，取消保持 145%', (
     tester,
   ) async {
     await _onPlatform(TargetPlatform.android, () async {
@@ -322,11 +323,11 @@ void main() {
       addTearDown(p.dispose);
       await p.setTextScale(1.45);
       await mount(tester, p, androidBaseline: true);
-      expect(previewBodySize(tester), closeTo(14.5, .001));
+      expect(previewBodySize(tester), closeTo(17.4, .001));
 
-      // 草稿 130%：正文 14 * 130% * 10 / 14 = 13，不会把已存 145% 再乘进来。
+      // 草稿 130%：正文 14 * 130% * 12 / 14 = 15.6，不会把已存 145% 再乘进来。
       await choose(tester, 5);
-      expect(previewBodySize(tester), closeTo(13, .001));
+      expect(previewBodySize(tester), closeTo(15.6, .001));
       expect(p.textScale, 1.45);
 
       await tester.tap(find.byKey(const ValueKey('text_size_back_button')));

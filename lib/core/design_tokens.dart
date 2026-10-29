@@ -60,12 +60,12 @@ class DesignTokens {
   static const double homeItemLeadingGap = space3xl;
   static const double homeQuadrantDotSize = 10;
   static const double homeQuadrantTitleGap = spaceSm;
-  static const Color homeText = Color(0xFF242C38);
-  static const Color homeMuted = Color(0xFF78808B);
-  static const Color homeSubtle = Color(0xFF959BA3);
-  static const Color homeAccent = Color(0xFFB84F54);
-  static const Color homeDivider = Color(0xFFE5E8ED);
-  static const Color homeCategory = Color(0xFF668AA5);
+  static const Color homeText = appleText;
+  static const Color homeMuted = appleTextMuted;
+  static const Color homeSubtle = appleSubtle;
+  static const Color homeAccent = applePrimary;
+  static const Color homeDivider = appleBorder;
+  static const Color homeCategory = appleCategory;
 
   // ----- Modal bottom sheets -----
   // 初始高度为半屏至三分之二屏；用户浏览后可展开到安全区内整页。
@@ -101,12 +101,41 @@ class DesignTokens {
   static const double radiusXxl = 28;
   static const double radiusPill = 999;
 
-  // ----- 默认主题 iOS 风档位 -----
+  // ----- Apple minimal（默认 App 主题 / Android 小组件同源）-----
   //
-  // 仅 `defaultBrand`（_defaultTheme）消费，用于把默认主题调向 iOS 观感；
-  // 其余 7 套主题（re0..botw）继续沿用上方通用档位，观感保持不变。
-  // 共享组件通过 `AppSurfaceStyle.ios`（ThemeExtension）读取，不要在共享层
-  // 直接引用这些常量，否则会波及全部主题。
+  // 默认主题（`AppBrands.defaultBrand`）与 Android 核心小组件共享同一套
+  // 苹果简约语言：雾灰画布、白色表面、珊瑚红品牌色、低对比边界、极淡阴影、
+  // 18 / 12 圆角与 28 弹层顶角。其余品牌主题不消费这些值；共享组件通过
+  // `AppSurfaceStyle`（ThemeExtension）读取档位，不要在共享层直接引用这些
+  // 常量，否则会波及全部主题。
+  static const Color appleBackground = Color(0xFFF2F2F7); // 雾灰画布
+  static const Color appleSurface = Color(0xFFFFFFFF); // 白色卡面
+  static const Color appleSurfaceMuted = Color(0xFFF2F2F7); // 输入 / 分段底
+  static const Color appleBorder = Color(0xFFE5E5EA); // 低对比细分隔
+  static const Color appleText = Color(0xFF1C1C1E);
+  static const Color appleTextMuted = Color(0xFF6E6E73);
+  static const Color applePrimary = defaultPrimary; // 品牌珊瑚红
+  static const Color applePrimarySoft = defaultPrimarySoft;
+  static const Color appleSubtle = Color(0xFF8E8E93);
+  static const Color appleCategory = Color(0xFF7A8494);
+  static const double radiusCardApple = 18; // 卡片圆角（Apple minimal 档）
+  static const double radiusSmallTileApple = 12; // 指标卡 / 控件圆角
+  static const double radiusSheetApple = 28; // 底部弹层顶角
+  static const double navBarAppleHeight = 68; // 底部导航高度（更高更宽松）
+  static const double navBarAppleBackgroundAlpha = 0.72; // 半透明底导航
+  // 极淡阴影：白卡面在雾灰画布上只留一档层次，不叠加硬描边。
+  static const List<BoxShadow> shadowApple = [
+    BoxShadow(
+      color: Color(0x0F000000), // #000 6%
+      blurRadius: 16,
+      offset: Offset(0, 2),
+    ),
+  ];
+
+  // ----- 旧默认主题 iOS 风档位（保留兼容）-----
+  //
+  // 默认主题已切到上面的 Apple minimal 档；这些常量继续服务
+  // `AppSurfaceStyle.ios` 与 `_SharedFeel.ios`（液态玻璃主题共用）。
   static const double radiusControlIos = 12; // 控件圆角 iOS 档（≥12）
   static const double radiusCardIos = 16; // 卡片圆角 iOS 档（≥16）
   static const double dialogIosRadius = 20; // 对话框圆角 iOS 档
@@ -163,23 +192,26 @@ class DesignTokens {
   static const double fontSizeNavigationTitle = 18;
   static const double fontSizePageTitle = 18;
   static const double fontSizeNumericHighlight = 24;
+
+  /// 系统小组件预览的主数字层级，不参与应用正文/标题基准。
+  static const double fontSizeWidgetPrimaryMetric = 34;
+  static const double fontSizeWidgetCount = 26;
   static const double fontSizeButton = 12;
   static const double fontSizeBottomNavLabel = 11;
 
-  /// 原生 Android 的正文基准字号：安卓端正文默认按 10dp 排版。
+  /// 原生 Android 的正文基准字号：安卓端正文默认按逻辑字号 12 排版。
   ///
   /// 共享字号 token（[fontSizeBody] 等 14 档）与其它平台的基准保持不变；
   /// 只有原生 Android 在 `AppTypography.platformScaler` 里按
-  /// `10 / 14` 的比例缩放文字，用户档位（默认 100%）与系统缩放、
+  /// `12 / 14` 的比例缩放文字，用户档位（默认 100%）与系统缩放、
   /// 非线性缩放仍原样叠加。
-  static const double androidFontSizeBody = 10;
+  static const double androidFontSizeBody = 12;
 
-  /// 全局 UI 字体：随应用打包的 Noto Sans SC 变量字库。
+  /// 全局 UI 字体：随应用打包的 Resource Han Rounded CN Bold 字库。
   ///
-  /// 中文无衬线、离线可用，所有品牌 / 页面 / 共享控件统一继承该家族；
-  /// 显式字重只允许走 [fontWeightRegular] / [fontWeightMedium] /
-  /// [fontWeightStrong]。
-  static const String fontFamily = 'NotoSansSC';
+  /// 圆润中文、离线可用，所有品牌 / 页面 / 共享控件统一继承该家族；同一
+  /// 静态粗体资源按 400 / 500 / 600 / 700 注册，保留现有语义字重令牌。
+  static const String fontFamily = 'ResourceHanRounded';
 
   /// 正文字重：正文、说明文字、输入提示与菜单项。
   static const FontWeight fontWeightRegular = FontWeight.w400;
@@ -276,9 +308,11 @@ class DesignTokens {
 
 /// 表面 / 控件的"观感档位"（ThemeExtension）。
 ///
-/// 仅默认主题在 `_defaultTheme` 注册 [AppSurfaceStyle.ios]：共享组件
+/// 默认主题在 `_defaultTheme` 注册 [AppSurfaceStyle.appleMinimal]：共享组件
 /// （AppSurfaceCard / AppModalSheet / AppMetricCard / AppSettingsSection /
-/// 主底部导航）据此取 iOS 档圆角、去描边留极淡阴影、半透明底导航与毛玻璃。
+/// 主底部导航）据此取 Apple minimal 档圆角、无描边 + 极淡阴影、半透明底导航
+/// 与低成本毛玻璃。[AppSurfaceStyle.ios] 是改造前的默认档，保留兼容；
+/// [AppSurfaceStyle.liquidGlass] 服务液态玻璃主题。
 /// 未注册该 extension 的主题（re0..botw）在调用点取各自既有默认值，
 /// 观感与改造前逐像素一致。
 class AppSurfaceStyle extends ThemeExtension<AppSurfaceStyle> {
@@ -314,11 +348,11 @@ class AppSurfaceStyle extends ThemeExtension<AppSurfaceStyle> {
     this.navBarBlurSigma = 0,
   });
 
-  /// 默认主题（defaultBrand）专用：iOS 风 / 液态玻璃档。
+  /// 改造前的默认主题 iOS 风档（保留兼容）。
   ///
   /// cardFillColor 显式注册为页面 surface 纯色：三类卡面（Material Card /
-  /// AppSurfaceCard / AppMetricCard）在默认主题同走一个填充档——此前
-  /// MetricCard 回退 surface@0.85，与另两类卡面的实底 surface 不同源。
+  /// AppSurfaceCard / AppMetricCard）同走一个填充档。默认主题已改用
+  /// [appleMinimal]；本档继续供既有引用使用。
   static const AppSurfaceStyle ios = AppSurfaceStyle(
     cardRadius: DesignTokens.radiusCardIos,
     smallTileRadius: DesignTokens.radiusControlIos,
@@ -328,6 +362,27 @@ class AppSurfaceStyle extends ThemeExtension<AppSurfaceStyle> {
     sheetTopRadius: DesignTokens.sheetIosTopRadius,
     navBarBlurSigma: DesignTokens.navBarIosBlurSigma,
   );
+
+  /// 默认 App 主题（defaultBrand）专用：Apple minimal 档。
+  ///
+  /// 与 Android 核心小组件同一套视觉语言：白色卡面 + 18 圆角、无描边、
+  /// 极淡阴影；底部导航沿用现有低成本模糊档（列表卡片不做 BackdropFilter）。
+  static const AppSurfaceStyle appleMinimal = AppSurfaceStyle(
+    cardRadius: DesignTokens.radiusCardApple,
+    smallTileRadius: DesignTokens.radiusSmallTileApple,
+    cardFillColor: DesignTokens.appleSurface,
+    cardBorder: Border(),
+    cardShadow: DesignTokens.shadowApple,
+    sheetTopRadius: DesignTokens.radiusSheetApple,
+    navBarBlurSigma: DesignTokens.navBarIosBlurSigma,
+  );
+
+  /// 是否为"默认主题"档位：Apple minimal 及其兼容别名 [ios]。
+  ///
+  /// 首页配色 / 页签等共享层用它判定默认主题；[liquidGlass] 与未注册档位的
+  /// 品牌主题都返回 false，观感不变。
+  static bool isDefaultTheme(AppSurfaceStyle? style) =>
+      style != null && (style == appleMinimal || style == ios);
 
   /// 液态玻璃主题（liquidGlass）专用：半透明白填充 + 白高光描边的伪玻璃卡片，
   /// 底部导航启用真模糊（BackdropFilter）。非 const：填充/描边色由玻璃档

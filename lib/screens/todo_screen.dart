@@ -27,6 +27,7 @@ import '../providers/share_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/eisenhower_matrix.dart';
+import '../widgets/apple_page_frame.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/todo_completion_flow.dart';
 import '../widgets/surface_components.dart';
@@ -355,6 +356,18 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  /// 顺延所有逾期任务（AppBar 文本按钮与 Apple 页头图标共用）。
+  Future<void> _postponeOverdue(int overdueCount) async {
+    await context.read<TodoProvider>().postponeOverdue(AppClock.now());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已顺延 $overdueCount 个逾期任务'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _showAddDialog({EisenhowerQuadrant? initialQuadrant}) {
     showTodoCreateSheet(context, initialQuadrant: initialQuadrant);
   }
@@ -471,6 +484,11 @@ class _TodoScreenState extends State<TodoScreen> {
               onScrollStart: _dismissSwipeActionsOnScroll,
             ),
           };
+    // 默认主题：双栏之间改用 Apple 留白分隔，不再画硬竖线。
+    final appleLayout = usesApplePageLayout(context);
+    final appleFramePadding = appleLayout
+        ? const EdgeInsets.symmetric(horizontal: ApplePageFrame.gutter)
+        : EdgeInsets.zero;
     final widescreenBody = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -485,11 +503,14 @@ class _TodoScreenState extends State<TodoScreen> {
             ],
           ),
         ),
-        const VerticalDivider(
-          width: 1,
-          thickness: 1,
-          // 不传 color：走主题 dividerTheme 档位（outlineVariant@feel alpha）。
-        ),
+        if (appleLayout)
+          const SizedBox(width: DesignTokens.spaceXxl)
+        else
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            // 不传 color：走主题 dividerTheme 档位（outlineVariant@feel alpha）。
+          ),
         SizedBox(
           width: DesktopTokens.rightSidebarWidth,
           child: Column(
@@ -520,6 +541,185 @@ class _TodoScreenState extends State<TodoScreen> {
         ),
       ],
     );
+
+    final headerActions = <Widget>[
+      if (_batchMode) ...[
+        IconButton(
+          tooltip: '退出批量操作',
+          onPressed: _exitBatchMode,
+          icon: const Icon(Icons.close),
+        ),
+        IconButton(
+          tooltip: allVisibleSelected ? '取消全选' : '全选当前视图',
+          onPressed: editableVisibleIds.isEmpty
+              ? null
+              : () => _selectAllVisible(editableVisibleIds),
+          icon: Icon(
+            allVisibleSelected
+                ? Icons.deselect_outlined
+                : Icons.select_all_outlined,
+          ),
+        ),
+      ] else ...[
+        if (_viewMode == _TodoViewMode.kanban)
+          IconButton(
+            tooltip: '看板列设置',
+            onPressed: _showKanbanSettings,
+            icon: const Icon(Icons.tune_outlined),
+          ),
+        IconButton(
+          tooltip: '批量操作',
+          onPressed: filteredTodos.isEmpty
+              ? null
+              : () => _enterBatchMode(switchToList: true),
+          icon: const Icon(Icons.checklist_outlined),
+        ),
+        if (overdueCount > 0)
+          IconButton(
+            tooltip: '顺延逾期任务',
+            onPressed: () => _postponeOverdue(overdueCount),
+            icon: const Icon(Icons.update_outlined),
+          ),
+      ],
+    ];
+
+    final batchActionBar = _batchMode
+        ? _TodoBatchActionBar(
+            selectedCount: _selectedTodoIds.length,
+            submitting: _batchSubmitting,
+            onComplete: _selectedTodoIds.isEmpty || _batchSubmitting
+                ? null
+                : _completeSelected,
+            onReopen: _selectedTodoIds.isEmpty || _batchSubmitting
+                ? null
+                : _reopenSelected,
+            onMove: _selectedTodoIds.isEmpty || _batchSubmitting
+                ? null
+                : _moveSelected,
+            onPriority: _selectedTodoIds.isEmpty || _batchSubmitting
+                ? null
+                : _setSelectedPriority,
+            onDelete: _selectedTodoIds.isEmpty || _batchSubmitting
+                ? null
+                : _deleteSelected,
+          )
+        : null;
+
+    final createFab = _batchMode
+        ? null
+        : AppCreateFab(label: s.todoAddAction, onPressed: _showAddDialog);
+
+    final controlBand = _batchMode
+        ? _TodoFilterBar(
+            filter: _filter,
+            totalCount: baseTodos.length,
+            filteredCount: filteredTodos.length,
+            availableTags: availableTags,
+            availableListGroups: availableListGroups,
+            onChanged: _setFilter,
+            onClear: _clearFilter,
+          )
+        : AppleControlBand(
+            margin: const EdgeInsets.only(bottom: DesignTokens.spaceMd),
+            padding: const EdgeInsets.fromLTRB(2, 4, 2, 2),
+            child: Column(
+              children: [
+                if (!isWeb)
+                  _TodoViewSwitcher(
+                    selected: _viewMode,
+                    onChanged: (mode) => setState(() => _viewMode = mode),
+                  ),
+                _TodoTodaySummaryCard(
+                  todos: baseTodos,
+                  habits: habitProvider.habits,
+                  activeGoalCount: goalProvider.activeGoals.length,
+                  now: now,
+                ),
+                _TodoFilterBar(
+                  filter: _filter,
+                  totalCount: baseTodos.length,
+                  filteredCount: filteredTodos.length,
+                  availableTags: availableTags,
+                  availableListGroups: availableListGroups,
+                  onChanged: _setFilter,
+                  onClear: _clearFilter,
+                ),
+                if (isWeb)
+                  _TodoViewSwitcher(
+                    selected: _viewMode,
+                    onChanged: (mode) => setState(() => _viewMode = mode),
+                  ),
+              ],
+            ),
+          );
+
+    // 默认主题：没有 AppBar，标题 / 操作 / 控制带 / 结果区都在同一条内容流里。
+    if (appleLayout) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          bottom: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: ApplePageFrame.maxContentWidth,
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ApplePageFrame.gutter,
+                      ApplePageFrame.pageTop,
+                      DesignTokens.spaceXs,
+                      DesignTokens.spaceXs,
+                    ),
+                    child: ApplePageHeader(
+                      title: _batchMode
+                          ? '已选择 ${_selectedTodoIds.length} 项'
+                          : s.todoTitle,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: headerActions,
+                      ),
+                    ),
+                  ),
+                  if (baseTodos.isEmpty)
+                    Expanded(
+                      child: EmptyState(
+                        icon: Icons.check_circle_outline,
+                        message: s.todoEmpty,
+                        actionLabel: s.todoAddAction,
+                        onAction: _showAddDialog,
+                      ),
+                    )
+                  else if (isWidescreen && !_batchMode)
+                    Expanded(
+                      child: Padding(
+                        padding: appleFramePadding,
+                        child: widescreenBody,
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ApplePageFrame(
+                        horizontalInset: ApplePageFrame.gutter,
+                        child: Column(
+                          children: [
+                            controlBand,
+                            Expanded(child: viewContent),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        bottomNavigationBar: batchActionBar,
+        floatingActionButton: createFab,
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -563,18 +763,7 @@ class _TodoScreenState extends State<TodoScreen> {
             ),
             if (overdueCount > 0)
               TextButton.icon(
-                onPressed: () async {
-                  await context.read<TodoProvider>().postponeOverdue(
-                    AppClock.now(),
-                  );
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('已顺延 $overdueCount 个逾期任务'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onPressed: () => _postponeOverdue(overdueCount),
                 icon: const Icon(Icons.update_outlined, size: 18),
                 label: const Text('顺延'),
               ),
@@ -589,62 +778,20 @@ class _TodoScreenState extends State<TodoScreen> {
               onAction: _showAddDialog,
             )
           : isWidescreen && !_batchMode
-          ? widescreenBody
-          : Column(
-              children: [
-                if (!_batchMode && !isWeb)
-                  _TodoViewSwitcher(
-                    selected: _viewMode,
-                    onChanged: (mode) => setState(() => _viewMode = mode),
-                  ),
-                if (!_batchMode)
-                  _TodoTodaySummaryCard(
-                    todos: baseTodos,
-                    habits: habitProvider.habits,
-                    activeGoalCount: goalProvider.activeGoals.length,
-                    now: now,
-                  ),
-                _TodoFilterBar(
-                  filter: _filter,
-                  totalCount: baseTodos.length,
-                  filteredCount: filteredTodos.length,
-                  availableTags: availableTags,
-                  availableListGroups: availableListGroups,
-                  onChanged: _setFilter,
-                  onClear: _clearFilter,
-                ),
-                if (!_batchMode && isWeb)
-                  _TodoViewSwitcher(
-                    selected: _viewMode,
-                    onChanged: (mode) => setState(() => _viewMode = mode),
-                  ),
-                Expanded(child: viewContent),
-              ],
+          ? Padding(padding: appleFramePadding, child: widescreenBody)
+          : ApplePageFrame(
+              horizontalInset: usesApplePageLayout(context)
+                  ? ApplePageFrame.gutter
+                  : 0,
+              child: Column(
+                children: [
+                  controlBand,
+                  Expanded(child: viewContent),
+                ],
+              ),
             ),
-      bottomNavigationBar: _batchMode
-          ? _TodoBatchActionBar(
-              selectedCount: _selectedTodoIds.length,
-              submitting: _batchSubmitting,
-              onComplete: _selectedTodoIds.isEmpty || _batchSubmitting
-                  ? null
-                  : _completeSelected,
-              onReopen: _selectedTodoIds.isEmpty || _batchSubmitting
-                  ? null
-                  : _reopenSelected,
-              onMove: _selectedTodoIds.isEmpty || _batchSubmitting
-                  ? null
-                  : _moveSelected,
-              onPriority: _selectedTodoIds.isEmpty || _batchSubmitting
-                  ? null
-                  : _setSelectedPriority,
-              onDelete: _selectedTodoIds.isEmpty || _batchSubmitting
-                  ? null
-                  : _deleteSelected,
-            )
-          : null,
-      floatingActionButton: _batchMode
-          ? null
-          : AppCreateFab(label: s.todoAddAction, onPressed: _showAddDialog),
+      bottomNavigationBar: batchActionBar,
+      floatingActionButton: createFab,
     );
   }
 }
@@ -659,7 +806,10 @@ class _TodoViewSwitcher extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       key: const ValueKey('todo_view_switcher'),
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      // 默认主题：控制带已提供左右留白，切换器不再各自贴边。
+      padding: usesApplePageLayout(context)
+          ? const EdgeInsets.fromLTRB(0, 0, 0, 8)
+          : const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: AppPageSwitcher<_TodoViewMode>(
         options: const [
           AppPageOption(value: _TodoViewMode.matrix, text: '四象限'),
@@ -743,78 +893,85 @@ class _TodoTodaySummaryCard extends StatelessWidget {
       ),
     ];
 
+    final summaryContent = LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        final header = Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.today_outlined, color: cs.primary, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '今日还要完成 $remaining 项',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: DesignTokens.fontWeightStrong,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '日常 $dailyRemaining / 待办 $todoCount / 目标 $activeGoalCount',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+        final chipRow = Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: chips.map((chip) => _TodoSummaryChip(data: chip)).toList(),
+        );
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [header, const SizedBox(height: 12), chipRow],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: header),
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: chipRow,
+            ),
+          ],
+        );
+      },
+    );
+    // 默认主题：摘要并入外层控制带，本身不再画一张卡（避免组面里再套卡片）。
+    if (usesApplePageLayout(context)) {
+      return Padding(
+        key: const ValueKey('todo_today_summary_card'),
+        padding: const EdgeInsets.fromLTRB(2, 4, 2, 6),
+        child: summaryContent,
+      );
+    }
     return AppSurfaceCard(
       key: const ValueKey('todo_today_summary_card'),
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       borderRadius: BorderRadius.circular(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 420;
-          final header = Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: cs.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.today_outlined, color: cs.primary, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '今日还要完成 $remaining 项',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: cs.onSurface,
-                        fontWeight: DesignTokens.fontWeightStrong,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '日常 $dailyRemaining / 待办 $todoCount / 目标 $activeGoalCount',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-          final chipRow = Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: chips
-                .map((chip) => _TodoSummaryChip(data: chip))
-                .toList(),
-          );
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [header, const SizedBox(height: 12), chipRow],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(child: header),
-              const SizedBox(width: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 300),
-                child: chipRow,
-              ),
-            ],
-          );
-        },
-      ),
+      child: summaryContent,
     );
   }
 }
@@ -907,7 +1064,9 @@ class _TodoFilterBar extends StatelessWidget {
 
     return Padding(
       key: const ValueKey('todo_filter_bar'),
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      padding: usesApplePageLayout(context)
+          ? const EdgeInsets.fromLTRB(0, 0, 0, 10)
+          : const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

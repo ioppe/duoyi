@@ -15,4 +15,5 @@
     android:description="@string/widget_style_standard_description"
     android:resizeMode="horizontal|vertical"
     android:configure="com.duoyi.duoyi.DuoyiWidgetConfigActivity"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="hide_from_picker" />

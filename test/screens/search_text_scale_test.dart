@@ -48,9 +48,10 @@ class _NonlinearScaler extends TextScaler {
 
 void main() {
   setUpAll(() async {
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    await (FontLoader(DesignTokens.fontFamily)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
     await (FontLoader(
       Icons.search.fontFamily!,
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -119,7 +120,7 @@ void main() {
             for (final size in <double>[11, 12, 14, 18, 24]) {
               expect(
                 paragraph.textScaler.scale(size),
-                closeTo(system.scale(size * ratio * 10 / 14), 1e-9),
+                closeTo(system.scale(size * ratio * 12 / 14), 1e-9),
                 reason: '$text / $ratio / $size',
               );
             }

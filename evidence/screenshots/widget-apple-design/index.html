@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>多仪 · 苹果风小组件实际效果</title>
+<style>
+:root{color-scheme:light;--ink:#1c1c1e;--muted:#6e6e73;--red:#c95455;--paper:#f7f8fa}
+*{box-sizing:border-box}
+body{margin:0;background:#eef0f4;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans SC",sans-serif;line-height:1.6}
+main{max-width:1180px;margin:auto;padding:48px 32px 64px}
+.eyebrow{margin:0 0 10px;color:var(--red);font-size:12px;font-weight:600;letter-spacing:.12em}
+h1{margin:0;font-size:34px;line-height:1.2;letter-spacing:-.04em}
+header p{margin:16px 0 24px;color:var(--muted);max-width:760px;font-size:14px}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:5px;background:#e2e5eb;border-radius:12px;width:max-content;max-width:100%;margin:0 0 28px}
+button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:500;line-height:1.6;padding:7px 16px;border-radius:9px;cursor:pointer}
+button[aria-selected=true]{background:white;color:var(--ink);box-shadow:0 1px 4px #0000000a}
+button:focus-visible,a:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+figure{margin:0;background:var(--paper);padding:18px;border-radius:24px}
+figure img{width:100%;height:auto;display:block;border-radius:20px}
+figcaption{padding:14px 4px 0}figcaption b{font-size:14px}
+figcaption p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+.panel[hidden]{display:none}
+.note{margin:24px 0 0;padding:18px 22px;background:#fff;border-radius:16px;color:var(--muted);font-size:13px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}a{color:var(--red);text-decoration:none}
+@media(max-width:700px){main{padding:28px 16px}.grid{grid-template-columns:1fr;gap:18px}h1{font-size:28px}figure{padding:12px}button{padding:7px 12px}}
+</style>
+</head>
+<body><main>
+<header><p class="eyebrow">DUOYI · WIDGET DESIGN</p><h1>留白更从容，信息更清楚。</h1><p>四个核心小组件的 Android 实际截图。统一圆角与模块头，空态居中，数据分层，底栏只突出当前分段。原图来自同一个 703 × 566 px 桌面实例，组合图没有重绘组件。</p></header>
+<nav role="tablist" aria-label="截图内容"><button role="tab" aria-selected="true" data-panel="overview">四页布局</button><button role="tab" aria-selected="false" data-panel="compare">改前 / 改后</button><button role="tab" aria-selected="false" data-panel="content">真实内容</button></nav>
+<section id="overview" class="panel grid" aria-label="四页布局">
+<figure><a href="after-todo-empty.png"><img src="after-todo-empty-crop.png" alt="新版待办空态，居中提示和轻分段底栏"></a><figcaption><b>待办</b><p>数量与单位分层，空态在正文区域居中。</p></figcaption></figure>
+<figure><a href="after-habit.png"><img src="after-habit-crop.png" alt="新版习惯，主百分比与连续天数"></a><figcaption><b>习惯</b><p>一个主完成率，配合简短说明与连续天数。</p></figcaption></figure>
+<figure><a href="after-calendar.png"><img src="after-calendar-crop.png" alt="新版完整十月月历，31天和四标签"></a><figcaption><b>月历</b><p>保留完整月份、今天和日期右上角事项数。</p></figcaption></figure>
+<figure><a href="after-focus.png"><img src="after-focus-crop.png" alt="新版专注，左侧大时间，右侧次数和分钟"></a><figcaption><b>专注</b><p>左侧主时间，右侧小统计，淡色入口。</p></figcaption></figure>
+</section>
+<section id="compare" class="panel grid" hidden aria-label="改前改后">
+<figure><img src="before-todo-crop.png" alt="改前待办，空态贴顶"><figcaption><b>改前 · 待办</b><p>空态贴顶，底栏层次较重。</p></figcaption></figure>
+<figure><img src="after-todo-empty-crop.png" alt="改后待办，空态居中"><figcaption><b>改后 · 待办</b><p>同尺寸，增加模块头和居中空态。</p></figcaption></figure>
+<figure><img src="before-focus-crop.png" alt="改前专注，三个等权重数字"><figcaption><b>改前 · 专注</b><p>三个同等权重数字和重复摘要。</p></figcaption></figure>
+<figure><img src="after-focus-crop.png" alt="改后专注，时间突出"><figcaption><b>改后 · 专注</b><p>时间成为主视觉，次数与分钟分层显示。</p></figcaption></figure>
+</section>
+<section id="content" class="panel grid" hidden aria-label="真实内容验证">
+<figure><a href="after-todo-content.png"><img src="after-todo-content-crop.png" alt="三条真实测试事项，标准密度展示两行，总数为3"></a><figcaption><b>真实待办 · 标准密度</b><p>通过离线 TodoProvider 新建三条事项，显示两条完整行，总数为 3。</p></figcaption></figure>
+<figure><a href="after-populated-observe.png"><img src="after-populated-observe-crop.png" alt="27日右上角事项数量为3"><figcaption><b>日期角标 · 27 日 3 项</b><p>完整 1–31 日各一次，角标位于日期右上方。</p></figcaption></figure>
+<div class="note" style="grid-column:1/-1">测试事项已按独立 ID 清理：Provider 恢复 0 条、待办恢复空态、日期角标清零。所有底栏截图均保持 Launcher 在前台。</div>
+</section>
+<footer>Android API 35 官方模拟器 · 系统字号 100% · 本地调试包 1.1.54+140020。浅深色 Flutter 布局回归已通过；这些 Android 原图为浅色主题。<br><a href="overview.png">四页原图组合</a> · <a href="README.md">验证说明</a> · <a href="verification.json">机器可读记录</a></footer>
+</main>
+<script>
+for(const b of document.querySelectorAll('button[data-panel]')) b.addEventListener('click',()=>{
+  for(const x of document.querySelectorAll('button[data-panel]')) x.setAttribute('aria-selected',String(x===b));
+  for(const p of document.querySelectorAll('.panel')) p.hidden=p.id!==b.dataset.panel;
+});
+</script>
+</body></html>

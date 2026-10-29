@@ -9,9 +9,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    await (FontLoader(DesignTokens.fontFamily)..addFont(
+          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
+        ))
+        .load();
   });
 
   testWidgets('九套主题共享文字短线页签，窄屏大字不溢出', (tester) async {

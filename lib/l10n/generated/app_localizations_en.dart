@@ -2326,11 +2326,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSectionStylesSubtitle => 'Changes apply to the whole app';
 
   @override
-  String get themeStyleDefaultName => 'Duoyi';
+  String get themeStyleDefaultName => 'Apple Minimal';
 
   @override
-  String get themeStyleDefaultDescription =>
-      'Clean original · warm orange base';
+  String get themeStyleDefaultDescription => 'Soft grey canvas · coral accent';
 
   @override
   String get themeStyleRe0Name => 'Re:Zero';
@@ -3467,13 +3466,91 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reminders follow the system time zone';
 
   @override
-  String get widgetCalendarMonthSummary => 'Month view · today is marked';
+  String get widgetCalendarMonthSummary => 'Numbers show each day’s task count';
+
+  @override
+  String get widgetCalendarWeekdayMon => 'Mon';
+
+  @override
+  String get widgetCalendarWeekdayTue => 'Tue';
+
+  @override
+  String get widgetCalendarWeekdayWed => 'Wed';
+
+  @override
+  String get widgetCalendarWeekdayThu => 'Thu';
+
+  @override
+  String get widgetCalendarWeekdayFri => 'Fri';
+
+  @override
+  String get widgetCalendarWeekdaySat => 'Sat';
+
+  @override
+  String get widgetCalendarWeekdaySun => 'Sun';
+
+  @override
+  String widgetCalendarDayCountLabel(Object count, Object date) {
+    return 'Items on $date: $count';
+  }
+
+  @override
+  String widgetCalendarMonthTitle(Object month, Object year) {
+    return '$year-$month';
+  }
 
   @override
   String get widgetHabitPending => 'Habits to check in today';
 
   @override
   String get widgetStreakRecordPrefix => 'Streak: ';
+
+  @override
+  String widgetTodoEmptyHint(Object tab) {
+    return 'Open $tab to plan what’s next';
+  }
+
+  @override
+  String get widgetTodoCountUnit => 'left';
+
+  @override
+  String get widgetHabitTodayLabel => 'Today’s progress';
+
+  @override
+  String get widgetFocusCountLabel => 'Sessions';
+
+  @override
+  String get widgetFocusMinutesLabel => 'Minutes';
+
+  @override
+  String get widgetFocusNextLabel => 'Next (min)';
+
+  @override
+  String get widgetFocusRemainingLabel => 'Remaining';
+
+  @override
+  String get widgetFocusOpenLabel => 'Open focus';
+
+  @override
+  String get widgetFocusRunningLabel => 'View timer';
+
+  @override
+  String get widgetFocusStartLabel => 'Start';
+
+  @override
+  String get widgetFocusResumeLabel => 'Resume';
+
+  @override
+  String get widgetFocusPauseLabel => 'Pause';
+
+  @override
+  String get widgetFocusStopLabel => 'Stop';
+
+  @override
+  String get widgetFocusPausedLabel => 'Paused';
+
+  @override
+  String get widgetTodayLabel => 'Today';
 
   @override
   String get timeAuditTitle => 'Time Tracking';
@@ -3908,6 +3985,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetStyleSaved => 'Widget style saved on this device';
+
+  @override
+  String get widgetAndroidPickerHint =>
+      'Pick Todo, Focus, Habits or Calendar from the system widget list, then drag the widget edges on the home screen to resize.';
+
+  @override
+  String get widgetAndroidCatalogDensityHint =>
+      'This is the default display density for new widgets. The system widget list only offers Todo, Focus, Habits and Calendar; drag the widget edges on the home screen to resize after adding.';
+
+  @override
+  String get widgetMobilePickerHint =>
+      'Find Duoyi in your phone\'s system widget list: on Android drag the widget edges to resize after adding, on iOS pick a size in the widget gallery.';
 
   @override
   String get preferencesNavWebSubtitle =>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 与 assets/logo/duoyi_unified_logo.svg 的 1/4 坐标保持一致。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#C95455"
+        android:pathData="M8.75,1.25 H15.25 A8,8 0,0 1,23.25 9.25 V15.25 A8,8 0,0 1,15.25 23.25 H8.75 A8,8 0,0 1,0.75 15.25 V9.25 A8,8 0,0 1,8.75 1.25 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8.5,7.75 H10.5 A1,1 0,0 1,11.5 8.75 V15.75 A1,1 0,0 1,10.5 16.75 H8.5 A1,1 0,0 1,7.5 15.75 V8.75 A1,1 0,0 1,8.5 7.75 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13.5,7.75 H15.5 A1,1 0,0 1,16.5 8.75 V10.25 A1,1 0,0 1,15.5 11.25 H13.5 A1,1 0,0 1,12.5 10.25 V8.75 A1,1 0,0 1,13.5 7.75 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M13.5,12.25 H15.5 A1,1 0,0 1,16.5 13.25 V15.75 A1,1 0,0 1,15.5 16.75 H13.5 A1,1 0,0 1,12.5 15.75 V13.25 A1,1 0,0 1,13.5 12.25 Z" />
+</vector>

@@ -1,0 +1,270 @@
+{
+  "label": "calendar-stable-final",
+  "recorded_at": "2026-10-27T10:13:48.991830+00:00",
+  "device": "emulator-5554",
+  "root_id": "com.duoyi.duoyi:id/widget_calendar_root",
+  "root_bounds": [
+    64,
+    466,
+    767,
+    1032
+  ],
+  "resumed_activity": [
+    "topResumedActivity=ActivityRecord{7e2aeaf u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+  ],
+  "launcher_in_front": true,
+  "app_anrs": [],
+  "texts": [
+    {
+      "id": "widget_calendar_month",
+      "text": "2026年10月",
+      "bounds": [
+        164,
+        503,
+        607,
+        555
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_today_button",
+      "text": "今天",
+      "bounds": [
+        624,
+        499,
+        734,
+        560
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_0",
+      "text": "一",
+      "bounds": [
+        97,
+        571,
+        188,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_1",
+      "text": "二",
+      "bounds": [
+        188,
+        571,
+        279,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_2",
+      "text": "三",
+      "bounds": [
+        279,
+        571,
+        370,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_3",
+      "text": "四",
+      "bounds": [
+        370,
+        571,
+        461,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_4",
+      "text": "五",
+      "bounds": [
+        461,
+        571,
+        552,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_5",
+      "text": "六",
+      "bounds": [
+        552,
+        571,
+        643,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_weekday_6",
+      "text": "日",
+      "bounds": [
+        643,
+        571,
+        734,
+        605
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_nav_todo",
+      "text": "待办",
+      "bounds": [
+        105,
+        928,
+        260,
+        993
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_nav_habit",
+      "text": "习惯",
+      "bounds": [
+        260,
+        928,
+        415,
+        993
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_nav_calendar",
+      "text": "日历",
+      "bounds": [
+        415,
+        928,
+        570,
+        993
+      ],
+      "desc": ""
+    },
+    {
+      "id": "widget_calendar_nav_focus",
+      "text": "专注",
+      "bounds": [
+        570,
+        928,
+        726,
+        993
+      ],
+      "desc": ""
+    }
+  ],
+  "nav_labels": [
+    "待办",
+    "习惯",
+    "日历",
+    "专注"
+  ],
+  "keys": {
+    "widget_calendar_month": "2026年10月",
+    "widget_calendar_today_button": "今天",
+    "widget_calendar_weekday_0": "一",
+    "widget_calendar_weekday_1": "二",
+    "widget_calendar_weekday_2": "三",
+    "widget_calendar_weekday_3": "四",
+    "widget_calendar_weekday_4": "五",
+    "widget_calendar_weekday_5": "六",
+    "widget_calendar_weekday_6": "日",
+    "widget_calendar_nav_todo": "待办",
+    "widget_calendar_nav_habit": "习惯",
+    "widget_calendar_nav_calendar": "日历",
+    "widget_calendar_nav_focus": "专注"
+  },
+  "screenshot": "evidence/screenshots/widget-calendar-restored/calendar-stable-final.png",
+  "png_sha256": "8997a4816a4ee9831594f45b9b91b891b9a6b74dfb759bc7af95c7b52ec81f21",
+  "crop": "evidence/screenshots/widget-calendar-restored/calendar-stable-final-crop.png",
+  "comparison_to_original_single_month": {
+    "widget_calendar_root": {
+      "before_px": [
+        64,
+        466,
+        767,
+        1032
+      ],
+      "after_px": [
+        64,
+        466,
+        767,
+        1032
+      ],
+      "equal": true
+    },
+    "widget_calendar_month": {
+      "before_px": [
+        164,
+        503,
+        607,
+        555
+      ],
+      "after_px": [
+        164,
+        503,
+        607,
+        555
+      ],
+      "equal": true
+    },
+    "widget_calendar_weekday_row": {
+      "before_px": [
+        97,
+        571,
+        734,
+        605
+      ],
+      "after_px": [
+        97,
+        571,
+        734,
+        605
+      ],
+      "equal": true
+    },
+    "widget_calendar_month_grid": {
+      "before_px": [
+        97,
+        611,
+        734,
+        905
+      ],
+      "after_px": [
+        97,
+        611,
+        734,
+        905
+      ],
+      "equal": true
+    },
+    "widget_calendar_bottom_nav": {
+      "before_px": [
+        97,
+        922,
+        734,
+        999
+      ],
+      "after_px": [
+        97,
+        922,
+        734,
+        999
+      ],
+      "equal": true
+    }
+  },
+  "all_comparison_bounds_equal": true,
+  "month_title": "2026年10月",
+  "dates_once": 31,
+  "calendar_vertical_list_visible": false,
+  "installed_apk_sha256": "b810b516b38e45841dd36ddbe3fa3c0d4539a3cd5dc0f8713fd37da1064e8af9",
+  "horizontal_swipe_implemented": false,
+  "horizontal_swipe_status": "blocked by current standard RemoteViews host; not verified or claimed"
+}

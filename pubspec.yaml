@@ -72,11 +72,15 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/logo/duoyi_logo_redesign_1024.png"
-  image_path_android: "assets/logo/duoyi_web_logo_512.png"
+  # 统一品牌标记（红底 #C95455 + 白色几何块），全部派生自
+  # assets/logo/duoyi_unified_logo.svg 的同一设计。
+  image_path: "assets/logo/duoyi_logo_ios_1024.png"
+  image_path_android: "assets/logo/duoyi_logo_1024.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/logo/duoyi_web_logo_512.png"
+  # 自适应图标：红色背景 + 仅白色标记的前景，避免红底方块叠在第二层背景上形成双 logo。
+  adaptive_icon_background: "#C95455"
+  adaptive_icon_foreground: "assets/logo/duoyi_launcher_foreground_512.png"
+  adaptive_icon_foreground_inset: 0
   remove_alpha_ios: false
 
 # For information on the generic Dart part of this file, see the
@@ -95,21 +99,16 @@ flutter:
     - assets/sounds/reminders/
 
   fonts:
-    # 全局 UI 字体：Noto Sans SC 变量字库（wght 100–900）。同一个变量文件按
-    # 400/500/600/700 注册，引擎按请求字重选择并应用 wght 变体。
-    - family: NotoSansSC
-      fonts:
-        - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 500
-        - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 600
-        - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 700
-    # 旧圆体字库保留打包：UI 已不再引用，仅避免移除历史资产带来干扰。
+    # 全局 UI 字体：Resource Han Rounded CN Bold（静态 700 字库）。
+    # 同一资源按四档注册，使现有 Regular / Medium / Strong 令牌都使用圆体字形。
     - family: ResourceHanRounded
       fonts:
+        - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
+          weight: 400
+        - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
+          weight: 500
+        - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
+          weight: 600
         - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
           weight: 700
 

@@ -86,7 +86,7 @@ void main() {
       expect(find.text('小组件'), findsNothing);
       expect(find.text('日历'), findsNothing);
 
-      // 实际 App 根部在 Android 上以正文 10 为标准，再叠加用户字号档位。
+      // 实际 App 根部在 Android 上以正文 12 为标准，再叠加用户字号档位。
       double effectiveBodySize() {
         final context = tester.element(find.byType(MainShell));
         final fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
@@ -95,7 +95,7 @@ void main() {
 
       expect(
         effectiveBodySize(),
-        closeTo(10 * AppTextScale.defaultScale, 1e-9),
+        closeTo(12 * AppTextScale.defaultScale, 1e-9),
       );
 
       final preferences = Provider.of<PreferencesProvider>(
@@ -104,7 +104,7 @@ void main() {
       );
       await tester.runAsync(() => preferences.setTextScale(AppTextScale.large));
       await tester.pump();
-      expect(effectiveBodySize(), closeTo(10 * AppTextScale.large, 1e-9));
+      expect(effectiveBodySize(), closeTo(12 * AppTextScale.large, 1e-9));
     },
     variant: TargetPlatformVariant.only(TargetPlatform.android),
   );

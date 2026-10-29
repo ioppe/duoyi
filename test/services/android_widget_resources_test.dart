@@ -46,6 +46,7 @@ void main() {
           '@+id/widget_todo_row_2',
           '@+id/widget_todo_row_3',
           '@+id/widget_todo_today_summary',
+          '@+id/widget_todo_list',
           '@+id/widget_todo_quick_add',
         ],
         compact: true,
@@ -68,6 +69,10 @@ void main() {
           '@+id/widget_focus_nav_focus',
           '@+id/widget_focus_streak_count',
           '@+id/widget_focus_quick_start',
+          '@+id/widget_focus_start_button',
+          '@+id/widget_focus_pause_button',
+          '@+id/widget_focus_stop_button',
+          '@+id/widget_focus_chronometer',
           '@+id/widget_focus_habit_summary',
           '@+id/widget_focus_streak_summary',
           '@+id/widget_focus_timer_caption',
@@ -92,6 +97,9 @@ void main() {
           '@+id/widget_habit_nav_focus',
           '@+id/widget_habit_summary',
           '@+id/widget_habit_streak',
+          '@+id/widget_habit_item_1',
+          '@+id/widget_habit_item_2',
+          '@+id/widget_habit_item_3',
           '@+id/widget_habit_hint',
         ],
         compact: true,
@@ -115,6 +123,7 @@ void main() {
           '@+id/widget_calendar_grid',
           '@+id/widget_calendar_summary',
           '@+id/widget_calendar_today_button',
+          '@+id/widget_calendar_list',
         ],
         compact: true,
       ),
@@ -230,6 +239,16 @@ void main() {
       ),
     ];
 
+    // 系统选择器只暴露核心 4 个 3x2 入口（待办 / 习惯 / 日历 / 专注）；
+    // 其余 5 个独立小组件与全部 compact/detailed 变体只保留给旧实例与应用内刷新。
+    const coreWidgetKinds = <String>{'todo', 'habit', 'calendar', 'focus'};
+    final coreWidgets = widgets
+        .where((widget) => coreWidgetKinds.contains(widget.kindId))
+        .toList();
+    final secondaryWidgets = widgets
+        .where((widget) => !coreWidgetKinds.contains(widget.kindId))
+        .toList();
+
     for (final widget in widgets) {
       test('${widget.title}小组件声明底部导航和 PNG 预览', () {
         _assertWidgetResource(widget);
@@ -293,13 +312,17 @@ void main() {
         for (final block in _textViewBlocks(layout)) {
           final id = _textViewId(block);
           if (!constrainedDynamicTextIds.contains(id)) continue;
-          expect(block, contains('android:layout_width="wrap_content"'));
-          expect(
-            block,
-            contains('android:maxWidth='),
-            reason:
-                '${file.path} $id must cap short dynamic text width in widget headers',
-          );
+          if (id == 'widget_calendar_month' &&
+              block.contains('android:layout_width="0dp"')) {
+            expect(block, contains('android:layout_weight="1"'));
+          } else {
+            expect(block, contains('android:layout_width="wrap_content"'));
+            expect(
+              block,
+              contains('android:maxWidth='),
+              reason: '${file.path} $id 必须限制动态文字的最大宽度',
+            );
+          }
         }
       }
     });
@@ -732,6 +755,11 @@ void main() {
           'widget_todo_root': 'duoyi://tab/todo',
           'widget_brand_logo': 'duoyi://tab/todo',
           'widget_todo_title': 'duoyi://tab/todo',
+          'widget_module_title': 'duoyi://tab/todo',
+          'widget_todo_count_unit': 'duoyi://tab/todo',
+          'widget_todo_empty_group': 'duoyi://tab/todo',
+          'widget_todo_empty_title': 'duoyi://tab/todo',
+          'widget_todo_empty_hint': 'duoyi://tab/todo',
           'widget_todo_count': 'duoyi://tab/todo',
           'widget_todo_today_summary': 'duoyi://tab/todo',
         },
@@ -739,10 +767,14 @@ void main() {
           'widget_habit_root': 'duoyi://tab/habit',
           'widget_brand_logo': 'duoyi://tab/habit',
           'widget_habit_title': 'duoyi://tab/habit',
+          'widget_module_title': 'duoyi://tab/habit',
           'widget_habit_subtitle': 'duoyi://tab/habit',
           'widget_habit_percent': 'duoyi://tab/habit',
           'widget_habit_summary': 'duoyi://tab/habit',
           'widget_habit_streak': 'duoyi://tab/habit',
+          'widget_habit_item_1': 'duoyi://tab/habit',
+          'widget_habit_item_2': 'duoyi://tab/habit',
+          'widget_habit_item_3': 'duoyi://tab/habit',
           'widget_habit_hint': 'duoyi://tab/habit',
         },
         'calendar': {
@@ -758,6 +790,7 @@ void main() {
           'widget_focus_habit_root': 'duoyi://tab/focus',
           'widget_brand_logo': 'duoyi://tab/focus',
           'widget_focus_habit_title': 'duoyi://tab/focus',
+          'widget_module_title': 'duoyi://tab/focus',
           'widget_focus_habit_date': 'duoyi://tab/focus',
           'widget_focus_count': 'duoyi://tab/focus',
           'widget_focus_habit_progress': 'duoyi://tab/focus',
@@ -860,11 +893,13 @@ void main() {
           isNot(contains('DuoyiWidgetNavigation.bindTabButton(')),
           reason: '${entry.key} 上方不再本地切页',
         );
-        expect(
-          source,
-          isNot(contains('HomeWidgetBackgroundIntent')),
-          reason: '${entry.key} 上方不再直接后台改数据',
-        );
+        if (entry.key != 'focus') {
+          expect(
+            source,
+            isNot(contains('HomeWidgetBackgroundIntent')),
+            reason: '${entry.key} 上方不再直接后台改数据',
+          );
+        }
         final pageTargets = _appPageTargets(source);
         for (final page in appPageExpectations[entry.key]!.entries) {
           expect(
@@ -930,13 +965,36 @@ void main() {
       );
       expect(
         providerSources['focus'],
-        isNot(contains('duoyi://action/start_pomodoro')),
-        reason: '专注组件不再后台启动番茄，改为进入专注分页',
+        contains('HomeWidgetBackgroundIntent'),
+        reason: '专注页三枚控制按钮必须走受保护后台广播',
       );
-      expect(
-        providerSources['focus'],
-        isNot(contains('HomeWidgetBackgroundIntent')),
-      );
+      for (final actionConst in [
+        'ACTION_START',
+        'ACTION_PAUSE',
+        'ACTION_STOP',
+      ]) {
+        expect(
+          providerSources['focus'],
+          contains('private const val $actionConst'),
+        );
+      }
+      expect(providerSources['focus'], contains('appendPath(action)'));
+      for (final id in [
+        'R.id.widget_focus_start_button',
+        'R.id.widget_focus_pause_button',
+        'R.id.widget_focus_stop_button',
+      ]) {
+        expect(providerSources['focus'], contains(id));
+      }
+      for (final key in [
+        'focus_timer_state',
+        'focus_timer_session_id',
+        'focus_timer_revision',
+        'focus_control_scope',
+        'focus_timer_count_up',
+      ]) {
+        expect(providerSources['focus'], contains(key));
+      }
       expect(
         providerSources['focus'],
         contains('R.id.widget_focus_habit_title,'),
@@ -986,8 +1044,39 @@ void main() {
       );
       expect(
         providerSources['habit'],
-        contains('views.setViewVisibility(R.id.widget_habit_hint, View.GONE)'),
-        reason: '没有具体习惯 ID 时提示隐藏，也不退回后台打卡',
+        contains('HABIT_ITEM_VIEW_IDS.forEachIndexed'),
+        reason: '具体习惯行必须统一绑定文案、详情点击和容量控制',
+      );
+      for (final index in [1, 2, 3]) {
+        expect(
+          providerSources['habit'],
+          contains('R.id.widget_habit_item_$index'),
+          reason: '缺少第 $index 条习惯行',
+        );
+        expect(
+          providerSources['habit'],
+          contains('habit_highlight_$index'),
+          reason: '缺少第 $index 条习惯 payload',
+        );
+      }
+      expect(
+        providerSources['habit'],
+        contains('habitHighlightIds.count { it.isNotBlank() }'),
+        reason: '具体习惯行数量必须进入容量门控',
+      );
+      expect(
+        providerSources['habit'],
+        contains('val itemShown = canShowItems && index < itemCount &&'),
+        reason: '习惯行必须按完整行预算显示，不能裁切文本',
+      );
+      expect(
+        providerSources['habit'],
+        contains('if (itemShown) View.VISIBLE else View.GONE'),
+      );
+      expect(
+        providerSources['habit'],
+        contains('shownItemCount == 0 && hasHint'),
+        reason: '只有没有可见具体习惯时才回退旧提示',
       );
       expect(
         providerSources['habit'],
@@ -1110,53 +1199,61 @@ void main() {
       expect(homeWidgetService, contains("'focus_minutes_today'"));
       expect(
         providerSources['focus'],
-        isNot(contains('HomeWidgetBackgroundIntent')),
-        reason: '专注组件不再通过后台回调直接开始计时',
+        contains('HomeWidgetBackgroundIntent'),
+        reason: '专注页三枚控制按钮通过后台回调执行，不由旧页面入口替代',
       );
     });
 
-    test('待办小组件未完成任务使用 o 圆圈并保留交互按钮', () {
+    test('待办任务行保持只读详情入口，空态使用独立居中区域', () {
       final layout = File(
         'android/app/src/main/res/layout/duoyi_todo_widget.xml',
       ).readAsStringSync();
       final provider = File(
         'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiTodoWidgetProvider.kt',
       ).readAsStringSync();
-      final widgetScreen = File(
-        'lib/screens/widget_screen.dart',
-      ).readAsStringSync();
 
       for (final index in [1, 2, 3]) {
-        final doneView = _xmlTextViewWithId(layout, 'widget_todo_done_$index');
-        expect(
-          doneView,
-          contains('android:text="o"'),
-          reason: '待办小组件展示的是未完成任务，右侧操作符号应是 o/圆圈，不应误导成已完成勾选。',
+        final doneView = _textViewBlocks(layout).singleWhere(
+          (block) => _textViewId(block) == 'widget_todo_done_$index',
         );
-        expect(doneView, isNot(contains('android:text="✓"')));
+        expect(doneView, contains('android:visibility="gone"'));
+        expect(layout, contains('@+id/widget_todo_marker_$index'));
+        expect(layout, contains('@+id/widget_todo_row_$index'));
+        expect(provider, contains('R.id.widget_todo_done_$index'));
       }
-
+      expect(layout, contains('@+id/widget_todo_data_list'));
+      expect(layout, contains('@+id/widget_todo_empty_group'));
+      expect(layout, contains('@+id/widget_todo_empty_title'));
+      expect(layout, contains('@+id/widget_todo_empty_hint'));
+      expect(layout, contains('@drawable/widget_apple_empty_check'));
+      expect(provider, contains('if (empty) View.GONE else View.VISIBLE'));
+      expect(provider, contains('if (empty) View.VISIBLE else View.GONE'));
+      expect(provider, contains('widget_todo_empty_hint'));
       expect(provider, contains('private fun bindTodoRow('));
       expect(provider, contains('val encodedTodoId = Uri.encode(todoId)'));
-      // 具体任务（含原完成圈）进入 App 详情，不再后台直接完成，也不带 confirm 参数。
       expect(provider, contains(r'Uri.parse("duoyi://todo/$encodedTodoId")'));
       expect(
         provider,
         contains('views.setOnClickPendingIntent(doneViewId, todoDetailPage)'),
       );
-      expect(provider, isNot(contains('complete_todo')));
-      expect(provider, isNot(contains('confirm=')));
-      // 没有有效 ID 的占位行整行进入待办分页；+ 添加 收起，没有后台快捷创建。
+      expect(
+        provider,
+        contains('views.setViewVisibility(doneViewId, View.GONE)'),
+      );
       expect(
         provider,
         contains(
-          'if (todoId.isBlank()) {\n'
-          '            views.setViewVisibility(doneViewId, View.GONE)\n'
-          '            // 没有有效 ID 的占位行：整行进入 App 待办页。\n'
-          '            rowViewIds.forEach { views.setOnClickPendingIntent(it, openTodoPage) }',
+          'rowViewIds.forEach { views.setOnClickPendingIntent(it, openTodoPage) }',
         ),
       );
-      expect(provider, isNot(contains('R.id.widget_todo_quick_add, quickAdd')));
+      expect(
+        provider,
+        contains(
+          'rowViewIds.forEach { views.setOnClickPendingIntent(it, todoDetailPage) }',
+        ),
+      );
+      expect(provider, isNot(contains('complete_todo')));
+      expect(provider, isNot(contains('confirm=')));
       expect(provider, isNot(contains('duoyi://action/quick_todo')));
       expect(
         provider,
@@ -1164,34 +1261,104 @@ void main() {
           'views.setViewVisibility(R.id.widget_todo_quick_add, View.GONE)',
         ),
       );
-
-      final todoBody = widgetScreen.substring(
-        widgetScreen.indexOf('class _WidgetPreviewTodoBody'),
-        widgetScreen.indexOf('class _WidgetPreviewFocusBody'),
-      );
-      expect(todoBody, contains("const _WidgetPreviewTodoRow(text: '整理今日计划')"));
-      expect(
-        todoBody,
-        contains("const _WidgetPreviewTodoRow(text: '项目复盘 · 3 个子任务')"),
-      );
-      expect(
-        todoBody,
-        contains("const _WidgetPreviewTodoRow(text: '晚间运动 30 分钟')"),
-      );
-      expect(todoBody, isNot(contains('_WidgetPreviewQuickAdd')));
-      expect(todoBody, isNot(contains('+ 添加待办')));
-
-      final previewRow = widgetScreen.substring(
-        widgetScreen.indexOf('class _WidgetPreviewTodoRow'),
-        widgetScreen.indexOf('class _WidgetPreviewMetric'),
-      );
-      expect(previewRow, contains("child: const Text(\n            'o',"));
-      expect(previewRow, isNot(contains('Icons.check_circle')));
     });
 
-    test('月历小组件按尺寸裁剪网格并提供今天交互按钮', () {
+    test('待办与月历使用受物理宿主校验的原生集合滚动', () {
+      final manifest = File(
+        'android/app/src/main/AndroidManifest.xml',
+      ).readAsStringSync();
+      final service = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetCollectionService.kt',
+      ).readAsStringSync();
+      final collections = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetCollections.kt',
+      ).readAsStringSync();
+      final navigation = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetNavigation.kt',
+      ).readAsStringSync();
+      final todo = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiTodoWidgetProvider.kt',
+      ).readAsStringSync();
+      final calendar = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiCalendarWidgetProvider.kt',
+      ).readAsStringSync();
+      final todoLayout = File(
+        'android/app/src/main/res/layout/duoyi_todo_widget.xml',
+      ).readAsStringSync();
+      final calendarLayout = File(
+        'android/app/src/main/res/layout/duoyi_calendar_widget.xml',
+      ).readAsStringSync();
+      expect(manifest, contains('DuoyiWidgetCollectionService'));
+      expect(manifest, contains('android.permission.BIND_REMOTEVIEWS'));
+      expect(manifest, contains('android:exported="false"'));
+      expect(
+        manifest,
+        contains(
+          '<service\n'
+          '            android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"\n'
+          '            android:exported="true"\n'
+          '            android:permission="android.permission.BIND_JOB_SERVICE" />',
+        ),
+        reason: '系统 JobScheduler 必须可绑定 home_widget 后台服务',
+      );
+      expect(
+        service,
+        contains('class DuoyiWidgetCollectionService : RemoteViewsService()'),
+      );
+      expect(service, contains('class TodoCollectionFactory'));
+      expect(service, contains('class CalendarCollectionFactory'));
+      expect(service, contains('CollectionSpec.from'));
+      expect(service, contains('DuoyiWidgetNavigation.targetFor'));
+      expect(service, contains('CALENDAR_MONTH_COUNT'));
+      expect(collections, contains('widget_todo_items_json'));
+      expect(collections, contains('CALENDAR_MONTH_RADIUS = 120'));
+      expect(navigation, contains('ACTION_CALENDAR_TODAY'));
+      expect(navigation, contains('collectionTemplate'));
+      expect(todo, contains('setPendingIntentTemplate'));
+      // 月历已改回"单月整月网格"：不再绑定纵向集合 adapter / 模板 / 滚动。
+      expect(calendar, isNot(contains('setPendingIntentTemplate')));
+      expect(todoLayout, contains('@+id/widget_todo_list'));
+      expect(todo, contains('setRemoteAdapter('));
+      expect(todo, contains('notifyAppWidgetViewDataChanged'));
+      expect(todo, contains('widget_todo_items_json'));
+      // 纵向集合 ListView 只保留 ID / 类型（升级兼容），单月正文改用 month_grid。
+      expect(calendarLayout, contains('@+id/widget_calendar_list'));
+      expect(calendar, isNot(contains('setRemoteAdapter(')));
+      expect(
+        calendar,
+        isNot(contains('setScrollPosition(R.id.widget_calendar_list')),
+      );
+      expect(calendar, isNot(contains('notifyAppWidgetViewDataChanged')));
+      expect(
+        calendar,
+        contains(
+          'views.setViewVisibility(R.id.widget_calendar_list, View.GONE)',
+        ),
+      );
+      expect(
+        calendar,
+        contains('views.addView(R.id.widget_calendar_month_grid'),
+      );
+      // 兼容集合项渲染器仍在（待办共享 service 依赖它），但不再是月历的活跃路径。
+      expect(calendar, contains('setOnClickFillInIntent'));
+      expect(
+        calendar,
+        contains('DuoyiCalendarMonth.build(month, today, counts)'),
+      );
+    });
+
+    test('月历小组件显示完整月份和日期右上角事项数', () {
       final layout = File(
         'android/app/src/main/res/layout/duoyi_calendar_widget.xml',
+      ).readAsStringSync();
+      final cell = File(
+        'android/app/src/main/res/layout/duoyi_calendar_day_cell.xml',
+      ).readAsStringSync();
+      final row = File(
+        'android/app/src/main/res/layout/duoyi_calendar_week_row.xml',
+      ).readAsStringSync();
+      final model = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiCalendarMonth.kt',
       ).readAsStringSync();
       final provider = File(
         'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiCalendarWidgetProvider.kt',
@@ -1199,62 +1366,121 @@ void main() {
       final widgetScreen = File(
         'lib/screens/widget_screen.dart',
       ).readAsStringSync();
-
+      expect(layout, contains('@+id/widget_calendar_month_grid'));
       expect(layout, contains('@+id/widget_calendar_today_button'));
-      expect(layout, contains('android:text="今天"'));
-      expect(provider, contains('R.id.widget_calendar_today_button'));
-      expect(provider, contains('DuoyiWidgetTheme.applyButtonSurfaces'));
-      expect(provider, contains('DuoyiWidgetDisplayMode.isCompact(prefs, id)'));
+      // 原尺寸单月：星期表头可见（4dp 上边距），整月网格 weight=1 吃掉剩余高度。
+      final weekdayRow = _viewBlockWithId(
+        layout,
+        'widget_calendar_weekday_row',
+      );
+      expect(weekdayRow, isNot(contains('android:visibility="gone"')));
+      expect(weekdayRow, contains('android:layout_marginTop="4dp"'));
+      final monthGrid = _viewBlockWithId(layout, 'widget_calendar_month_grid');
+      expect(monthGrid, contains('android:layout_height="0dp"'));
+      expect(monthGrid, contains('android:layout_weight="1"'));
+      expect(monthGrid, contains('android:layout_marginTop="2dp"'));
+      expect(monthGrid, isNot(contains('android:visibility="gone"')));
+      // 纵向集合 ListView 保留 ID / 类型但隐藏，且不再占任何剩余高度。
+      final hiddenListView = _viewBlockWithId(layout, 'widget_calendar_list');
+      expect(hiddenListView, contains('android:visibility="gone"'));
+      expect(hiddenListView, contains('android:layout_height="0dp"'));
+      expect(hiddenListView, isNot(contains('android:layout_weight=')));
       expect(
         provider,
-        contains('DuoyiWidgetDisplayMode.isDetailed(prefs, id)'),
+        contains('views.addView(R.id.widget_calendar_month_grid'),
       );
-      expect(provider, contains('buildMonthGrid(now, compact, detailed)'));
-      expect(provider, contains('views.setTextViewTextSize('));
+      expect(provider, contains('YearMonth.from(today)'));
+      expect(
+        provider,
+        contains('DuoyiCalendarMonth.build(month, today, dayCounts)'),
+      );
+      expect(provider, contains('DuoyiCalendarMonth.build('));
+      expect(model, contains('YearMonth'));
+      expect(model, contains('lengthOfMonth()'));
+      expect(provider, isNot(contains('buildMonthGrid(')));
+      expect(provider, isNot(contains('currentWeek..currentWeek')));
+      expect(provider, isNot(contains('currentWeek - 1')));
+      expect(provider, contains('grid.rows.forEach'));
+      expect(
+        provider,
+        contains('views.removeAllViews(R.id.widget_calendar_month_grid)'),
+      );
+      expect(row, contains('android:orientation="horizontal"'));
+      expect(cell, contains('android:layout_weight="1"'));
+      expect(cell, contains('@+id/widget_calendar_day_number'));
+      expect(
+        cell,
+        contains('android:layout_gravity="bottom|center_horizontal"'),
+      );
+      expect(cell, contains('@+id/widget_calendar_day_badge'));
+      expect(cell, contains('android:layout_gravity="top|end"'));
+      expect(provider, contains('if (cell.hasBadge)'));
+      expect(provider, contains('cell.count.toString()'));
+      expect(
+        provider,
+        contains('cellViews.setViewVisibility(badgeId, View.GONE)'),
+      );
+      expect(provider, contains('cellViews.setOnClickFillInIntent('));
+      expect(
+        provider,
+        contains('DuoyiWidgetNavigation.calendarFillInIntent()'),
+      );
+      expect(provider, contains('DuoyiCalendarMonth.formatCountLabel('));
+      for (final key in [
+        'calendar_day_counts_json',
+        'calendar_timezone',
+        'calendar_weekdays_json',
+        'calendar_day_count_label',
+        'calendar_month_title',
+      ]) {
+        expect(provider, contains(key));
+      }
+      expect(provider, contains('LocalDate.now(zone)'));
+      expect(provider, contains('DuoyiWidgetTheme.applyButtonSurfaces'));
       expect(provider, contains('TypedValue.COMPLEX_UNIT_SP'));
-      expect(provider, contains('if (compact) "M月" else "yyyy年M月"'));
-      // 品牌文字已换成 logo：旧标题在任何密度下都保持隐藏，密度只影响月份/网格。
+      expect(
+        provider,
+        contains(
+          'views.setViewVisibility(R.id.widget_calendar_grid, View.GONE)',
+        ),
+        reason: '旧多行文本 ID 保留但隐藏，不能重新截取本周代替完整月历',
+      );
       expect(
         provider,
         contains(
           'views.setViewVisibility(R.id.widget_calendar_title, View.GONE)',
         ),
       );
-      expect(
-        provider,
-        isNot(contains('if (compact) View.GONE else View.VISIBLE')),
-      );
       final pageTargets = _appPageTargets(provider);
-      expect(
-        pageTargets,
-        containsPair('widget_calendar_today_button', 'duoyi://tab/calendar'),
-        reason: '“今天”按钮进入 App 日历分页，不再本地重绘',
-      );
-      expect(
-        pageTargets,
-        containsPair('widget_calendar_month', 'duoyi://tab/calendar'),
-      );
-      expect(
-        pageTargets,
-        containsPair('widget_calendar_grid', 'duoyi://tab/calendar'),
-      );
-      expect(
-        provider,
-        isNot(contains('DuoyiWidgetNavigation.bindRefresh(')),
-        reason: '日历上方不再只读本地刷新',
-      );
-      expect(provider, contains('compact -> currentWeek..currentWeek'));
-      expect(provider, contains('detailed -> 0..5'));
-      expect(provider, contains('currentWeek - 1'));
-      expect(widgetScreen, contains('class _WidgetPreviewCalendarGrid'));
-      expect(widgetScreen, contains('class _WidgetPreviewCalendarCell'));
+      for (final id in [
+        'widget_calendar_today_button',
+        'widget_calendar_month',
+        'widget_calendar_grid',
+        'widget_calendar_month_grid',
+      ]) {
+        expect(pageTargets, containsPair(id, 'duoyi://tab/calendar'));
+      }
+      for (var weekday = 0; weekday < 7; weekday++) {
+        expect(layout, contains('@+id/widget_calendar_weekday_$weekday'));
+        expect(
+          pageTargets,
+          containsPair(
+            'widget_calendar_weekday_$weekday',
+            'duoyi://tab/calendar',
+          ),
+        );
+      }
+      expect(provider, isNot(contains('DuoyiWidgetNavigation.bindRefresh(')));
+      expect(widgetScreen, contains('buildHomeWidgetCalendarWeeks('));
+      expect(widgetScreen, contains('buildHomeWidgetCalendarDayCounts('));
+      expect(widgetScreen, isNot(contains('currentWeekIndex')));
       expect(
         widgetScreen,
-        contains("child: const Text(\n                '今天',"),
+        contains("const ValueKey('widget-preview-calendar-month-grid')"),
+        reason: '月历正文恢复为完整固定单月网格',
       );
     });
-
-    test('核心 4 页在组件内切页：切页与刷新都不经过 Activity 或 Flutter 后台回调', () {
+    test('核心 4 页在组件内切页，集合与专注按钮不拉起 App', () {
       final helper = File(
         'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetNavigation.kt',
       ).readAsStringSync();
@@ -1352,7 +1578,8 @@ void main() {
       // 只做 UI 切页：不发 Activity，也不触发 Flutter / 业务后台回调。
       expect(helper, isNot(contains('HomeWidgetLaunchIntent')));
       expect(helper, isNot(contains('HomeWidgetBackgroundIntent')));
-      expect(helper, isNot(contains('MainActivity')));
+      expect(helper, contains('collectionTemplate'));
+      expect(helper, contains('MainActivity'));
       expect(helper, isNot(contains('startActivity')));
 
       // update 分流：无选择回原 provider，有选择交给内容页 provider 当纯渲染器。
@@ -1578,7 +1805,9 @@ void main() {
         reason: '导航栏边缘点击也应留在组件内',
       );
 
-      // compact 首次仍无底栏；实例切过页以后，任何目标页都必须能看到四条 tab。
+      // 历史综合组件 compact 首次仍无底栏（本次不改）；核心 4 页由 provider 传
+      // View.VISIBLE，首次放置就能看到四条 tab。实例切过页以后，任何目标页都必须
+      // 能看到四条 tab。
       expect(
         helper,
         contains(
@@ -1680,17 +1909,21 @@ void main() {
         reason:
             'Preview cards should scale their fixed widget content instead of hiding overflow in a disabled scroll view.',
       );
-      expect(widgetScreen, contains('final visibleWeeks = switch (maxLines)'));
-      expect(widgetScreen, contains('currentWeekIndex - 1'));
-      expect(widgetScreen, contains('_ => [0, 1, 2, 3, 4, 5]'));
+      expect(widgetScreen, contains('buildHomeWidgetCalendarWeeks('));
+      expect(widgetScreen, contains('buildHomeWidgetCalendarDayCounts('));
+      expect(widgetScreen, isNot(contains('currentWeekIndex')));
       expect(widgetScreen, contains('class _WidgetPreviewCalendarGrid'));
       expect(widgetScreen, contains('class _WidgetPreviewCalendarCell'));
       expect(
         widgetScreen,
         contains('displayMode != WidgetDisplayMode.compact'),
       );
-      expect(widgetScreen, contains('if (maxLines >= 2)'));
-      expect(widgetScreen, contains('if (maxLines >= 3)'));
+      expect(
+        widgetScreen,
+        contains('ListView.separated('),
+        reason: '待办完整集合仍可上下滚动，月历独立使用原单月网格',
+      );
+      expect(widgetScreen, contains('widget-preview-todo-list'));
       expect(helper, contains('PER_WIDGET_KEY_PREFIX'));
       expect(helper, contains('saveForWidget'));
       expect(helper, contains('saveForWidgetIfMissing'));
@@ -1783,16 +2016,9 @@ void main() {
       final todoProvider = File(
         'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiTodoWidgetProvider.kt',
       ).readAsStringSync();
-      expect(todoLayout, contains('@+id/widget_todo_row_2'));
-      expect(todoLayout, contains('@+id/widget_todo_row_3'));
-      expect(
-        todoProvider,
-        contains('views.setViewVisibility(R.id.widget_todo_row_2'),
-      );
-      expect(
-        todoProvider,
-        contains('views.setViewVisibility(R.id.widget_todo_row_3'),
-      );
+      expect(todoLayout, contains('@+id/widget_todo_list'));
+      expect(todoProvider, contains('setRemoteAdapter('));
+      expect(todoProvider, contains('notifyAppWidgetViewDataChanged'));
       for (final widget in widgets) {
         final source = File(
           'android/app/src/main/kotlin/com/duoyi/duoyi/${widget.receiver}.kt',
@@ -1803,7 +2029,23 @@ void main() {
         final bottomNavName = bottomNav.replaceFirst('@+id/', '');
         expect(source, contains('DuoyiWidgetDisplayMode'));
         expect(source, contains('R.id.$bottomNavName'));
-        expect(source, contains('DuoyiWidgetDisplayMode.bottomNavVisibility'));
+        if (const {
+          'DuoyiTodoWidgetProvider',
+          'DuoyiHabitWidgetProvider',
+          'DuoyiCalendarWidgetProvider',
+          'DuoyiFocusHabitWidgetProvider',
+        }.contains(widget.receiver)) {
+          expect(
+            source,
+            contains('defaultNavVisibility = View.VISIBLE'),
+            reason: '核心四页在各密度下都保留完整底栏供实例内切页',
+          );
+        } else {
+          expect(
+            source,
+            contains('DuoyiWidgetDisplayMode.bottomNavVisibility'),
+          );
+        }
         expect(source, contains('override fun onDeleted'));
         expect(source, contains('DuoyiWidgetDisplayMode.clearForWidget'));
       }
@@ -1958,12 +2200,17 @@ void main() {
       expect(widgetScreen, contains('AppLifecycleState.resumed'));
       expect(widgetScreen, contains('onPinSupportChanged'));
       expect(widgetScreen, contains('当前桌面不支持应用内直接添加小组件'));
-      expect(widgetScreen, contains('当前平台不支持直接添加 Android 桌面小组件'));
+      expect(widgetScreen, contains("'widget.mobile_picker_hint'"));
       expect(widgetScreen, contains('系统拒绝了本次添加请求'));
       expect(widgetScreen, contains('桌面没有展示或接受系统确认弹窗'));
       expect(widgetScreen, contains('仅 Android 支持应用内添加'));
       expect(widgetScreen, contains('请从系统小组件列表添加'));
-      expect(widgetScreen, contains('紧凑 2×2、标准 3×2 或详细 4×3'));
+      expect(widgetScreen, contains("'widget.android_picker_hint'"));
+      expect(
+        widgetScreen,
+        isNot(contains('系统小组件列表选择紧凑 2×2')),
+        reason: 'Android 系统选择器只提供四个核心入口，尺寸在桌面拖动调整',
+      );
       expect(widgetScreen, isNot(contains('系统列表只能添加标准尺寸')));
       expect(widgetScreen, contains('桌面小组件权限'));
       expect(widgetScreen, contains('后台弹窗'));
@@ -2469,20 +2716,36 @@ void main() {
         variants,
         contains('keep_system_visible_variant_provider'),
         reason:
-            'Compact/detailed receivers are now system picker entries and must stay visible after failed or deleted pin attempts.',
+            'Compact/detailed receivers stay enabled for legacy instances and in-app refresh even though the picker hint hides them.',
       );
       expect(
         variants,
         isNot(contains('PackageManager.COMPONENT_ENABLED_STATE_DISABLED')),
       );
       expect(variants, isNot(contains('disable_unused_variant_provider')));
-      expect(variants, contains('"compact" -> family.compact'));
+      // 新的统一 pin 契约：核心 4 只 pin 标准 3x2 入口；样式继续作为密度选项与
+      // 请求尺寸持久化，compact/detailed 变体类保留给旧实例与刷新查找。
+      final pinBody = _functionBody(variants, 'componentFor') ?? '';
       expect(
-        variants,
-        contains('"detailed" -> family.detailed'),
-        reason: '应用内 pin 必须选中真实变体 provider，否则桌面可能继续按标准尺寸添加。',
+        _standardPinnedKinds(variants, pinBody, coreWidgetKinds),
+        coreWidgetKinds,
+        reason: '新 pin 必须按核心 4 类白名单统一落到标准 3x2 入口',
       );
-      expect(variants, contains('else -> family.standard'));
+      expect(
+        pinBody,
+        contains('family.standard'),
+        reason: '核心 4 的新 pin 目标必须是标准 3x2 provider',
+      );
+      expect(
+        pinBody,
+        contains('ComponentName(context,'),
+        reason: 'pin 目标必须是可解析的 ComponentName',
+      );
+      expect(
+        _standardReturnIsGuarded(pinBody, coreWidgetKinds),
+        isTrue,
+        reason: '返回 family.standard 的那一行必须由核心 4 白名单守卫',
+      );
 
       for (final widget in widgets) {
         final providerSource = File(
@@ -2593,8 +2856,14 @@ void main() {
         expect(standard, contains('android:minHeight="110dp"'));
         expect(standard, contains('android:minResizeWidth="110dp"'));
         expect(standard, contains('android:minResizeHeight="110dp"'));
-        expect(standard, contains('android:maxResizeWidth="250dp"'));
-        expect(standard, contains('android:maxResizeHeight="180dp"'));
+        if (coreWidgetKinds.contains(widget.kindId)) {
+          // 核心 4 是系统选择器里唯一可见的入口，可放大到官方上限 600dp。
+          expect(standard, contains('android:maxResizeWidth="600dp"'));
+          expect(standard, contains('android:maxResizeHeight="600dp"'));
+        } else {
+          expect(standard, contains('android:maxResizeWidth="250dp"'));
+          expect(standard, contains('android:maxResizeHeight="180dp"'));
+        }
         expect(standard, contains('android:targetCellWidth="3"'));
         expect(standard, contains('android:targetCellHeight="2"'));
         expect(
@@ -2799,15 +3068,30 @@ void main() {
       expect(variants, contains('keep_variant_provider provider='));
       expect(variants, contains('widgetCount='));
       expect(variants, contains('pendingCount='));
+      // 新的统一 pin 契约：核心 4 无论 compact/standard/detailed 都 pin 标准 3x2
+      // 入口；样式仍是持久化的密度选项 + 请求尺寸，compact/detailed 变体类只留给
+      // 旧实例与刷新查找（9 个 family 的类声明在下面的循环里继续逐条断言）。
+      final pinBody = _functionBody(variants, 'componentFor') ?? '';
+      expect(pinBody, isNotEmpty, reason: 'registry 必须保留 componentFor');
       expect(
-        variants,
-        contains('"compact" -> family.compact'),
-        reason: '紧凑样式必须 pin 到真实 compact provider。',
+        _standardPinnedKinds(variants, pinBody, coreWidgetKinds),
+        coreWidgetKinds,
+        reason: 'componentFor 必须先用核心 4 类白名单守卫',
       );
       expect(
-        variants,
-        contains('"detailed" -> family.detailed'),
-        reason: '详细样式必须 pin 到真实 detailed provider。',
+        pinBody,
+        contains('family.standard'),
+        reason: '核心 4 的新 pin 目标必须是标准 3x2 provider',
+      );
+      expect(
+        pinBody,
+        contains('ComponentName(context,'),
+        reason: 'pin 目标必须是可解析的 ComponentName',
+      );
+      expect(
+        _standardReturnIsGuarded(pinBody, coreWidgetKinds),
+        isTrue,
+        reason: '返回 family.standard 的那一行必须由核心 4 白名单守卫',
       );
 
       for (final widget in widgets) {
@@ -2945,6 +3229,218 @@ void main() {
       }
     });
 
+    test('原生选择器只暴露核心 4 个 3x2 入口，其余 24 个隐藏但保持启用', () {
+      final manifest = File(
+        'android/app/src/main/AndroidManifest.xml',
+      ).readAsStringSync();
+      final kotlinSources =
+          Directory('android/app/src/main/kotlin/com/duoyi/duoyi')
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.uri.pathSegments.last.endsWith('.kt'))
+              .map((file) => file.readAsStringSync())
+              .join('\n');
+
+      final allReceivers = <String>[
+        legacyWidget.receiver,
+        ...widgets.expand(
+          (widget) => [
+            widget.receiver,
+            widget.compactReceiver,
+            widget.detailedReceiver,
+          ],
+        ),
+      ];
+      expect(allReceivers, hasLength(28));
+      expect(coreWidgets, hasLength(4));
+      expect(secondaryWidgets, hasLength(5));
+
+      final visible = <String>{};
+      final hidden = <String>{};
+      for (final receiver in allReceivers) {
+        final block = _receiverBlock(manifest, receiver);
+        expect(
+          block,
+          isNot(contains('android:enabled="false"')),
+          reason: '$receiver 必须保持启用：旧实例仍由同一个 provider 刷新',
+        );
+        final metadataRefs = RegExp(
+          r'android:name="android\.appwidget\.provider"[\s\S]{0,120}?android:resource="@xml/([^"]+)"',
+        ).allMatches(block).map((match) => match.group(1)!).toList();
+        expect(
+          metadataRefs,
+          isNotEmpty,
+          reason: '$receiver 缺少 android.appwidget.provider 元数据',
+        );
+        for (final ref in metadataRefs) {
+          final file = File('android/app/src/main/res/xml/$ref.xml');
+          expect(file.existsSync(), isTrue, reason: '$ref.xml 必须存在');
+          if (file.readAsStringSync().contains(
+            'android:widgetFeatures="hide_from_picker"',
+          )) {
+            hidden.add(ref);
+          } else {
+            visible.add(ref);
+          }
+        }
+        expect(
+          kotlinSources,
+          contains('class $receiver :'),
+          reason: '$receiver 的实现类必须仍然注册，隐藏只是系统选择器提示',
+        );
+      }
+
+      expect(
+        visible.toList()..sort(),
+        _sorted(
+          coreWidgets.map(
+            (widget) => widget.providerXml.replaceFirst('.xml', ''),
+          ),
+        ),
+        reason: '系统选择器只保留待办/习惯/日历/专注 4 个标准 3x2 入口',
+      );
+      expect(
+        hidden,
+        hasLength(24),
+        reason: '其余 24 个元数据入口（历史 1 + 核心变体 8 + 次级 15）只隐藏不删除',
+      );
+
+      for (final widget in widgets) {
+        final baseName = widget.providerXml.replaceFirst('.xml', '');
+        for (final variant in [
+          (name: '${baseName}_compact', cells: '2', rows: '2'),
+          (name: '${baseName}_detailed', cells: '4', rows: '3'),
+        ]) {
+          final source = File(
+            'android/app/src/main/res/xml/${variant.name}.xml',
+          ).readAsStringSync();
+          expect(
+            source,
+            contains('android:widgetFeatures="hide_from_picker"'),
+            reason: '${variant.name} 是兼容入口，必须隐藏但仍可被旧实例使用',
+          );
+          expect(
+            source,
+            contains('android:targetCellWidth="${variant.cells}"'),
+            reason: '${variant.name} 的请求格子宽度保持原值',
+          );
+          expect(
+            source,
+            contains('android:targetCellHeight="${variant.rows}"'),
+            reason: '${variant.name} 的请求格子高度保持原值',
+          );
+        }
+      }
+      for (final widget in secondaryWidgets) {
+        expect(
+          File(
+            'android/app/src/main/res/xml/${widget.providerXml}',
+          ).readAsStringSync(),
+          contains('android:widgetFeatures="hide_from_picker"'),
+          reason: '${widget.title} 在 Android 系统选择器里隐藏，App 内添加与刷新保持不变',
+        );
+      }
+      expect(
+        File(
+          'android/app/src/main/res/xml/duoyi_widget_info.xml',
+        ).readAsStringSync(),
+        contains('android:widgetFeatures="hide_from_picker"'),
+        reason: '历史综合小组件只服务旧实例，不再出现在系统选择器里',
+      );
+
+      // 核心 4 是唯一可见入口：标准 3x2、双向可调、上限 600dp。
+      // android:widgetFeatures 的 hide_from_picker 需要 API 28+；更老的启动器会
+      // 忽略该提示、照旧列出入口，因此这里只对官方支持的版本承诺"恰好 4 个"。
+      for (final widget in coreWidgets) {
+        final source = File(
+          'android/app/src/main/res/xml/${widget.providerXml}',
+        ).readAsStringSync();
+        expect(
+          source,
+          isNot(contains('hide_from_picker')),
+          reason: '${widget.title} 必须出现在系统选择器里',
+        );
+        expect(source, contains('android:targetCellWidth="3"'));
+        expect(source, contains('android:targetCellHeight="2"'));
+        expect(source, contains('android:resizeMode="horizontal|vertical"'));
+        expect(source, contains('android:maxResizeWidth="600dp"'));
+        expect(source, contains('android:maxResizeHeight="600dp"'));
+      }
+    });
+
+    test('核心 4 页按真实高度自适应，统计说明文字是 wrap_content 且底栏常驻', () {
+      final helper = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetLayout.kt',
+      );
+      expect(helper.existsSync(), isTrue, reason: '核心 4 页共用只读几何预算 helper');
+      final helperSource = helper.readAsStringSync();
+      expect(helperSource, contains('object DuoyiWidgetLayout'));
+      expect(helperSource, contains('fun resolve('));
+      expect(helperSource, contains('fun profileOf('));
+
+      // 统计数字与说明文字绝不能写成 0dp 权重块，否则 3x2 下会被纵向挤压裁掉。
+      const statsAndCaptionTokens = <String>[
+        'count',
+        'summary',
+        'caption',
+        'streak',
+        'percent',
+        'hint',
+        'progress',
+        'date',
+        'subtitle',
+      ];
+      for (final widget in coreWidgets) {
+        final layoutPath =
+            'android/app/src/main/res/layout/${widget.layoutXml}';
+        final layout = File(layoutPath).readAsStringSync();
+        final checkedIds = <String>[];
+        for (final block in _textViewBlocks(layout)) {
+          final viewId = _textViewId(block);
+          if (viewId == null) continue;
+          if (!statsAndCaptionTokens.any((token) => viewId.contains(token))) {
+            continue;
+          }
+          checkedIds.add(viewId);
+          expect(
+            block,
+            contains('android:layout_height="wrap_content"'),
+            reason: '$layoutPath 的 $viewId 是统计/说明文字，必须 wrap_content 由整行预算决定显隐',
+          );
+          expect(
+            block,
+            isNot(contains('android:layout_height="0dp"')),
+            reason: '$layoutPath 的 $viewId 不能写 0dp，避免被权重块挤成 0 高',
+          );
+        }
+        expect(checkedIds, isNotEmpty, reason: '$layoutPath 必须保留统计/说明文字 ID');
+
+        final provider = File(
+          'android/app/src/main/kotlin/com/duoyi/duoyi/${widget.receiver}.kt',
+        ).readAsStringSync();
+        expect(
+          provider,
+          contains('DuoyiWidgetLayout.resolve('),
+          reason: '${widget.title} 每次 onUpdate 都按实例真实尺寸取整行预算',
+        );
+        expect(
+          provider,
+          contains('defaultNavVisibility = View.VISIBLE'),
+          reason: '${widget.title} 的底部四项在 compact 首次放置时也可见',
+        );
+      }
+
+      // 历史综合小组件保持旧的 compact 首次无底栏行为（本次不改动）。
+      expect(
+        File(
+          'android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiWidgetProvider.kt',
+        ).readAsStringSync(),
+        contains(
+          'defaultNavVisibility = DuoyiWidgetDisplayMode.bottomNavVisibility(prefs, id)',
+        ),
+        reason: '历史综合小组件的底栏可见性继续按旧展示模式推导',
+      );
+    });
     test('小组件 Android iOS 和 Flutter 清单保持 9 类 exact set 对齐', () {
       final manifest = File(
         'android/app/src/main/AndroidManifest.xml',
@@ -3306,6 +3802,36 @@ void main() {
       expect(mainActivity, contains('pendingInitialDeepLink'));
       expect(service, contains('habit_quick_check_id'));
       expect(service, contains('habit_quick_check_label'));
+      for (final key in [
+        'habit_highlight_1',
+        'habit_highlight_1_id',
+        'habit_highlight_2',
+        'habit_highlight_2_id',
+        'habit_highlight_3',
+        'habit_highlight_3_id',
+      ]) {
+        expect(service, contains(key), reason: '缺少 $key');
+      }
+      expect(
+        main,
+        contains(
+          'ensureDeferredLocalStorageStartup().then((_) => handleDeepLink(uri))',
+        ),
+      );
+      expect(
+        main,
+        contains(
+          'await ensureDeferredLocalStorageStartup();\n          _handleWidgetUri(initial',
+        ),
+      );
+      expect(
+        main,
+        contains(
+          'await ensureDeferredLocalStorageStartup();\n          _handleWidgetUri(initialDeepLink',
+        ),
+      );
+      expect(main, contains('bool _reserveWidgetUri(Uri uri)'));
+      expect(main, contains('if (!_reserveWidgetUri(uri)) return;'));
       expect(service, contains('_updateWidgetFamily'));
       expect(service, isNot(contains('_androidVariantProviderNames')));
       expect(widgetScreen, contains('WidgetPreviewCard'));
@@ -3330,9 +3856,9 @@ void main() {
       expect(widgetScreen, contains("'待办', '习惯', '日历', '专注'"));
       expect(widgetScreen, contains('展示进行中目标和进度'));
       expect(widgetScreen, contains('发版准备 · 68%'));
-      expect(widgetScreen, contains('今日优先处理'));
+      expect(widgetScreen, contains("I18n.tr('widget.todo_empty_hint')"));
       expect(widgetScreen, isNot(contains('+ 添加待办')));
-      expect(widgetScreen, contains('开始 25 分钟专注'));
+      expect(widgetScreen, contains("I18n.tr('widget.focus_start_label')"));
     });
 
     test('桌面小组件 deep link 跳转隐藏底部页时允许打开隐藏 tab', () {
@@ -3394,9 +3920,11 @@ void main() {
         contains('state.navigateTo(4, allowHidden: true)'),
         reason: '桌面专注动作应能进入隐藏的专注页',
       );
-      expect(startPomodoroBranch, contains('pomodoro.startIfIdle()'));
+      expect(
+        startPomodoroBranch,
+        contains('HomeWidgetService.runBackgroundAction('),
+      );
       expect(startPomodoroBranch, contains('已开始专注'));
-      expect(startPomodoroBranch, contains('专注计时正在进行'));
       final quickTodoBranch = _widgetActionBranch(main, 'quick_todo');
       expect(
         quickTodoBranch,
@@ -3644,7 +4172,7 @@ void main() {
       }
     });
 
-    test('10 种可见独立小组件标准入口默认 3x2 且可调整到 2x2-4x3', () {
+    test('标准 provider 元数据默认 3x2 且可调整，核心 4 可见入口放大到 600dp', () {
       for (final widget in widgets) {
         final provider = File(
           'android/app/src/main/res/xml/${widget.providerXml}',
@@ -3656,12 +4184,19 @@ void main() {
         expect(provider, contains('android:targetCellHeight="2"'));
         expect(provider, contains('android:minResizeWidth="110dp"'));
         expect(provider, contains('android:minResizeHeight="110dp"'));
-        expect(provider, contains('android:maxResizeWidth="250dp"'));
-        expect(provider, contains('android:maxResizeHeight="180dp"'));
+        if (coreWidgetKinds.contains(widget.kindId)) {
+          // 核心 4 是系统选择器里唯一可见的入口，官方允许放大到 600dp。
+          expect(provider, contains('android:maxResizeWidth="600dp"'));
+          expect(provider, contains('android:maxResizeHeight="600dp"'));
+        } else {
+          // 隐藏入口只为旧实例/应用内刷新保留，尺寸声明维持原值。
+          expect(provider, contains('android:maxResizeWidth="250dp"'));
+          expect(provider, contains('android:maxResizeHeight="180dp"'));
+        }
       }
     });
 
-    test('所有可见小组件左上角品牌文字换成 Web logo 图片', () {
+    test('小组件和预览使用透明外围的红白矢量品牌标记', () {
       const brandLayouts = <String, String>{
         'duoyi_widget.xml': 'widget_title',
         'duoyi_todo_widget.xml': 'widget_todo_title',
@@ -3687,17 +4222,19 @@ void main() {
         expect(
           logo,
           contains('android:src="@drawable/duoyi_widget_logo"'),
-          reason: '$path 的左上品牌图必须使用 Web logo 资源',
+          reason: '$path 的左上品牌图必须使用统一红白矢量资源',
         );
         expect(
           logo,
           contains('android:contentDescription="@string/app_name"'),
           reason: '$path 的品牌 logo 需要无障碍名称',
         );
+        // 品牌 logo 只要求固定正高度：自适应几何可能把它调成 20dp 之类的紧凑值，
+        // 因此不再锁定 24dp，但必须是固定 dp——不能 wrap_content 撑高 header，也不能 0dp 被挤压。
         expect(
-          logo,
-          contains('android:layout_height="24dp"'),
-          reason: '$path 的品牌 logo 必须保持 header 行高',
+          RegExp(r'android:layout_height="[1-9][0-9]?dp"').hasMatch(logo),
+          isTrue,
+          reason: '$path 的品牌 logo 必须是固定正高度',
         );
         expect(
           logo,
@@ -3720,13 +4257,93 @@ void main() {
         );
       }
 
+      final vector = File(
+        'android/app/src/main/res/drawable/duoyi_widget_logo.xml',
+      ).readAsStringSync();
+      expect(vector, contains('<vector'));
+      expect(vector, contains('android:viewportWidth="24"'));
+      expect(vector, contains('android:viewportHeight="24"'));
+      // 统一品牌标记：红底圆角方块是标记内容本身，白色几何块是标记图形。
+      expect(vector, contains('android:fillColor="#C95455"'));
+      expect(vector, contains('android:fillColor="#FFFFFF"'));
+      expect(
+        vector,
+        isNot(contains('android:strokeColor="#F28A32"')),
+        reason: '旧橙色活动前景不能回到小组件 logo',
+      );
+      expect(vector, isNot(contains('<bitmap')));
+      expect(vector, isNot(contains('android:tint=')));
       expect(
         File(
           'android/app/src/main/res/drawable-nodpi/duoyi_widget_logo.png',
         ).existsSync(),
-        isTrue,
-        reason: 'widget logo 资源需由 web/icons/Icon-512.png 生成，@drawable 引用才能编译',
+        isFalse,
+        reason: '旧白底 PNG 不能继续覆盖同名矢量资源',
       );
+      final unified = File(
+        'assets/logo/duoyi_unified_logo.svg',
+      ).readAsStringSync();
+      expect(unified, contains('viewBox="0 0 96 96"'));
+      expect(unified, contains('#C95455'));
+      expect(unified, contains('x="30" y="31" width="16" height="36"'));
+      expect(unified, contains('#FFFFFF'));
+      expect(unified, isNot(contains('<image')));
+      expect(unified, isNot(contains('base64')));
+      final source = File(
+        'assets/logo/duoyi_widget_mark.svg',
+      ).readAsStringSync();
+      expect(source, contains('viewBox="0 0 24 24"'));
+      expect(source, contains('#C95455'));
+      expect(source, contains('#FFFFFF'));
+      expect(source, isNot(contains('#F28A32')));
+      expect(source, isNot(contains('<image')));
+      expect(source, isNot(contains('base64')));
+      // 活动平台图标必须是由同一 SVG 源派生的红底白标 PNG，不能残留旧蓝图/橙色沙漏。
+      for (final path in const [
+        'assets/logo/duoyi_logo_redesign_1024.png',
+        'assets/logo/duoyi_logo_1024.png',
+        'assets/logo/duoyi_logo_512.png',
+        'assets/logo/duoyi_logo_192.png',
+        'assets/logo/duoyi_web_logo_512.png',
+        'assets/logo/duoyi_logo_ios_1024.png',
+        'assets/logo/duoyi_launcher_foreground_512.png',
+        'linux/duoyi.png',
+        'web/icons/Icon-512.png',
+        'web/icons/Icon-192.png',
+        'web/icons/Icon-maskable-512.png',
+        'web/icons/Icon-maskable-192.png',
+        'web/favicon.png',
+      ]) {
+        final asset = File(path);
+        expect(asset.existsSync(), isTrue, reason: '$path 必须存在');
+        expect(asset.lengthSync(), greaterThan(256), reason: '$path 不能是空占位图标');
+      }
+      final painter = File(
+        'lib/widgets/widget_brand_logo.dart',
+      ).readAsStringSync();
+      expect(painter, contains('CustomPaint('));
+      expect(painter, contains('0xFFC95455'));
+      expect(
+        painter,
+        isNot(contains('0xFFF28A32')),
+        reason: 'Flutter 预览 painter 不能再绘制旧橙色标记',
+      );
+      expect(painter, isNot(contains('Image.asset')));
+      final preview = File('lib/screens/widget_screen.dart').readAsStringSync();
+      expect(preview, contains('WidgetBrandLogo('));
+      final authFrame = File(
+        'lib/widgets/auth_page_frame.dart',
+      ).readAsStringSync();
+      expect(authFrame, contains('WidgetBrandLogo('));
+      expect(authFrame, isNot(contains('Icons.space_dashboard_rounded')));
+      final main = File('lib/main.dart').readAsStringSync();
+      final rail = main.substring(
+        main.indexOf('class _DesktopRailHeader'),
+        main.indexOf('class _LazyTabPlaceholder'),
+      );
+      expect(rail, contains('WidgetBrandLogo('));
+      expect(rail, isNot(contains('Icons.dashboard_customize_rounded')));
+      expect(preview, isNot(contains('assets/logo/duoyi_web_logo_512.png')));
     });
   });
 }
@@ -3808,6 +4425,15 @@ String _imageViewWithId(String source, String id) {
   return match!.group(0)!;
 }
 
+/// 取带指定 id 的任意视图起始标签块（`... />` 或 `...>`）：只用于布局结构断言。
+String _viewBlockWithId(String source, String id) {
+  final match = RegExp(
+    r'<[A-Za-z]+\s+android:id="@\+id/' + id + r'"[\s\S]*?>',
+  ).firstMatch(source);
+  expect(match, isNotNull, reason: '$id view not found');
+  return match!.group(0)!;
+}
+
 /// 顶部区域“进入 App 分页”的绑定（必须以 `intArrayOf(` 起行，避免误吞
 /// `primaryIds = intArrayOf(...)` 这类样式参数）：
 /// `intArrayOf(a, b).forEach { views.setOnClickPendingIntent(it, pageVar) }`
@@ -3875,6 +4501,70 @@ String? _textViewId(String block) {
 }
 
 List<String> _sorted(Iterable<String> values) => values.toList()..sort();
+
+/// 取 `fun name(...)` 的函数体（到 4 空格缩进的收尾 `}` 为止）。
+String? _functionBody(String source, String name) {
+  final match = RegExp('fun $name\\([\\s\\S]*?\\n    \\}').firstMatch(source);
+  return match?.group(0);
+}
+
+/// 新 pin 契约里"只允许 pin 标准入口"的 kind 白名单。
+///
+/// 允许两种实现形态：函数体里的 `when (kind) { "todo", "habit", ... }` 字面量，
+/// 或者 registry 内单独的 `setOf(...)` / `listOf(...)` 集合声明。返回值必须恰好
+/// 等于核心 4 类；多一类（例如把历史综合组件也放进来）同样判失败。
+Set<String> _standardPinnedKinds(
+  String source,
+  String pinBody,
+  Set<String> coreKinds,
+) {
+  final literals = coreKinds
+      .where(
+        (kind) => pinBody.contains('"$kind"') || pinBody.contains("'$kind'"),
+      )
+      .toSet();
+  if (literals.length == coreKinds.length) return literals;
+  // `setOf(KIND_TODO, ...)` 里常量的字面量声明也解析，避免只认内联字符串。
+  final stringConstants = <String, String>{};
+  for (final match in RegExp(
+    r'\b(?:const\s+)?val\s+(\w+)\s*=\s*"([a-z_]+)"',
+  ).allMatches(source)) {
+    stringConstants[match.group(1)!] = match.group(2)!;
+  }
+  for (final match in RegExp(
+    r'(?:setOf|mutableSetOf|listOf|arrayOf)\(([\s\S]{0,500}?)\)',
+  ).allMatches(source)) {
+    final region = match.group(1)!;
+    final ids = <String>{
+      for (final literal in RegExp(r'"([a-z_]+)"').allMatches(region))
+        literal.group(1)!,
+      for (final identifier in RegExp(r'[A-Za-z_]\w*').allMatches(region))
+        if (stringConstants[identifier.group(0)!] != null)
+          stringConstants[identifier.group(0)!]!,
+    };
+    if (ids.length == coreKinds.length && ids.containsAll(coreKinds)) {
+      return ids;
+    }
+  }
+  return literals;
+}
+
+/// `family.standard` 的返回必须紧跟在核心 4 白名单守卫之后（`when` 字面量分支、
+/// `kind in <allowlist>`，或守卫行后 4 行内的多行 return），而不是无条件回落。
+bool _standardReturnIsGuarded(String pinBody, Set<String> coreKinds) {
+  final lines = pinBody.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final guarded =
+        coreKinds.any((kind) => line.contains('"$kind"')) ||
+        RegExp(r'\bin\s+[A-Za-z_]\w*').hasMatch(line);
+    if (!guarded) continue;
+    if (lines.skip(i).take(4).join('\n').contains('family.standard')) {
+      return true;
+    }
+  }
+  return false;
+}
 
 bool _pngContainsTextLikeContent(File file) {
   final bytes = file.readAsBytesSync();

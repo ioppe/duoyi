@@ -69,7 +69,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('o'), findsWidgets);
+    // 旧“o”假完成圈已移除：改为真实行/计数 key 的正向断言。
+    expect(find.text('o'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('widget-preview-todo-count')),
+      findsWidgets,
+    );
+    expect(find.text('整理今日计划'), findsWidgets);
     expect(find.text('今天'), findsWidgets);
     expect(find.textContaining('发版准备'), findsWidgets);
     expect(find.textContaining('4x3'), findsWidgets);
@@ -147,7 +153,12 @@ void main() {
     await tester.pump();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('o'), findsWidgets);
+    expect(find.text('o'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('widget-preview-todo-count')),
+      findsWidgets,
+    );
+    expect(find.text('整理今日计划'), findsWidgets);
     expect(find.text('今天'), findsWidgets);
     expect(find.textContaining('发版准备'), findsWidgets);
   });

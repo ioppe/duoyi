@@ -13,6 +13,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Build
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import kotlin.math.roundToInt
@@ -37,6 +38,24 @@ data class DuoyiWidgetThemePalette(
     val borderWidthDp: Int,
 )
 
+/**
+ * 只读派生的 Apple 风色板：从用户已有主题 prefs 推导，绝不回写 prefs。
+ *
+ * - 浅色：雾白容器 F7F8FA / 白 surface / 主 label 1C1C1E / secondary 6E6E73 / 轨道 E9EBEF
+ * - 深色：容器 1C1C1E / surface 2C2C2E / label F5F5F7 / secondary B1B1B7 / 轨道 303034
+ * - accent 沿用主题 primary；深色在 primary 上混少量白提升对比。
+ */
+data class DuoyiApplePalette(
+    val container: Int,
+    val surface: Int,
+    val label: Int,
+    val secondary: Int,
+    val track: Int,
+    val selection: Int,
+    val accent: Int,
+    val dark: Boolean,
+)
+
 object DuoyiWidgetTheme {
     private const val defaultPrimary = "#FFFF6B6B"
     private const val defaultBackground = "#FFFFFFFF"
@@ -48,6 +67,25 @@ object DuoyiWidgetTheme {
     private const val defaultOnPrimary = "#FFFFFFFF"
     private const val defaultAccentStart = "#FFFF6B6B"
     private const val defaultAccentEnd = "#FFFFB088"
+    // Apple 风派生的固定色板（只读，不写入 prefs）。
+    private const val appleLightContainer = "#F7F8FA"
+    private const val appleLightSurface = "#FFFFFF"
+    private const val appleLightLabel = "#1C1C1E"
+    private const val appleLightSecondary = "#6E6E73"
+    private const val appleLightTrack = "#E9EBEF"
+    private const val appleDarkContainer = "#1C1C1E"
+    private const val appleDarkSurface = "#2C2C2E"
+    private const val appleDarkLabel = "#F5F5F7"
+    private const val appleDarkSecondary = "#B1B1B7"
+    private const val appleDarkTrack = "#303034"
+    private const val appleDarkSelection = "#48484D"
+    /** 深色强调色：在主题 primary 上混 22% 白。 */
+    private const val APPLE_DARK_ACCENT_WHITE = 0.22f
+    /** 纯色 root 混入原色的比例：浅色 6%，深色 10%。 */
+    private const val APPLE_LIGHT_ROOT_MIX = 0.06f
+    private const val APPLE_DARK_ROOT_MIX = 0.10f
+    /** 淡 accent CTA 背景透明度。 */
+    private const val APPLE_CTA_ALPHA = 0.12f
     private const val maxBackgroundBitmapCacheEntries = 8
     private val backgroundBitmapCache =
         object : LinkedHashMap<BackgroundBitmapCacheKey, Bitmap>(
@@ -89,8 +127,21 @@ object DuoyiWidgetTheme {
         rootId: Int,
         navId: Int = 0,
         appWidgetId: Int? = null,
+        appleStyle: Boolean = false,
     ) {
         val theme = read(prefs)
+        if (appleStyle) {
+            applyAppleContainer(
+                context = context,
+                views = views,
+                prefs = prefs,
+                theme = theme,
+                rootId = rootId,
+                navId = navId,
+                appWidgetId = appWidgetId,
+            )
+            return
+        }
         val imageResource = backgroundImageResource(theme.backgroundAssetKey)
         if (imageResource != 0) {
             applyImageBackedSurface(
@@ -123,6 +174,54 @@ object DuoyiWidgetTheme {
                 stroke = blend(theme.border, theme.navBackground, 0.45f),
                 radiusDp = theme.controlRadiusDp,
                 strokeWidthDp = if (theme.borderWidthDp > 0) 1 else 0,
+            )
+        }
+    }
+
+    /**
+     * Apple 风外框：24dp 圆角、轻边界、无厚阴影。
+     *
+     * 纯色 root 用近乎不透明的 soft surface 混少量主题原色；深色按 theme.dark。
+     * 主题图片背景继续复用已有的圆角裁切位图（radius=24），不新增模糊/动画。
+     */
+    private fun applyAppleContainer(
+        context: Context,
+        views: RemoteViews,
+        prefs: SharedPreferences,
+        theme: DuoyiWidgetThemePalette,
+        rootId: Int,
+        navId: Int,
+        appWidgetId: Int?,
+    ) {
+        val palette = applePalette(theme)
+        val imageResource = backgroundImageResource(theme.backgroundAssetKey)
+        if (imageResource != 0) {
+            applyImageBackedSurface(
+                context = context,
+                views = views,
+                prefs = prefs,
+                rootId = rootId,
+                imageResource = imageResource,
+                overlayColor = imageOverlayColor(theme),
+                radiusDp = DuoyiWidgetLayout.APPLE_CORNER_RADIUS_DP,
+                appWidgetId = appWidgetId,
+            )
+        } else {
+            views.setViewVisibility(R.id.widget_theme_background, View.GONE)
+            views.setViewVisibility(R.id.widget_theme_overlay, View.GONE)
+            applyAppleSurface(
+                views = views,
+                viewId = rootId,
+                fill = appleRootFill(palette),
+                drawableResource = appleRootDrawable(theme.dark),
+            )
+        }
+        if (navId != 0) {
+            applyAppleSurface(
+                views = views,
+                viewId = navId,
+                fill = palette.track,
+                drawableResource = appleTrackDrawable(theme.dark),
             )
         }
     }
@@ -165,8 +264,29 @@ object DuoyiWidgetTheme {
         prefs: SharedPreferences,
         primaryIds: IntArray = intArrayOf(),
         secondaryIds: IntArray = intArrayOf(),
+        appleStyle: Boolean = false,
     ) {
         val theme = read(prefs)
+        val palette = if (appleStyle) applePalette(theme) else null
+        if (palette != null) {
+            primaryIds.forEach {
+                applyAppleSurface(
+                    views = views,
+                    viewId = it,
+                    fill = withAlpha(palette.accent, APPLE_CTA_ALPHA),
+                    drawableResource = appleCtaDrawable(palette.dark),
+                )
+            }
+            secondaryIds.forEach {
+                applyAppleSurface(
+                    views = views,
+                    viewId = it,
+                    fill = palette.track,
+                    drawableResource = appleTrackDrawable(palette.dark),
+                )
+            }
+            return
+        }
         primaryIds.forEach {
             applyRoundedSurface(
                 views,
@@ -196,13 +316,136 @@ object DuoyiWidgetTheme {
         bodyIds: IntArray = intArrayOf(),
         mutedIds: IntArray = intArrayOf(),
         onPrimaryIds: IntArray = intArrayOf(),
+        appleStyle: Boolean = false,
     ) {
         val theme = read(prefs)
+        if (appleStyle) {
+            val palette = applePalette(theme)
+            primaryIds.forEach { views.setTextColor(it, palette.accent) }
+            bodyIds.forEach { views.setTextColor(it, palette.label) }
+            mutedIds.forEach { views.setTextColor(it, palette.secondary) }
+            onPrimaryIds.forEach { views.setTextColor(it, theme.onPrimary) }
+            return
+        }
         primaryIds.forEach { views.setTextColor(it, theme.primary) }
         bodyIds.forEach { views.setTextColor(it, theme.text) }
         mutedIds.forEach { views.setTextColor(it, theme.mutedText) }
         onPrimaryIds.forEach { views.setTextColor(it, theme.onPrimary) }
     }
+
+    // ------------------------------------------------------------ Apple 风派生色板
+
+    /** 只读派生：不做 blur / 动画 / bitmap 装饰，只换配色与圆角资源。 */
+    fun applePalette(theme: DuoyiWidgetThemePalette): DuoyiApplePalette {
+        // 深色把主题 primary 混少量白，提升在 1C1C1E 上的对比度。
+        val accent = if (theme.dark) blend(Color.WHITE, theme.primary, APPLE_DARK_ACCENT_WHITE) else theme.primary
+        return if (theme.dark) {
+            DuoyiApplePalette(
+                container = parseAppleColor(appleDarkContainer),
+                surface = parseAppleColor(appleDarkSurface),
+                label = parseAppleColor(appleDarkLabel),
+                secondary = parseAppleColor(appleDarkSecondary),
+                track = parseAppleColor(appleDarkTrack),
+                selection = parseAppleColor(appleDarkSelection),
+                accent = accent,
+                dark = true,
+            )
+        } else {
+            DuoyiApplePalette(
+                container = parseAppleColor(appleLightContainer),
+                surface = parseAppleColor(appleLightSurface),
+                label = parseAppleColor(appleLightLabel),
+                secondary = parseAppleColor(appleLightSecondary),
+                track = parseAppleColor(appleLightTrack),
+                selection = parseAppleColor(appleLightSurface),
+                accent = accent,
+                dark = false,
+            )
+        }
+    }
+
+    /** 供 provider 直接取派生色板；与 apply* 内部读到的 prefs 完全一致。 */
+    fun applePaletteOf(prefs: SharedPreferences): DuoyiApplePalette = applePalette(read(prefs))
+
+    /** 纯色 root：近乎不透明的 soft surface 混少量原色（深色按 theme.dark 有更强混合）。 */
+    private fun appleRootFill(palette: DuoyiApplePalette): Int {
+        val mix = if (palette.dark) APPLE_DARK_ROOT_MIX else APPLE_LIGHT_ROOT_MIX
+        return blend(palette.accent, palette.container, mix)
+    }
+
+    /**
+     * 底栏分段控件：选中 segment 用白/深灰小圆角，文字 accent；未选清背景 + secondary。
+     *
+     * 每次 reapply 都先清掉未选标签的背景，避免 RemoteViews 复用时残留上一次的
+     * 选中色块。Android S+ 用 setBackgroundTintList 上色，pre-S 用静态 light/dark
+     * 圆角 drawable 保持形状与对比（不用 setBackgroundColor 破坏圆角）。
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun applySegmentedNavigation(
+        context: Context,
+        views: RemoteViews,
+        prefs: SharedPreferences,
+        tabViewIds: IntArray,
+        selectedId: Int,
+        profile: DuoyiWidgetProfile,
+    ) {
+        val palette = applePaletteOf(prefs)
+        val labelSp = profile.navLabelSp
+        val segmentDrawable = appleSegmentDrawable(palette.dark)
+        tabViewIds.forEach { viewId ->
+            views.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, labelSp)
+            if (viewId == selectedId) {
+                applyAppleSurface(
+                    views = views,
+                    viewId = viewId,
+                    fill = palette.selection,
+                    drawableResource = segmentDrawable,
+                )
+                views.setTextColor(viewId, palette.accent)
+            } else {
+                views.setInt(viewId, "setBackgroundResource", 0)
+                views.setTextColor(viewId, palette.secondary)
+            }
+        }
+    }
+
+    private fun applyAppleSurface(
+        views: RemoteViews,
+        viewId: Int,
+        fill: Int,
+        drawableResource: Int,
+    ) {
+        views.setInt(viewId, "setBackgroundResource", drawableResource)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            views.setColorStateList(
+                viewId,
+                "setBackgroundTintList",
+                ColorStateList.valueOf(fill),
+            )
+        }
+    }
+
+    private fun appleRootDrawable(dark: Boolean): Int =
+        if (dark) R.drawable.widget_apple_bg_dark else R.drawable.widget_apple_bg_light
+
+    private fun appleTrackDrawable(dark: Boolean): Int =
+        if (dark) R.drawable.widget_apple_track_dark else R.drawable.widget_apple_track_light
+
+    private fun appleSegmentDrawable(dark: Boolean): Int =
+        if (dark) R.drawable.widget_apple_segment_dark else R.drawable.widget_apple_segment_light
+
+    private fun appleCtaDrawable(dark: Boolean): Int =
+        if (dark) R.drawable.widget_apple_cta_dark else R.drawable.widget_apple_cta_light
+
+    private fun parseAppleColor(hex: String): Int = Color.parseColor(hex)
+
+    private fun withAlpha(color: Int, alpha: Float): Int =
+        Color.argb(
+            (alpha.coerceIn(0f, 1f) * 255f).roundToInt(),
+            Color.red(color),
+            Color.green(color),
+            Color.blue(color),
+        )
 
     private fun readColor(
         prefs: SharedPreferences,
@@ -251,6 +494,10 @@ object DuoyiWidgetTheme {
     }
 
     private fun widgetBackgroundResource(radiusDp: Int, strokeWidthDp: Int): Int {
+        // 24dp 的 Apple 外框必须真正返回新资源，不能被 >=16 分支映射回 16dp。
+        if (radiusDp >= DuoyiWidgetLayout.APPLE_CORNER_RADIUS_DP) {
+            return R.drawable.widget_apple_bg_light
+        }
         if (radiusDp >= 16) return R.drawable.widget_bg_round_16
         if (radiusDp >= 15) return R.drawable.widget_bg_round_15
         if (radiusDp >= 14) return R.drawable.widget_bg_round_14

@@ -1,5 +1,6 @@
 package com.duoyi.duoyi
 
+import android.os.Build
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -8,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import java.time.LocalDate
+import java.time.YearMonth
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -28,6 +31,8 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 object DuoyiWidgetNavigation {
     const val ACTION_NAVIGATE = "com.duoyi.duoyi.action.WIDGET_NAVIGATE"
     const val ACTION_REFRESH = "com.duoyi.duoyi.action.WIDGET_REFRESH"
+    /** 「今天」：只在同一个实例里把月历列表滚回应用本月，不启动 App。 */
+    const val ACTION_CALENDAR_TODAY = "com.duoyi.duoyi.action.WIDGET_CALENDAR_TODAY"
 
     const val TAB_TODO = "todo"
     const val TAB_HABIT = "habit"
@@ -45,6 +50,12 @@ object DuoyiWidgetNavigation {
     private const val uriScheme = "duoyi-widget"
     private const val hostNavigate = "navigate"
     private const val hostRefresh = "refresh"
+    private const val hostCalendarToday = "calendar-today"
+    private const val calendarTodaySlot = 5
+    private const val collectionSlot = 6
+    private const val anchorKeyPrefix = "duoyi_widget_calendar_anchor_"
+    private const val resetKeyPrefix = "duoyi_widget_calendar_reset_"
+    private const val collectionCategoryPrefix = "com.duoyi.duoyi.category.widget_collection"
     private const val refreshSlot = 7
     private const val maxRequestCodeWidgetId = 0x3FFFF
 
@@ -74,6 +85,7 @@ object DuoyiWidgetNavigation {
         val action = intent.action
         if (action != ACTION_NAVIGATE &&
             action != ACTION_REFRESH &&
+            action != ACTION_CALENDAR_TODAY &&
             action != AppWidgetManager.ACTION_APPWIDGET_UPDATE
         ) {
             return false
@@ -89,6 +101,9 @@ object DuoyiWidgetNavigation {
                 val tab = resolved?.tab
                 if (resolved != null && tab != null && isSupportedTab(tab)) {
                     val id = resolved.target.appWidgetId
+                    if (tab == TAB_CALENDAR && selectionFor(prefs, id, receivingName) != TAB_CALENDAR) {
+                        markCalendarReset(prefs, id)
+                    }
                     saveSelection(prefs, id, tab, receivingName)
                     Log.i(tag, "navigate widgetId=$id tab=$tab provider=$receivingName")
                     renderSelection(context, manager, prefs, id, tab, receivingName)
@@ -111,6 +126,24 @@ object DuoyiWidgetNavigation {
                     } else {
                         receivingProvider.onUpdate(context, manager, intArrayOf(id))
                     }
+                }
+                true
+            }
+
+            ACTION_CALENDAR_TODAY -> {
+                val resolved = resolveInstance(
+                    context, intent, manager, receivingName, ACTION_CALENDAR_TODAY,
+                )
+                if (resolved == null) {
+                    Log.i(tag, "calendar_today_rejected provider=$receivingName data=${intent.data}")
+                } else {
+                    val id = resolved.target.appWidgetId
+                    // 只在本地实例内标记"回到应用本月"，渲染时消费一次；不启动 App。
+                    markCalendarReset(prefs, id)
+                    Log.i(tag, "calendar_today widgetId=$id provider=$receivingName")
+                    renderSelection(
+                        context, manager, prefs, id, TAB_CALENDAR, receivingName,
+                    )
                 }
                 true
             }
@@ -230,7 +263,11 @@ object DuoyiWidgetNavigation {
         if (intent.action != expectedAction) return null
         val data = intent.data ?: return null
         if (data.scheme != uriScheme) return null
-        val expectedHost = if (expectedAction == ACTION_NAVIGATE) hostNavigate else hostRefresh
+        val expectedHost = when (expectedAction) {
+            ACTION_NAVIGATE -> hostNavigate
+            ACTION_CALENDAR_TODAY -> hostCalendarToday
+            else -> hostRefresh
+        }
         if (data.host != expectedHost) return null
 
         val uriId = data.lastPathSegment?.toIntOrNull() ?: return null
@@ -371,8 +408,78 @@ object DuoyiWidgetNavigation {
             if (appWidgetId <= 0) return@forEach
             editor.remove(tabKey(appWidgetId))
             editor.remove(providerKey(appWidgetId))
+            // 实例删除后清掉月历 anchor / 一次性 reset，避免新实例继承旧位置。
+            editor.remove(anchorKey(appWidgetId))
+            editor.remove(resetKey(appWidgetId))
+            editor.remove("duoyi_widget_calendar_pending_scroll_$appWidgetId")
         }
         editor.apply()
+    }
+
+    // ------------------------------------------------- 月历 anchor / 「今天」重置
+
+    /**
+     * 实例的月份 anchor：首次读取时以应用本月为准落盘，之后保持不变。
+     *
+     * 列表范围是 anchor ±120 个月（共 241 项）。anchor 稳定意味着数据/主题刷新
+     * 不会把用户正在看的月份跳回本月；只有「今天」按钮的一次性 reset 才会滚动。
+     */
+    fun calendarAnchor(
+        prefs: SharedPreferences,
+        appWidgetId: Int,
+        today: LocalDate,
+    ): YearMonth {
+        val initial = YearMonth.from(today)
+        if (appWidgetId <= 0) return initial
+        storedCalendarAnchor(prefs, appWidgetId)?.let { return it }
+        prefs.edit().putString(anchorKey(appWidgetId), initial.toString()).apply()
+        return initial
+    }
+
+    /**
+     * 需要滚动时返回目标下标，否则返回 null。
+     *
+     * 只在两种情况返回：本实例首次渲染（anchor 刚落盘）或收到一次「今天」。
+     * 判定与消费都发生在 provider 的 onUpdate 里（`forOrientations` 之外），
+     * 横竖两套 RemoteViews 因此拿到同一个初始/重置意图，不会一个方向先消费掉。
+     */
+    fun calendarScrollIndex(
+        prefs: SharedPreferences,
+        appWidgetId: Int,
+        today: LocalDate,
+    ): Int? {
+        if (appWidgetId <= 0) return null
+        val stored = storedCalendarAnchor(prefs, appWidgetId)
+        val resetRequested = consumeCalendarReset(prefs, appWidgetId)
+        if (stored != null && !resetRequested) return null
+        val anchor = stored ?: YearMonth.from(today).also {
+            prefs.edit().putString(anchorKey(appWidgetId), it.toString()).apply()
+        }
+        return DuoyiWidgetCollections.indexOfMonth(anchor, YearMonth.from(today))
+    }
+
+    private fun storedCalendarAnchor(
+        prefs: SharedPreferences,
+        appWidgetId: Int,
+    ): YearMonth? {
+        val raw = prefs.getString(anchorKey(appWidgetId), null) ?: return null
+        return runCatching { YearMonth.parse(raw) }.getOrNull()
+    }
+
+    private fun markCalendarReset(prefs: SharedPreferences, appWidgetId: Int) {
+        if (appWidgetId <= 0) return
+        prefs.edit().putBoolean(resetKey(appWidgetId), true).apply()
+    }
+
+    /** 只消费一次：读取后立即清除，常规刷新不会再触发滚动。 */
+    private fun consumeCalendarReset(
+        prefs: SharedPreferences,
+        appWidgetId: Int,
+    ): Boolean {
+        if (appWidgetId <= 0) return false
+        if (!prefs.getBoolean(resetKey(appWidgetId), false)) return false
+        prefs.edit().remove(resetKey(appWidgetId)).apply()
+        return true
     }
 
     // ---------------------------------------------------------------- PendingIntent
@@ -489,4 +596,98 @@ object DuoyiWidgetNavigation {
     private fun tabKey(appWidgetId: Int): String = "$tabKeyPrefix$appWidgetId"
 
     private fun providerKey(appWidgetId: Int): String = "$providerKeyPrefix$appWidgetId"
+    // ---------------------------------------------------------------- 「今天」
+
+    /**
+     * 月历「今天」按钮：只发本实例的本地广播，滚回应用本月，不启动 App、不切 tab。
+     */
+    fun bindCalendarToday(
+        context: Context,
+        views: RemoteViews,
+        target: Target?,
+        viewId: Int,
+    ): Boolean {
+        if (target == null || viewId == 0) return false
+        views.setOnClickPendingIntent(viewId, calendarTodayIntent(context, target))
+        return true
+    }
+
+    private fun calendarTodayIntent(context: Context, target: Target): PendingIntent {
+        val intent = Intent(ACTION_CALENDAR_TODAY).apply {
+            setComponent(ComponentName(context.packageName, target.providerName))
+            data = targetUri(target, hostCalendarToday, null)
+            putExtra(extraAppWidgetId, target.appWidgetId)
+            putExtra(extraProvider, target.providerName)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            requestCodeFor(target.appWidgetId, calendarTodaySlot),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    // ------------------------------------------------------------ 集合 fill-in
+
+    /**
+     * 待办行的 fill-in Intent：data 用本地可信 ID 编码成详情深链。
+     *
+     * fill-in 只承载 data，不携带组件 / action；真正启动 Activity 的是 provider 里
+     * 唯一的模板 PendingIntent（见 [collectionTemplate]）。模板的 data 保持为空，
+     * 否则 fill-in 的详情 URI 会被固定 base data 覆盖掉。
+     */
+    fun todoFillInIntent(todoId: String): Intent {
+        val intent = Intent()
+        if (todoId.isBlank()) return intent
+        intent.data = Uri.parse("duoyi://todo/${Uri.encode(todoId)}")
+        return intent
+    }
+
+    /** 月历格的 fill-in Intent：进入 App 日历页（Dart 只按 host 分页）。 */
+    fun calendarFillInIntent(): Intent {
+        return Intent().apply { data = Uri.parse("duoyi://calendar") }
+    }
+
+    /**
+     * 集合 item 的固定模板：显式 MainActivity + 唯一 category（含 kind / 实例）。
+     *
+     * 只有这里允许 FLAG_MUTABLE（API 31+，更低版本无需该 flag），因为系统必须能把
+     * item 的 fill-in data 合进模板。其余 nav / refresh / today 仍是 IMMUTABLE。
+     * 模板 Intent 的 data 故意留空，避免固定 base data 盖掉 fill-in 详情 URL。
+     */
+    fun collectionTemplate(
+        context: Context,
+        target: Target?,
+        kind: String,
+    ): PendingIntent? {
+        if (target == null) return null
+        if (kind != DuoyiWidgetCollectionService.KIND_TODO &&
+            kind != DuoyiWidgetCollectionService.KIND_CALENDAR
+        ) {
+            return null
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setComponent(ComponentName(context.packageName, MainActivity::class.java.name))
+            // 固定 category 让"宿主 provider + 实例 + kind"的模板身份唯一；data 保持空，
+            // 这样 item 的 fill-in 详情 URI 才能生效。
+            addCategory(
+                "$collectionCategoryPrefix.$kind.${target.appWidgetId}.${target.providerName}",
+            )
+        }
+        val mutableFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_MUTABLE
+        } else {
+            0
+        }
+        return PendingIntent.getActivity(
+            context,
+            requestCodeFor(target.appWidgetId, collectionSlot),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag,
+        )
+    }
+
+    private fun anchorKey(appWidgetId: Int): String = "$anchorKeyPrefix$appWidgetId"
+
+    private fun resetKey(appWidgetId: Int): String = "$resetKeyPrefix$appWidgetId"
 }

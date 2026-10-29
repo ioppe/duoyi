@@ -190,8 +190,15 @@
             android:exported="false" />
         <service
             android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
-            android:exported="false"
+            android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- 待办 / 月历桌面集合的 RemoteViewsService：只被系统 launcher 通过
+             BIND_REMOTEVIEWS 绑定，不导出、不新增权限或 receiver。 -->
+        <service
+            android:name=".DuoyiWidgetCollectionService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <!-- 历史兼容总览小组件：保留升级前已添加到桌面的旧实例。 -->
         <receiver

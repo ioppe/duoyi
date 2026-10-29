@@ -2,6 +2,29 @@ import '../core/focus_sound_catalog.dart';
 
 enum PomodoroType { focus, shortBreak, longBreak }
 
+/// 桌面小组件可远程触发的专注控制动作。
+///
+/// 只包含幂等的三段控制（开始/继续、暂停、停止）：跳过与完成语义另走 App
+/// 内路径，避免小组件把“停止”当成完成或跳到休息。
+enum PomodoroWidgetControlAction { start, pause, stop }
+
+/// 小组件读取的控制身份状态；`wireName` 即 `focus_timer_state` 协议值。
+enum PomodoroWidgetTimerState {
+  idle,
+  running,
+  paused;
+
+  String get wireName => name;
+
+  static PomodoroWidgetTimerState? fromWire(Object? raw) {
+    final value = raw?.toString().trim().toLowerCase();
+    for (final state in PomodoroWidgetTimerState.values) {
+      if (state.wireName == value) return state;
+    }
+    return null;
+  }
+}
+
 class PomodoroConfig {
   static const int defaultFocusDuration = 1500;
   static const int defaultShortBreakDuration = 300;

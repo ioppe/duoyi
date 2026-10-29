@@ -26,6 +26,7 @@ import '../widgets/habit_heatmap.dart';
 import '../widgets/habit_weekly_card.dart';
 import '../widgets/reminder_plan_editor.dart';
 import '../widgets/brand_background.dart';
+import '../widgets/apple_page_frame.dart';
 import '../widgets/surface_components.dart';
 import 'habit_detail_screen.dart';
 
@@ -670,11 +671,13 @@ class _HabitScreenState extends State<HabitScreen>
     final todayScrollView = CustomScrollView(
       key: const ValueKey('habit_today_scroll_view'),
       slivers: [
-        const SliverToBoxAdapter(child: HabitWeeklyCard()),
         SliverToBoxAdapter(
-          key: const ValueKey('habit_insight_before_today_list'),
-          child: _HabitInsightSection(habits: provider.habits),
+          child: KeyedSubtree(
+            key: const ValueKey('habit_insight_before_today_list'),
+            child: _HabitInsightSection(habits: provider.habits),
+          ),
         ),
+        const SliverToBoxAdapter(child: HabitWeeklyCard()),
         if (activeHabits.isEmpty)
           SliverToBoxAdapter(
             key: const ValueKey('habit_today_empty_state_sliver'),
@@ -702,12 +705,36 @@ class _HabitScreenState extends State<HabitScreen>
             ),
           )
         else ...[
+          // 默认主题：先给出「今日打卡」分组标题与完成情况摘要，再进入习惯列表。
+          if (usesApplePageLayout(context))
+            SliverToBoxAdapter(
+              child: AppleSectionHeader(
+                title: s.habitTabToday,
+                subtitle:
+                    '${I18n.tr('today.completed')} $completedCount/${activeHabits.length}',
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.spaceLg,
+                  DesignTokens.spaceSm,
+                  DesignTokens.spaceLg,
+                  DesignTokens.spaceSm,
+                ),
+              ),
+            ),
           SliverToBoxAdapter(
-            child: _HabitTodaySummaryCard(
-              completedCount: completedCount,
-              totalCount: activeHabits.length,
-              selected: _statusFilter,
-              onChanged: (value) => setState(() => _statusFilter = value),
+            child: AppleGroup(
+              margin: const EdgeInsets.fromLTRB(
+                DesignTokens.spaceLg,
+                0,
+                DesignTokens.spaceLg,
+                DesignTokens.spaceMd,
+              ),
+              padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+              child: _HabitTodaySummaryCard(
+                completedCount: completedCount,
+                totalCount: activeHabits.length,
+                selected: _statusFilter,
+                onChanged: (value) => setState(() => _statusFilter = value),
+              ),
             ),
           ),
           if (visibleHabits.isEmpty)
@@ -768,40 +795,88 @@ class _HabitScreenState extends State<HabitScreen>
       emptyMessage: I18n.tr('habit.workspace.history_empty_title'),
     );
 
+    final habitTabs = AppPageTabs(
+      controller: _tabCtrl,
+      height: AppPageTabs.heightFor(context),
+      tabs: [
+        Tab(text: s.habitTabToday),
+        Tab(text: s.habitTabHeatmap),
+      ],
+    );
+    final habitViews = <Widget>[
+      todayScrollView,
+      _heatmapTabBuilt ? heatmapTab : const SizedBox.shrink(),
+    ];
+    final createFab = AppCreateFab(
+      key: const ValueKey('habit_add_action'),
+      label: s.habitAddAction,
+      onPressed: _showAddDialog,
+    );
+
+    // 默认主题：没有 AppBar 外壳，页头 / 页签 / 内容在同一条页面内容流里。
+    if (usesApplePageLayout(context)) {
+      return Scaffold(
+        backgroundColor: routeBackground,
+        body: SafeArea(
+          bottom: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: ApplePageFrame.maxContentWidth,
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ApplePageFrame.gutter,
+                      ApplePageFrame.pageTop,
+                      ApplePageFrame.gutter,
+                      0,
+                    ),
+                    child: ApplePageHeader(title: s.habitTitle),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ApplePageFrame.gutter,
+                      DesignTokens.spaceSm,
+                      ApplePageFrame.gutter,
+                      DesignTokens.spaceXs,
+                    ),
+                    child: habitTabs,
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabCtrl,
+                      children: habitViews,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        floatingActionButton: createFab,
+      );
+    }
+
     return BrandScaffold(
       paintBackground: false,
       appBar: AppBar(
         title: Text(s.habitTitle),
         backgroundColor: routeBackground.withValues(alpha: 0.96),
         surfaceTintColor: Colors.transparent,
-        bottom: AppPageTabs(
-          controller: _tabCtrl,
-          height: AppPageTabs.heightFor(context),
-          tabs: [
-            Tab(text: s.habitTabToday),
-            Tab(text: s.habitTabHeatmap),
-          ],
-        ),
+        bottom: habitTabs,
       ),
       body: Center(
         child: ConstrainedBox(
+          // 其他主题沿用既有 960 工作区宽度。
           constraints: const BoxConstraints(
             maxWidth: DesignTokens.habitWorkspaceMaxWidth,
           ),
-          child: TabBarView(
-            controller: _tabCtrl,
-            children: [
-              todayScrollView,
-              _heatmapTabBuilt ? heatmapTab : const SizedBox.shrink(),
-            ],
-          ),
+          child: TabBarView(controller: _tabCtrl, children: habitViews),
         ),
       ),
-      floatingActionButton: AppCreateFab(
-        key: const ValueKey('habit_add_action'),
-        label: s.habitAddAction,
-        onPressed: _showAddDialog,
-      ),
+      floatingActionButton: createFab,
     );
   }
 }
@@ -971,7 +1046,9 @@ class _HabitInsightSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final insights = HabitInsightEngine.buildInsights(habits, limit: 3);
-    if (insights.isEmpty) return const SizedBox.shrink();
+    if (insights.isEmpty) {
+      return const SizedBox(height: DesignTokens.spaceXxs);
+    }
     return _HabitInsightCard(insights: insights);
   }
 }

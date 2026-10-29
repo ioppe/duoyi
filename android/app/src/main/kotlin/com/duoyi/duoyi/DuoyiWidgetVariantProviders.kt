@@ -50,14 +50,24 @@ object DuoyiWidgetProviderRegistry {
     private const val pendingFieldSeparator = "||"
     private const val pendingVariantProviderTtlMillis = 4 * 60 * 1000L
 
+    /**
+     * 应用内"添加小组件"只固定核心 4 类的标准入口。
+     *
+     * 系统小组件列表现在只暴露这 4 个 provider（其余注册项以
+     * `android:widgetFeatures="hide_from_picker"` 隐藏，仍保留给已添加的旧实例使用）：
+     * DuoyiTodoWidgetProvider / DuoyiHabitWidgetProvider /
+     * DuoyiCalendarWidgetProvider / DuoyiFocusHabitWidgetProvider。
+     *
+     * 密度（compact/standard/detailed）不再决定 provider：请求尺寸仍由 Pin 流程写进
+     * 实例的 DisplayMode 与 options，宿主调整大小后由布局按物理容量自适应。
+     * 已存在的 compact/detailed/次级品类实例继续按原组件刷新、不做禁用或迁移，
+     * 因此 [style] 只影响 DisplayMode，不参与 provider 选择。
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun componentFor(context: Context, kind: String, style: String): ComponentName? {
+        if (kind !in standardCatalogKinds) return null
         val family = widgetFamilies.firstOrNull { it.kind == kind } ?: return null
-        val provider = when (style) {
-            "compact" -> family.compact
-            "detailed" -> family.detailed
-            else -> family.standard
-        }
-        return ComponentName(context, provider)
+        return ComponentName(context, family.standard)
     }
 
     fun rememberPendingVariantProvider(
@@ -465,6 +475,9 @@ object DuoyiWidgetProviderRegistry {
         val variantProviderClasses: List<Class<out AppWidgetProvider>>
             get() = listOf(compact, detailed)
     }
+
+    /** 系统小组件列表可见的 4 个标准品类；其余 family 仅保留给旧实例刷新与宿主查找。 */
+    private val standardCatalogKinds = setOf("todo", "focus", "habit", "calendar")
 
     private val widgetFamilies = listOf(
         WidgetFamily(

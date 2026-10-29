@@ -14,7 +14,7 @@
 
 使用全局 Noto Sans SC 字体、主题颜色和 `DesignTokens`。设计基准是浅灰页面（#F5F6F8）、白色表面（#FFFFFF）、深色正文（#242C38）、次级灰（#78808B）与品牌红（#B84F54）；实际组件继承当前主题的 ColorScheme。选中行使用低透明度主题色背景、主题色文字和勾选反馈。控件在 320px 窄屏、放大文字和键盘弹出时仍通过外层表单滚动访问。
 
-收起摘要的清单名称与任务名、子任务输入统一为 `DesignTokens.fontSizeMd`（共享 token 为 14；原生 Android 标准 100% 且系统未额外放大时的有效字号为 10）、1.5 行高，继承 Noto Sans SC 常规正文。框体保留 56px 最小高度；搜索和结果项使用共享文字层级。历史字号对比见 [截图与验证](../evidence/screenshots/list-group-picker/typography/README.md)，当前全局字阶以 [设计约定](design-v2.md) 为准。
+收起摘要的清单名称与任务名、子任务输入统一为 `DesignTokens.fontSizeMd`（共享 token 为 14；原生 Android 标准 100% 且系统未额外放大时的有效字号为 12）、1.5 行高，继承 Noto Sans SC 常规正文。框体保留 56px 最小高度；搜索和结果项使用共享文字层级。历史字号对比见 [截图与验证](../evidence/screenshots/list-group-picker/typography/README.md)，当前全局字阶以 [设计约定](design-v2.md) 为准。
 
 ## 数据与权限
 

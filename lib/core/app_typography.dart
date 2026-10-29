@@ -5,19 +5,19 @@ import 'design_tokens.dart';
 
 /// 原生平台的基础文字排版基准。
 ///
-/// Android 端正文默认按逻辑字号 10 排版（[DesignTokens.androidFontSizeBody]），
+/// Android 端正文默认按逻辑字号 12 排版（[DesignTokens.androidFontSizeBody]），
 /// 其它平台沿用共享的 [DesignTokens.fontSizeBody] 14。实现方式是给系统
 /// [TextScaler] 再包一层基准 scaler，因此：
 ///
 /// - 只影响文字排版，padding / viewInsets / 触控尺寸仍是系统原值；
-/// - 基准比例由常量 `10 / 14` 计算，不读写偏好、不做档位归一化，
+/// - 基准比例由常量 `12 / 14` 计算，不读写偏好、不做档位归一化，
 ///   用户档位默认仍为 100%；Android 七档与其它平台八档的已保存比例语义不变；
 /// - 内层系统 scaler 原样保留，系统线性 / 非线性缩放行为不变；
 /// - 非 Android 平台与移动 Web 直接返回同一个 `system` 对象。
 class AppTypography {
   AppTypography._();
 
-  /// Android 正文基准相对共享正文 token 的比例（10 / 14）。
+  /// Android 正文基准相对共享正文 token 的比例（12 / 14）。
   static const double androidBodyFactor =
       DesignTokens.androidFontSizeBody / DesignTokens.fontSizeBody;
 

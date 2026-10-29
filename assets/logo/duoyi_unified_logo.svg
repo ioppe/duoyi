@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 统一品牌源：参考图的红色圆角方块和白色三块几何标记。
+     所有 PNG 由 scripts/generate_brand_assets.py 派生；外部画布透明。 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Duoyi">
+  <title>Duoyi unified brand mark</title>
+  <rect x="3" y="5" width="90" height="88" rx="32" ry="32" fill="#C95455"/>
+  <rect x="30" y="31" width="16" height="36" rx="4" ry="4" fill="#FFFFFF"/>
+  <rect x="50" y="31" width="16" height="14" rx="4" ry="4" fill="#FFFFFF"/>
+  <rect x="50" y="49" width="16" height="18" rx="4" ry="4" fill="#FFFFFF"/>
+</svg>

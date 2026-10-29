@@ -143,6 +143,30 @@ class AndroidWidgetPinConfirmation {
 class AndroidWidgetManager {
   AndroidWidgetManager._();
 
+  /// Android 系统小组件列表中的应用内目录：只有这 4 个标准入口。
+  ///
+  /// 原生侧对应 DuoyiTodoWidgetProvider / DuoyiHabitWidgetProvider /
+  /// DuoyiCalendarWidgetProvider / DuoyiFocusHabitWidgetProvider；添加后由宿主
+  /// 拖动边缘调整大小，密度（紧凑/标准/详细）只作为显示偏好保存到实例。
+  /// 其余 5 个历史品类（schedule/goal/course/note/anniversary）与 compact/detailed
+  /// provider 仍保留在 [DuoyiWidgetKind] 与 Manifest 中，供已添加的旧实例刷新。
+  static const List<DuoyiWidgetKind> catalogKinds = <DuoyiWidgetKind>[
+    DuoyiWidgetKind.todo,
+    DuoyiWidgetKind.focus,
+    DuoyiWidgetKind.habit,
+    DuoyiWidgetKind.calendar,
+  ];
+
+  /// 仅测试用：覆盖原生 Android 判定。
+  ///
+  /// flutter test 跑在 VM 上，`Platform.isAndroid` 恒为 false，Android 专属目录
+  /// 分支无法用真实平台条件触达，目录可见性测试靠此注入。
+  @visibleForTesting
+  static bool? debugNativeAndroid;
+
+  /// 当前宿主是否为原生 Android。目录可见性以此为准，不用于 MethodChannel 调用。
+  static bool get isNativeAndroid => debugNativeAndroid ?? _isAndroid;
+
   static const MethodChannel _channel = MethodChannel('duoyi/widgets');
 
   static Future<bool> canRequestPinWidget() async {

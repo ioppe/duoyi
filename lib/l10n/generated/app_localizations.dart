@@ -4433,13 +4433,13 @@ abstract class AppLocalizations {
   /// No description provided for @themeStyleDefaultName.
   ///
   /// In zh, this message translates to:
-  /// **'多仪'**
+  /// **'苹果简约'**
   String get themeStyleDefaultName;
 
   /// No description provided for @themeStyleDefaultDescription.
   ///
   /// In zh, this message translates to:
-  /// **'简洁原版 · 暖橙基调'**
+  /// **'雾灰画布 · 珊瑚红点缀'**
   String get themeStyleDefaultDescription;
 
   /// No description provided for @themeStyleRe0Name.
@@ -6599,8 +6599,62 @@ abstract class AppLocalizations {
   /// No description provided for @widgetCalendarMonthSummary.
   ///
   /// In zh, this message translates to:
-  /// **'本月日期 · 今日已标记'**
+  /// **'右上角为当天事项数'**
   String get widgetCalendarMonthSummary;
+
+  /// No description provided for @widgetCalendarWeekdayMon.
+  ///
+  /// In zh, this message translates to:
+  /// **'一'**
+  String get widgetCalendarWeekdayMon;
+
+  /// No description provided for @widgetCalendarWeekdayTue.
+  ///
+  /// In zh, this message translates to:
+  /// **'二'**
+  String get widgetCalendarWeekdayTue;
+
+  /// No description provided for @widgetCalendarWeekdayWed.
+  ///
+  /// In zh, this message translates to:
+  /// **'三'**
+  String get widgetCalendarWeekdayWed;
+
+  /// No description provided for @widgetCalendarWeekdayThu.
+  ///
+  /// In zh, this message translates to:
+  /// **'四'**
+  String get widgetCalendarWeekdayThu;
+
+  /// No description provided for @widgetCalendarWeekdayFri.
+  ///
+  /// In zh, this message translates to:
+  /// **'五'**
+  String get widgetCalendarWeekdayFri;
+
+  /// No description provided for @widgetCalendarWeekdaySat.
+  ///
+  /// In zh, this message translates to:
+  /// **'六'**
+  String get widgetCalendarWeekdaySat;
+
+  /// No description provided for @widgetCalendarWeekdaySun.
+  ///
+  /// In zh, this message translates to:
+  /// **'日'**
+  String get widgetCalendarWeekdaySun;
+
+  /// No description provided for @widgetCalendarDayCountLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{date}，{count}项'**
+  String widgetCalendarDayCountLabel(Object count, Object date);
+
+  /// No description provided for @widgetCalendarMonthTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年{month}月'**
+  String widgetCalendarMonthTitle(Object month, Object year);
 
   /// No description provided for @widgetHabitPending.
   ///
@@ -6613,6 +6667,96 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'连续记录 '**
   String get widgetStreakRecordPrefix;
+
+  /// No description provided for @widgetTodoEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开{tab}，安排下一件事'**
+  String widgetTodoEmptyHint(Object tab);
+
+  /// No description provided for @widgetTodoCountUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'项'**
+  String get widgetTodoCountUnit;
+
+  /// No description provided for @widgetHabitTodayLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日完成率'**
+  String get widgetHabitTodayLabel;
+
+  /// No description provided for @widgetFocusCountLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'次数'**
+  String get widgetFocusCountLabel;
+
+  /// No description provided for @widgetFocusMinutesLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get widgetFocusMinutesLabel;
+
+  /// No description provided for @widgetFocusNextLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'下轮专注（分钟）'**
+  String get widgetFocusNextLabel;
+
+  /// No description provided for @widgetFocusRemainingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余时间'**
+  String get widgetFocusRemainingLabel;
+
+  /// No description provided for @widgetFocusOpenLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'前往专注'**
+  String get widgetFocusOpenLabel;
+
+  /// No description provided for @widgetFocusRunningLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看倒计时'**
+  String get widgetFocusRunningLabel;
+
+  /// No description provided for @widgetFocusStartLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get widgetFocusStartLabel;
+
+  /// No description provided for @widgetFocusResumeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get widgetFocusResumeLabel;
+
+  /// No description provided for @widgetFocusPauseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停'**
+  String get widgetFocusPauseLabel;
+
+  /// No description provided for @widgetFocusStopLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止'**
+  String get widgetFocusStopLabel;
+
+  /// No description provided for @widgetFocusPausedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get widgetFocusPausedLabel;
+
+  /// No description provided for @widgetTodayLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get widgetTodayLabel;
 
   /// No description provided for @timeAuditTitle.
   ///
@@ -7453,6 +7597,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'小组件样式已保存在此设备'**
   String get widgetStyleSaved;
+
+  /// No description provided for @widgetAndroidPickerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请从系统小组件列表选择待办、专注、习惯或月历，添加后在桌面拖动边缘调整大小。'**
+  String get widgetAndroidPickerHint;
+
+  /// No description provided for @widgetAndroidCatalogDensityHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里选择的是新添加小组件的默认显示密度；系统小组件列表只有待办、专注、习惯、月历四个入口，添加后在桌面拖动边缘调整大小。'**
+  String get widgetAndroidCatalogDensityHint;
+
+  /// No description provided for @widgetMobilePickerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请在手机的系统小组件列表中查找多仪：Android 添加后拖动边缘调整大小，iOS 可在小组件库选择尺寸。'**
+  String get widgetMobilePickerHint;
 
   /// No description provided for @preferencesNavWebSubtitle.
   ///

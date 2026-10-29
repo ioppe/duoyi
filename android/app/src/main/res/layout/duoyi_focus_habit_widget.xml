@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  专注小组件（Apple 风）：顶栏 18dp logo + 13sp 模块名 + MM/dd。
+  body 统计「左大右小」：左侧 32sp 主数（旧 widget_focus_streak_count）+ 11sp 说明，
+  右侧两行 16sp 计数/分钟 + 11sp 单位。运行中主数换成 Chronometer 实时走表，
+  原 TextView 隐藏但 ID 保留。下面三枚并排按钮直接后台开始 / 暂停 / 停止（不再跳 App），
+  旧 widget_focus_quick_start 保留 ID 且 GONE，仅作旧实例兼容。
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_focus_habit_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_round_16"
+    android:background="@drawable/widget_apple_bg_light"
     android:clipToOutline="true"
     android:outlineProvider="background">
 
@@ -19,256 +26,390 @@
         android:id="@+id/widget_theme_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:maxLines="1"
         android:ellipsize="end"
+        android:maxLines="1"
         android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/widget_focus_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="14dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <ImageView
-            android:id="@+id/widget_brand_logo"
-            android:layout_width="0dp"
-            android:layout_height="24dp"
-            android:layout_weight="1"
-            android:contentDescription="@string/app_name"
-            android:scaleType="fitStart"
-            android:src="@drawable/duoyi_widget_logo" />
-
-        <TextView
-            android:id="@+id/widget_focus_habit_title"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:id="@+id/widget_focus_header"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widget_brand_logo"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@string/app_name"
+                android:scaleType="fitStart"
+                android:src="@drawable/duoyi_widget_logo" />
+
+            <TextView
+                android:id="@+id/widget_focus_habit_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="专注"
+                android:textColor="#7E57C2"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/widget_module_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="专注"
+                android:textColor="#1C1C1E"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_focus_habit_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="60dp"
+                android:text="--/--"
+                android:textColor="#6E6E73"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_focus_stats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/widget_focus_streak_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="0"
+                    android:textColor="#1C1C1E"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <!-- 运行中实时走表：与 widget_focus_streak_count 同槽、同字号、同色，
+                     两者互斥显示；无 Dart 更新也能每秒刷新。 -->
+                <Chronometer
+                    android:id="@+id/widget_focus_chronometer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#1C1C1E"
+                    android:textSize="32sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/widget_focus_timer_caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="下一轮"
+                    android:textColor="#6E6E73"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/widget_focus_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:text="0"
+                        android:textColor="#C95455"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_focus_count_caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:text="次数"
+                        android:textColor="#6E6E73"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/widget_focus_habit_progress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:text="0"
+                        android:textColor="#1C1C1E"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_focus_minutes_caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:text="分钟"
+                        android:textColor="#6E6E73"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 计时控制：开始 / 暂停 / 停止。全部走 HomeWidgetBackgroundIntent 后台
+             广播，不拉起 App；淡 accent 背景 + accent 字，不与主时间争视觉。 -->
+        <LinearLayout
+            android:id="@+id/widget_focus_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_focus_start_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/widget_apple_cta_light"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:minHeight="27dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="开始"
+                android:textColor="#C95455"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/widget_focus_pause_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/widget_apple_cta_light"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:minHeight="27dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="暂停"
+                android:textColor="#C95455"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/widget_focus_stop_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/widget_apple_cta_light"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:minHeight="27dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="停止"
+                android:textColor="#C95455"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 旧入口只保留 ID 兼容（GONE）；点击仍指回专注分页，绝不承载业务动作。 -->
+        <TextView
+            android:id="@+id/widget_focus_quick_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_apple_cta_light"
             android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="专注"
-            android:textColor="#7E57C2"
-            android:textSize="14sp"
-            android:textStyle="bold"
+            android:minHeight="27dp"
+            android:text="前往专注"
+            android:textColor="#C95455"
+            android:textSize="12sp"
             android:visibility="gone" />
 
         <TextView
-            android:id="@+id/widget_focus_habit_date"
-            android:layout_width="wrap_content"
+            android:id="@+id/widget_focus_summary"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
-            android:maxWidth="56dp"
+            android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="--/--"
-            android:textColor="#888888"
-            android:textSize="11sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:weightSum="3">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_focus_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="0"
-                android:textColor="#E53935"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="次数"
-                android:textColor="#666666"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_focus_habit_progress"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="0"
-                android:textColor="#43A047"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="分钟"
-                android:textColor="#666666"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_focus_streak_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="0"
-                android:textColor="#7E57C2"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_focus_timer_caption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="下一轮"
-                android:textColor="#666666"
-                android:textSize="10sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/widget_focus_quick_start"
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_marginTop="6dp"
-        android:gravity="center"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="开始 25 分钟专注"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:background="@drawable/widget_btn_primary" />
-
-    <TextView
-        android:id="@+id/widget_focus_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="今日还未专注"
-        android:textColor="#666666"
-        android:textSize="10sp" />
-
-    <TextView
-        android:id="@+id/widget_focus_habit_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="下一轮：25 分钟专注"
-        android:textColor="#666666"
-        android:textSize="10sp" />
-
-    <TextView
-        android:id="@+id/widget_focus_streak_summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="结束后提醒休息"
-        android:textColor="#666666"
-        android:textSize="10sp" />
-
-    <LinearLayout
-        android:id="@+id/widget_focus_habit_bottom_nav"
-        android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/widget_nav_bg"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingLeft="4dp"
-        android:paddingRight="4dp"
-        android:weightSum="4">
-
-        <TextView
-            android:id="@+id/widget_focus_nav_todo"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="待办"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_focus_nav_habit"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="习惯"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_focus_nav_calendar"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="日历"
-            android:textColor="#333333"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_focus_nav_focus"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="专注"
-            android:textColor="#7E57C2"
+            android:text="今日还未专注"
+            android:textColor="#6E6E73"
             android:textSize="10sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_focus_habit_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="下一轮：25 分钟专注"
+            android:textColor="#6E6E73"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_focus_streak_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="结束后提醒休息"
+            android:textColor="#6E6E73"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/widget_focus_spacer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/widget_focus_habit_bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_apple_track_light"
+            android:gravity="center"
+            android:minHeight="28dp"
+            android:orientation="horizontal"
+            android:paddingLeft="3dp"
+            android:paddingTop="2dp"
+            android:paddingRight="3dp"
+            android:paddingBottom="2dp"
+            android:weightSum="4">
+
+            <TextView
+                android:id="@+id/widget_focus_nav_todo"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="待办"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/widget_focus_nav_habit"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="习惯"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/widget_focus_nav_calendar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="日历"
+                android:textColor="#6E6E73"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/widget_focus_nav_focus"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="专注"
+                android:textColor="#7E57C2"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

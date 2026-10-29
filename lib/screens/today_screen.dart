@@ -29,6 +29,7 @@ import '../providers/share_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/user_provider.dart';
+import '../widgets/apple_page_frame.dart';
 import '../widgets/brand_background.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/todo_completion_flow.dart';
@@ -172,45 +173,54 @@ class TodayScreen extends StatelessWidget {
       onTap: () => _go(context, AlmanacScreen(initialDate: now)),
     );
 
-    final metrics = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.spaceMd,
-        vertical: DesignTokens.spaceSm,
-      ),
-      child: Wrap(
-        key: const ValueKey('today_metrics_summary'),
-        spacing: DesignTokens.spaceXxl,
-        runSpacing: DesignTokens.spaceXs,
-        alignment: WrapAlignment.spaceBetween,
-        children: [
-          _TodayMetricLink(
-            label: s.navTodo,
-            value: '$todayTodosCount',
-            unit: I18n.tr('today.unit.item'),
-            icon: Icons.check_circle_outline,
-            onTap: () => _go(context, const TodoScreen()),
-          ),
-          _TodayMetricLink(
-            label: s.navHabit,
-            value: '${(todayHabitProgress * 100).round()}',
-            unit: '%',
-            icon: Icons.repeat,
-            onTap: () => _go(context, const HabitScreen()),
-          ),
-          _TodayMetricLink(
-            label: s.navFocus,
-            value: '$todayFocusMinutes',
-            unit: I18n.tr('unit.min'),
-            icon: Icons.timer_outlined,
-            onTap: () =>
-                _go(context, const PomodoroScreen(useShellBackground: true)),
-          ),
-        ],
-      ),
+    final metricsContent = Wrap(
+      key: const ValueKey('today_metrics_summary'),
+      spacing: DesignTokens.spaceXxl,
+      runSpacing: DesignTokens.spaceXs,
+      alignment: WrapAlignment.spaceBetween,
+      children: [
+        _TodayMetricLink(
+          label: s.navTodo,
+          value: '$todayTodosCount',
+          unit: I18n.tr('today.unit.item'),
+          icon: Icons.check_circle_outline,
+          onTap: () => _go(context, const TodoScreen()),
+        ),
+        _TodayMetricLink(
+          label: s.navHabit,
+          value: '${(todayHabitProgress * 100).round()}',
+          unit: '%',
+          icon: Icons.repeat,
+          onTap: () => _go(context, const HabitScreen()),
+        ),
+        _TodayMetricLink(
+          label: s.navFocus,
+          value: '$todayFocusMinutes',
+          unit: I18n.tr('unit.min'),
+          icon: Icons.timer_outlined,
+          onTap: () =>
+              _go(context, const PomodoroScreen(useShellBackground: true)),
+        ),
+      ],
     );
+    // 默认主题：指标并入同一内容列的一张轻量组面；其他主题保留旧的内外边距。
+    final metrics = usesApplePageLayout(context)
+        ? AppleGroup(
+            margin: const EdgeInsets.only(bottom: ApplePageFrame.sectionGap),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: metricsContent,
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spaceMd,
+              vertical: DesignTokens.spaceSm,
+            ),
+            child: metricsContent,
+          );
 
     Widget todosSection({int maxItems = 6}) {
       return _section(
+        context,
         I18n.tr(
           'today.todos.summary',
         ).replaceAll('{count}', '$todayTodosCount'),
@@ -220,6 +230,24 @@ class TodayScreen extends StatelessWidget {
             ? null
             : '${I18n.tr('today.completed')} $completedTodayCount',
         onMore: () => TodayDetailRouter.open(context, TodaySectionKind.todos),
+        // 默认主题：今日待办拆成组面内的扁平行（细分隔线分列）。
+        flatChildren: todayTodos.isEmpty
+            ? null
+            : <Widget>[
+                for (final t in todayTodos.take(maxItems))
+                  _TodayTodoSwipeTile(
+                    key: ValueKey('today_todo_row_${t.id}'),
+                    todo: t,
+                    flat: true,
+                    onToggle: () =>
+                        completeTodoWithOptionalTimeRecord(context, t),
+                    onOpen: () => TodayDetailRouter.open(
+                      context,
+                      TodaySectionKind.todos,
+                      id: t.id,
+                    ),
+                  ),
+              ],
         child: todayTodos.isEmpty
             ? _TodayTodoEmptyState(
                 onTap: () =>
@@ -279,6 +307,7 @@ class TodayScreen extends StatelessWidget {
     Widget? coursesSection() {
       if (todayCourses.isEmpty) return null;
       return _section(
+        context,
         I18n.tr('today.courses'),
         subtitle:
             '${todayCourses.length} ${I18n.tr('today.unit.course_section')}',
@@ -315,6 +344,7 @@ class TodayScreen extends StatelessWidget {
     Widget? anniversariesSection() {
       if (soon.isEmpty) return null;
       return _section(
+        context,
         I18n.tr('today.upcoming_anniversaries'),
         onMore: () =>
             TodayDetailRouter.open(context, TodaySectionKind.anniversaries),
@@ -356,6 +386,7 @@ class TodayScreen extends StatelessWidget {
     Widget goalsSection() {
       final theme = Theme.of(context);
       return _section(
+        context,
         I18n.tr(
           'today.goals.summary',
         ).replaceAll('{count}', '${activeGoals.length}'),
@@ -461,6 +492,8 @@ class TodayScreen extends StatelessWidget {
     final anniversaries = anniversariesSection();
     final isDesktopLayout = MediaQuery.sizeOf(context).width >= 1100;
 
+    final appleLayout = usesApplePageLayout(context);
+
     Widget homePage({required String id, required List<Widget> children}) {
       return Align(
         alignment: Alignment.topCenter,
@@ -468,16 +501,24 @@ class TodayScreen extends StatelessWidget {
           constraints: const BoxConstraints(
             maxWidth: DesignTokens.homeContentMaxWidth,
           ),
-          child: ListView(
-            key: ValueKey(id),
-            restorationId: id,
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.spaceMd,
-              DesignTokens.spaceXs,
-              DesignTokens.spaceMd,
-              DesignTokens.space5xl + DesignTokens.spaceXxl,
+          // 默认主题：统一 16 内容列 + 页头/页尾留白；其他主题维持既有边距。
+          child: ApplePageFrame(
+            horizontalInset: appleLayout ? ApplePageFrame.gutter : 0,
+            maxWidth: double.infinity,
+            child: ListView(
+              key: ValueKey(id),
+              restorationId: id,
+              padding: EdgeInsets.fromLTRB(
+                appleLayout ? 0 : DesignTokens.spaceMd,
+                appleLayout ? ApplePageFrame.pageTop : DesignTokens.spaceXs,
+                appleLayout ? 0 : DesignTokens.spaceMd,
+                (appleLayout
+                        ? ApplePageFrame.pageBottom
+                        : DesignTokens.space5xl) +
+                    DesignTokens.spaceXxl,
+              ),
+              children: children,
             ),
-            children: children,
           ),
         ),
       );
@@ -485,9 +526,11 @@ class TodayScreen extends StatelessWidget {
 
     final scaler = MediaQuery.textScalerOf(context);
     final tabHeight = AppPageTabs.heightFor(context);
+    // Apple 页头与现有页面标题共用 18 号基线，额外留白由页头组件负责。
+    final toolbarTitleSize = DesignTokens.homeHeadingSize;
     final toolbarHeight =
         DesignTokens.homeTopInset +
-        scaler.scale(DesignTokens.homeHeadingSize) * 1.5 +
+        scaler.scale(toolbarTitleSize) * 1.5 +
         DesignTokens.spaceXs +
         scaler.scale(DesignTokens.homeCaptionSize) * 1.5;
     Widget homeTab({
@@ -517,6 +560,121 @@ class TodayScreen extends StatelessWidget {
         ],
       ),
     );
+    final todayTabs = AppPageTabs(
+      barKey: const ValueKey('today_home_tabs'),
+      height: tabHeight,
+      padding: EdgeInsets.zero,
+      tabs: [
+        homeTab(
+          key: const ValueKey('today_todos_tab'),
+          text: I18n.tr('today.todos'),
+          count: todayTodosCount,
+        ),
+        homeTab(
+          key: const ValueKey('today_goals_tab'),
+          text: I18n.tr('today.tab.goals'),
+          count: activeGoals.length,
+        ),
+      ],
+    );
+    final todayPages = <Widget>[
+      homePage(
+        id: 'today_screen_list',
+        children: [
+          todosSection(maxItems: isDesktopLayout ? 8 : 6),
+          metrics,
+          ?reminder,
+          ?courses,
+          ?anniversaries,
+          if (showHomeCalendar) ...[
+            AppleGroup(
+              margin: EdgeInsets.only(
+                bottom: appleLayout ? ApplePageFrame.sectionGap : 0,
+              ),
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+              child: almanacCard,
+            ),
+            if (!appleLayout) const SizedBox(height: DesignTokens.spaceMd),
+          ],
+          _QuoteCard(),
+        ],
+      ),
+      homePage(id: 'today_goals_list', children: [goalsSection()]),
+    ];
+    final todayFab = showCaptureFab
+        ? Builder(
+            builder: (context) {
+              final controller = DefaultTabController.of(context);
+              return AnimatedBuilder(
+                animation: controller,
+                builder: (context, _) => QuickCaptureFab(
+                  key: ValueKey(controller.index),
+                  label: controller.index == 0
+                      ? (home.usesReferencePalette
+                            ? I18n.tr('today.new_todo')
+                            : s.todoCreateTitle)
+                      : I18n.tr('today.new_goal'),
+                  onCreate: controller.index == 0
+                      ? null
+                      : () => showGoalCreateSheet(context),
+                ),
+              );
+            },
+          )
+        : null;
+
+    // 默认主题：没有 AppBar，页头 / 页签 / 内容都在同一条页面内容流里。
+    if (appleLayout) {
+      return DefaultTabController(
+        length: 2,
+        initialIndex: 0,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            bottom: false,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: DesignTokens.homeContentMaxWidth,
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        ApplePageFrame.gutter,
+                        DesignTokens.homeTopInset,
+                        ApplePageFrame.gutter,
+                        0,
+                      ),
+                      child: ApplePageHeader(
+                        title: greeting,
+                        subtitle: I18nDateFormat.homeHeader(now),
+                        titleKey: const ValueKey('home_greeting'),
+                        subtitleKey: const ValueKey('home_date'),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        ApplePageFrame.gutter,
+                        DesignTokens.spaceSm,
+                        ApplePageFrame.gutter,
+                        DesignTokens.spaceXs,
+                      ),
+                      child: todayTabs,
+                    ),
+                    Expanded(child: TabBarView(children: todayPages)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          floatingActionButton: todayFab,
+        ),
+      );
+    }
+
     return DefaultTabController(
       length: 2,
       initialIndex: 0,
@@ -611,142 +769,58 @@ class TodayScreen extends StatelessWidget {
             ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            homePage(
-              id: 'today_screen_list',
-              children: [
-                todosSection(maxItems: isDesktopLayout ? 8 : 6),
-                ?reminder,
-                ?courses,
-                ?anniversaries,
-                if (showHomeCalendar) ...[
-                  almanacCard,
-                  const SizedBox(height: DesignTokens.spaceMd),
-                ],
-                metrics,
-                const SizedBox.shrink(),
-                _QuoteCard(),
-              ],
-            ),
-            homePage(id: 'today_goals_list', children: [goalsSection()]),
-          ],
-        ),
+        body: TabBarView(children: todayPages),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: showCaptureFab
-            ? Builder(
-                builder: (context) {
-                  final controller = DefaultTabController.of(context);
-                  return AnimatedBuilder(
-                    animation: controller,
-                    builder: (context, _) => QuickCaptureFab(
-                      key: ValueKey(controller.index),
-                      label: controller.index == 0
-                          ? (home.usesReferencePalette
-                                ? I18n.tr('today.new_todo')
-                                : s.todoCreateTitle)
-                          : I18n.tr('today.new_goal'),
-                      onCreate: controller.index == 0
-                          ? null
-                          : () => showGoalCreateSheet(context),
-                    ),
-                  );
-                },
-              )
-            : null,
+        floatingActionButton: todayFab,
       ),
     );
   }
 
   Widget _section(
+    BuildContext context,
     String title, {
     String? subtitle,
     required Widget child,
+    List<Widget>? flatChildren,
     VoidCallback? onMore,
     String? actionLabel,
     Key? headerKey,
   }) {
+    final theme = Theme.of(context);
+    final home = HomePageStyle.of(context);
+    final headerStyle = home.typography(
+      theme,
+      size: DesignTokens.homeCaptionSize,
+      color: home.muted,
+    );
+    final apple = usesApplePageLayout(context);
     return Padding(
-      padding: EdgeInsets.zero,
+      // 默认主题：组与组之间固定 16 间距（页头 + 组面），其他主题维持零外距。
+      padding: EdgeInsets.only(bottom: apple ? ApplePageFrame.sectionGap : 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Builder(
-            builder: (context) {
-              final theme = Theme.of(context);
-              final home = HomePageStyle.of(context);
-              final headerStyle = home.typography(
-                theme,
-                size: DesignTokens.homeCaptionSize,
-                color: home.muted,
-              );
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.spaceMd,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) => Row(
-                    key: headerKey,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(title, style: headerStyle),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: DesignTokens.spaceXxs),
-                              Text(subtitle, style: headerStyle),
-                            ],
-                          ],
-                        ),
-                      ),
-                      if (onMore != null) ...[
-                        const SizedBox(width: DesignTokens.spaceSm),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: constraints.maxWidth * 0.48,
-                          ),
-                          child: TextButton(
-                            onPressed: onMore,
-                            style: TextButton.styleFrom(
-                              foregroundColor: home.muted,
-                              textStyle: headerStyle,
-                              minimumSize: const Size(
-                                0,
-                                DesignTokens.controlMinHeight,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: DesignTokens.spaceXs,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    actionLabel ?? I18n.tr('today.view'),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: DesignTokens.spaceXs),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  size: DesignTokens.fontSizeMd,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
+          AppleSectionHeader(
+            headerKey: headerKey,
+            title: title,
+            subtitle: subtitle,
+            titleStyle: headerStyle,
+            subtitleStyle: headerStyle,
+            actionTextStyle: headerStyle,
+            actionColor: home.muted,
+            actionLabel: onMore == null
+                ? null
+                : (actionLabel ?? I18n.tr('today.view')),
+            onAction: onMore,
+            padding: apple
+                ? EdgeInsets.zero
+                : const EdgeInsets.symmetric(horizontal: DesignTokens.spaceMd),
           ),
-          child,
+          // 默认主题：内容进一张白组面；可拆成扁平行时用细分隔线分列，
+          // 其他主题原样返回旧内容。
+          apple
+              ? AppleGroupedList(children: flatChildren ?? <Widget>[child])
+              : child,
         ],
       ),
     );
@@ -764,14 +838,20 @@ class _TodayListDivider extends StatelessWidget {
   const _TodayListDivider();
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spaceMd),
-    child: Divider(
-      height: 1,
-      thickness: 0.5,
-      color: HomePageStyle.of(context).divider,
-    ),
-  );
+  Widget build(BuildContext context) {
+    // 默认主题：分隔线在组面内部不再叠加页边距；其他主题维持既有 12 缩进。
+    final horizontalInset = usesApplePageLayout(context)
+        ? 0.0
+        : DesignTokens.spaceMd;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalInset),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: HomePageStyle.of(context).divider,
+      ),
+    );
+  }
 }
 
 class _TodayMetricLink extends StatelessWidget {

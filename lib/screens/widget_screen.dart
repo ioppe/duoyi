@@ -1,13 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
+import '../core/home_widget_calendar.dart';
+import '../core/home_widget_todos.dart';
 import '../core/web_target.dart';
 import '../core/i18n.dart';
+import '../models/todo.dart';
 import '../providers/theme_provider.dart';
+import '../providers/todo_provider.dart';
 import '../services/android_widget_manager.dart';
 import '../services/home_widget_service.dart';
 import '../widgets/surface_components.dart';
+import '../widgets/widget_brand_logo.dart';
 import 'calendar_screen.dart';
 
 class WidgetScreen extends StatefulWidget {
@@ -116,6 +124,9 @@ class _WidgetScreenState extends State<WidgetScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Android 系统小组件列表只暴露核心 4 类（AndroidWidgetManager.catalogKinds）：
+    // 5 个次级品类仍保留给已添加的旧实例刷新，但不再出现在应用内目录。
+    final showSecondaryWidgetCatalog = !AndroidWidgetManager.isNativeAndroid;
     final cs = Theme.of(context).colorScheme;
     final routeBackground = Theme.of(context).brightness == Brightness.dark
         ? cs.surface
@@ -229,10 +240,10 @@ class _WidgetScreenState extends State<WidgetScreen>
                     onPinSupportChanged: _setPinSupport,
                   ),
                   const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
+                  _WidgetCatalogTile(
                     icon: Icons.calendar_month_outlined,
                     title: '月历',
-                    subtitle: '显示本月日期和今日标记',
+                    subtitle: I18n.tr('widget.calendar_month_summary'),
                     color: Colors.indigo,
                   ),
                   const SizedBox(height: 10),
@@ -247,102 +258,105 @@ class _WidgetScreenState extends State<WidgetScreen>
                     onPinSupportChanged: _setPinSupport,
                   ),
                   const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.event_note_outlined,
-                    title: '今日日程',
-                    subtitle: '展示今天的日程和提醒时间',
-                    color: Colors.cyan,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.schedule(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.schedule,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
-                  const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.flag_outlined,
-                    title: '目标',
-                    subtitle: '展示进行中目标和进度',
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.goal(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.goal,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
-                  const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.school_outlined,
-                    title: '课程表',
-                    subtitle: '展示今日课程和下一节课',
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.course(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.course,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
-                  const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.edit_note_outlined,
-                    title: '随手记',
-                    subtitle: '展示最近更新的三条笔记，点击进入随手记',
-                    color: Colors.purple,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.note(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.note,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
-                  const SizedBox(height: 16),
-                  const _WidgetCatalogTile(
-                    icon: Icons.event_available_outlined,
-                    title: '纪念日',
-                    subtitle: '展示最近的纪念日，点击进入纪念日列表',
-                    color: Colors.pink,
-                  ),
-                  const SizedBox(height: 10),
-                  WidgetPreviewCard.anniversary(displayMode: _displayMode),
-                  const SizedBox(height: 8),
-                  _AddWidgetButton(
-                    pinSupport: _pinSupport,
-                    checkingPinSupport: _checkingPinSupport,
-                    kind: DuoyiWidgetKind.anniversary,
-                    displayMode: _displayMode,
-                    canOpenWidgetSettings: _canOpenWidgetSettings,
-                    onPinSupportChanged: _setPinSupport,
-                  ),
+                  if (showSecondaryWidgetCatalog) ...[
+                    const _WidgetCatalogTile(
+                      icon: Icons.event_note_outlined,
+                      title: '今日日程',
+                      subtitle: '展示今天的日程和提醒时间',
+                      color: Colors.cyan,
+                    ),
+                    const SizedBox(height: 10),
+                    WidgetPreviewCard.schedule(displayMode: _displayMode),
+                    const SizedBox(height: 8),
+                    _AddWidgetButton(
+                      pinSupport: _pinSupport,
+                      checkingPinSupport: _checkingPinSupport,
+                      kind: DuoyiWidgetKind.schedule,
+                      displayMode: _displayMode,
+                      canOpenWidgetSettings: _canOpenWidgetSettings,
+                      onPinSupportChanged: _setPinSupport,
+                    ),
+                    const SizedBox(height: 16),
+                    const _WidgetCatalogTile(
+                      icon: Icons.flag_outlined,
+                      title: '目标',
+                      subtitle: '展示进行中目标和进度',
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 10),
+                    WidgetPreviewCard.goal(displayMode: _displayMode),
+                    const SizedBox(height: 8),
+                    _AddWidgetButton(
+                      pinSupport: _pinSupport,
+                      checkingPinSupport: _checkingPinSupport,
+                      kind: DuoyiWidgetKind.goal,
+                      displayMode: _displayMode,
+                      canOpenWidgetSettings: _canOpenWidgetSettings,
+                      onPinSupportChanged: _setPinSupport,
+                    ),
+                    const SizedBox(height: 16),
+                    const _WidgetCatalogTile(
+                      icon: Icons.school_outlined,
+                      title: '课程表',
+                      subtitle: '展示今日课程和下一节课',
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(height: 10),
+                    WidgetPreviewCard.course(displayMode: _displayMode),
+                    const SizedBox(height: 8),
+                    _AddWidgetButton(
+                      pinSupport: _pinSupport,
+                      checkingPinSupport: _checkingPinSupport,
+                      kind: DuoyiWidgetKind.course,
+                      displayMode: _displayMode,
+                      canOpenWidgetSettings: _canOpenWidgetSettings,
+                      onPinSupportChanged: _setPinSupport,
+                    ),
+                    const SizedBox(height: 16),
+                    const _WidgetCatalogTile(
+                      icon: Icons.edit_note_outlined,
+                      title: '随手记',
+                      subtitle: '展示最近更新的三条笔记，点击进入随手记',
+                      color: Colors.purple,
+                    ),
+                    const SizedBox(height: 10),
+                    WidgetPreviewCard.note(displayMode: _displayMode),
+                    const SizedBox(height: 8),
+                    _AddWidgetButton(
+                      pinSupport: _pinSupport,
+                      checkingPinSupport: _checkingPinSupport,
+                      kind: DuoyiWidgetKind.note,
+                      displayMode: _displayMode,
+                      canOpenWidgetSettings: _canOpenWidgetSettings,
+                      onPinSupportChanged: _setPinSupport,
+                    ),
+                    const SizedBox(height: 16),
+                    const _WidgetCatalogTile(
+                      icon: Icons.event_available_outlined,
+                      title: '纪念日',
+                      subtitle: '展示最近的纪念日，点击进入纪念日列表',
+                      color: Colors.pink,
+                    ),
+                    const SizedBox(height: 10),
+                    WidgetPreviewCard.anniversary(displayMode: _displayMode),
+                    const SizedBox(height: 8),
+                    _AddWidgetButton(
+                      pinSupport: _pinSupport,
+                      checkingPinSupport: _checkingPinSupport,
+                      kind: DuoyiWidgetKind.anniversary,
+                      displayMode: _displayMode,
+                      canOpenWidgetSettings: _canOpenWidgetSettings,
+                      onPinSupportChanged: _setPinSupport,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   AppInfoBanner(
                     icon: Icons.touch_app_outlined,
                     color: Colors.teal,
                     title: '添加桌面无权限时的处理',
-                    message:
-                        '这里选择的是新添加小组件的默认样式/请求尺寸；已添加到桌面的实例不会被修改。系统小组件列表也提供紧凑 2×2、标准 3×2 和详细 4×3 入口。',
+                    message: AndroidWidgetManager.isNativeAndroid
+                        ? I18n.tr('widget.android_catalog_density_hint')
+                        : '这里选择的是新添加小组件的默认样式/请求尺寸；已添加到桌面的实例不会被修改。系统小组件列表也提供紧凑 2×2、标准 3×2 和详细 4×3 入口。',
                   ),
                 ],
               ),
@@ -440,18 +454,20 @@ class _WidgetPinSupportBanner extends StatelessWidget {
     final message = checking
         ? '正在检测当前桌面是否支持直接固定小组件。'
         : supported
-        ? '选择紧凑 2×2、标准 3×2 或详细 4×3 后再添加；这是新添加实例的请求尺寸，最终占位仍由桌面网格决定。'
+        ? I18n.tr('widget.android_picker_hint')
         : switch (support) {
-            AndroidWidgetPinResult.unsupportedPlatform =>
-              '请在 Android 手机上使用系统小组件列表添加多仪，可选择紧凑 2×2、标准 3×2 或详细 4×3。',
+            AndroidWidgetPinResult.unsupportedPlatform => I18n.tr(
+              'widget.mobile_picker_hint',
+            ),
             AndroidWidgetPinResult.unsupportedLauncher =>
-              '当前桌面启动器未开放应用内添加；请从系统小组件列表选择紧凑 2×2、标准 3×2 或详细 4×3。',
+              '当前桌面启动器未开放应用内添加。${I18n.tr('widget.android_picker_hint')}',
             AndroidWidgetPinResult.permissionDenied =>
-              '系统拒绝了添加请求，通常是桌面小组件权限未允许。请在系统设置里允许多仪添加桌面小组件后重试，或从系统小组件列表选择尺寸。',
+              '系统拒绝了添加请求，通常是桌面小组件权限未允许。请在系统设置里允许多仪添加桌面小组件后重试。${I18n.tr('widget.android_picker_hint')}',
             AndroidWidgetPinResult.confirmationBlocked =>
-              '桌面没有展示或接受系统确认弹窗，常见于后台弹窗/悬浮窗限制。请允许多仪显示系统确认后重试，或从系统小组件列表选择尺寸。',
+              '桌面没有展示或接受系统确认弹窗，常见于后台弹窗/悬浮窗限制。请允许多仪显示系统确认后重试。${I18n.tr('widget.android_picker_hint')}',
             AndroidWidgetPinResult.invalidKind => '请更新应用后重试。',
-            _ => '如果点击添加后没有系统确认框，请打开系统设置检查桌面小组件权限、后台弹窗权限后重试，或从系统小组件列表选择尺寸。',
+            _ =>
+              '如果点击添加后没有系统确认框，请打开系统设置检查桌面小组件权限、后台弹窗权限后重试。${I18n.tr('widget.android_picker_hint')}',
           };
     final cs = Theme.of(context).colorScheme;
     return AppSurfaceCard(
@@ -789,18 +805,19 @@ class _AddWidgetButtonState extends State<_AddWidgetButton> {
   ) async {
     final message = switch (result) {
       AndroidWidgetPinResult.unsupported =>
-        '当前桌面不支持应用内直接添加小组件。请从系统小组件列表选择紧凑 2×2、标准 3×2 或详细 4×3。',
-      AndroidWidgetPinResult.unsupportedPlatform =>
-        '当前平台不支持直接添加 Android 桌面小组件。请在 Android 手机上使用系统小组件列表添加多仪，可选择紧凑 2×2、标准 3×2 或详细 4×3。',
+        '当前桌面不支持应用内直接添加小组件。${I18n.tr('widget.android_picker_hint')}',
+      AndroidWidgetPinResult.unsupportedPlatform => I18n.tr(
+        'widget.mobile_picker_hint',
+      ),
       AndroidWidgetPinResult.unsupportedLauncher =>
-        '当前桌面启动器不支持应用内直接添加小组件。请从系统小组件列表选择紧凑 2×2、标准 3×2 或详细 4×3。',
+        '当前桌面启动器不支持应用内直接添加小组件。${I18n.tr('widget.android_picker_hint')}',
       AndroidWidgetPinResult.permissionDenied =>
-        '系统拒绝了本次添加请求，通常是桌面小组件权限未允许；也可能没有桌面添加权限。请在系统设置里允许多仪添加桌面小组件后重试，或从系统小组件列表选择尺寸。',
+        '系统拒绝了本次添加请求，通常是桌面小组件权限未允许；也可能没有桌面添加权限。请在系统设置里允许多仪添加桌面小组件后重试。${I18n.tr('widget.android_picker_hint')}',
       AndroidWidgetPinResult.confirmationBlocked =>
-        '桌面没有展示或接受系统确认弹窗，常见于后台弹出确认、后台弹窗或悬浮窗限制，或桌面拦截了确认流程。请允许多仪显示系统确认后重试，或从系统小组件列表选择尺寸。',
+        '桌面没有展示或接受系统确认弹窗，常见于后台弹出确认、后台弹窗或悬浮窗限制，或桌面拦截了确认流程。请允许多仪显示系统确认后重试。${I18n.tr('widget.android_picker_hint')}',
       AndroidWidgetPinResult.invalidKind => '当前小组件类型暂不支持添加，请更新应用后重试。',
       AndroidWidgetPinResult.unavailable =>
-        '无法发起添加到桌面。可打开系统设置检查桌面小组件权限、后台弹窗权限后重试，或从系统小组件列表选择尺寸。',
+        '无法发起添加到桌面。可打开系统设置检查桌面小组件权限、后台弹窗权限后重试。${I18n.tr('widget.android_picker_hint')}',
       AndroidWidgetPinResult.requested => '已发起添加请求，请在桌面确认小组件。',
     };
     await showDialog<void>(
@@ -835,15 +852,15 @@ class _AddWidgetButtonState extends State<_AddWidgetButton> {
     final (title, message) = switch (confirmation.status) {
       AndroidWidgetPinFinalStatus.invalidWidgetId => (
         '添加未完成',
-        '桌面返回了无效的小组件实例，系统没有真正创建桌面小组件。请重新点击添加；如果反复出现，请切换标准尺寸或在系统小组件列表中添加。',
+        '桌面返回了无效的小组件实例，系统没有真正创建桌面小组件。请重新点击添加；如果反复出现，请从系统小组件列表重新添加。${I18n.tr('widget.android_picker_hint')}',
       ),
       AndroidWidgetPinFinalStatus.timeout => (
         '等待桌面确认',
-        '已发起添加请求，但桌面暂未返回确认结果。部分桌面会延迟回调，可先回到桌面查看；如果一直没有确认弹窗，请检查桌面小组件权限和后台弹窗权限，或从系统小组件列表选择尺寸。',
+        '已发起添加请求，但桌面暂未返回确认结果。部分桌面会延迟回调，可先回到桌面查看；如果一直没有确认弹窗，请检查桌面小组件权限和后台弹窗权限。${I18n.tr('widget.android_picker_hint')}',
       ),
       AndroidWidgetPinFinalStatus.unavailable => (
         '添加状态异常',
-        '桌面没有返回有效的添加结果。请重新点击添加；如果反复失败，请检查桌面小组件权限、后台弹窗权限，或从系统小组件列表添加标准尺寸。',
+        '桌面没有返回有效的添加结果。请重新点击添加；如果反复失败，请检查桌面小组件权限、后台弹窗权限。${I18n.tr('widget.android_picker_hint')}',
       ),
       AndroidWidgetPinFinalStatus.success => ('已添加', '桌面小组件已添加。'),
     };
@@ -927,6 +944,8 @@ class WidgetPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    AppClock.watch(context);
+    final previewToday = AppClock.today();
     ThemeProvider? themeProvider;
     try {
       themeProvider = context.watch<ThemeProvider>();
@@ -1007,6 +1026,13 @@ class WidgetPreviewCard extends StatelessWidget {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
+    // core 4 模块用苹果风样卡；secondary 5 模块保持原样。
+    final apple = _usesApplePreview(kind);
+    final palette = _ApplePreviewPalette.of(context, cs);
+    final navLabels = _appleNavLabels(themeProvider);
+    final todayTodos = kind == WidgetPreviewKind.todo
+        ? _watchTodayTodos(context, previewToday)
+        : null;
     return Semantics(
       label: '$title ${displayMode.previewCellLabel}',
       child: LayoutBuilder(
@@ -1026,13 +1052,17 @@ class WidgetPreviewCard extends StatelessWidget {
                 child: Container(
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
-                    color: imageBacked ? cs.surface : previewBackground,
-                    gradient: imageBacked ? null : previewGradient,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: cs.primary.withValues(alpha: 0.16),
-                      width: 0.45,
-                    ),
+                    color: apple
+                        ? palette.surface
+                        : (imageBacked ? cs.surface : previewBackground),
+                    gradient: (apple || imageBacked) ? null : previewGradient,
+                    borderRadius: BorderRadius.circular(apple ? 24 : 12),
+                    border: apple
+                        ? null
+                        : Border.all(
+                            color: cs.primary.withValues(alpha: 0.16),
+                            width: 0.45,
+                          ),
                   ),
                   child: Stack(
                     children: [
@@ -1070,89 +1100,109 @@ class WidgetPreviewCard extends StatelessWidget {
                       if (imageBacked)
                         Positioned.fill(
                           child: DecoratedBox(
-                            decoration: BoxDecoration(gradient: imageOverlay),
+                            decoration: BoxDecoration(
+                              gradient: apple
+                                  ? palette.imageOverlay
+                                  : imageOverlay,
+                            ),
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/logo/duoyi_web_logo_512.png',
-                                  width: 24,
-                                  height: 24,
-                                  fit: BoxFit.contain,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: DesignTokens.fontWeightStrong,
+                      if (apple)
+                        _WidgetApplePreview(
+                          kind: kind,
+                          displayMode: displayMode,
+                          palette: palette,
+                          navLabels: navLabels,
+                          today: previewToday,
+                          todos: todayTodos,
+                        ),
+                      if (!apple)
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const WidgetBrandLogo(size: 24),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight:
+                                            DesignTokens.fontWeightStrong,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '${displayMode.previewCellLabel} · 05/17',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: cs.onSurfaceVariant,
+                                  Text(
+                                    '${displayMode.previewCellLabel} · '
+                                    '${previewToday.month.toString().padLeft(2, '0')}/'
+                                    '${previewToday.day.toString().padLeft(2, '0')}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: cs.onSurfaceVariant,
+                                    ),
                                   ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: _WidgetPreviewContentFrame(
+                                  mode: displayMode,
+                                  designHeightOverride:
+                                      kind == WidgetPreviewKind.calendar
+                                      ? _WidgetPreviewCalendarBody.designHeightFor(
+                                          displayMode,
+                                        )
+                                      : null,
+                                  child: switch (kind) {
+                                    WidgetPreviewKind.todo =>
+                                      const _WidgetPreviewTodoBody(),
+                                    WidgetPreviewKind.focus =>
+                                      const _WidgetPreviewFocusBody(),
+                                    WidgetPreviewKind.habit =>
+                                      const _WidgetPreviewHabitBody(),
+                                    WidgetPreviewKind.calendar =>
+                                      _WidgetPreviewCalendarBody(
+                                        displayMode: displayMode,
+                                      ),
+                                    WidgetPreviewKind.schedule =>
+                                      const _WidgetPreviewScheduleBody(),
+                                    WidgetPreviewKind.goal =>
+                                      const _WidgetPreviewGoalBody(),
+                                    WidgetPreviewKind.course =>
+                                      const _WidgetPreviewCourseBody(),
+                                    WidgetPreviewKind.note =>
+                                      const _WidgetPreviewNoteBody(),
+                                    WidgetPreviewKind.anniversary =>
+                                      const _WidgetPreviewAnniversaryBody(),
+                                  },
+                                ),
+                              ),
+                              if (displayMode != WidgetDisplayMode.compact) ...[
+                                const SizedBox(height: 10),
+                                _WidgetPreviewNav(
+                                  selectedIndex: switch (kind) {
+                                    WidgetPreviewKind.todo => 0,
+                                    WidgetPreviewKind.focus => 3,
+                                    WidgetPreviewKind.habit => 1,
+                                    WidgetPreviewKind.calendar => 2,
+                                    WidgetPreviewKind.schedule => 2,
+                                    WidgetPreviewKind.goal => 2,
+                                    WidgetPreviewKind.course => 2,
+                                    WidgetPreviewKind.note => 2,
+                                    WidgetPreviewKind.anniversary => 2,
+                                  },
+                                  accent: accent,
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 10),
-                            Expanded(
-                              child: _WidgetPreviewContentFrame(
-                                mode: displayMode,
-                                child: switch (kind) {
-                                  WidgetPreviewKind.todo =>
-                                    const _WidgetPreviewTodoBody(),
-                                  WidgetPreviewKind.focus =>
-                                    const _WidgetPreviewFocusBody(),
-                                  WidgetPreviewKind.habit =>
-                                    const _WidgetPreviewHabitBody(),
-                                  WidgetPreviewKind.calendar =>
-                                    const _WidgetPreviewCalendarBody(),
-                                  WidgetPreviewKind.schedule =>
-                                    const _WidgetPreviewScheduleBody(),
-                                  WidgetPreviewKind.goal =>
-                                    const _WidgetPreviewGoalBody(),
-                                  WidgetPreviewKind.course =>
-                                    const _WidgetPreviewCourseBody(),
-                                  WidgetPreviewKind.note =>
-                                    const _WidgetPreviewNoteBody(),
-                                  WidgetPreviewKind.anniversary =>
-                                    const _WidgetPreviewAnniversaryBody(),
-                                },
-                              ),
-                            ),
-                            if (displayMode != WidgetDisplayMode.compact) ...[
-                              const SizedBox(height: 10),
-                              _WidgetPreviewNav(
-                                selectedIndex: switch (kind) {
-                                  WidgetPreviewKind.todo => 0,
-                                  WidgetPreviewKind.focus => 3,
-                                  WidgetPreviewKind.habit => 1,
-                                  WidgetPreviewKind.calendar => 2,
-                                  WidgetPreviewKind.schedule => 2,
-                                  WidgetPreviewKind.goal => 2,
-                                  WidgetPreviewKind.course => 2,
-                                  WidgetPreviewKind.note => 2,
-                                  WidgetPreviewKind.anniversary => 2,
-                                },
-                                accent: accent,
-                              ),
                             ],
-                          ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -1198,15 +1248,28 @@ class _WidgetPreviewContentFrame extends StatelessWidget {
   final WidgetDisplayMode mode;
   final Widget child;
 
-  const _WidgetPreviewContentFrame({required this.mode, required this.child});
+  /// 完整月历等内容较多的预览可抬高设计高度；默认仍按密度取值。
+  final double? designHeightOverride;
+
+  /// 内容比可用空间大时按比例缩小；苹果风样卡水平居中，其它预览保持左上。
+  final Alignment alignment;
+
+  const _WidgetPreviewContentFrame({
+    required this.mode,
+    required this.child,
+    this.designHeightOverride,
+    this.alignment = Alignment.topLeft,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final designHeight = switch (mode) {
-      WidgetDisplayMode.compact => 92.0,
-      WidgetDisplayMode.standard => 150.0,
-      WidgetDisplayMode.detailed => 200.0,
-    };
+    final designHeight =
+        designHeightOverride ??
+        switch (mode) {
+          WidgetDisplayMode.compact => 92.0,
+          WidgetDisplayMode.standard => 150.0,
+          WidgetDisplayMode.detailed => 200.0,
+        };
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth.isFinite
@@ -1214,10 +1277,10 @@ class _WidgetPreviewContentFrame extends StatelessWidget {
             : mode.previewMaxWidth;
         return ClipRect(
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: alignment,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              alignment: Alignment.topLeft,
+              alignment: alignment,
               child: SizedBox(
                 width: width,
                 height: designHeight,
@@ -1253,67 +1316,208 @@ class _WidgetPreviewDensityScope extends InheritedWidget {
 }
 
 class _WidgetPreviewTodoBody extends StatelessWidget {
-  const _WidgetPreviewTodoBody();
+  /// null = 独立预览（无 TodoProvider）时用示例列表；空列表 = 真实今日无待办。
+  final List<TodoItem>? todos;
+  final String navTodoLabel;
+
+  const _WidgetPreviewTodoBody({this.todos, this.navTodoLabel = ''});
 
   @override
   Widget build(BuildContext context) {
-    final maxLines = _WidgetPreviewDensityScope.maxLinesOf(context);
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
+    );
+    final visible = todos;
+    if (visible != null && visible.isEmpty) {
+      return _WidgetTodoAppleEmptyNotice(
+        palette: palette,
+        navTodoLabel: navTodoLabel,
+      );
+    }
+    // 有 Provider 时渲染完整列表（不在数据层截断），由有界 ListView 滚动浏览；
+    // 无 Provider（独立预览/组件测试）才退回到三条示例。
+    final rows = visible == null
+        ? const <Widget>[
+            _WidgetPreviewTodoRow(text: '整理今日计划'),
+            _WidgetPreviewTodoRow(text: '项目复盘 · 3 个子任务'),
+            _WidgetPreviewTodoRow(text: '晚间运动 30 分钟'),
+          ]
+        : <Widget>[
+            for (final todo in visible) _WidgetPreviewTodoRow(text: todo.title),
+          ];
+    return ListView.separated(
+      key: const ValueKey('widget-preview-todo-list'),
+      padding: EdgeInsets.zero,
+      // 固定 key + 外部固定高度：数据刷新不重置滚动位置。
+      physics: const ClampingScrollPhysics(),
+      itemCount: rows.length,
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        thickness: 1,
+        color: palette.ink.withValues(alpha: 0.06),
+      ),
+      itemBuilder: (context, index) => rows[index],
+    );
+  }
+}
+
+/// 待办空态：居中灰勾圆 + 既有文案 + 新提示，不再堆告警和 AI 说明。
+class _WidgetTodoAppleEmptyNotice extends StatelessWidget {
+  final _ApplePreviewPalette palette;
+  final String navTodoLabel;
+
+  const _WidgetTodoAppleEmptyNotice({
+    required this.palette,
+    required this.navTodoLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tabLabel = navTodoLabel.isEmpty ? I18n.tr('nav.todo') : navTodoLabel;
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const _WidgetPreviewLine(
-          icon: Icons.warning_amber_outlined,
-          text: '逾期 1 项 · 20:25 有提醒 · 今日优先处理',
+        Icon(
+          Icons.check_circle_outline,
+          size: 26,
+          color: palette.secondary.withValues(alpha: 0.72),
         ),
-        const SizedBox(height: 5),
-        const _WidgetPreviewTodoRow(text: '整理今日计划'),
-        if (maxLines >= 2) ...[
-          const SizedBox(height: 7),
-          const _WidgetPreviewTodoRow(text: '项目复盘 · 3 个子任务'),
-        ],
-        if (maxLines >= 3) ...[
-          const SizedBox(height: 7),
-          const _WidgetPreviewTodoRow(text: '晚间运动 30 分钟'),
-          const SizedBox(height: 5),
-          const _WidgetPreviewLine(
-            icon: Icons.subdirectory_arrow_right,
-            text: 'AI 子任务：列清单 / 订闹钟 / 完成确认 / 今日可见',
+        const SizedBox(height: 8),
+        Text(
+          I18n.tr('widget.todo_top3_empty'),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: DesignTokens.fontWeightMedium,
+            color: palette.ink,
           ),
-        ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          I18n.tr('widget.todo_empty_hint').replaceAll('{tab}', tabLabel),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 11, height: 1.4, color: palette.secondary),
+        ),
       ],
     );
   }
 }
 
-class _WidgetPreviewFocusBody extends StatelessWidget {
+/// 专注预览：三个控制按钮（开始/继续、暂停、停止）替换原“前往专注”入口。
+///
+/// 纯预览演示：状态与倒计时只在本组件内 tick，**不触碰真实 `PomodoroProvider`**；
+/// 原生真实控制由桌面小组件后台动作完成。首按钮在暂停后显示“继续”。
+class _WidgetPreviewFocusBody extends StatefulWidget {
   const _WidgetPreviewFocusBody();
 
   @override
+  State<_WidgetPreviewFocusBody> createState() =>
+      _WidgetPreviewFocusBodyState();
+}
+
+enum _FocusPreviewPhase { idle, running, paused }
+
+class _WidgetPreviewFocusBodyState extends State<_WidgetPreviewFocusBody> {
+  static const int _totalSeconds = 25 * 60;
+
+  _FocusPreviewPhase _phase = _FocusPreviewPhase.idle;
+  int _remainingSeconds = _totalSeconds;
+  Timer? _ticker;
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startOrResume() {
+    if (_phase == _FocusPreviewPhase.running) return;
+    setState(() => _phase = _FocusPreviewPhase.running);
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_remainingSeconds <= 1) {
+        _stop();
+        return;
+      }
+      setState(() => _remainingSeconds--);
+    });
+  }
+
+  void _pause() {
+    if (_phase != _FocusPreviewPhase.running) return;
+    _ticker?.cancel();
+    _ticker = null;
+    setState(() => _phase = _FocusPreviewPhase.paused);
+  }
+
+  void _stop() {
+    _ticker?.cancel();
+    _ticker = null;
+    setState(() {
+      _phase = _FocusPreviewPhase.idle;
+      _remainingSeconds = _totalSeconds;
+    });
+  }
+
+  String get _timeLabel {
+    final minutes = (_remainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_remainingSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final maxLines = _WidgetPreviewDensityScope.maxLinesOf(context);
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
+    );
+    final startLabel = _phase == _FocusPreviewPhase.paused
+        ? I18n.tr('widget.focus_resume_label')
+        : I18n.tr('widget.focus_start_label');
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '2',
-                label: '专注',
-                color: Colors.redAccent,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _timeLabel,
+                  key: const ValueKey('widget-preview-focus-time'),
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: DesignTokens.fontSizeWidgetPrimaryMetric,
+                    height: 1.05,
+                    letterSpacing: -0.8,
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    color: palette.ink,
+                  ),
+                ),
               ),
             ),
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '50',
-                label: '分钟',
-                color: Colors.redAccent,
-              ),
-            ),
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '25',
-                label: '下一轮',
-                color: Colors.redAccent,
-              ),
+            const SizedBox(width: 8),
+            Text(
+              _phase == _FocusPreviewPhase.paused
+                  ? I18n.tr('widget.focus_paused_label')
+                  : _phase == _FocusPreviewPhase.running
+                  ? I18n.tr('widget.focus_running_label')
+                  : I18n.tr('widget.focus_next_label'),
+              key: const ValueKey('widget-preview-focus-status'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: palette.secondary),
             ),
           ],
         ),
@@ -1321,41 +1525,82 @@ class _WidgetPreviewFocusBody extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Container(
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '开始 25 分钟专注',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
+              child: _WidgetPreviewFocusButton(
+                buttonKey: const ValueKey('widget-preview-focus-start'),
+                label: startLabel,
+                palette: palette,
+                emphasized: true,
+                onTap: _startOrResume,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _WidgetPreviewFocusButton(
+                buttonKey: const ValueKey('widget-preview-focus-pause'),
+                label: I18n.tr('widget.focus_pause_label'),
+                palette: palette,
+                onTap: _pause,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _WidgetPreviewFocusButton(
+                buttonKey: const ValueKey('widget-preview-focus-stop'),
+                label: I18n.tr('widget.focus_stop_label'),
+                palette: palette,
+                onTap: _stop,
               ),
             ),
           ],
         ),
-        if (maxLines >= 2) ...[
-          const SizedBox(height: 8),
-          const _WidgetPreviewLine(
-            icon: Icons.timer_outlined,
-            text: '今日专注 2 次 · 深度工作 50 分钟',
-          ),
-        ],
-        if (maxLines >= 3) ...[
-          const _WidgetPreviewLine(
-            icon: Icons.play_circle_outline,
-            text: '下一轮 25 分钟 · 点击立即开始',
-          ),
-          const _WidgetPreviewLine(
-            icon: Icons.notifications_active_outlined,
-            text: '结束后提醒休息 5 分钟',
-          ),
-        ],
       ],
+    );
+  }
+}
+
+class _WidgetPreviewFocusButton extends StatelessWidget {
+  final Key buttonKey;
+  final String label;
+  final _ApplePreviewPalette palette;
+  final bool emphasized;
+  final VoidCallback onTap;
+
+  const _WidgetPreviewFocusButton({
+    required this.buttonKey,
+    required this.label,
+    required this.palette,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: buttonKey,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 26,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: emphasized
+              ? palette.accent.withValues(alpha: 0.12)
+              : palette.track,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: DesignTokens.fontWeightMedium,
+            color: emphasized ? palette.accent : palette.ink,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1365,203 +1610,289 @@ class _WidgetPreviewHabitBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxLines = _WidgetPreviewDensityScope.maxLinesOf(context);
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
+    );
+    // 示例数据与原 demo 一致（4/5 完成、80%、连续 12 天），不改 HabitProvider。
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
-          children: [
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '4/5',
-                label: '完成',
-                color: Colors.green,
-              ),
-            ),
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '80%',
-                label: '进度',
-                color: Colors.green,
-              ),
-            ),
-            Expanded(
-              child: _WidgetPreviewMetric(
-                value: '12',
-                label: '连续',
-                color: Colors.green,
-              ),
-            ),
-          ],
+        Text(
+          '80%',
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: DesignTokens.fontSizeWidgetPrimaryMetric,
+            height: 1.1,
+            letterSpacing: -1,
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: palette.ink,
+          ),
         ),
-        if (maxLines >= 2) ...[
-          const SizedBox(height: 8),
-          const _WidgetPreviewLine(
-            icon: Icons.self_improvement_outlined,
-            text: '晚间拉伸 · 今天待打卡',
-          ),
-        ],
-        if (maxLines >= 3) ...[
-          const _WidgetPreviewLine(
-            icon: Icons.water_drop_outlined,
-            text: '喝水 · 已记录 7 杯',
-          ),
-          const _WidgetPreviewLine(
-            icon: Icons.local_fire_department_outlined,
-            text: '连续记录 12 天',
-          ),
-        ],
+        const SizedBox(height: 5),
+        Text(
+          I18n.tr('widget.habit_today_label'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: palette.secondary),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${I18n.tr('widget.streak_record_prefix')}12'
+          '${I18n.tr('widget.streak_suffix')}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 12, color: palette.ink),
+        ),
       ],
     );
   }
 }
 
-class _WidgetPreviewCalendarBody extends StatelessWidget {
-  const _WidgetPreviewCalendarBody();
+/// 固定单月预览：沿用原来的正文设计高度、星期表头和完整 4-6 周网格。
+/// 月份标题放回外层头栏，正文不再插入标题或纵向月份列表。
+class _WidgetPreviewCalendarBody extends StatefulWidget {
+  final WidgetDisplayMode displayMode;
+
+  const _WidgetPreviewCalendarBody({super.key, required this.displayMode});
+
+  static double designHeightFor(WidgetDisplayMode mode) => switch (mode) {
+    WidgetDisplayMode.compact => 132.0,
+    WidgetDisplayMode.standard => 150.0,
+    WidgetDisplayMode.detailed => 200.0,
+  };
+
+  @override
+  State<_WidgetPreviewCalendarBody> createState() =>
+      _WidgetPreviewCalendarBodyState();
+}
+
+class _WidgetPreviewCalendarBodyState
+    extends State<_WidgetPreviewCalendarBody> {
+  void refreshCurrentMonth() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final maxLines = _WidgetPreviewDensityScope.maxLinesOf(context);
-    const currentWeekIndex = 2;
-    final visibleWeeks = switch (maxLines) {
-      1 => [currentWeekIndex],
-      2 => [
-        currentWeekIndex - 1,
-        currentWeekIndex,
-        currentWeekIndex + 1,
-        currentWeekIndex + 2,
-      ],
-      _ => [0, 1, 2, 3, 4, 5],
+    AppClock.watch(context);
+    final today = AppClock.today();
+    final month = DateTime(today.year, today.month);
+    final monthKey = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+    TodoProvider? todoProvider;
+    try {
+      todoProvider = context.watch<TodoProvider>();
+    } catch (_) {
+      // 组件测试和独立预览允许不注入业务 Provider。
+      todoProvider = null;
+    }
+    final dayCounts = buildHomeWidgetCalendarDayCounts(
+      todoProvider?.todos ?? const <TodoItem>[],
+    );
+    final dateFontSize = switch (widget.displayMode) {
+      WidgetDisplayMode.compact => 10.0,
+      WidgetDisplayMode.standard => 11.0,
+      WidgetDisplayMode.detailed => 12.0,
     };
-    const weekLabels = ['一', '二', '三', '四', '五', '六', '日'];
-    const monthWeeks = <List<int?>>[
-      [null, null, null, null, 1, 2, 3],
-      [4, 5, 6, 7, 8, 9, 10],
-      [11, 12, 13, 14, 15, 16, 17],
-      [18, 19, 20, 21, 22, 23, 24],
-      [25, 26, 27, 28, 29, 30, 31],
-      [null, null, null, null, null, null, null],
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '2026年5月',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-              ),
-            ),
-            Container(
-              height: 22,
-              padding: const EdgeInsets.symmetric(horizontal: 9),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.blue.withValues(alpha: 0.28),
-                  width: 0.45,
-                ),
-              ),
-              child: const Text(
-                '今天',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 11,
-                  fontWeight: DesignTokens.fontWeightStrong,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 7),
-        _WidgetPreviewCalendarGrid(
-          weekLabels: weekLabels,
-          weeks: [for (final index in visibleWeeks) monthWeeks[index]],
-        ),
-      ],
+    return SizedBox.expand(
+      key: ValueKey('widget-calendar-month-$monthKey'),
+      child: _WidgetPreviewCalendarGrid(
+        key: const ValueKey('widget-preview-calendar-month-grid'),
+        weekdayLabels: homeWidgetCalendarWeekdayLabels(),
+        weeks: buildHomeWidgetCalendarWeeks(month),
+        dayCounts: dayCounts,
+        today: today,
+        dateFontSize: dateFontSize,
+      ),
     );
   }
 }
 
 class _WidgetPreviewCalendarGrid extends StatelessWidget {
-  final List<String> weekLabels;
-  final List<List<int?>> weeks;
+  final List<String> weekdayLabels;
+  final List<List<DateTime?>> weeks;
+  final Map<String, int> dayCounts;
+  final DateTime today;
+  final double dateFontSize;
 
   const _WidgetPreviewCalendarGrid({
-    required this.weekLabels,
+    super.key,
+    required this.weekdayLabels,
     required this.weeks,
+    required this.dayCounts,
+    required this.today,
+    required this.dateFontSize,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
+    );
     return Column(
       children: [
         Row(
           children: [
-            for (final label in weekLabels)
+            for (final label in weekdayLabels)
               Expanded(
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.clip,
-                  style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                  style: TextStyle(fontSize: 9, color: palette.secondary),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 4),
-        for (final week in weeks) ...[
-          Row(
+        const SizedBox(height: 2),
+        Expanded(
+          child: Column(
             children: [
-              for (final day in week)
-                Expanded(child: _WidgetPreviewCalendarCell(day: day)),
+              for (var index = 0; index < weeks.length; index++)
+                Expanded(
+                  child: Row(
+                    key: ValueKey('widget-calendar-week-$index'),
+                    children: [
+                      for (final date in weeks[index])
+                        Expanded(
+                          child: _WidgetPreviewCalendarCell(
+                            date: date,
+                            count: date == null
+                                ? 0
+                                : dayCounts[homeWidgetCalendarDayKey(date)] ??
+                                      0,
+                            isToday:
+                                date != null &&
+                                date.year == today.year &&
+                                date.month == today.month &&
+                                date.day == today.day,
+                            dateFontSize: dateFontSize,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 3),
-        ],
+        ),
       ],
     );
   }
 }
 
 class _WidgetPreviewCalendarCell extends StatelessWidget {
-  final int? day;
+  final DateTime? date;
+  final int count;
+  final bool isToday;
+  final double dateFontSize;
 
-  const _WidgetPreviewCalendarCell({required this.day});
+  const _WidgetPreviewCalendarCell({
+    required this.date,
+    required this.count,
+    required this.isToday,
+    required this.dateFontSize,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isToday = day == 17;
-    return Center(
-      child: Container(
-        width: 22,
-        height: 20,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isToday ? Colors.blue : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          day == null ? '' : '$day',
-          maxLines: 1,
-          overflow: TextOverflow.clip,
-          style: TextStyle(
-            fontSize: 10,
-            color: isToday ? Colors.white : cs.onSurface,
-            fontWeight: DesignTokens.fontWeightStrong,
-          ),
-        ),
-      ),
+    final value = date;
+    if (value == null) return const SizedBox.shrink();
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
+    );
+    final dayKey = homeWidgetCalendarDayKey(value);
+    final countLabel = count > 0
+        ? I18n.tr(
+            'widget.calendar_day_count_label',
+          ).replaceAll('{date}', dayKey).replaceAll('{count}', '$count')
+        : null;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : 32.0;
+        final badgeHeight = (height * 0.32).clamp(0.0, 12.0).toDouble();
+        final gap = (height * 0.04).clamp(0.0, 1.0).toDouble();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: badgeHeight,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: countLabel == null
+                    ? null
+                    : Semantics(
+                        label: countLabel,
+                        excludeSemantics: true,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 1),
+                            child: Container(
+                              key: ValueKey('widget-calendar-badge-$dayKey'),
+                              constraints: const BoxConstraints(
+                                minWidth: 12,
+                                minHeight: 12,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: palette.accent.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '$count',
+                                maxLines: 1,
+                                overflow: TextOverflow.clip,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: palette.accent,
+                                  fontWeight: DesignTokens.fontWeightStrong,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            SizedBox(height: gap),
+            Expanded(
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Container(
+                    key: ValueKey('widget-calendar-date-$dayKey'),
+                    width: 22,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isToday ? palette.accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${value.day}',
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      style: TextStyle(
+                        fontSize: dateFontSize,
+                        color: isToday ? Colors.white : palette.ink,
+                        fontWeight: DesignTokens.fontWeightStrong,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1722,79 +2053,33 @@ class _WidgetPreviewTodoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: Colors.blue.withValues(alpha: 0.28),
-              width: 0.45,
-            ),
-          ),
-          child: const Text(
-            'o',
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            style: TextStyle(
-              color: Colors.blue,
-              fontSize: 13,
-              fontWeight: DesignTokens.fontWeightStrong,
-            ),
-          ),
-        ),
-        const SizedBox(width: 7),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: cs.onSurface),
-          ),
-        ),
-      ],
+    final palette = _ApplePreviewPalette.of(
+      context,
+      Theme.of(context).colorScheme,
     );
-  }
-}
-
-class _WidgetPreviewMetric extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _WidgetPreviewMetric({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: DesignTokens.fontWeightStrong,
-            color: color,
+    return SizedBox(
+      height: 28,
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              color: palette.accent.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: palette.ink),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1836,6 +2121,420 @@ class _WidgetPreviewNav extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// core 4 模块（待办/专注/习惯/月历）使用苹果风样卡；其余 5 个沿用原预览。
+bool _usesApplePreview(WidgetPreviewKind kind) => switch (kind) {
+  WidgetPreviewKind.todo ||
+  WidgetPreviewKind.focus ||
+  WidgetPreviewKind.habit ||
+  WidgetPreviewKind.calendar => true,
+  WidgetPreviewKind.schedule ||
+  WidgetPreviewKind.goal ||
+  WidgetPreviewKind.course ||
+  WidgetPreviewKind.note ||
+  WidgetPreviewKind.anniversary => false,
+};
+
+/// 卡片头栏与底栏共用的模块名：优先品牌词，独立预览回退到 I18n 导航词。
+List<String> _appleNavLabels(ThemeProvider? themeProvider) {
+  final strings = themeProvider?.brand.strings;
+  return <String>[
+    strings?.navTodo ?? I18n.tr('nav.todo'),
+    strings?.navHabit ?? I18n.tr('nav.habit'),
+    strings?.navCalendar ?? I18n.tr('nav.calendar'),
+    strings?.navFocus ?? I18n.tr('nav.focus'),
+  ];
+}
+
+/// 今日可见未完成待办：与主推送同口径（可见今日 → 四象限 Q1→Q3→Q2→Q4 →
+/// 同象限优先级倒序/手动次序/创建时刻/ID 稳定兜底），不截 Top3。
+///
+/// 返回 null 表示当前没有 `TodoProvider`（独立预览/组件测试），由样卡回退到
+/// 示例列表；返回空列表表示真实数据里今天确实没有待办，必须走真空态。
+List<TodoItem>? _watchTodayTodos(BuildContext context, DateTime now) {
+  TodoProvider? provider;
+  try {
+    provider = context.watch<TodoProvider>();
+  } catch (_) {
+    return null;
+  }
+  return buildHomeWidgetTodoItems(provider.visibleTodayTodos(now), now: now);
+}
+
+/// 苹果风样卡配色：浅色雾白 + 墨黑，深色 1C1C1E/2C2C2E，accent 取主题 primary。
+///
+/// 深色下把 primary 与白色混合抬高对比，避免品牌红在深底上发闷；
+/// 浅色直接用主题 primary（默认 #C95455）。
+class _ApplePreviewPalette {
+  final Color surface;
+  final Color ink;
+  final Color secondary;
+  final Color track;
+  final Color selection;
+  final Color accent;
+  final bool isDark;
+
+  const _ApplePreviewPalette({
+    required this.surface,
+    required this.ink,
+    required this.secondary,
+    required this.track,
+    required this.selection,
+    required this.accent,
+    required this.isDark,
+  });
+
+  factory _ApplePreviewPalette.of(BuildContext context, ColorScheme cs) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _ApplePreviewPalette(
+      surface: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF7F8FA),
+      ink: isDark ? const Color(0xFFF5F5F7) : const Color(0xFF1C1C1E),
+      secondary: isDark ? const Color(0xFFB1B1B7) : const Color(0xFF6E6E73),
+      track: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE9EBEF),
+      selection: isDark ? const Color(0xFF48484D) : const Color(0xFFFFFFFF),
+      accent: isDark ? Color.lerp(cs.primary, Colors.white, 0.32)! : cs.primary,
+      isDark: isDark,
+    );
+  }
+
+  /// 主题背景图片上的轻 overlay：保留图案，同时保证正文对比度。
+  LinearGradient get imageOverlay => LinearGradient(
+    colors: isDark
+        ? [
+            Colors.black.withValues(alpha: 0.42),
+            surface.withValues(alpha: 0.58),
+          ]
+        : [surface.withValues(alpha: 0.66), surface.withValues(alpha: 0.30)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+/// 苹果风样卡：14dp 边距（月历 12dp）、28dp 头栏、28dp 分段底栏。
+///
+/// 头栏只写模块名（月历写完整月份）与真实计数，不放“预览”字样或元信息占位；
+/// 外层“预览”字样只属于 App 页面上下文。
+class _WidgetApplePreview extends StatelessWidget {
+  final WidgetPreviewKind kind;
+  final WidgetDisplayMode displayMode;
+  final _ApplePreviewPalette palette;
+  final List<String> navLabels;
+  final DateTime today;
+  final List<TodoItem>? todos;
+
+  const _WidgetApplePreview({
+    required this.kind,
+    required this.displayMode,
+    required this.palette,
+    required this.navLabels,
+    required this.today,
+    required this.todos,
+  });
+
+  static const _selectedNavIndex = <WidgetPreviewKind, int>{
+    WidgetPreviewKind.todo: 0,
+    WidgetPreviewKind.habit: 1,
+    WidgetPreviewKind.calendar: 2,
+    WidgetPreviewKind.focus: 3,
+  };
+
+  int get selectedIndex => _selectedNavIndex[kind] ?? 0;
+
+  bool get isCalendar => kind == WidgetPreviewKind.calendar;
+
+  String get _headerLabel => navLabels[selectedIndex];
+
+  @override
+  Widget build(BuildContext context) {
+    // 月历走独立的纵向月份浏览宿主：头栏是模块名 + “今天”按钮，月份标题在
+    // 每个月份项内部；其余页面沿用 14dp 边距的样卡布局。
+    if (isCalendar) {
+      return _WidgetAppleCalendarHost(
+        displayMode: displayMode,
+        palette: palette,
+        navLabels: navLabels,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 28, child: _buildHeader(context)),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _WidgetPreviewContentFrame(
+              mode: displayMode,
+              alignment: Alignment.topCenter,
+              child: switch (kind) {
+                WidgetPreviewKind.todo => _WidgetPreviewTodoBody(
+                  todos: todos,
+                  navTodoLabel: navLabels[0],
+                ),
+                WidgetPreviewKind.focus => const _WidgetPreviewFocusBody(),
+                WidgetPreviewKind.habit => const _WidgetPreviewHabitBody(),
+                _ => const SizedBox.shrink(),
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          // core 4 任何密度都保留 4 个 tab（原生 compact 也有导航）。
+          _WidgetAppleNav(
+            labels: navLabels,
+            selectedIndex: selectedIndex,
+            palette: palette,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        const WidgetBrandLogo(size: 18),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            _headerLabel,
+            key: const ValueKey('widget-preview-header-label'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: DesignTokens.fontWeightStrong,
+              color: palette.ink,
+            ),
+          ),
+        ),
+        if (kind == WidgetPreviewKind.todo)
+          _buildTodoCount()
+        else if (kind == WidgetPreviewKind.focus)
+          Text(
+            '${today.month.toString().padLeft(2, '0')}/'
+            '${today.day.toString().padLeft(2, '0')}',
+            maxLines: 1,
+            style: TextStyle(fontSize: 11, color: palette.secondary),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTodoCount() {
+    final count = todos?.length ?? 3;
+    return Row(
+      key: const ValueKey('widget-preview-todo-count'),
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$count',
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: DesignTokens.fontSizeWidgetCount,
+            height: 1,
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: count == 0 ? palette.secondary : palette.accent,
+          ),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          I18n.tr('widget.todo_count_unit'),
+          maxLines: 1,
+          style: TextStyle(fontSize: 11, color: palette.secondary),
+        ),
+      ],
+    );
+  }
+}
+
+/// 月历头栏的“今天”按钮：点按由宿主滚回本地当前月。
+class _WidgetCalendarTodayButton extends StatelessWidget {
+  final _ApplePreviewPalette palette;
+  final VoidCallback onTap;
+
+  const _WidgetCalendarTodayButton({
+    required this.palette,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: const ValueKey('widget-preview-calendar-today'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: palette.track,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Text(
+          I18n.tr('widget.today_label'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: palette.accent,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 月历样卡宿主：月份标题和今天按钮沿用原头栏，正文保留完整单月尺寸。
+class _WidgetAppleCalendarHost extends StatefulWidget {
+  final WidgetDisplayMode displayMode;
+  final _ApplePreviewPalette palette;
+  final List<String> navLabels;
+
+  const _WidgetAppleCalendarHost({
+    required this.displayMode,
+    required this.palette,
+    required this.navLabels,
+  });
+
+  @override
+  State<_WidgetAppleCalendarHost> createState() =>
+      _WidgetAppleCalendarHostState();
+}
+
+class _WidgetAppleCalendarHostState extends State<_WidgetAppleCalendarHost> {
+  final GlobalKey<_WidgetPreviewCalendarBodyState> _monthsKey =
+      GlobalKey<_WidgetPreviewCalendarBodyState>();
+
+  String get _monthLabel {
+    final today = AppClock.today();
+    return I18n.tr('widget.calendar_month_title')
+        .replaceAll('{year}', '${today.year}')
+        .replaceAll('{month}', '${today.month}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 24, child: _buildHeader()),
+          const SizedBox(height: 6),
+          Expanded(
+            child: _WidgetPreviewContentFrame(
+              mode: widget.displayMode,
+              designHeightOverride: _WidgetPreviewCalendarBody.designHeightFor(
+                widget.displayMode,
+              ),
+              alignment: Alignment.topCenter,
+              child: _WidgetPreviewCalendarBody(
+                key: _monthsKey,
+                displayMode: widget.displayMode,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          _WidgetAppleNav(
+            labels: widget.navLabels,
+            selectedIndex: 2,
+            palette: widget.palette,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        const WidgetBrandLogo(size: 18),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            _monthLabel,
+            key: const ValueKey('widget-preview-header-label'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: DesignTokens.fontWeightStrong,
+              color: widget.palette.ink,
+            ),
+          ),
+        ),
+        _WidgetCalendarTodayButton(
+          palette: widget.palette,
+          onTap: () => _monthsKey.currentState?.refreshCurrentMonth(),
+        ),
+      ],
+    );
+  }
+}
+
+/// 苹果风分段底栏：28dp 高、浅灰轨道、选中一段白色/深灰小圆角 + accent 文字。
+class _WidgetAppleNav extends StatelessWidget {
+  final List<String> labels;
+  final int selectedIndex;
+  final _ApplePreviewPalette palette;
+
+  const _WidgetAppleNav({
+    required this.labels,
+    required this.selectedIndex,
+    required this.palette,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('widget-preview-nav-track'),
+      height: 28,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: palette.track,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          for (var index = 0; index < labels.length; index++) ...[
+            if (index > 0) const SizedBox(width: 2),
+            Expanded(
+              child: Container(
+                key: ValueKey('widget-preview-nav-$index'),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: index == selectedIndex
+                      ? palette.selection
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  labels[index],
+                  key: index == selectedIndex
+                      ? const ValueKey('widget-preview-nav-selected')
+                      : null,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: index == selectedIndex
+                        ? DesignTokens.fontWeightStrong
+                        : DesignTokens.fontWeightMedium,
+                    color: index == selectedIndex
+                        ? palette.accent
+                        : palette.secondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -246,7 +246,7 @@ void main() {
     }
   });
 
-  test('打包字体在 400/500/600/700 注册，变量字重覆盖 400–700 且可离线加载', () async {
+  test('打包字体在 400/500/600/700 注册，静态圆体资源保持 700 权重且可离线加载', () async {
     final manifest =
         jsonDecode(await rootBundle.loadString('FontManifest.json'))
             as List<dynamic>;
@@ -259,37 +259,29 @@ void main() {
 
     final assets = fonts.map((font) => font['asset']).toSet();
     expect(assets, hasLength(1));
-    final asset = assets.single as String;
+    expect(assets.single, 'assets/fonts/ResourceHanRoundedCN-Bold.ttf');
 
-    final data = await rootBundle.load(asset);
+    final data = await rootBundle.load(assets.single as String);
     final bytes = data.buffer.asUint8List(
       data.offsetInBytes,
       data.lengthInBytes,
     );
-    final tables = data.getUint16(4);
-    int? fvar;
-    for (var i = 0; i < tables; i++) {
+    final tableCount = data.getUint16(4);
+    var os2Offset = -1;
+    var hasCmap = false;
+    var hasGlyf = false;
+    for (var i = 0; i < tableCount; i++) {
       final record = 12 + 16 * i;
       final tag = ascii.decode(bytes.sublist(record, record + 4));
-      if (tag == 'fvar') fvar = data.getUint32(record + 8);
+      final offset = data.getUint32(record + 8);
+      if (tag == 'OS/2') os2Offset = offset;
+      if (tag == 'cmap') hasCmap = true;
+      if (tag == 'glyf') hasGlyf = true;
     }
-    expect(fvar, isNotNull, reason: '打包字体必须是变量字体');
-
-    final axisCount = data.getUint16(fvar! + 8);
-    final axisSize = data.getUint16(fvar + 10);
-    final axisOffset = fvar + data.getUint16(fvar + 4);
-    double? minWeight;
-    double? maxWeight;
-    for (var i = 0; i < axisCount; i++) {
-      final axis = axisOffset + i * axisSize;
-      if (ascii.decode(bytes.sublist(axis, axis + 4)) == 'wght') {
-        minWeight = data.getInt32(axis + 4) / 65536;
-        maxWeight = data.getInt32(axis + 12) / 65536;
-      }
-    }
-    expect(minWeight, isNotNull, reason: '变量字体需要 wght 轴');
-    expect(minWeight!, lessThanOrEqualTo(400));
-    expect(maxWeight!, greaterThanOrEqualTo(700));
+    expect(os2Offset, greaterThanOrEqualTo(0));
+    expect(hasCmap, isTrue);
+    expect(hasGlyf, isTrue);
+    expect(data.getUint16(os2Offset + 4), 700);
 
     await (FontLoader(
       DesignTokens.fontFamily,

@@ -5,14 +5,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_clock.dart';
 import '../core/brand_strings.dart';
+import '../core/home_widget_calendar.dart';
+import '../core/home_widget_todos.dart';
 import '../core/i18n.dart';
 import '../core/iterable_extensions.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/platform_info.dart';
 import '../core/smart_todo_draft.dart';
 import '../models/habit.dart' show HabitKind;
-import '../models/pomodoro.dart' show PomodoroType;
-import '../models/todo.dart' show TodoPriorityX;
+import '../models/pomodoro.dart'
+    show PomodoroType, PomodoroWidgetControlAction, PomodoroWidgetTimerState;
 import '../providers/cloud_sync_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -70,6 +72,12 @@ class HomeWidgetService {
   static Map<String, Object> get accountPayloadDefaults => <String, Object>{
     'todo_count': 0,
     'habit_percent': 0,
+    'habit_highlight_1': '',
+    'habit_highlight_1_id': '',
+    'habit_highlight_2': '',
+    'habit_highlight_2_id': '',
+    'habit_highlight_3': '',
+    'habit_highlight_3_id': '',
     'pomodoro_today': 0,
     'focus_minutes_today': 0,
     'brand_app_title': I18n.tr('mine.about.title'),
@@ -84,6 +92,8 @@ class HomeWidgetService {
     'todo_top3_2_id': '',
     'todo_top3_3': '',
     'todo_top3_3_id': '',
+    // 全部今日可见未完成待办（已排序）；新 key 缺省时原生回退旧 Top3。
+    'widget_todo_items_json': '[]',
     'goal_highlight_1': I18n.tr('widget.goal_empty'),
     'goal_highlight_1_id': '',
     'goal_highlight_2': '',
@@ -126,6 +136,33 @@ class HomeWidgetService {
     'schedule_highlight_3': I18n.tr('widget.schedule_timezone_hint'),
     'schedule_highlight_3_id': '',
     'calendar_month_summary': I18n.tr('widget.calendar_month_summary'),
+    'calendar_day_counts_json': '{}',
+    'calendar_timezone': '',
+    'calendar_weekdays_json': homeWidgetCalendarWeekdayLabelsJson(),
+    'calendar_day_count_label': I18n.tr('widget.calendar_day_count_label'),
+    'calendar_month_title': I18n.tr('widget.calendar_month_title'),
+    // 小组件 UI 纯展示文案（native 按 widget_* key 读取）；空态 {tab} 用默认导航词。
+    'widget_todo_empty_hint': _todoEmptyHint(I18n.tr('nav.todo')),
+    'widget_todo_count_unit': I18n.tr('widget.todo_count_unit'),
+    'widget_habit_today_label': I18n.tr('widget.habit_today_label'),
+    'widget_focus_count_label': I18n.tr('widget.focus_count_label'),
+    'widget_focus_minutes_label': I18n.tr('widget.focus_minutes_label'),
+    'widget_focus_next_label': I18n.tr('widget.focus_next_label'),
+    'widget_focus_remaining_label': I18n.tr('widget.focus_remaining_label'),
+    'widget_focus_open_label': I18n.tr('widget.focus_open_label'),
+    'widget_focus_running_label': I18n.tr('widget.focus_running_label'),
+    'widget_today_label': I18n.tr('widget.today_label'),
+    'widget_focus_start_label': I18n.tr('widget.focus_start_label'),
+    'widget_focus_resume_label': I18n.tr('widget.focus_resume_label'),
+    'widget_focus_pause_label': I18n.tr('widget.focus_pause_label'),
+    'widget_focus_stop_label': I18n.tr('widget.focus_stop_label'),
+    'widget_focus_paused_label': I18n.tr('widget.focus_paused_label'),
+    // 专注控制元数据默认值：空身份 + idle + revision 0 + 非正计时。
+    'focus_timer_state': PomodoroWidgetTimerState.idle.wireName,
+    'focus_timer_session_id': '',
+    'focus_timer_revision': 0,
+    'focus_control_scope': '',
+    'focus_timer_count_up': false,
     'focus_summary': I18n.tr('widget.focus_not_started'),
     'habit_summary': I18n.tr('widget.habit_pending'),
     'streak_summary':
@@ -323,12 +360,37 @@ class HomeWidgetService {
     int focusTimerTotalSeconds = 0,
     int focusTimerEndsAtMillis = 0,
     String focusTimerLabel = '专注倒计时',
+
+    /// 正计时标记：原生按 `focus_timer_count_up` 切换 Chronometer。
+    bool focusTimerCountUp = false,
+
+    /// 控制身份：idle|running|paused + 不透明 session + revision + scope。
+    String focusTimerState = 'idle',
+    String focusTimerSessionId = '',
+    int focusTimerRevision = 0,
+    String focusControlScope = '',
+
+    /// 全部今日可见未完成待办（已排序，不截 Top3）。
+    String todoItemsJson = '[]',
     String habitQuickCheckId = '',
     String habitQuickCheckLabel = '点击进入习惯打卡',
+    int habitTotalCompletions = 0,
+    List<String> habitHighlights = const [],
+    List<String> habitHighlightIds = const [],
+    // 月历协议字段来自完整 todos 统计，与其它 payload 同批写入，
+    // native 侧不会读到半新半旧的快照。
+    Map<String, int> calendarDayCounts = const <String, int>{},
+    String calendarTimezone = '',
     required HomeWidgetThemePayload theme,
   }) async {
     if (!_supported) return true;
     await _drainPendingAccountClear();
+    final calendarPayload = _calendarPayload(
+      dayCounts: calendarDayCounts,
+      timezone: calendarTimezone,
+    );
+    // UI 纯展示文案：与数值/协议字段解耦，native 按 widget_* key 读取。
+    final uiCopy = _widgetUiCopy(strings.navTodo);
     final signature = _pushSignature(
       todoCount: todoCount,
       habitPercent: habitPercent,
@@ -361,9 +423,20 @@ class HomeWidgetService {
       focusTimerTotalSeconds: focusTimerTotalSeconds,
       focusTimerEndsAtMillis: focusTimerEndsAtMillis,
       focusTimerLabel: focusTimerLabel,
+      focusTimerCountUp: focusTimerCountUp,
+      focusTimerState: focusTimerState,
+      focusTimerSessionId: focusTimerSessionId,
+      focusTimerRevision: focusTimerRevision,
+      focusControlScope: focusControlScope,
+      todoItemsJson: todoItemsJson,
       habitQuickCheckId: habitQuickCheckId,
       habitQuickCheckLabel: habitQuickCheckLabel,
+      habitTotalCompletions: habitTotalCompletions,
+      habitHighlights: habitHighlights,
+      habitHighlightIds: habitHighlightIds,
       theme: theme,
+      calendar: calendarPayload,
+      uiCopy: uiCopy,
     );
     if (signature == _lastPushSignature) return true;
     try {
@@ -384,7 +457,9 @@ class HomeWidgetService {
         HomeWidget.saveWidgetData<int>('todo_top3_count', todoCount),
         HomeWidget.saveWidgetData<String>(
           'todo_top3_1',
-          todoTop3.isNotEmpty ? '· ${todoTop3[0]}' : '今天没有未完成待办',
+          todoTop3.isNotEmpty
+              ? '· ${todoTop3[0]}'
+              : I18n.tr('widget.todo_top3_empty'),
         ),
         HomeWidget.saveWidgetData<String>(
           'todo_top3_1_id',
@@ -564,10 +639,7 @@ class HomeWidgetService {
           'schedule_highlight_3_id',
           scheduleHighlightIds.length > 2 ? scheduleHighlightIds[2] : '',
         ),
-        HomeWidget.saveWidgetData<String>(
-          'calendar_month_summary',
-          '本月日期 · 今日已标记',
-        ),
+        ...calendarPayload.entries.map(_saveWidgetPayloadEntry),
         HomeWidget.saveWidgetData<String>('focus_summary', focusSummary),
         HomeWidget.saveWidgetData<String>('habit_summary', habitSummary),
         HomeWidget.saveWidgetData<String>('streak_summary', streakSummary),
@@ -589,6 +661,27 @@ class HomeWidgetService {
           focusTimerEndsAtMillis,
         ),
         HomeWidget.saveWidgetData<String>('focus_timer_label', focusTimerLabel),
+        HomeWidget.saveWidgetData<bool>(
+          'focus_timer_count_up',
+          focusTimerCountUp,
+        ),
+        HomeWidget.saveWidgetData<String>('focus_timer_state', focusTimerState),
+        HomeWidget.saveWidgetData<String>(
+          'focus_timer_session_id',
+          focusTimerSessionId,
+        ),
+        HomeWidget.saveWidgetData<int>(
+          'focus_timer_revision',
+          focusTimerRevision,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'focus_control_scope',
+          focusControlScope,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_todo_items_json',
+          todoItemsJson,
+        ),
         HomeWidget.saveWidgetData<String>(
           'habit_quick_check_id',
           habitQuickCheckId,
@@ -596,6 +689,90 @@ class HomeWidgetService {
         HomeWidget.saveWidgetData<String>(
           'habit_quick_check_label',
           habitQuickCheckLabel,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_1',
+          habitHighlights.isNotEmpty ? habitHighlights[0] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_1_id',
+          habitHighlightIds.isNotEmpty ? habitHighlightIds[0] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_2',
+          habitHighlights.length > 1 ? habitHighlights[1] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_2_id',
+          habitHighlightIds.length > 1 ? habitHighlightIds[1] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_3',
+          habitHighlights.length > 2 ? habitHighlights[2] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'habit_highlight_3_id',
+          habitHighlightIds.length > 2 ? habitHighlightIds[2] : '',
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_todo_empty_hint',
+          uiCopy['widget_todo_empty_hint']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_todo_count_unit',
+          uiCopy['widget_todo_count_unit']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_habit_today_label',
+          uiCopy['widget_habit_today_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_count_label',
+          uiCopy['widget_focus_count_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_minutes_label',
+          uiCopy['widget_focus_minutes_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_next_label',
+          uiCopy['widget_focus_next_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_remaining_label',
+          uiCopy['widget_focus_remaining_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_open_label',
+          uiCopy['widget_focus_open_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_running_label',
+          uiCopy['widget_focus_running_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_start_label',
+          uiCopy['widget_focus_start_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_resume_label',
+          uiCopy['widget_focus_resume_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_pause_label',
+          uiCopy['widget_focus_pause_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_stop_label',
+          uiCopy['widget_focus_stop_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_focus_paused_label',
+          uiCopy['widget_focus_paused_label']!,
+        ),
+        HomeWidget.saveWidgetData<String>(
+          'widget_today_label',
+          uiCopy['widget_today_label']!,
         ),
         ...theme.saveOperations(),
       ]);
@@ -696,7 +873,11 @@ class HomeWidgetService {
         await prefs.reload();
         await _prepareColdIsolate();
       }
-      final blocked = await _resolveBlockReason(prefs, signedIn: signedIn);
+      final blocked = await _resolveBlockReason(
+        prefs,
+        signedIn: signedIn,
+        request: request,
+      );
       if (blocked != HomeWidgetActionBlockReason.none) {
         debugPrint(
           '[HomeWidget] ${request.kind.name} skipped: ${blocked.name}',
@@ -705,7 +886,11 @@ class HomeWidgetService {
       }
       final providers = live ?? await _loadColdProviders();
       // Provider 加载期间可能发生切号/登出：写盘前用最新 prefs 再判定一次。
-      final recheck = await _resolveBlockReason(prefs, signedIn: signedIn);
+      final recheck = await _resolveBlockReason(
+        prefs,
+        signedIn: signedIn,
+        request: request,
+      );
       if (recheck != HomeWidgetActionBlockReason.none) {
         debugPrint(
           '[HomeWidget] ${request.kind.name} skipped: ${recheck.name}',
@@ -715,6 +900,7 @@ class HomeWidgetService {
       final changed = await _applyBackgroundAction(request, providers);
       if (!changed) return false;
       if (cold) {
+        await providers.pomodoro.flushPersistence();
         // 冷引擎没有主 isolate 的监听链，这里补本地待同步元数据与 payload。
         _markColdLocalChange();
         await _refreshColdActionPayload(request.kind, providers);
@@ -732,10 +918,33 @@ class HomeWidgetService {
   static Future<HomeWidgetActionBlockReason> _resolveBlockReason(
     SharedPreferences prefs, {
     bool? signedIn,
+    HomeWidgetActionRequest? request,
   }) async {
     await prefs.reload();
-    if (signedIn == false) return HomeWidgetActionBlockReason.signedOut;
-    return HomeWidgetAccountScope.fromPreferences(prefs).blockReason;
+    final scope = HomeWidgetAccountScope.fromPreferences(prefs);
+    // 主 isolate 的内存登录态可能早于 prefs：未登录时按 signedOut 处理。
+    final blocked = signedIn == false
+        ? HomeWidgetActionBlockReason.signedOut
+        : scope.blockReason;
+    final currentScope = scope.focusControlScope;
+    if (blocked == HomeWidgetActionBlockReason.none) {
+      // 绑定 focus 控制必须属于当前账号 scope：换号后的旧按钮不能操作新账号。
+      if (request != null &&
+          request.isBoundFocusControl &&
+          request.focusScope != currentScope) {
+        return HomeWidgetActionBlockReason.ownerMismatch;
+      }
+      return HomeWidgetActionBlockReason.none;
+    }
+    // 只对合法的绑定 focus 请求放开匿名本地专注；legacy 无绑定请求仍按原规则。
+    if (blocked == HomeWidgetActionBlockReason.signedOut &&
+        request != null &&
+        request.allowsSignedOutExecution &&
+        currentScope == HomeWidgetAccountScope.localFocusControlScope &&
+        request.focusScope == currentScope) {
+      return HomeWidgetActionBlockReason.none;
+    }
+    return blocked;
   }
 
   /// 冷后台引擎的进程级初始化：应用时区与语言。
@@ -790,6 +999,7 @@ class HomeWidgetService {
         todos: providers.todos,
         habits: providers.habits,
         pomodoro: providers.pomodoro,
+        focusControlScope: await currentFocusControlScope(),
       );
       // 顺序固定：先落 payload 再刷新原生组件，否则组件读到的是旧数据。
       await Future.wait(payload.entries.map(_saveWidgetPayloadEntry));
@@ -833,10 +1043,23 @@ class HomeWidgetService {
         await habits.incrementHabit(id);
         return habit.todayCount() > before;
       case HomeWidgetActionKind.startPomodoro:
-        final pomodoro = providers.pomodoro;
-        if (pomodoro.state.isRunning) return false;
-        pomodoro.startIfIdle();
-        return pomodoro.state.isRunning;
+        return _applyFocusControl(
+          providers.pomodoro,
+          request,
+          PomodoroWidgetControlAction.start,
+        );
+      case HomeWidgetActionKind.pausePomodoro:
+        return _applyFocusControl(
+          providers.pomodoro,
+          request,
+          PomodoroWidgetControlAction.pause,
+        );
+      case HomeWidgetActionKind.stopPomodoro:
+        return _applyFocusControl(
+          providers.pomodoro,
+          request,
+          PomodoroWidgetControlAction.stop,
+        );
       case HomeWidgetActionKind.quickTodo:
         final text = request.text;
         if (text == null) return false;
@@ -845,6 +1068,33 @@ class HomeWidgetService {
         await todos.addTodo(SmartTodoDraftBuilder.fromText(text).toTodo());
         return todos.todos.length > before;
     }
+  }
+
+  /// 专注控制执行。
+  ///
+  /// 绑定请求走 Provider 的 session + revision + state 校验（旧按钮/重复点击
+  /// 一律 false 且不改状态）；legacy 无绑定 start 保持原有“仅在空闲时启动”。
+  static Future<bool> _applyFocusControl(
+    PomodoroProvider pomodoro,
+    HomeWidgetActionRequest request,
+    PomodoroWidgetControlAction action,
+  ) async {
+    if (request.isBoundFocusControl) {
+      final sessionId = request.focusSessionId;
+      final revision = request.focusRevision;
+      final state = request.focusState;
+      if (sessionId == null || revision == null || state == null) return false;
+      return pomodoro.applyWidgetControl(
+        action: action,
+        sessionId: sessionId,
+        revision: revision,
+        expectedState: state,
+      );
+    }
+    if (action != PomodoroWidgetControlAction.start) return false;
+    if (pomodoro.state.isRunning) return false;
+    pomodoro.startIfIdle();
+    return pomodoro.state.isRunning;
   }
 
   /// 桌面动作之后需要重算的小组件 payload。
@@ -858,6 +1108,9 @@ class HomeWidgetService {
     required HabitProvider habits,
     required PomodoroProvider pomodoro,
     DateTime? now,
+
+    /// 当前账号/匿名 focus 控制 scope（冷后台从 prefs 读取后传入）。
+    String focusControlScope = '',
   }) {
     switch (kind) {
       case HomeWidgetActionKind.completeTodo:
@@ -866,7 +1119,15 @@ class HomeWidgetService {
       case HomeWidgetActionKind.checkinHabit:
         return habitHomeWidgetActionPayload(habits);
       case HomeWidgetActionKind.startPomodoro:
-        return focusHomeWidgetActionPayload(pomodoro);
+      case HomeWidgetActionKind.pausePomodoro:
+      case HomeWidgetActionKind.stopPomodoro:
+        return <String, Object>{
+          ...focusHomeWidgetActionPayload(
+            pomodoro,
+            focusControlScope: focusControlScope,
+          ),
+          ...todoHomeWidgetActionPayload(todos, now: now),
+        };
     }
   }
 
@@ -876,17 +1137,18 @@ class HomeWidgetService {
     TodoProvider todos, {
     DateTime? now,
   }) {
-    final visible = todos.visibleTodayTodos(now ?? AppClock.now())
-      ..sort((a, b) {
-        // 按优先级倒序，其次按手动排序（同 `_pushHomeWidget`）。
-        final byPriority = b.priority.rank.compareTo(a.priority.rank);
-        if (byPriority != 0) return byPriority;
-        return a.sortOrder.compareTo(b.sortOrder);
-      });
+    final nowTs = now ?? AppClock.now();
+    // 与 `_pushHomeWidget` 完全同口径：四象限 Q1→Q3→Q2→Q4、同象限优先级倒序、
+    // 手动次序、创建时刻与 ID 稳定兜底；原生只读这份已排序数组，不再自排。
+    final visible = buildHomeWidgetTodoItems(
+      todos.visibleTodayTodos(nowTs),
+      now: nowTs,
+    );
     final top3 = visible.take(3).toList();
     return <String, Object>{
       'todo_count': visible.length,
       'todo_top3_count': visible.length,
+      'widget_todo_items_json': encodeHomeWidgetTodoItems(visible),
       'todo_top3_1': top3.isNotEmpty
           ? '· ${top3[0].title}'
           : I18n.tr('widget.todo_top3_empty'),
@@ -895,6 +1157,14 @@ class HomeWidgetService {
       'todo_top3_2_id': top3.length > 1 ? top3[1].id : '',
       'todo_top3_3': top3.length > 2 ? '· ${top3[2].title}' : '',
       'todo_top3_3_id': top3.length > 2 ? top3[2].id : '',
+      'calendar_day_counts_json': homeWidgetCalendarDayCountsJson(
+        buildHomeWidgetCalendarDayCounts(todos.todos),
+      ),
+      'calendar_timezone': LocalTimezoneResolver.currentIana,
+      'calendar_weekdays_json': homeWidgetCalendarWeekdayLabelsJson(),
+      'calendar_day_count_label': I18n.tr('widget.calendar_day_count_label'),
+      'calendar_month_title': I18n.tr('widget.calendar_month_title'),
+      ..._widgetUiCopy(I18n.tr('nav.todo')),
     };
   }
 
@@ -904,21 +1174,28 @@ class HomeWidgetService {
     HabitProvider habits,
   ) {
     final percent = (habits.todayCompletionRate * 100).round();
-    final pending =
-        habits.habits
-            .where(
-              (habit) =>
-                  habit.kind == HabitKind.positive &&
-                  habit.isActiveToday() &&
-                  !habit.isCompletedToday(),
-            )
-            .toList()
+    final active =
+        habits.habits.where((habit) => habit.isActiveToday()).toList()
           ..sort((a, b) {
             final byOrder = a.sortOrder.compareTo(b.sortOrder);
             if (byOrder != 0) return byOrder;
             return a.createdAt.compareTo(b.createdAt);
           });
+    final pending = active
+        .where(
+          (habit) =>
+              habit.kind == HabitKind.positive && !habit.isCompletedToday(),
+        )
+        .toList();
     final quick = pending.isEmpty ? null : pending.first;
+    final highlights = active
+        .take(3)
+        .map(
+          (habit) =>
+              '· ${habit.name} ${(habit.todayProgress() * 100).round()}%',
+        )
+        .toList();
+    final highlightIds = active.take(3).map((habit) => habit.id).toList();
     return <String, Object>{
       'habit_percent': percent,
       'habit_summary': percent >= 100
@@ -929,20 +1206,25 @@ class HomeWidgetService {
       'habit_quick_check_label': quick == null
           ? I18n.tr('widget.habit_quick_check_hint')
           : '${I18n.tr('widget.habit_checkin_prefix')}${quick.name}',
+      'habit_highlight_1': highlights.isNotEmpty ? highlights[0] : '',
+      'habit_highlight_1_id': highlightIds.isNotEmpty ? highlightIds[0] : '',
+      'habit_highlight_2': highlights.length > 1 ? highlights[1] : '',
+      'habit_highlight_2_id': highlightIds.length > 1 ? highlightIds[1] : '',
+      'habit_highlight_3': highlights.length > 2 ? highlights[2] : '',
+      'habit_highlight_3_id': highlightIds.length > 2 ? highlightIds[2] : '',
     };
   }
 
   /// 专注相关 payload：倒计时毫秒用真实 `DateTime.now()` 计算，与主推送一致。
   @visibleForTesting
   static Map<String, Object> focusHomeWidgetActionPayload(
-    PomodoroProvider pomodoro,
-  ) {
+    PomodoroProvider pomodoro, {
+    String focusControlScope = '',
+  }) {
     final state = pomodoro.state;
-    final endsAtMillis = state.isRunning && !state.isCountUp
-        ? DateTime.now()
-              .add(Duration(seconds: state.remainingSeconds))
-              .millisecondsSinceEpoch
-        : 0;
+    // 结束时刻必须用 Provider 的 canonical 锚点，不能用 now + remaining 每推漂移；
+    // 正计时为 0，原生据 `focus_timer_count_up` 改用 Chronometer。
+    final endsAtMillis = pomodoro.focusTimerEndsAtMillis;
     final label = switch (state.type) {
       PomodoroType.focus =>
         state.isCountUp
@@ -958,6 +1240,11 @@ class HomeWidgetService {
       'focus_timer_total_seconds': state.totalSeconds,
       'focus_timer_ends_at_millis': endsAtMillis,
       'focus_timer_label': label,
+      'focus_timer_count_up': state.isCountUp,
+      'focus_timer_state': pomodoro.focusTimerState.wireName,
+      'focus_timer_session_id': pomodoro.focusControlSessionId,
+      'focus_timer_revision': pomodoro.focusControlRevision,
+      'focus_control_scope': focusControlScope,
       'focus_summary': sessions == 0
           ? I18n.tr('widget.focus_not_started')
           : '${I18n.tr('widget.focus_today_prefix')}$sessions'
@@ -1015,6 +1302,18 @@ class HomeWidgetService {
     ];
   }
 
+  /// 当前账号/匿名 focus 控制 scope：无身份时返回空串（原生视为不可控制）。
+  static Future<String> currentFocusControlScope() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return HomeWidgetAccountScope.fromPreferences(prefs).focusControlScope ??
+          '';
+    } catch (e, st) {
+      debugPrint('[HomeWidget] focus scope read failed: $e\n$st');
+      return '';
+    }
+  }
+
   static Stream<Uri?> get widgetClickedStream {
     if (!_supported) return const Stream.empty();
     return HomeWidget.widgetClicked;
@@ -1057,9 +1356,20 @@ class HomeWidgetService {
     required int focusTimerTotalSeconds,
     required int focusTimerEndsAtMillis,
     required String focusTimerLabel,
+    required bool focusTimerCountUp,
+    required String focusTimerState,
+    required String focusTimerSessionId,
+    required int focusTimerRevision,
+    required String focusControlScope,
+    required String todoItemsJson,
     required String habitQuickCheckId,
     required String habitQuickCheckLabel,
+    required int habitTotalCompletions,
+    required List<String> habitHighlights,
+    required List<String> habitHighlightIds,
     required HomeWidgetThemePayload theme,
+    required Map<String, Object> calendar,
+    required Map<String, String> uiCopy,
   }) {
     return [
       todoCount,
@@ -1097,11 +1407,73 @@ class HomeWidgetService {
       focusTimerTotalSeconds,
       focusTimerEndsAtMillis,
       focusTimerLabel,
+      focusTimerCountUp,
+      focusTimerState,
+      focusTimerSessionId,
+      focusTimerRevision,
+      focusControlScope,
+      todoItemsJson,
       habitQuickCheckId,
       habitQuickCheckLabel,
+      habitTotalCompletions,
+      _listSignature(habitHighlights),
+      _listSignature(habitHighlightIds),
       theme.signature,
+      calendar['calendar_day_counts_json'],
+      calendar['calendar_timezone'],
+      calendar['calendar_weekdays_json'],
+      calendar['calendar_day_count_label'],
+      calendar['calendar_month_title'],
+      calendar['calendar_month_summary'],
+      // UI 纯展示文案：locale 切换只改 copy 也必须刷新原生组件。
+      uiCopy.entries.map((entry) => '${entry.key}=${entry.value}').join(','),
     ].map(_signaturePart).join('|');
   }
+
+  /// 月历协议字段（原生代理按此读取）。
+  ///
+  /// `calendar_day_counts_json` 覆盖全部任务日期（不限当月），native 侧可随当前
+  /// 月份滚动取值；`calendar_weekdays_json` 是周一..周日表头；
+  /// `calendar_day_count_label` 是含 `{date}` / `{count}` 的角标模板。
+  static Map<String, Object> _calendarPayload({
+    required Map<String, int> dayCounts,
+    required String timezone,
+  }) => <String, Object>{
+    'calendar_day_counts_json': homeWidgetCalendarDayCountsJson(dayCounts),
+    'calendar_timezone': timezone,
+    'calendar_weekdays_json': homeWidgetCalendarWeekdayLabelsJson(),
+    'calendar_day_count_label': I18n.tr('widget.calendar_day_count_label'),
+    'calendar_month_title': I18n.tr('widget.calendar_month_title'),
+    'calendar_month_summary': I18n.tr('widget.calendar_month_summary'),
+  };
+
+  /// 桌面小组件 UI 纯展示文案。
+  ///
+  /// native 子布局按 `widget_*` key 读取这些字符串，与数值/协议字段解耦：
+  /// 换语言只改这份 copy，不影响任务、倒计时与月历协议。`{tab}` 用当前
+  /// 导航模块名替换（常规推送用品牌词，账号兜底/冷态用默认词）。
+  static Map<String, String> _widgetUiCopy(String navTodoLabel) =>
+      <String, String>{
+        'widget_todo_empty_hint': _todoEmptyHint(navTodoLabel),
+        'widget_todo_count_unit': I18n.tr('widget.todo_count_unit'),
+        'widget_habit_today_label': I18n.tr('widget.habit_today_label'),
+        'widget_focus_count_label': I18n.tr('widget.focus_count_label'),
+        'widget_focus_minutes_label': I18n.tr('widget.focus_minutes_label'),
+        'widget_focus_next_label': I18n.tr('widget.focus_next_label'),
+        'widget_focus_remaining_label': I18n.tr('widget.focus_remaining_label'),
+        'widget_focus_open_label': I18n.tr('widget.focus_open_label'),
+        'widget_focus_running_label': I18n.tr('widget.focus_running_label'),
+        'widget_focus_start_label': I18n.tr('widget.focus_start_label'),
+        'widget_focus_resume_label': I18n.tr('widget.focus_resume_label'),
+        'widget_focus_pause_label': I18n.tr('widget.focus_pause_label'),
+        'widget_focus_stop_label': I18n.tr('widget.focus_stop_label'),
+        'widget_focus_paused_label': I18n.tr('widget.focus_paused_label'),
+        'widget_today_label': I18n.tr('widget.today_label'),
+      };
+
+  /// 待办空态提示：把 `{tab}` 换成待办导航词（品牌词或默认词）。
+  static String _todoEmptyHint(String navTodoLabel) =>
+      I18n.tr('widget.todo_empty_hint').replaceAll('{tab}', navTodoLabel);
 
   static String _listSignature(List<String> values) {
     return values.map(_signaturePart).join(',');

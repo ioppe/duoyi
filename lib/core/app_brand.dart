@@ -202,7 +202,7 @@ Color _buttonActionBackground(Color primary, {required bool isDark}) {
 /// 共享控件层的观感档位：所有字段默认值 = 既有观感。
 ///
 /// 四条主题构造路径（_lightTheme/_darkTheme/_re0Theme/_botwTheme）都汇入
-/// [_withSharedControls]；只有 [_defaultTheme] 传 [_SharedFeel.ios]，
+/// [_withSharedControls]；只有 [_defaultTheme] 传 [_SharedFeel.appleMinimal]，
 /// 其余 7 套主题走默认值，观感保持不变（参数化差异，而非全局改档）。
 class _SharedFeel {
   final double controlRadius;
@@ -213,6 +213,15 @@ class _SharedFeel {
   final double dividerAlphaLight;
   final double dividerAlphaDark;
 
+  /// 底部导航高度；默认沿用改造前的 60，只有 Apple minimal 档抬高。
+  final double navBarHeight;
+
+  /// 输入框填充色；null 时沿用表面色与 surfaceContainerHighest 的混合档。
+  final Color? inputFillColor;
+
+  /// 输入框边界色；null 时沿用各主题的 outline 混合档。
+  final Color? inputBorderColor;
+
   const _SharedFeel({
     this.controlRadius = DesignTokens.radiusControl,
     this.dialogRadius = 18,
@@ -221,10 +230,13 @@ class _SharedFeel {
     this.navBarAlphaLight = 0.96,
     this.dividerAlphaLight = 0.64,
     this.dividerAlphaDark = 0.52,
+    this.navBarHeight = 60,
+    this.inputFillColor,
+    this.inputBorderColor,
   });
 
-  /// 默认主题专用 iOS 档：更大圆角、更宽松控件内边距、更柔和分隔、
-  /// 半透明底导航（毛玻璃模糊由 [AppSurfaceStyle.ios.navBarBlurSigma] 驱动）。
+  /// 液态玻璃主题复用的 iOS 档：更大圆角、更宽松控件内边距、更柔和分隔、
+  /// 半透明底导航（毛玻璃模糊由 [AppSurfaceStyle.navBarBlurSigma] 驱动）。
   static const _SharedFeel ios = _SharedFeel(
     controlRadius: DesignTokens.radiusControlIos,
     dialogRadius: DesignTokens.dialogIosRadius,
@@ -233,6 +245,21 @@ class _SharedFeel {
     navBarAlphaLight: DesignTokens.navBarIosBackgroundAlpha,
     dividerAlphaLight: DesignTokens.dividerIosAlpha,
     dividerAlphaDark: DesignTokens.dividerIosDarkAlpha,
+  );
+
+  /// 默认主题 Apple minimal 档：宽松控件内边距、柔和分隔、更高更宽松的
+  /// 半透明底栏；输入框走雾灰填充（[inputFillColor]，与白色卡面分层）。
+  static const _SharedFeel appleMinimal = _SharedFeel(
+    controlRadius: DesignTokens.radiusControlIos,
+    dialogRadius: DesignTokens.dialogIosRadius,
+    sheetTopRadius: DesignTokens.radiusSheetApple,
+    inputVerticalPadding: DesignTokens.inputIosVerticalPadding,
+    navBarAlphaLight: DesignTokens.navBarAppleBackgroundAlpha,
+    dividerAlphaLight: DesignTokens.dividerIosAlpha,
+    dividerAlphaDark: DesignTokens.dividerIosDarkAlpha,
+    navBarHeight: DesignTokens.navBarAppleHeight,
+    inputFillColor: DesignTokens.appleSurfaceMuted,
+    inputBorderColor: DesignTokens.appleBorder,
   );
 }
 
@@ -329,19 +356,23 @@ ThemeData _withSharedControls(
     );
   }
 
+  final inputFill =
+      feel.inputFillColor ??
+      Color.alphaBlend(
+        cs.surfaceContainerHighest.withValues(alpha: isDark ? 0.58 : 0.72),
+        surface,
+      );
+  final inputBorder = feel.inputBorderColor ?? outline;
   final inputTheme = InputDecorationTheme(
     filled: true,
-    fillColor: Color.alphaBlend(
-      cs.surfaceContainerHighest.withValues(alpha: isDark ? 0.58 : 0.72),
-      surface,
-    ),
+    fillColor: inputFill,
     isDense: true,
     contentPadding: EdgeInsets.symmetric(
       horizontal: 12,
       vertical: feel.inputVerticalPadding,
     ),
-    border: fieldBorder(outline),
-    enabledBorder: fieldBorder(outline),
+    border: fieldBorder(inputBorder),
+    enabledBorder: fieldBorder(inputBorder),
     focusedBorder: fieldBorder(cs.primary.withValues(alpha: 0.18), width: 0.45),
     errorBorder: fieldBorder(cs.error.withValues(alpha: 0.36)),
     focusedErrorBorder: fieldBorder(
@@ -765,9 +796,9 @@ ThemeData _withSharedControls(
     ),
     tabBarTheme: appPageTabTheme(theme),
     navigationBarTheme: NavigationBarThemeData(
-      height: 60,
+      height: feel.navBarHeight,
       elevation: 0,
-      // 暗色主题保持既有 0.92；亮色走档位（默认主题 iOS 档 0.72）。
+      // 暗色主题保持既有 0.92；亮色走档位（默认主题 Apple minimal 档 0.72）。
       backgroundColor: surface.withValues(
         alpha: isDark ? 0.92 : feel.navBarAlphaLight,
       ),
@@ -960,6 +991,11 @@ ThemeData _lightTheme({
   Color error = const Color(0xFFA23535),
   _SharedFeel feel = const _SharedFeel(),
   AppSurfaceStyle? surfaceStyle,
+  bool appBarCenterTitle = true,
+  EdgeInsets cardMargin = const EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 6,
+  ),
 }) {
   final theme = ThemeData(
     useMaterial3: true,
@@ -978,8 +1014,8 @@ ThemeData _lightTheme({
       error: error,
       onSurface: DesignTokens.defaultText,
     ),
-    // 仅默认主题注册 AppSurfaceStyle.ios；其余主题不带该 extension，
-    // 共享组件在调用点回退到既有默认值，观感不变。
+    // 仅默认主题注册 AppSurfaceStyle.appleMinimal；其余主题不带该
+    // extension，共享组件在调用点回退到既有默认值，观感不变。
     extensions: surfaceStyle == null
         ? null
         : <ThemeExtension<dynamic>>[surfaceStyle],
@@ -987,7 +1023,7 @@ ThemeData _lightTheme({
     cardTheme: CardThemeData(
       color: surface,
       elevation: 0,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: cardMargin,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(
@@ -1032,7 +1068,7 @@ ThemeData _lightTheme({
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: true,
+      centerTitle: appBarCenterTitle,
       foregroundColor: const Color(0xFF1E2532),
       titleTextStyle: const TextStyle(
         fontSize: DesignTokens.fontSizePageTitle,
@@ -1281,15 +1317,17 @@ final _botwTheme = _withSharedControls(
 );
 
 final _defaultTheme = _lightTheme(
-  primary: DesignTokens.defaultPrimary,
+  primary: DesignTokens.applePrimary,
   secondary: DesignTokens.defaultAccent,
-  surface: DesignTokens.defaultSurface,
-  background: DesignTokens.defaultPageBackground,
+  surface: DesignTokens.appleSurface,
+  background: DesignTokens.appleBackground,
   error: DesignTokens.defaultError,
-  // 默认主题专属 iOS 档：更大圆角 / 更宽松控件 / 更柔和分隔 / 半透明底导航。
-  // 其余 7 套主题不传 feel / surfaceStyle，走既有默认值，观感不变。
-  feel: _SharedFeel.ios,
-  surfaceStyle: AppSurfaceStyle.ios,
+  // 默认主题专属 Apple minimal 档：更大圆角 / 更宽松控件 / 更柔和分隔 /
+  // 更高半透明底导航 / 左对齐标题。其余 7 套主题不传这些参数，观感不变。
+  feel: _SharedFeel.appleMinimal,
+  surfaceStyle: AppSurfaceStyle.appleMinimal,
+  appBarCenterTitle: false,
+  cardMargin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 );
 
 /// 液态玻璃主题：浅色 iOS 基底（iOS 蓝），玻璃质感卡片。
@@ -1359,7 +1397,8 @@ class AppBrands {
     style: BrandStyle.defaultBrand,
     name: '多仪',
     theme: _defaultTheme,
-    backgroundOverlay: DesignTokens.defaultPageBackground,
+    // 雾灰画布：与 `scaffoldBackgroundColor`、Android 小组件同源。
+    backgroundOverlay: DesignTokens.appleBackground,
     backgroundOverlayOpacity: 1.0,
   );
   static final re0 = AppBrand(

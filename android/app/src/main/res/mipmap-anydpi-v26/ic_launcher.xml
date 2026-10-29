@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应启动图标：背景为品牌红 #C95455，前景只有白色几何标记，
+     两者合成后与 assets/logo/duoyi_unified_logo.svg 的同一设计一致，
+     不会出现红底方块叠在白底背景上的双 logo。 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
   <background android:drawable="@color/ic_launcher_background"/>
-  <foreground>
-      <inset
-          android:drawable="@drawable/ic_launcher_foreground"
-          android:inset="16%" />
-  </foreground>
+  <foreground android:drawable="@drawable/ic_launcher_foreground"/>
 </adaptive-icon>

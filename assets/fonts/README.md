@@ -1,13 +1,9 @@
-# 应用界面字体
+应用界面统一使用 **Resource Han Rounded CN Bold（资源圆体）**，覆盖简体中文、中英文标点、拉丁字母及数字。它是一份静态 700 字重字库；`pubspec.yaml` 将同一资源按 400 / 500 / 600 / 700 注册，让现有 Regular / Medium / Strong 语义令牌统一呈现圆润粗体字形。
 
-应用界面统一使用 **Noto Sans SC（思源黑体同源的中文无衬线体）** 变量字库，覆盖简体中文、中英文标点、拉丁字母及数字。普通正文为 Regular 400，标签 / 按钮 / 导航为 Medium 500，标题与强调为 Semibold 600。
-
-- 上游：Google Fonts 官方分发的 Noto Sans SC 变量字体（`NotoSansSC[wght].ttf`），经官方 HTTPS 下载，未经修改。
-- 文件：`NotoSansSC-Variable.ttf`，17,772,300 字节，变量轴 `wght` 100–900（默认 100），31,036 个字形。
-- SHA-256：`a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da`。
-- 授权：[SIL Open Font License 1.1](NotoSansSC-OFL.txt)，随应用一起打包。
-
-`pubspec.yaml` 把同一个变量文件按 400 / 500 / 600 / 700 四档注册为 `NotoSansSC`，引擎按请求字重选择该资源并应用 `wght` 变体；`assets/fonts/` 整目录仍作为普通资源打包。
+- 上游：Resource Han Rounded CN（资源圆体）发布包，未经修改。
+- 文件：`ResourceHanRoundedCN-Bold.ttf`，13,978,508 字节，OS/2 权重 700。
+- SHA-256：`f713907a21a10701cd68a7ce3e345ccdce46c789e1809d65ace54e095d7107c3`。
+- 授权：[SIL Open Font License 1.1](ResourceHanRounded-OFL.txt)，随应用一起打包。
 
 界面入口统一在 `lib/core/design_tokens.dart`：
 
@@ -16,10 +12,8 @@
 - `DesignTokens.fontWeightMedium` (500)：按钮文字、导航标签、chip、浮动标签。
 - `DesignTokens.fontWeightStrong` (600)：页面 / 卡片 / AppBar 标题与强调文字。
 
-字号统一走共享 `DesignTokens.fontSize*` 档位（正文 14、次级 12、说明 11、页标题 18 等）。原生 Android 另以 `DesignTokens.androidFontSizeBody = 10` 在根部 `AppTypography` 应用 10/14 平台基准，标准 100% 默认正文有效字号为 10，其他角色按原层级同比缩放；Web（包括安卓浏览器）、iOS 和桌面保留共享基准。不要在页面里硬编码字号、字重或家族。默认应用比例为 100%，已保存比例保持不变；平台字阶、用户比例与系统缩放分别组合，预览不重复应用平台基准。罕见字符、其他语言和 emoji 仍由 `ThemeData.fontFamilyFallback` 中的系统字体回退处理。
+字号统一走共享 `DesignTokens.fontSize*` 档位（正文 14、次级 12、说明 11、页标题 18 等）。原生 Android 另以 `DesignTokens.androidFontSizeBody = 12` 在根部 `AppTypography` 应用 12/14 平台基准，标准 100% 默认正文有效字号为 12，其他角色按原层级同比缩放；Web（包括安卓浏览器）、iOS 和桌面保留共享基准。不要在页面里硬编码字号、字重或家族。默认应用比例为 100%，已保存比例保持不变；平台字阶、用户比例与系统缩放分别组合，预览不重复应用平台基准。罕见字符、其他语言和 emoji 仍由 `ThemeData.fontFamilyFallback` 中的系统字体回退处理。
 
-## 旧字库
+## 兼容字体
 
-`ResourceHanRoundedCN-Bold.ttf`（资源圆体 CN Bold，700，13,978,508 字节，SHA-256 `f713907a21a10701cd68a7ce3e345ccdce46c789e1809d65ace54e095d7107c3`，授权见 `ResourceHanRounded-OFL.txt`）是此前的全粗体界面字体，现已不再被界面引用，仅作为历史资源保留打包，以免移除资产影响既有构建与截图证据。新代码不得再引用 `ResourceHanRounded`。
-
-`DroidSansFallbackFull.ttf` 仍用于 PDF 报告，导出字体处理与应用界面独立。
+`NotoSansSC-Variable.ttf` 与 `NotoSansSC-OFL.txt` 保留在资源目录中，作为历史构建/截图兼容资产，但不再注册为应用 UI 字体。`DroidSansFallbackFull.ttf` 仍用于 PDF 报告，导出字体处理与应用界面独立。

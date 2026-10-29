@@ -19,6 +19,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Android 小组件的 `focus_timer_ends_at_millis` 与 `endsAtMs` 同源。
   static const String runningSnapshotKey = 'pomodoro_running_snapshot';
 
+  /// 桌面小组件控制身份与暂停态（session + revision + idle/running/paused）。
+  /// 与 [runningSnapshotKey] 分开保存：运行快照只表达“进程被杀时在跑”，
+  /// 暂停后的剩余时长必须能跨重启与冷/热切换继续。
+  static const String widgetControlKey = 'pomodoro_widget_control';
+
   PomodoroState _state = PomodoroState(
     remainingSeconds: 1500,
     totalSeconds: 1500,
@@ -52,6 +57,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// 链首 future 的回调会固定在其创建 zone 调度，fakeAsync 测试驱动不到。
   final List<Future<void> Function(SharedPreferences)> _snapshotOps = [];
   bool _snapshotDraining = false;
+  Completer<void>? _snapshotDrainDone;
 
   /// 真实白噪音服务。Task 16 接入：番茄钟状态 ↔ 音频播放。
   final FocusSoundService _sound = FocusSoundService.instance;
@@ -95,6 +101,18 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// 白名单模式无法扫描已安装应用时为 true（UI 用它提示拦截已暂停）。
   bool get focusDistractionAppScanFailed => _distractionScanFailed;
   ValueListenable<int> get timerTicks => _timerTicks;
+
+  /// 小组件控制身份：不透明 session id + 单调 revision + 当前状态；
+  /// `idle` 也持久化，停止后旧 start 绑定会因 session 失配被拒绝。
+  String _widgetSessionId = '';
+  int _widgetRevision = 0;
+  PomodoroWidgetTimerState _widgetTimerState = PomodoroWidgetTimerState.idle;
+
+  /// 暂停态运行数据（跨重启/冷热切换恢复同一剩余时长）。
+  PomodoroPausedRuntime? _pausedRuntime;
+
+  /// 控制记录写入串行链：保证后入队的状态不会被先发起的写覆盖。
+  Future<void> _widgetControlWrites = Future<void>.value();
 
   void attachNotifier(NotificationService n) {
     _notifier = n;
@@ -179,6 +197,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     // 先过跨天重置再恢复/结算，保证逾期补结算的当日计数归属恢复当天。
     _checkDayReset();
     final snapshotHandled = await _restoreRunningFromSnapshot(prefs);
+    // 控制身份/暂停态：暂停后重启或冷/主切换要能继续同一剩余时长。
+    final pausedRestored = _restoreWidgetControl(
+      prefs.getString(widgetControlKey),
+      snapshotHandled: snapshotHandled,
+    );
     if (_state.isRunning) {
       _state = _state.copyWith(
         whiteNoiseSound: _config.whiteNoiseSound,
@@ -188,8 +211,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       unawaited(_syncSoundToState());
       _syncDndToState();
       _syncDistractionMonitorToState();
-    } else if (!snapshotHandled) {
-      // 无快照且不在运行：重置为完整 focusDuration。
+    } else if (!snapshotHandled && !pausedRestored) {
+      // 无快照/暂停态且不在运行：重置为完整 focusDuration。
       // 有快照但逾期且未续跑时，保留结算后的 break 相位，不重置。
       _initState();
     }
@@ -201,6 +224,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _storageGeneration++;
     _cancelTimer();
     _clearRunningSnapshot();
+    // 新 idle 身份：换号/重置后旧小组件按钮的 session + revision 一律失效。
+    _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
     _timerTicks.value = 0;
     _config = PomodoroConfig();
     _sessions = [];
@@ -325,6 +350,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _snapshotOps.add(op);
     if (_snapshotDraining) return;
     _snapshotDraining = true;
+    _snapshotDrainDone = Completer<void>();
     unawaited(_drainSnapshotOps());
   }
 
@@ -341,6 +367,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
     } finally {
       _snapshotDraining = false;
+      _snapshotDrainDone?.complete();
+      _snapshotDrainDone = null;
     }
   }
 
@@ -598,6 +626,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_timer?.isActive ?? false) {
       if (!_state.isRunning) {
         _state = _state.copyWith(isRunning: true);
+        // 身份推进只在“进入运行”这一帧发生，tick 绝不改 revision。
+        _markTimerStarted();
         notifyListeners();
       }
       unawaited(_syncSoundToState());
@@ -607,6 +637,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     if (!_state.isRunning) {
       _state = _state.copyWith(isRunning: true);
+      _markTimerStarted();
       notifyListeners();
     }
     // 新启动（含暂停续跑）计算锚点；崩溃恢复路径已带原锚点，不重算。
@@ -646,13 +677,16 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void _pauseTimer() {
     _cancelTimer();
+    // 暂停前先记录完整相位：重启/冷热切换后可继续同一剩余时长。
+    _capturePausedRuntime();
     _clearRunningSnapshot();
     _state = _state.copyWith(isRunning: false);
+    _widgetTimerState = PomodoroWidgetTimerState.paused;
+    _widgetRevision++;
+    unawaited(_writeWidgetControl());
     notifyListeners();
     _syncDndToState();
     _syncDistractionMonitorToState();
-    // 300ms 淡出；FocusSoundService.fadeOut 结束后会把 isPlaying 置为 false，
-    // 满足 Requirement 5.6（500ms 内静音）。
     // ignore: discarded_futures
     _sound.fadeOut(const Duration(milliseconds: 300));
   }
@@ -780,6 +814,13 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       _syncDndToState();
       _syncDistractionMonitorToState();
     }
+    // 自然完成即“结束当前 session”：生成新身份（含 idle/自动续跑），
+    // 旧按钮的 session/revision 不再能暂停或停止新的相位。
+    _resetWidgetControlIdentity(
+      _state.isRunning
+          ? PomodoroWidgetTimerState.running
+          : PomodoroWidgetTimerState.idle,
+    );
     notifyListeners();
     unawaited(
       _persistCompletedSession(
@@ -855,6 +896,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         type: PomodoroType.focus,
       );
     }
+    // 跳过同样是相位切换：旧按钮不能暂停/停止新相位。
+    _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
     // ignore: discarded_futures
     _sound.stop();
     _syncDndToState();
@@ -873,6 +916,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       type: PomodoroType.focus,
       completedSessions: 0,
     );
+    // stop 语义：回到满时长、不产生完成记录，并生成新 idle 身份。
+    _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
     // ignore: discarded_futures
     _sound.stop();
     _syncDndToState();
@@ -898,6 +943,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       isCountUp: enabled,
       type: PomodoroType.focus,
     );
+    _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
     // ignore: discarded_futures
     _sound.stop();
     _syncDndToState();
@@ -1363,6 +1409,224 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
   }
 
+  // --- 桌面小组件控制（绑定 session + revision + state） ---
+
+  /// 当前控制身份：`idle` 也持久化并带独立 session，停止后旧 start 绑定失效。
+  String get focusControlSessionId => _widgetSessionId;
+  int get focusControlRevision => _widgetRevision;
+  PomodoroWidgetTimerState get focusTimerState => _widgetTimerState;
+
+  /// 原生倒计时锚点：倒计时运行中取 Provider 的 canonical 结束时刻（不按
+  /// `now + remaining` 漂移）；正计时与非运行态为 0（原生改用 Chronometer）。
+  int get focusTimerEndsAtMillis =>
+      _state.isRunning && !_state.isCountUp ? (_activeAnchorMs ?? 0) : 0;
+
+  /// 小组件控制入口。
+  ///
+  /// 执行前匹配 session + revision + state，任一不符直接拒绝并保持状态不变，
+  /// 因此旧按钮、重复点击与“未来 revision”都不会改状态，也不会重复记惩罚。
+  Future<bool> applyWidgetControl({
+    required PomodoroWidgetControlAction action,
+    required String sessionId,
+    required int revision,
+    required PomodoroWidgetTimerState expectedState,
+  }) async {
+    final generation = _storageGeneration;
+    if (sessionId.isEmpty || sessionId != _widgetSessionId) return false;
+    if (revision < 0 || revision != _widgetRevision) return false;
+    if (expectedState != _widgetTimerState) return false;
+    final current = _widgetTimerState;
+    switch (action) {
+      case PomodoroWidgetControlAction.start:
+        // start 只接受 idle / paused；运行中重复 start 不改状态。
+        if (current != PomodoroWidgetTimerState.idle &&
+            current != PomodoroWidgetTimerState.paused) {
+          return false;
+        }
+        if (current == PomodoroWidgetTimerState.paused) {
+          _resumeFromPausedRuntime();
+        } else {
+          _startTimer();
+        }
+      case PomodoroWidgetControlAction.pause:
+        if (current != PomodoroWidgetTimerState.running) return false;
+        unawaited(_recordStrictFocusPenalty(FocusPenaltyReason.pause));
+        _pauseTimer();
+      case PomodoroWidgetControlAction.stop:
+        if (current != PomodoroWidgetTimerState.running &&
+            current != PomodoroWidgetTimerState.paused) {
+          return false;
+        }
+        // stop 复用 resetTimer 语义：记 reset 惩罚、回满时长、不产生完成记录。
+        resetTimer();
+    }
+    if (generation != _storageGeneration) return false;
+    await _writeWidgetControl();
+    await flushPersistence();
+    return true;
+  }
+
+  /// 运行态的身份推进：session 保留（暂停续跑继续同一任务），revision +1。
+  void _markTimerStarted() {
+    if (_widgetSessionId.isEmpty) {
+      _widgetSessionId = _newWidgetSessionId();
+    }
+    _widgetTimerState = PomodoroWidgetTimerState.running;
+    _widgetRevision++;
+    unawaited(_writeWidgetControl());
+  }
+
+  void _capturePausedRuntime() {
+    final current = _state;
+    _pausedRuntime = PomodoroPausedRuntime(
+      type: current.type,
+      remainingSeconds: current.remainingSeconds,
+      totalSeconds: current.totalSeconds,
+      isCountUp: current.isCountUp,
+      completedSessions: current.completedSessions,
+      taskName: current.taskName,
+      todoId: current.todoId,
+      subtaskId: current.subtaskId,
+      todoTitle: current.todoTitle,
+      tag: current.tag,
+    );
+  }
+
+  /// 续跑：沿用暂停时记录的相位与任务绑定，不新开一次专注。
+  void _resumeFromPausedRuntime() {
+    final paused = _pausedRuntime;
+    _pausedRuntime = null;
+    if (paused != null) {
+      _activeAnchorMs = null;
+      _state = PomodoroState(
+        remainingSeconds: paused.remainingSeconds,
+        totalSeconds: paused.totalSeconds,
+        isRunning: false,
+        isCountUp: paused.isCountUp,
+        type: paused.type,
+        completedSessions: paused.completedSessions,
+        taskName: paused.taskName,
+        todoId: paused.todoId,
+        subtaskId: paused.subtaskId,
+        todoTitle: paused.todoTitle,
+        whiteNoiseSound: _config.whiteNoiseSound,
+        tag: paused.tag,
+        focusRoomId: _config.focusRoomId,
+      );
+    }
+    _startTimer();
+  }
+
+  /// 结束/停止/重置产生新的 idle 身份：旧按钮的 session/revision 立即失效。
+  void _resetWidgetControlIdentity(PomodoroWidgetTimerState state) {
+    _pausedRuntime = null;
+    _widgetSessionId = _newWidgetSessionId();
+    _widgetRevision = 0;
+    _widgetTimerState = state;
+    unawaited(_writeWidgetControl());
+  }
+
+  String _newWidgetSessionId() =>
+      'focus-${DateTime.now().microsecondsSinceEpoch}';
+
+  Map<String, dynamic> _widgetControlJson() => <String, dynamic>{
+    'sessionId': _widgetSessionId,
+    'revision': _widgetRevision,
+    'state': _widgetTimerState.wireName,
+    if (_pausedRuntime != null) 'paused': _pausedRuntime!.toJson(),
+  };
+
+  /// 串行写入控制记录：最后入队的状态必然是磁盘上的最终状态。
+  Future<void> _writeWidgetControl() {
+    final payload = json.encode(_widgetControlJson());
+    _widgetControlWrites = _widgetControlWrites.then((_) async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(widgetControlKey, payload);
+      } catch (_) {
+        // 控制元数据写入失败可容忍：下一次状态变化会整条重写。
+      }
+    });
+    return _widgetControlWrites;
+  }
+
+  /// 后台动作 ACK 前等待当前控制记录与运行快照全部落盘。
+  Future<void> flushPersistence() async {
+    await _widgetControlWrites;
+    final pendingSnapshot = _snapshotDrainDone;
+    if (pendingSnapshot != null) await pendingSnapshot.future;
+  }
+
+  /// 启动时恢复控制身份；返回是否已从暂停态恢复出 [state]（调用方不要再 init）。
+  bool _restoreWidgetControl(String? raw, {required bool snapshotHandled}) {
+    Map<String, dynamic>? data;
+    if (raw != null) {
+      try {
+        final decoded = json.decode(raw);
+        if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+      } on FormatException {
+        data = null;
+      }
+    }
+    final sessionId = data?['sessionId']?.toString().trim() ?? '';
+    final revision = (data?['revision'] as num?)?.toInt() ?? 0;
+    final state = PomodoroWidgetTimerState.fromWire(data?['state']);
+
+    if (_state.isRunning) {
+      // 运行快照是权威：身份沿用记录；缺失/漂移则 +1，让旧按钮立即失效。
+      _pausedRuntime = null;
+      _widgetSessionId = sessionId.isNotEmpty
+          ? sessionId
+          : _newWidgetSessionId();
+      _widgetRevision = revision < 0 ? 0 : revision;
+      _widgetTimerState = PomodoroWidgetTimerState.running;
+      if (sessionId.isEmpty || state != PomodoroWidgetTimerState.running) {
+        _widgetRevision++;
+      }
+      unawaited(_writeWidgetControl());
+      return false;
+    }
+    if (snapshotHandled) {
+      // 逾期补结算已经生成过新身份，不能在这里覆盖。
+      return false;
+    }
+    final paused = state == PomodoroWidgetTimerState.paused
+        ? PomodoroPausedRuntime.fromJson(data?['paused'])
+        : null;
+    if (paused != null && sessionId.isNotEmpty) {
+      _widgetSessionId = sessionId;
+      _widgetRevision = revision < 0 ? 0 : revision;
+      _widgetTimerState = PomodoroWidgetTimerState.paused;
+      _pausedRuntime = paused;
+      _state = PomodoroState(
+        remainingSeconds: paused.remainingSeconds,
+        totalSeconds: paused.totalSeconds,
+        isRunning: false,
+        isCountUp: paused.isCountUp,
+        type: paused.type,
+        completedSessions: paused.completedSessions,
+        taskName: paused.taskName,
+        todoId: paused.todoId,
+        subtaskId: paused.subtaskId,
+        todoTitle: paused.todoTitle,
+        whiteNoiseSound: _config.whiteNoiseSound,
+        tag: paused.tag,
+        focusRoomId: _config.focusRoomId,
+      );
+      return true;
+    }
+    if (state == PomodoroWidgetTimerState.idle && sessionId.isNotEmpty) {
+      _widgetSessionId = sessionId;
+      _widgetRevision = revision < 0 ? 0 : revision;
+      _widgetTimerState = PomodoroWidgetTimerState.idle;
+      _pausedRuntime = null;
+      unawaited(_writeWidgetControl());
+      return false;
+    }
+    _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
+    return false;
+  }
+
   // --- Queries ---
 
   List<PomodoroSession> getSessionsForDateRange(DateTime start, DateTime end) {
@@ -1423,6 +1687,74 @@ const int _maxPomodoroSessions = 500;
 
 /// 正计时崩溃恢复的累计上限（对齐 _completeSession 的 clamp(1, 24h)）。
 const int _maxCountUpSnapshotSeconds = 24 * 60 * 60;
+
+/// 暂停态快照：暂停时记录完整计时相位与任务绑定，重启/冷热切换后可继续同一
+/// 剩余时长；[PomodoroProvider.runningSnapshotKey] 仍只表达“进程被杀时在跑”。
+@immutable
+class PomodoroPausedRuntime {
+  final PomodoroType type;
+  final int remainingSeconds;
+  final int totalSeconds;
+  final bool isCountUp;
+  final int completedSessions;
+  final String? taskName;
+  final String? todoId;
+  final String? subtaskId;
+  final String? todoTitle;
+  final String? tag;
+
+  const PomodoroPausedRuntime({
+    required this.type,
+    required this.remainingSeconds,
+    required this.totalSeconds,
+    required this.isCountUp,
+    required this.completedSessions,
+    this.taskName,
+    this.todoId,
+    this.subtaskId,
+    this.todoTitle,
+    this.tag,
+  });
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'type': type.index,
+    'remainingSeconds': remainingSeconds,
+    'totalSeconds': totalSeconds,
+    'isCountUp': isCountUp,
+    'completedSessions': completedSessions,
+    'taskName': taskName,
+    'todoId': todoId,
+    'subtaskId': subtaskId,
+    'todoTitle': todoTitle,
+    'tag': tag,
+  };
+
+  /// 损坏/越界返回 null：调用方按“无暂停态”处理，绝不恢复出非法时长。
+  static PomodoroPausedRuntime? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final map = Map<String, dynamic>.from(raw);
+    final typeIndex = (map['type'] as num?)?.toInt();
+    final remaining = (map['remainingSeconds'] as num?)?.toInt();
+    final total = (map['totalSeconds'] as num?)?.toInt();
+    if (typeIndex == null || remaining == null || total == null) return null;
+    if (typeIndex < 0 || typeIndex >= PomodoroType.values.length) return null;
+    if (remaining < 0 || total < 0) return null;
+    final isCountUp = map['isCountUp'] == true;
+    if (!isCountUp && (total <= 0 || remaining > total)) return null;
+    return PomodoroPausedRuntime(
+      type: PomodoroType.values[typeIndex],
+      remainingSeconds: remaining,
+      totalSeconds: total,
+      isCountUp: isCountUp,
+      completedSessions: (map['completedSessions'] as num?)?.toInt() ?? 0,
+      taskName: map['taskName']?.toString(),
+      todoId: map['todoId']?.toString(),
+      subtaskId: map['subtaskId']?.toString(),
+      todoTitle: map['todoTitle']?.toString(),
+      tag: map['tag']?.toString(),
+    );
+  }
+}
 
 String _encodePomodoroSessionsPayload(List<PomodoroSession> sessions) =>
     json.encode(sessions.map((e) => e.toJson()).toList());
