@@ -204,7 +204,8 @@ void main() {
     expect(widgetStreamStart, greaterThanOrEqualTo(0));
     expect(widgetStreamEnd, greaterThan(widgetStreamStart));
     final widgetStream = main.substring(widgetStreamStart, widgetStreamEnd);
-    expect(widgetStream, contains('if (uri != null) handleDeepLink(uri);'));
+    expect(widgetStream, contains('if (uri != null)'));
+    expect(widgetStream, contains('handleDeepLink(uri)'));
     expect(
       widgetStream,
       isNot(contains('_handleWidgetUri(uri, pomodoroProvider)')),

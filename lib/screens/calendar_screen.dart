@@ -438,14 +438,22 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   void _previousThreeDays() {
     setState(() {
-      _selectedDay = _selectedDay.subtract(const Duration(days: 3));
+      _selectedDay = AppClock.date(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day - 3,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _nextThreeDays() {
     setState(() {
-      _selectedDay = _selectedDay.add(const Duration(days: 3));
+      _selectedDay = AppClock.date(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day + 3,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
@@ -782,7 +790,11 @@ class _CalendarScreenState extends State<CalendarScreen>
     final weekEnd = weekStart.add(const Duration(days: 6));
     final weekLabel =
         '${weekStart.month}/${weekStart.day} - ${weekEnd.month}/${weekEnd.day}';
-    final threeDayEnd = _selectedDay.add(const Duration(days: 2));
+    final threeDayEnd = AppClock.date(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day + 2,
+    );
     final threeDayLabel =
         '${_selectedDay.year}年${_selectedDay.month}/${_selectedDay.day} - ${threeDayEnd.month}/${threeDayEnd.day}';
     final yearLabel = '${_focusedMonth.year} 年';
@@ -1863,7 +1875,8 @@ class _CalendarThreeDayView extends StatelessWidget {
   Widget build(BuildContext context) {
     final days = List.generate(
       3,
-      (index) => startDate.add(Duration(days: index)),
+      (index) =>
+          AppClock.date(startDate.year, startDate.month, startDate.day + index),
     );
     return LayoutBuilder(
       builder: (context, constraints) {
