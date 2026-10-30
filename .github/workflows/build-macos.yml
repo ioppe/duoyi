@@ -121,8 +121,8 @@ jobs:
           )"
           APP_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
           APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
-          lipo -verify_arch arm64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
-          lipo -verify_arch x86_64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch arm64
+          lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch x86_64
           lipo -archs "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
           ARTIFACT_NAME="duoyi-${APP_VERSION}-${GITHUB_SHA:0:8}-macos-universal-unsigned"
           PACKAGE_DIR="$GITHUB_WORKSPACE/build/macos/packages"
