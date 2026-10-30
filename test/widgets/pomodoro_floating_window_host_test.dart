@@ -209,6 +209,14 @@ void main() {
       ).toARGB32(),
     );
     expect(
+      originalAppearance['windowBackgroundColor'],
+      originalTheme.scaffoldBackgroundColor.toARGB32(),
+    );
+    expect(
+      originalAppearance['windowForegroundColor'],
+      originalTheme.colorScheme.onSurface.toARGB32(),
+    );
+    expect(
       originalAppearance['primaryColor'],
       originalTheme.filledButtonTheme.style!.backgroundColor!
           .resolve({})!
@@ -265,5 +273,13 @@ void main() {
       dark.colorScheme.onSurface.toARGB32(),
     );
     expect(appearance['primaryColor'], dark.colorScheme.primary.toARGB32());
+    expect(
+      appearance['windowBackgroundColor'],
+      dark.scaffoldBackgroundColor.toARGB32(),
+    );
+    expect(
+      appearance['windowForegroundColor'],
+      dark.colorScheme.onSurface.toARGB32(),
+    );
   });
 }

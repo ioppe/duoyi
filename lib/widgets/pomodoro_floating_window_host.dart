@@ -112,6 +112,8 @@ class _PomodoroFloatingWindowHostState
       appearance: {
         'backgroundColor': cardFill.toARGB32(),
         'foregroundColor': cs.onSurface.toARGB32(),
+        'windowBackgroundColor': themeData.scaffoldBackgroundColor.toARGB32(),
+        'windowForegroundColor': cs.onSurface.toARGB32(),
         'secondaryColor': cs.onSurfaceVariant.toARGB32(),
         'primaryColor': (button?.backgroundColor?.resolve({}) ?? cs.primary)
             .toARGB32(),

@@ -32,6 +32,9 @@ struct PomodoroFloatingPanelAppearance {
   let timeFontSize: CGFloat
   let captionFontSize: CGFloat
   let buttonFontSize: CGFloat
+  /// Main-window title-bar colors. They fall back to the card palette for old snapshots.
+  let windowBackgroundColor: NSColor
+  let windowForegroundColor: NSColor
 
   static let semanticFallback = PomodoroFloatingPanelAppearance(
     backgroundColor: .windowBackgroundColor,
@@ -60,7 +63,9 @@ struct PomodoroFloatingPanelAppearance {
     controlRadius: CGFloat,
     timeFontSize: CGFloat,
     captionFontSize: CGFloat,
-    buttonFontSize: CGFloat
+    buttonFontSize: CGFloat,
+    windowBackgroundColor: NSColor? = nil,
+    windowForegroundColor: NSColor? = nil
   ) {
     self.backgroundColor = backgroundColor
     self.foregroundColor = foregroundColor
@@ -74,8 +79,9 @@ struct PomodoroFloatingPanelAppearance {
     self.timeFontSize = timeFontSize
     self.captionFontSize = captionFontSize
     self.buttonFontSize = buttonFontSize
+    self.windowBackgroundColor = windowBackgroundColor ?? backgroundColor
+    self.windowForegroundColor = windowForegroundColor ?? foregroundColor
   }
-
   /// Parses the nested `appearance` map. Missing keys keep their semantic
   /// default, so a partial payload never produces an unstyled card.
   init?(dictionary: [String: Any]?) {
@@ -113,6 +119,12 @@ struct PomodoroFloatingPanelAppearance {
       dictionary["captionFontSize"], fallback: fallback.captionFontSize)
     self.buttonFontSize = PomodoroFloatingPanelAppearance.metricValue(
       dictionary["buttonFontSize"], fallback: fallback.buttonFontSize)
+    self.windowBackgroundColor =
+      PomodoroFloatingPanelAppearance.colorValue(dictionary["windowBackgroundColor"])
+      ?? self.backgroundColor
+    self.windowForegroundColor =
+      PomodoroFloatingPanelAppearance.colorValue(dictionary["windowForegroundColor"])
+      ?? self.foregroundColor
   }
 
   /// Flutter sends colors as `uint32` ARGB values; alpha is honoured.

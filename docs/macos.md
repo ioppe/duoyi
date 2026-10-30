@@ -63,6 +63,7 @@ macOS 作业在分析与回归通过后运行，使用完整 Xcode 的 `macos-15
 这是开发测试打包流程，未配置 Developer ID 签名或 Apple 公证；成功产出安装包不代表通过 Gatekeeper 验证。正式分发前应另行配置团队签名和公证。当前工作区的改动需要先进入所选构建分支，远端构建不会读取本机未提交文件。
 
 下载入口：日常构建进入 **Actions → build → 对应运行 → Artifacts → duoyi-macos-universal-unsigned**；单独 macOS 流程也上传相同产物名。正式标签构建成功后，可从对应 **Releases** 页面直接下载 `.dmg`。DMG 内包含多仪应用与 Applications 快捷入口，拖入 Applications 即可安装。
+- macOS 主窗口顶部标题栏也跟随当前 Flutter 主题背景色和文字色更新；切换默认、re0、深色等主题时不需要重启窗口，交通灯按钮与窗口拖动仍由 AppKit 原生管理。
 
 ## 实现边界
 

@@ -1,24 +1,26 @@
 import Cocoa
 import FlutterMacOS
 
-/// Bridges Dart to the native pomodoro floating panel.
+/// Bridges Dart to the native pomodoro floating panel and the main window theme.
 ///
 /// Channel: `com.duoyi/pomodoro_floating_window`
 /// Dart -> native: `update`, `show`, `hide`, `dispose`
-/// Native -> Dart: `toggle` (user pressed play/pause), `closed` (user dismissed
-/// the panel with its own close button)
-///
-/// Every method answers with success unless the arguments are malformed;
-/// unknown methods answer `FlutterMethodNotImplemented`.
+/// Native -> Dart: `toggle`, `closed`
 final class PomodoroFloatingWindowChannel: NSObject, PomodoroFloatingPanelDelegate {
   static let channelName = "com.duoyi/pomodoro_floating_window"
 
   private let channel: FlutterMethodChannel
   private let controller: PomodoroFloatingPanelController
+  private weak var mainWindow: MainFlutterWindow?
 
-  init(messenger: FlutterBinaryMessenger, controller: PomodoroFloatingPanelController = .shared) {
+  init(
+    messenger: FlutterBinaryMessenger,
+    controller: PomodoroFloatingPanelController = .shared,
+    mainWindow: MainFlutterWindow? = nil
+  ) {
     self.channel = FlutterMethodChannel(name: Self.channelName, binaryMessenger: messenger)
     self.controller = controller
+    self.mainWindow = mainWindow
     super.init()
     controller.delegate = self
     channel.setMethodCallHandler { [weak self] call, result in
@@ -43,6 +45,8 @@ final class PomodoroFloatingWindowChannel: NSObject, PomodoroFloatingPanelDelega
         )
         return
       }
+      // The same snapshot drives both the floating panel and the native titlebar.
+      mainWindow?.applyThemeAppearance(state.appearance)
       if call.method == "show" {
         controller.show(state)
       } else {
@@ -86,10 +90,49 @@ class MainFlutterWindow: NSWindow, NSWindowDelegate {
     self.delegate = self
     self.flutterViewController = flutterViewController
     self.pomodoroChannel = PomodoroFloatingWindowChannel(
-      messenger: flutterViewController.engine.binaryMessenger
+      messenger: flutterViewController.engine.binaryMessenger,
+      mainWindow: self
     )
 
     super.awakeFromNib()
+    applyThemeAppearance(.semanticFallback)
+  }
+
+  /// Applies the Flutter page background and foreground colors to AppKit's
+  /// native titlebar while keeping traffic lights and window behavior native.
+  func applyThemeAppearance(_ appearance: PomodoroFloatingPanelAppearance) {
+    let background = appearance.windowBackgroundColor
+    let foreground = appearance.windowForegroundColor
+    backgroundColor = background
+    titlebarAppearsTransparent = true
+    titleVisibility = .visible
+    titlebarSeparatorStyle = .none
+
+    let rgb = background.usingColorSpace(.sRGB)
+    let luminance = rgb.map {
+      0.2126 * $0.redComponent + 0.7152 * $0.greenComponent + 0.0722 * $0.blueComponent
+    } ?? 1
+    self.appearance = NSAppearance(named: luminance < 0.45 ? .darkAqua : .aqua)
+
+    guard let closeButton = standardWindowButton(.closeButton) else { return }
+    var titlebarView: NSView = closeButton
+    for _ in 0..<3 {
+      guard let parent = titlebarView.superview else { break }
+      titlebarView = parent
+    }
+    titlebarView.wantsLayer = true
+    titlebarView.layer?.backgroundColor = background.cgColor
+    titlebarView.layer?.borderWidth = 0
+    updateTitlebarTextColor(titlebarView, color: foreground)
+  }
+
+  private func updateTitlebarTextColor(_ view: NSView, color: NSColor) {
+    if let field = view as? NSTextField, field.stringValue == title {
+      field.textColor = color
+    }
+    for child in view.subviews {
+      updateTitlebarTextColor(child, color: color)
+    }
   }
 
   /// The red close button hides the window instead of closing it, so the Flutter
