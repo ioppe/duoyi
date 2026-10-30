@@ -6,7 +6,7 @@
 
 配置入口、优先级和迁移说明见 [docs/configuration.md](docs/configuration.md)；当前自托管实例的构建命令见 [docs/self-hosting-skydrow.md](docs/self-hosting-skydrow.md)。
 
-安装端（Android、iOS、Windows、Linux 及后续 macOS）在登录页填写服务器地址和访问令牌；Web 默认连接当前站点后端。可先在网页版账号的“我的 → 个人资料 → 访问令牌”创建令牌，支持按设备命名、查看最近使用时间、设置有效期和单独撤销。安装端也保留账号密码登录入口。
+安装端（Android、iOS、Windows、Linux、macOS）在登录页填写服务器地址和访问令牌；Web 默认连接当前站点后端。可先在网页版账号的“我的 → 个人资料 → 访问令牌”创建令牌，支持按设备命名、查看最近使用时间、设置有效期和单独撤销。安装端也保留账号密码登录入口。
 
 ## 功能特性
 
@@ -26,6 +26,7 @@
 
 ### 平台特性
 - **桌面**：Linux 系统托盘 + DBus 桌面通知
+- **macOS**：原生桌面客户端与随 App 主题切换的番茄计时悬浮窗，支持鼠标拖动、开始/暂停/继续及隐藏面板；构建和使用方法见 [docs/macos.md](docs/macos.md)
 - **Android**：MIUI/通用桌面小组件（待办/习惯/番茄三栏，深链 `duoyi://`）
 - **多端云同步**：Python FastAPI 后端，按时间戳合并
 
@@ -59,6 +60,7 @@ lib/
 backend/                   # FastAPI 后端 (auth / sync / announcements / feedback)
 android/app/src/main/      # MIUI 桌面小组件 (Kotlin AppWidgetProvider + XML)
 linux/                     # Linux 桌面入口 + .desktop
+macos/                     # macOS 原生入口 + 可拖动番茄悬浮窗
 assets/backgrounds/        # 7 张主题背景图
 ```
 
@@ -71,6 +73,8 @@ python3 scripts/flutter_with_config.py pub get
 python3 scripts/flutter_with_config.py run
 python3 scripts/flutter_with_config.py build apk --release  # 需配置自己的签名
 ```
+
+macOS 需安装完整 Xcode 和 CocoaPods，再运行 `python3 scripts/flutter_with_config.py run -d macos`；Release 构建命令与手动 Actions ZIP/DMG 打包见 [macOS 说明](docs/macos.md)。
 
 ### 后端
 ```bash
@@ -93,10 +97,13 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 |---|---|---|
 | 推送到 `main` / `self-hosted-skydrow`，或向这两个分支提交 PR | `analyze` | `flutter analyze`、完整 Flutter 测试和后端测试 |
 | 同上，通过检查后 | `android` | 正式签名通用 APK + 分 ABI APK (armeabi-v7a / arm64-v8a / x86_64) |
+| 同上，或手动保持 `build_macos=true`（默认） | `macos` | Apple Silicon / Intel 通用 DMG + 应用 ZIP + SHA-256 校验文件 |
 | 推送 `main` / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
-| 推 `v*` tag | `release` | 汇总 APK + AAB + web 打包，自动建 GitHub Release |
+| 推 `v*` tag | `release` | 汇总 APK + AAB + Web + macOS DMG/ZIP，全部成功后自动建 GitHub Release |
 
 日常推送无需打 tag：进入仓库 **Actions → build → 对应运行 → Artifacts**，下载 `duoyi-android`。手机通常安装其中以 `-arm64-v8a.apk` 结尾的包，通用包为 `duoyi-<日期>-<提交>.apk`；产物保留 30 天。手动构建时在 **Run workflow** 中选择对应分支。同一分支连续推送时，新推送会取消仍在运行的旧构建。
+
+macOS 安装包下载 **duoyi-macos-universal-unsigned** 产物中的 `.dmg`，或在标签发布后从 Releases 直接下载；也可独立手动运行 `build-macos.yml`。安装时将 DMG 内的应用拖入 Applications。当前为未作 Developer ID 签名/Apple 公证的测试包，详情见 [macOS 构建说明](docs/macos.md)。
 
 #### 需要的仓库 Secrets
 - `DUOYI_KEYSTORE_BASE64` — keystore 文件的 base64，用于正式签名。**不设置时发布构建会直接失败，不会降级为 debug 签名**。
@@ -128,6 +135,7 @@ Release 页面会自动生成并附带：
 - `duoyi-v1.0.3-arm64-v8a.apk` / `-armeabi-v7a.apk` / `-x86_64.apk`
 - `duoyi-v1.0.3.aab`（上架 Play Store 用）
 - `duoyi-web-v1.0.3.tar.gz`
+- macOS 通用 `.dmg`、应用 `.zip` 与 SHA-256 校验文件
 
 App 内 "我的 → 检查更新" 会拉取最新 Release。
 

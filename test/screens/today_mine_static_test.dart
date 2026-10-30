@@ -27,7 +27,7 @@ void main() {
       expect(surface, contains('defaultCardSkinId'));
       expect(surface, contains('Radius.circular(DesignTokens.radiusMd)'));
       expect(surface, contains('iconBoxSize = 28'));
-      expect(surface, contains('fontSize: 12'));
+      expect(surface, contains('fontSize: DesignTokens.fontSizeBody'));
       expect(surface, contains('fontSize: 11'));
       expect(surface, contains('Text.rich'));
 

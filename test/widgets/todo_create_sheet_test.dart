@@ -418,10 +418,9 @@ Future<void> _createListGroup(WidgetTester tester) async {
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
-          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
-        ))
-        .load();
+    final fonts = FontLoader(DesignTokens.fontFamily);
+    fonts.addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'));
+    await fonts.load();
   });
   setUp(() async {
     SharedPreferences.setMockInitialValues({});

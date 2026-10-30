@@ -6236,6 +6236,54 @@ abstract class AppLocalizations {
   /// **'暂停'**
   String get focusPause;
 
+  /// No description provided for @focusFloatingOpen.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开番茄悬浮窗'**
+  String get focusFloatingOpen;
+
+  /// No description provided for @focusFloatingHide.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏番茄悬浮窗'**
+  String get focusFloatingHide;
+
+  /// No description provided for @focusFloatingClose.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭悬浮窗'**
+  String get focusFloatingClose;
+
+  /// No description provided for @focusFloatingError.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗操作失败，请稍后重试'**
+  String get focusFloatingError;
+
+  /// No description provided for @focusFloatingStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get focusFloatingStart;
+
+  /// No description provided for @focusFloatingResume.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get focusFloatingResume;
+
+  /// No description provided for @focusFloatingPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get focusFloatingPaused;
+
+  /// No description provided for @focusFloatingReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'待开始'**
+  String get focusFloatingReady;
+
   /// No description provided for @focusResume.
   ///
   /// In zh, this message translates to:

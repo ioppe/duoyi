@@ -119,14 +119,14 @@ void main() {
     expect(source, contains("I18n.tr('preferences.nav.fixed')"));
     expect(source, contains('class _NavConfigActions'));
     expect(source, contains(r"ValueKey('bottom_nav_actions_$tab')"));
-    expect(source, contains('width: 138'));
-    expect(source, contains('BoxConstraints.tightFor(width: 36, height: 36)'));
+    expect(source, contains('width: kMinInteractiveDimension * 2 + 56'));
+    expect(source, contains('height: DesignTokens.controlMinHeight'));
     expect(source, contains('PreferencesProvider.maxBottomNavTabs'));
     expect(source, contains('reachedLimit'));
     expect(source, contains('? null'));
   });
 
-  test('底部导航设置 320px trailing 操作组使用固定紧凑宽度', () {
+  test('底部导航设置操作组为标准触控区域预留等宽空间', () {
     final source = File(
       'lib/screens/preferences_screen.dart',
     ).readAsStringSync();
@@ -141,11 +141,8 @@ void main() {
 
     expect(navTileSource, contains('trailing: _NavConfigActions('));
     expect(actionsSource, contains(r"ValueKey('bottom_nav_actions_$tab')"));
-    expect(actionsSource, contains('width: 138'));
-    expect(
-      actionsSource,
-      contains('BoxConstraints.tightFor(width: 36, height: 36)'),
-    );
+    expect(actionsSource, contains('width: kMinInteractiveDimension * 2 + 56'));
+    expect(actionsSource, contains('height: DesignTokens.controlMinHeight'));
     expect(actionsSource, contains('width: 56'));
     expect(actionsSource, isNot(contains('mainAxisSize: MainAxisSize.max')));
   });
@@ -178,7 +175,7 @@ void main() {
     );
     expect(source, contains("title: I18n.tr('preferences.navigation.title')"));
     expect(source, contains('const BottomNavSettingsScreen()'));
-    expect(source, contains('fontSize: 11'));
+    expect(source, contains('fontSize: DesignTokens.fontSizeSecondary'));
     expect(source, contains('appSecondaryMenuItemTextStyle('));
     expect(source, isNot(contains("label: '通知设置'")));
   });

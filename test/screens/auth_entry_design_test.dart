@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/design_tokens.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/providers/auth_provider.dart';
@@ -64,7 +65,14 @@ void main() {
       await tester.pumpAndSettle();
       final surface = find.byKey(const ValueKey('auth_form_surface'));
       final rect = tester.getRect(surface);
-      expect(rect.height, lessThanOrEqualTo(size.width < 960 ? 460 : 484));
+      expect(
+        rect.height,
+        lessThanOrEqualTo(
+          size.width < DesignTokens.authWideBreakpoint
+              ? DesignTokens.authCardHeightMobile
+              : DesignTokens.authCardHeightWide,
+        ),
+      );
       final submit = find.byKey(const ValueKey('auth-submit'));
       final password = find.byKey(const ValueKey('auth-password'));
       final loginGap =

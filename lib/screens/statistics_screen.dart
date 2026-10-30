@@ -986,7 +986,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   TextStyle(
                     color: cs.onInverseSurface,
                     fontSize: 11,
-                    fontFamily: DesignTokens.fontFamilyRounded,
+                    fontFamily: DesignTokens.fontFamily,
                     fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),
@@ -1142,7 +1142,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 textStyle: TextStyle(
                   color: cs.onInverseSurface,
                   fontSize: 11,
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               );
@@ -1318,7 +1318,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 textStyle: TextStyle(
                   color: cs.onInverseSurface,
                   fontSize: 11,
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               );
@@ -1466,7 +1466,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 TextStyle(
                   color: cs.onInverseSurface,
                   fontSize: 11,
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               );
@@ -1629,7 +1629,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 TextStyle(
                   color: cs.onInverseSurface,
                   fontSize: 11,
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               );
@@ -1865,7 +1865,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 TextStyle(
                   color: cs.onInverseSurface,
                   fontSize: 11,
-                  fontFamily: DesignTokens.fontFamilyRounded,
+                  fontFamily: DesignTokens.fontFamily,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               );
@@ -4457,7 +4457,7 @@ class _ProductivityTrendCard extends StatelessWidget {
                   TextStyle(
                     color: cs.onInverseSurface,
                     fontSize: 11,
-                    fontFamily: DesignTokens.fontFamilyRounded,
+                    fontFamily: DesignTokens.fontFamily,
                     fontWeight: DesignTokens.fontWeightStrong,
                   ),
                 ),

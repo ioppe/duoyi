@@ -3276,6 +3276,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get focusPause => 'Pause';
 
   @override
+  String get focusFloatingOpen => 'Open focus floating window';
+
+  @override
+  String get focusFloatingHide => 'Hide focus floating window';
+
+  @override
+  String get focusFloatingClose => 'Close floating window';
+
+  @override
+  String get focusFloatingError => 'Floating window action failed. Try again.';
+
+  @override
+  String get focusFloatingStart => 'Start';
+
+  @override
+  String get focusFloatingResume => 'Resume';
+
+  @override
+  String get focusFloatingPaused => 'Paused';
+
+  @override
+  String get focusFloatingReady => 'Ready';
+
+  @override
   String get focusResume => 'Resume';
 
   @override

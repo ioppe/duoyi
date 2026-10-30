@@ -1,0 +1,150 @@
+name: macOS DMG
+
+on:
+  push:
+    branches: [build/macos-dmg]
+  workflow_dispatch:
+    inputs:
+      config_file:
+        description: '公开部署配置文件'
+        type: string
+        default: 'config/deployment.json'
+      server_url:
+        description: '覆盖初始服务器地址；留空使用部署配置'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      deployment_profile:
+        description: '主流程 configuration.outputs.profile 的公开部署配置 JSON'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      DUOYI_CONFIG_FILE: ${{ inputs.config_file || 'config/deployment.json' }}
+      DUOYI_BUILD_PROFILE: ${{ inputs.deployment_profile || '' }}
+      SERVER_URL_OVERRIDE: ${{ inputs.server_url || vars.DUOYI_SERVER_URL || '' }}
+      UPDATE_REPOSITORY_OVERRIDE: ${{ vars.DUOYI_UPDATE_REPOSITORY || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned Flutter version
+        id: toolchain
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          versions = json.loads(Path('config/toolchain.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"flutter={versions['flutter']}\n")
+              output.write(f"python={versions['python']}\n")
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.toolchain.outputs.python }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.toolchain.outputs.flutter }}
+          channel: stable
+          cache: true
+
+      - name: Install shared deployment profile
+        if: env.DUOYI_BUILD_PROFILE != ''
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          profile = Path(os.environ['RUNNER_TEMP']) / 'duoyi-deployment.json'
+          profile.write_text(json.dumps(json.loads(os.environ['DUOYI_BUILD_PROFILE'])))
+          with open(os.environ['GITHUB_ENV'], 'a') as handle:
+              handle.write(f'DUOYI_CONFIG_FILE={profile}\n')
+          PY
+
+      - name: Validate public deployment configuration
+        run: |
+          if [ -z "$DUOYI_BUILD_PROFILE" ]; then
+            if [ -n "$SERVER_URL_OVERRIDE" ]; then
+              export DUOYI_SERVER_URL="$SERVER_URL_OVERRIDE"
+              echo "DUOYI_SERVER_URL=$SERVER_URL_OVERRIDE" >> "$GITHUB_ENV"
+            fi
+            if [ -n "$UPDATE_REPOSITORY_OVERRIDE" ]; then
+              export DUOYI_UPDATE_REPOSITORY="$UPDATE_REPOSITORY_OVERRIDE"
+              echo "DUOYI_UPDATE_REPOSITORY=$UPDATE_REPOSITORY_OVERRIDE" >> "$GITHUB_ENV"
+            fi
+          else
+            echo "Using the caller's validated public deployment profile; repository variable overrides are not applied."
+          fi
+          python3 scripts/project_config.py validate
+          python3 scripts/flutter_with_config.py --dry-run build macos --release
+
+      - name: Check Apple toolchain
+        run: |
+          xcodebuild -version
+          pod --version
+          flutter doctor -v
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Analyze and verify timer integration
+        run: |
+          flutter analyze
+          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart
+
+      - name: Build universal macOS application
+        run: python3 scripts/flutter_with_config.py build macos --release --no-pub
+
+      - name: Package application and verify architectures
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$(python3 - <<'PY'
+          from pathlib import Path
+          apps = list(Path('build/macos/Build/Products/Release').glob('*.app'))
+          if len(apps) != 1:
+              raise SystemExit(f'Expected one application, found {len(apps)}')
+          print(apps[0])
+          PY
+          )"
+          APP_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
+          APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+          lipo -verify_arch arm64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          lipo -verify_arch x86_64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          lipo -archs "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          ARTIFACT_NAME="duoyi-${APP_VERSION}-${GITHUB_SHA:0:8}-macos-universal-unsigned"
+          PACKAGE_DIR="$GITHUB_WORKSPACE/build/macos/packages"
+          STAGING_DIR="$(mktemp -d "$RUNNER_TEMP/duoyi-dmg.XXXXXX")"
+          trap 'rm -rf "$STAGING_DIR"' EXIT
+          mkdir -p "$PACKAGE_DIR"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$PACKAGE_DIR/$ARTIFACT_NAME.zip"
+          ditto "$APP_PATH" "$STAGING_DIR/多仪.app"
+          ln -s /Applications "$STAGING_DIR/Applications"
+          hdiutil create -volname '多仪 Duoyi' -srcfolder "$STAGING_DIR" -ov -format UDZO "$PACKAGE_DIR/$ARTIFACT_NAME.dmg"
+          cd "$PACKAGE_DIR"
+          shasum -a 256 ./*.zip ./*.dmg > SHA256SUMS-macos.txt
+          ls -lh ./*.dmg ./*.zip SHA256SUMS-macos.txt
+          cat SHA256SUMS-macos.txt
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: duoyi-macos-universal-unsigned
+          path: |
+            build/macos/packages/*.dmg
+            build/macos/packages/*.zip
+            build/macos/packages/SHA256SUMS-macos.txt
+          if-no-files-found: error
+          retention-days: 30

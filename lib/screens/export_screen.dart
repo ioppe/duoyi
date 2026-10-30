@@ -270,7 +270,7 @@ class _ExportScreenState extends State<ExportScreen> {
                         child: SelectableText(
                           _ics!,
                           style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamilyRounded,
+                            fontFamily: DesignTokens.fontFamily,
                             fontSize: 11,
                           ),
                         ),

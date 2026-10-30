@@ -150,27 +150,27 @@ class AppSurfaceCard extends StatelessWidget {
 TextStyle appSecondaryControlTextStyle(BuildContext context) {
   final theme = Theme.of(context);
   return (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-    fontSize: 12,
-    fontWeight: DesignTokens.fontWeightStrong,
-    height: 1.2,
+    fontSize: DesignTokens.fontSizeBody,
+    fontWeight: DesignTokens.fontWeightRegular,
+    height: 1.4,
   );
 }
 
 TextStyle appSecondaryControlLabelStyle(BuildContext context) {
   final theme = Theme.of(context);
   return (theme.textTheme.labelMedium ?? const TextStyle()).copyWith(
-    fontSize: 11,
-    fontWeight: DesignTokens.fontWeightStrong,
-    height: 1.16,
+    fontSize: DesignTokens.fontSizeSecondary,
+    fontWeight: DesignTokens.fontWeightRegular,
+    height: 1.4,
   );
 }
 
 TextStyle appSecondaryMenuItemTextStyle(BuildContext context) {
   final theme = Theme.of(context);
   return (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-    fontSize: 12,
-    fontWeight: DesignTokens.fontWeightStrong,
-    height: 1.18,
+    fontSize: DesignTokens.fontSizeBody,
+    fontWeight: DesignTokens.fontWeightMedium,
+    height: 1.4,
   );
 }
 
@@ -178,7 +178,7 @@ TextStyle appSecondaryRouteTitleTextStyle(BuildContext context) {
   final theme = Theme.of(context);
   final cs = theme.colorScheme;
   return (theme.textTheme.titleMedium ?? const TextStyle()).copyWith(
-    fontSize: DesignTokens.fontSizeMd,
+    fontSize: DesignTokens.fontSizePageTitle,
     fontWeight: DesignTokens.fontWeightStrong,
     color: cs.onSurface,
     height: 1.2,
@@ -246,11 +246,14 @@ ButtonStyle appSecondaryFilledButtonStyle(BuildContext context) {
       cs.onSurfaceVariant,
     ).withValues(alpha: 0.70),
     side: BorderSide(color: background.withValues(alpha: 0.16), width: 0.45),
-    visualDensity: VisualDensity.compact,
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    minimumSize: const Size(0, 34),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    textStyle: appSecondaryMenuItemTextStyle(context),
+    visualDensity: VisualDensity.standard,
+    tapTargetSize: MaterialTapTargetSize.padded,
+    minimumSize: const Size(0, DesignTokens.controlMinHeight),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    textStyle: appSecondaryControlTextStyle(context).copyWith(
+      fontSize: DesignTokens.fontSizeButton,
+      fontWeight: DesignTokens.fontWeightMedium,
+    ),
   );
 }
 
@@ -266,6 +269,10 @@ class AppSecondaryControlTheme extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final controlText = appSecondaryControlTextStyle(context);
     final labelText = appSecondaryControlLabelStyle(context);
+    final buttonText = controlText.copyWith(
+      fontSize: DesignTokens.fontSizeButton,
+      fontWeight: DesignTokens.fontWeightMedium,
+    );
     OutlineInputBorder inputBorder(Color color, {double width = 0.35}) {
       return OutlineInputBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
@@ -319,15 +326,15 @@ class AppSecondaryControlTheme extends StatelessWidget {
           ),
           labelStyle: labelText.copyWith(
             color: cs.onSurfaceVariant,
-            fontWeight: DesignTokens.fontWeightStrong,
+            fontWeight: DesignTokens.fontWeightRegular,
           ),
           floatingLabelStyle: labelText.copyWith(
             color: cs.primary,
-            fontWeight: DesignTokens.fontWeightStrong,
+            fontWeight: DesignTokens.fontWeightMedium,
           ),
           hintStyle: controlText.copyWith(
             color: cs.onSurfaceVariant.withValues(alpha: 0.68),
-            fontWeight: DesignTokens.fontWeightStrong,
+            fontWeight: DesignTokens.fontWeightRegular,
           ),
           border: inputBorder(subtleBorder),
           enabledBorder: inputBorder(subtleBorder),
@@ -367,40 +374,40 @@ class AppSecondaryControlTheme extends StatelessWidget {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            textStyle: controlText,
-            minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: buttonText,
+            minimumSize: const Size(0, DesignTokens.controlMinHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.padded,
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            textStyle: controlText,
-            minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: buttonText,
+            minimumSize: const Size(0, DesignTokens.controlMinHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.padded,
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            textStyle: controlText,
-            minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: buttonText,
+            minimumSize: const Size(0, DesignTokens.controlMinHeight),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.padded,
             side: BorderSide(color: subtleBorder, width: 0.4),
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: appSecondaryFilledButtonStyle(
             context,
-          ).copyWith(textStyle: WidgetStatePropertyAll(controlText)),
+          ).copyWith(textStyle: WidgetStatePropertyAll(buttonText)),
         ),
         segmentedButtonTheme: SegmentedButtonThemeData(
           style: ButtonStyle(
-            textStyle: WidgetStatePropertyAll(controlText),
+            textStyle: WidgetStatePropertyAll(buttonText),
             foregroundColor: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.disabled)) {
                 return cs.onSurface.withValues(alpha: 0.38);
@@ -422,8 +429,11 @@ class AppSecondaryControlTheme extends StatelessWidget {
                   : subtleBorder;
               return BorderSide(color: color, width: 0.4);
             }),
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            minimumSize: const WidgetStatePropertyAll(
+              Size(0, DesignTokens.controlMinHeight),
+            ),
+            visualDensity: VisualDensity.standard,
+            tapTargetSize: MaterialTapTargetSize.padded,
           ),
         ),
         chipTheme: theme.chipTheme.copyWith(
@@ -458,7 +468,7 @@ class AppFormFieldTheme extends StatelessWidget {
           final inputText = (theme.textTheme.bodyLarge ?? const TextStyle())
               .copyWith(fontSize: DesignTokens.fontSizeMd, height: 1.5);
           final labelText = inputText.copyWith(
-            fontSize: DesignTokens.fontSizeBody,
+            fontSize: DesignTokens.fontSizeSecondary,
             height: 1.4,
             color: cs.onSurfaceVariant,
           );
@@ -484,7 +494,7 @@ class AppFormFieldTheme extends StatelessWidget {
             labelStyle: labelText,
             // InputDecorator scales floating labels to 75% of this size.
             floatingLabelStyle: labelText.copyWith(
-              fontSize: DesignTokens.fontSizeBody / 0.75,
+              fontSize: DesignTokens.fontSizeSecondary / 0.75,
               color: cs.primary,
             ),
             hintStyle: inputText.copyWith(color: cs.onSurfaceVariant),
@@ -546,7 +556,7 @@ class AppSecondaryMenuText extends StatelessWidget {
       overflow: overflow,
       style: appSecondaryMenuItemTextStyle(context).copyWith(
         color: color ?? cs.onSurface,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
     );
   }
@@ -1115,26 +1125,24 @@ class AppSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
     Widget trailingWidget(double maxWidth) {
-      final fallback = Icon(
-        Icons.chevron_right,
-        size: 18,
-        color: cs.onSurface.withValues(alpha: 0.38),
-      );
       return ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: SizedBox(
-          height: 40,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: trailing ?? fallback,
-            ),
-          ),
+        constraints: BoxConstraints(
+          maxWidth: maxWidth,
+          minHeight: DesignTokens.controlMinHeight,
+        ),
+        child: Align(
+          alignment: Alignment.centerRight,
+          widthFactor: 1,
+          heightFactor: 1,
+          child:
+              trailing ??
+              Icon(
+                Icons.chevron_right,
+                size: DesignTokens.controlIconSize,
+                color: cs.onSurface.withValues(alpha: 0.38),
+              ),
         ),
       );
     }
@@ -1143,78 +1151,92 @@ class AppSettingsTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
         child: Padding(
           padding: padding,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final contentWidth = (constraints.maxWidth - 44).clamp(
-                0.0,
-                constraints.maxWidth,
-              );
+              const leadingWidth = 34.0;
+              const leadingGap = DesignTokens.spaceMd;
               final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
-              final rowMinHeight = hasSubtitle ? 54.0 : 42.0;
+              final stackAction =
+                  trailing != null &&
+                  (constraints.maxWidth < 420 ||
+                      MediaQuery.textScalerOf(context).scale(16) > 20);
               final leading = Container(
-                width: 34,
-                height: 34,
+                width: leadingWidth,
+                height: leadingWidth,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.radiusControl,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 18),
-              );
-              final titleText = Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: appSecondaryMenuItemTextStyle(context).copyWith(
-                  color: cs.onSurface,
-                  fontWeight: DesignTokens.fontWeightStrong,
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: DesignTokens.controlIconSize,
                 ),
               );
-              final subtitleStyle = appSecondaryControlLabelStyle(
-                context,
-              ).copyWith(color: cs.onSurface.withValues(alpha: 0.62));
-              final subtitleText = Text(
-                subtitle ?? '',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: subtitleStyle,
-              );
-              final trailingMaxWidth = hasSubtitle
-                  ? (contentWidth * 0.40).clamp(48.0, 124.0)
-                  : (contentWidth * 0.50).clamp(56.0, 150.0);
-              final action = trailingWidget(trailingMaxWidth);
-              return ConstrainedBox(
-                constraints: BoxConstraints(minHeight: rowMinHeight),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 34, height: 34, child: leading),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: titleText,
-                          ),
-                          if (hasSubtitle) ...[
-                            const SizedBox(height: 2),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: subtitleText,
-                            ),
-                          ],
-                        ],
-                      ),
+              final text = Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: appSecondaryMenuItemTextStyle(
+                      context,
+                    ).copyWith(color: cs.onSurface),
+                  ),
+                  if (hasSubtitle) ...[
+                    const SizedBox(height: DesignTokens.spaceXs),
+                    Text(
+                      subtitle!,
+                      style: appSecondaryControlLabelStyle(
+                        context,
+                      ).copyWith(color: cs.onSurface.withValues(alpha: 0.62)),
                     ),
-                    const SizedBox(width: 8),
-                    action,
+                  ],
+                ],
+              );
+              final row = Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  leading,
+                  const SizedBox(width: leadingGap),
+                  Expanded(child: text),
+                  if (!stackAction) ...[
+                    const SizedBox(width: DesignTokens.spaceSm),
+                    trailingWidget(
+                      trailing == null ? 24 : constraints.maxWidth * 0.45,
+                    ),
+                  ],
+                ],
+              );
+              return ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: DesignTokens.controlMinHeight,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    row,
+                    if (stackAction)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: leadingWidth + leadingGap,
+                          top: DesignTokens.spaceSm,
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: trailingWidget(
+                            (constraints.maxWidth - leadingWidth - leadingGap)
+                                .clamp(0.0, constraints.maxWidth),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               );
@@ -2412,7 +2434,13 @@ class AppCompactDropdown<T> extends StatelessWidget {
                   : null,
               onTap: enabled ? () => _openPicker(anchorContext) : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                constraints: const BoxConstraints(
+                  minHeight: DesignTokens.controlMinHeight,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spaceMd,
+                  vertical: DesignTokens.spaceSm,
+                ),
                 decoration: BoxDecoration(
                   color: bg,
                   borderRadius: BorderRadius.circular(14),
@@ -2430,7 +2458,7 @@ class AppCompactDropdown<T> extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: appSecondaryControlTextStyle(context).copyWith(
                           color: textColor,
-                          fontWeight: DesignTokens.fontWeightStrong,
+                          fontWeight: DesignTokens.fontWeightMedium,
                         ),
                       ),
                     ),

@@ -3110,6 +3110,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get focusPause => '暂停';
 
   @override
+  String get focusFloatingOpen => '打开番茄悬浮窗';
+
+  @override
+  String get focusFloatingHide => '隐藏番茄悬浮窗';
+
+  @override
+  String get focusFloatingClose => '关闭悬浮窗';
+
+  @override
+  String get focusFloatingError => '悬浮窗操作失败，请稍后重试';
+
+  @override
+  String get focusFloatingStart => '开始';
+
+  @override
+  String get focusFloatingResume => '继续';
+
+  @override
+  String get focusFloatingPaused => '已暂停';
+
+  @override
+  String get focusFloatingReady => '待开始';
+
+  @override
   String get focusResume => '继续';
 
   @override

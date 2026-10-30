@@ -95,6 +95,7 @@ import 'widgets/force_update_gate.dart';
 import 'widgets/web_auth_gate.dart';
 import 'widgets/todo_completion_flow.dart';
 import 'widgets/surface_components.dart';
+import 'widgets/pomodoro_floating_window_host.dart';
 
 final GlobalKey<MainShellState> mainShellKey = GlobalKey<MainShellState>();
 final List<Uri> _pendingWidgetUris = <Uri>[];
@@ -3881,9 +3882,11 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       builder: (context, child) => Theme(
         data: AppMotion.themeFor(context, Theme.of(context)),
         child: AppClockScope(
-          child: WebAuthGate(
-            enabled: WebTarget.isWebBuild && !mustUpdate,
-            child: child!,
+          child: PomodoroFloatingWindowHost(
+            child: WebAuthGate(
+              enabled: WebTarget.isWebBuild && !mustUpdate,
+              child: child!,
+            ),
           ),
         ),
       ),

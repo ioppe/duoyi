@@ -73,7 +73,7 @@ class PomodoroTimerRing extends StatelessWidget {
                     style: TextStyle(
                       fontSize: timeFontSize,
                       fontWeight: DesignTokens.fontWeightStrong,
-                      fontFamily: DesignTokens.fontFamilyRounded,
+                      fontFamily: DesignTokens.fontFamily,
                       letterSpacing: 0,
                       color: Theme.of(context).textTheme.headlineSmall?.color,
                     ),

@@ -73,6 +73,15 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 - 默认入口最多五项；原生客户端的小组件可从「我的 → 更多应用」进入，仍可在导航设置中自定义显示与排序。
 - `pref_focus_navigation_v1` 一次性将旧默认四项或包含小组件的旧默认五项升级为专注五项；保留原有排序及其他自定义组合，迁移后手动隐藏专注的选择可持久化。Web 原有导航迁移与小组件过滤继续生效。
 
+#### macOS 番茄计时悬浮窗
+
+- macOS runner 复用现有 Flutter 主引擎、主导航和全部业务 Provider，最低支持 macOS 11；专注页标题栏提供仅 macOS 可见的悬浮窗入口。
+- 独立 AppKit `NSPanel` 采用约 320×88 的主题卡片：左侧状态与时间按实际可见字形整体垂直居中，右侧带文字的开始/暂停/继续主按钮和隐藏按钮；底色、文字、主按钮、边框、圆角和 Noto Sans SC 字阶沿用当前 App 的 `ThemeData`、`AppSurfaceStyle`、`DesignTokens`，切换主题实时同步。文字与空白处可鼠标拖动，位置保存并在显示器变化时限制到可见区域；面板置顶、跨桌面与全屏工作空间显示。
+- `com.duoyi/pomodoro_floating_window` 通道连接单个 `PomodoroProvider`，同时监听普通状态和 `timerTicks`；Swift 只渲染包含主题 `appearance` 和暂停状态的快照，不维护第二计时器。运行显示暂停，暂停后显示已暂停/继续，继续保留本次剩余或累计时长。`show/update/hide/dispose` 与 `toggle/closed` 分别负责展示同步和用户操作。
+- 关闭面板只隐藏；关闭主窗口保留计时进程，Dock 可重新打开主窗口，Command+Q 才退出。运行时抑制 App Nap，但不阻止系统睡眠。
+- 全局 Host 在应用锁或强制更新时隐藏面板并拒绝控制，账号/服务器变化也隐藏；解锁后不自动重开。文案走中英文 I18n/ARB，标题沿用品牌专注文案。macOS 通知权限读取系统真实授权状态。
+- 本地构建、手动 Actions ZIP/DMG 与验证边界见 [macOS 客户端说明](macos.md)。
+
 ### 2.4 Web 待办页面布局
 
 - Web 待办页按「今日概要与提醒 → 自定义视图筛选 → 四象限 / 列表 / 看板页签 → 任务内容」上下排列，所有视图共享顶部筛选，不使用右侧筛选栏。

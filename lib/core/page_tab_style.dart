@@ -14,8 +14,8 @@ TabBarThemeData appPageTabTheme(ThemeData theme) {
       ? DesignTokens.homeMuted
       : theme.textTheme.bodySmall?.color ?? theme.colorScheme.onSurfaceVariant;
   final text = (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-    fontSize: DesignTokens.fontSizeBody,
-    fontWeight: DesignTokens.fontWeightStrong,
+    fontSize: DesignTokens.fontSizeSm,
+    fontWeight: DesignTokens.fontWeightMedium,
     height: 1.5,
     letterSpacing: 0,
   );

@@ -51,9 +51,10 @@ class HomePageStyle {
     required double size,
     Color? color,
     double height = 1.5,
+    FontWeight weight = DesignTokens.fontWeightRegular,
   }) => (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
     fontSize: size,
-    fontWeight: DesignTokens.fontWeightStrong,
+    fontWeight: weight,
     color: color ?? text,
     height: height,
     letterSpacing: 0,

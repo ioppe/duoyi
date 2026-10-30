@@ -2,12 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/models/pomodoro.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
 import 'package:duoyi/providers/time_audit_provider.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// A restored 25-minute session may have started yesterday when tests run just
+// after midnight. The product counts focus sessions by their application day.
+int recoveredFocusCountToday(int endsAtMs) {
+  final start = DateTime.fromMillisecondsSinceEpoch(
+    endsAtMs,
+  ).subtract(const Duration(minutes: 25));
+  return AppClock.dateOnly(AppClock.toLocal(start)) == AppClock.today() ? 1 : 0;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -611,7 +621,11 @@ void main() {
         expect(provider.sessions, hasLength(1), reason: '逾期应补一条自然完成');
         expect(provider.sessions.single.type, PomodoroType.focus);
         expect(provider.sessions.single.durationSeconds, 1500);
-        expect(provider.sessionCountToday, 1, reason: '当日计数 +1');
+        expect(
+          provider.sessionCountToday,
+          recoveredFocusCountToday(endsAtMs),
+          reason: '按应用时区的会话开始日期统计当天次数',
+        );
         // autoStartBreaks 默认 false：结算后停在 break 相位等待手动开始。
         expect(provider.state.type, PomodoroType.shortBreak);
         expect(provider.state.isRunning, isFalse);
@@ -640,7 +654,11 @@ void main() {
         async.flushMicrotasks();
 
         expect(provider.sessions, hasLength(1), reason: '只结算一次');
-        expect(provider.sessionCountToday, 1, reason: '不重复计次');
+        expect(
+          provider.sessionCountToday,
+          recoveredFocusCountToday(endsAtMs),
+          reason: '恢复快照不重复计次',
+        );
 
         provider.dispose();
       });
@@ -1183,7 +1201,11 @@ void main() {
         expect(session.subtaskId, 'sub-1');
         expect(session.todoTitle, '周报整理');
         expect(session.taskLabel, '周报整理 / 写总结');
-        expect(provider.sessionCountToday, 1, reason: '仍只结算一次');
+        expect(
+          provider.sessionCountToday,
+          recoveredFocusCountToday(endsAtMs),
+          reason: '保留任务关联并且只结算一次',
+        );
 
         provider.dispose();
       });

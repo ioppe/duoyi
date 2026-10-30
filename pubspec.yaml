@@ -93,6 +93,17 @@ flutter:
     - assets/sounds/reminders/
 
   fonts:
+    # Shared app typography, also used by the native macOS floating panel.
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 700
     - family: ResourceHanRounded
       fonts:
         - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
