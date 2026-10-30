@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('force update defaults use current 1.1.46 version floor', () {
+  test('force update defaults use current 1.1.47 version floor', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final appVersion = File('lib/core/app_version.dart').readAsStringSync();
     final backend = File('backend/main.py').readAsStringSync();
@@ -12,9 +12,9 @@ void main() {
       'lib/screens/admin_screen.dart',
     ).readAsStringSync();
 
-    expect(pubspec, contains('version: 1.1.46+140012'));
-    expect(appVersion, contains("static const name = '1.1.46';"));
-    expect(appVersion, contains('static const build = 140012;'));
+    expect(pubspec, contains('version: 1.1.47+140013'));
+    expect(appVersion, contains("static const name = '1.1.47';"));
+    expect(appVersion, contains('static const build = 140013;'));
     final backendConfig = File('backend/config.py').readAsStringSync();
     expect(backendConfig, contains('def _pubspec_app_version('));
     expect(backendConfig, contains('"pubspec.yaml"'));
