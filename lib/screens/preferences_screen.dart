@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
+import '../core/platform_info.dart';
+import '../core/pomodoro_floating_window_size.dart';
 import '../core/app_clock.dart';
 import '../core/app_motion.dart';
 import '../core/i18n_date_format.dart';
@@ -438,6 +440,32 @@ class _PersonalizationSettingsScreenState
                         .read<PreferencesProvider>()
                         .setDefaultPomodoroMinutes(v.toInt()),
                   ),
+                  // 悬浮窗只存在于 macOS；其他平台不显示这个设备本地偏好。
+                  if (PlatformInfo.isMacOS)
+                    AppSettingsTile(
+                      icon: Icons.picture_in_picture_alt_outlined,
+                      color: Colors.deepPurple,
+                      title: I18n.tr('preferences.floating_window.size'),
+                      subtitle: I18n.tr('preferences.floating_window.subtitle'),
+                      trailing: _compactDropdown<PomodoroFloatingWindowSize>(
+                        value: p.pomodoroFloatingWindowSize,
+                        items: [
+                          for (final size in PomodoroFloatingWindowSize.values)
+                            DropdownMenuItem(
+                              value: size,
+                              child: Text(
+                                _floatingWindowSizeLabel(size),
+                                style: appSecondaryControlTextStyle(context),
+                              ),
+                            ),
+                        ],
+                        onChanged: (v) => v == null
+                            ? null
+                            : context
+                                  .read<PreferencesProvider>()
+                                  .setPomodoroFloatingWindowSize(v),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -514,6 +542,17 @@ class _PersonalizationSettingsScreenState
       onChanged: onChanged,
       width: width,
     );
+  }
+
+  String _floatingWindowSizeLabel(PomodoroFloatingWindowSize size) {
+    return switch (size) {
+      PomodoroFloatingWindowSize.large => I18n.tr(
+        'preferences.floating_window.large',
+      ),
+      PomodoroFloatingWindowSize.compact => I18n.tr(
+        'preferences.floating_window.compact',
+      ),
+    };
   }
 }
 

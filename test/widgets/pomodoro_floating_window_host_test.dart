@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:duoyi/core/design_tokens.dart';
 import 'package:duoyi/core/i18n.dart';
+import 'package:duoyi/core/pomodoro_floating_window_size.dart';
 import 'package:duoyi/providers/app_lock_provider.dart';
 import 'package:duoyi/providers/auth_provider.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
+import 'package:duoyi/providers/preferences_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/services/app_update_service.dart';
 import 'package:duoyi/services/pomodoro_floating_window_service.dart';
@@ -31,6 +33,7 @@ void main() {
   late AuthProvider auth;
   late AppUpdateService update;
   late PomodoroFloatingWindowService service;
+  late PreferencesProvider preferences;
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -46,6 +49,7 @@ void main() {
     lock = AppLockProvider();
     auth = AuthProvider();
     update = AppUpdateService(repo: 'duoyi/test', currentVersion: '1.0.0');
+    preferences = PreferencesProvider();
     service = PomodoroFloatingWindowService(supported: true, channel: channel);
   });
 
@@ -58,6 +62,7 @@ void main() {
     lock.dispose();
     auth.dispose();
     update.dispose();
+    preferences.dispose();
     messenger.setMockMethodCallHandler(channel, null);
   });
 
@@ -70,6 +75,7 @@ void main() {
         ChangeNotifierProvider<AppLockProvider>.value(value: lock),
         ChangeNotifierProvider<AuthProvider>.value(value: auth),
         ChangeNotifierProvider<AppUpdateService>.value(value: update),
+        ChangeNotifierProvider<PreferencesProvider>.value(value: preferences),
       ],
       child: MaterialApp(
         theme: inheritedTheme ?? theme.brand.theme,
@@ -281,5 +287,35 @@ void main() {
       appearance['windowForegroundColor'],
       dark.colorScheme.onSurface.toARGB32(),
     );
+  });
+
+  testWidgets('悬浮窗尺寸默认 large，切换 compact 只发送 update', (tester) async {
+    await tester.pumpWidget(host());
+    await tester.pump();
+    expect(await service.open(), isTrue);
+    await tester.pump();
+
+    Map<String, Object?> latestSnapshot() =>
+        (calls.lastWhere((call) => call.method == 'update').arguments
+                as Map<Object?, Object?>)
+            .cast<String, Object?>();
+    expect(latestSnapshot()['windowSize'], 'large');
+    final showCount = calls.where((call) => call.method == 'show').length;
+    expect(showCount, 1);
+
+    await tester.runAsync(
+      () => preferences.setPomodoroFloatingWindowSize(
+        PomodoroFloatingWindowSize.compact,
+      ),
+    );
+    await tester.pump();
+
+    expect(latestSnapshot()['windowSize'], 'compact');
+    expect(
+      calls.where((call) => call.method == 'show'),
+      hasLength(showCount),
+      reason: '尺寸切换只更新已显示面板，不重新 show',
+    );
+    expect(service.isVisible, isTrue);
   });
 }

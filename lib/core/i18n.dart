@@ -260,6 +260,10 @@ const Map<String, String> _zh = <String, String>{
   'preferences.show_completed.title': '待办页显示已完成',
   'preferences.show_completed.subtitle': '关闭后只看未完成和进行中的事项',
   'preferences.pomodoro_length.title': '默认番茄钟长度',
+  'preferences.floating_window.size': '番茄悬浮窗尺寸',
+  'preferences.floating_window.subtitle': '仅 macOS 生效，尺寸保存在本机',
+  'preferences.floating_window.large': '标准',
+  'preferences.floating_window.compact': '紧凑',
   'preferences.section.bottom_nav': '底部导航栏',
   'preferences.section.bottom_nav.subtitle': '底部导航最多显示 5 个入口；我的固定显示，小组件可隐藏',
   'preferences.section.interaction': '交互',
@@ -1627,6 +1631,11 @@ const Map<String, String> _en = <String, String>{
   'preferences.show_completed.subtitle':
       'Hide completed items to focus on open work',
   'preferences.pomodoro_length.title': 'Default Pomodoro length',
+  'preferences.floating_window.size': 'Floating window size',
+  'preferences.floating_window.subtitle':
+      'macOS only; stored on this device',
+  'preferences.floating_window.large': 'Standard',
+  'preferences.floating_window.compact': 'Compact',
   'preferences.section.bottom_nav': 'Bottom navigation',
   'preferences.section.bottom_nav.subtitle':
       'Show up to five bottom tabs; Me stays fixed, Widgets can be hidden',

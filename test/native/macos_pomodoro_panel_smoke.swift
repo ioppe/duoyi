@@ -12,6 +12,9 @@ import CoreText
 /// font sizes are the real ones exported from the Flutter host test. Without
 /// that file the panel falls back to dynamic AppKit semantic colors.
 ///
+/// Snapshots may omit `windowSize` (older payloads, native-only runs); the
+/// panel then keeps the large card.
+///
 /// These checks do not replace a full app build or a real mouse drag.
 @main
 @MainActor
@@ -80,6 +83,7 @@ struct MacOSPomodoroPanelSmoke {
       paused: Bool = false,
       allowed: Bool = true,
       isBreak: Bool = false,
+      size: PomodoroFloatingPanelSize? = nil,
       stateLabel: String? = nil,
       appearance: [String: Any]?
     ) -> PomodoroFloatingPanelState {
@@ -96,6 +100,9 @@ struct MacOSPomodoroPanelSmoke {
         "closeLabel": closeLabel,
         "windowTitle": windowTitle,
       ]
+      if let size = size {
+        arguments["windowSize"] = size.rawValue
+      }
       if let appearance = appearance {
         arguments["appearance"] = appearance
       }
@@ -104,6 +111,11 @@ struct MacOSPomodoroPanelSmoke {
 
     controller.update(snapshot("25:00", appearance: defaultAppearancePayload))
     try check(!controller.isPanelVisible, "update does not open the panel")
+    let legacyState = snapshot("25:00", appearance: defaultAppearancePayload)
+    try check(
+      legacyState.windowSize == .large
+        && legacyState.windowSize.panelSize == NSSize(width: 320, height: 88),
+      "legacy payload without windowSize keeps the large 320 x 88 card")
 
     controller.show(snapshot("25:00", appearance: defaultAppearancePayload))
     guard let panel = NSApp.windows.first(where: { $0 is PomodoroFloatingPanel }),
@@ -303,13 +315,108 @@ struct MacOSPomodoroPanelSmoke {
       try check(time.font?.familyName?.contains("Noto") == true,
                 "renders with the same bundled Noto family as the app")
     }
-    try check(checked.count >= 24, "all expected checks were executed")
+
+    // MARK: Compact layout
+    //
+    // The panel is recreated after `dispose()` so these checks cannot disturb
+    // the large-card history above. The payload carries the usual fields plus
+    // `windowSize: "compact"`.
+    let compactIdle = snapshot(
+      "1440:00", size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      compactIdle.windowSize == .compact && compactIdle.toggleSymbolName == "play.fill",
+      "idle compact card offers the play symbol")
+    controller.show(compactIdle)
+    guard let compactPanel = NSApp.windows.first(
+      where: { $0 is PomodoroFloatingPanel && $0.isVisible }),
+          let compactContent = compactPanel.contentView,
+          let compactTime = view(PomodoroFloatingPanelContentView.timeIdentifier, in: compactContent)
+            as? NSTextField,
+          let compactToggle = view(PomodoroFloatingPanelContentView.toggleIdentifier, in: compactContent)
+            as? NSButton,
+          let compactClose = view(PomodoroFloatingPanelContentView.closeIdentifier, in: compactContent)
+            as? NSButton else {
+      throw NSError(
+        domain: "MacOSPomodoroPanelSmoke", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "compact panel content is missing"])
+    }
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == NSSize(width: 236, height: 64)
+        && compactPanel.frame.width < PomodoroFloatingPanelSize.large.panelSize.width
+        && compactPanel.frame.height < PomodoroFloatingPanelSize.large.panelSize.height,
+      "compact card is visibly smaller than the large card")
+    try check(
+      compactToggle.title.isEmpty && compactClose.title.isEmpty,
+      "compact controls draw symbols without visible titles")
+    try check(
+      compactToggle.accessibilityLabel() == playLabel && compactToggle.toolTip == playLabel
+        && compactClose.accessibilityLabel() == closeLabel && compactClose.toolTip == closeLabel,
+      "compact controls keep full accessibility labels and tooltips")
+    try check(
+      compactToggle.image != nil && compactClose.image != nil,
+      "compact controls render SF Symbols")
+    let compactTextWidth = (compactTime.stringValue as NSString)
+      .size(withAttributes: [.font: compactTime.font!]).width
+    try check(
+      compactTime.stringValue == "1440:00" && compactTextWidth <= compactTime.frame.width,
+      "compact card fits the longest configured duration without truncation")
+    let compactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact.png"))
+    try check(
+      abs(compactOffset) <= 1.5,
+      "compact visible text is vertically centered (offset: \(compactOffset))")
+
+    let runningCompact = snapshot(
+      "24:59", running: true, size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      runningCompact.toggleSymbolName == "pause.fill",
+      "running compact card uses the pause symbol")
+    controller.update(runningCompact)
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactToggle.accessibilityLabel() == pauseLabel && compactToggle.toolTip == pauseLabel,
+      "a running compact card exposes the pause action")
+    let pausedCompact = snapshot(
+      "24:59", paused: true, size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      pausedCompact.toggleSymbolName == "play.fill" && pausedCompact.toggleLabel == resumeLabel,
+      "a paused compact card asks to resume with the play symbol")
+    controller.update(pausedCompact)
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactToggle.accessibilityLabel() == resumeLabel,
+      "the compact control follows the paused semantics from the payload")
+
+    // Switching density behaves like a repaint: same window, same origin, and
+    // the large card gets its localized title back.
+    let compactOrigin = compactPanel.frame.origin
+    let panelCountBeforeSwitch = NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count
+    controller.update(
+      snapshot("24:59", running: true, size: .large, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == PomodoroFloatingPanelSize.large.panelSize
+        && compactPanel.frame.origin == compactOrigin
+        && compactToggle.title == pauseLabel,
+      "switching to large restores the titled control without moving the card")
+    controller.update(
+      snapshot("24:59", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == NSSize(width: 236, height: 64)
+        && compactPanel.frame.origin == compactOrigin
+        && compactToggle.title.isEmpty
+        && NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count == panelCountBeforeSwitch,
+      "switching back to compact reuses one panel in place")
+    try check(checked.count >= 34, "all expected checks were executed")
 
     let result: [String: Any] = [
       "checksPassed": checked.count, "checks": checked,
       "scope": "production AppKit panel without Flutter engine",
       "themeFixture": fixtures.isEmpty ? "semantic-fallback" : "flutter-snapshot",
       "realMouseDragVerified": false, "fullApplicationBuildVerified": false,
+      "windowSizeLayouts": ["large", "compact"],
       "renderedFontFamily": time.font?.familyName ?? "",
       "textCenterOffsets": ["ready": readyOffset, "running": runningOffset,
                             "paused": pausedOffset, "longDuration": longOffset,

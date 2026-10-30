@@ -7,9 +7,11 @@ import '../core/app_brand.dart';
 import '../core/brand_strings.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
+import '../core/pomodoro_floating_window_size.dart';
 import '../providers/app_lock_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pomodoro_provider.dart';
+import '../providers/preferences_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/app_update_service.dart';
 import '../services/pomodoro_floating_window_service.dart';
@@ -75,6 +77,7 @@ class _PomodoroFloatingWindowHostState
     final lock = context.watch<AppLockProvider?>();
     final update = context.watch<AppUpdateService?>();
     final auth = context.watch<AuthProvider?>();
+    final preferences = context.watch<PreferencesProvider?>();
 
     final brand = theme?.brand ?? AppBrands.defaultBrand;
     final locale = localeProvider?.locale ?? I18n.current;
@@ -109,6 +112,9 @@ class _PomodoroFloatingWindowHostState
       focusLabel: strings.focusStateFocus,
       shortBreakLabel: strings.focusStateShortBreak,
       longBreakLabel: strings.focusStateLongBreak,
+      windowSize:
+          preferences?.pomodoroFloatingWindowSize ??
+          PomodoroFloatingWindowSize.defaultSize,
       appearance: {
         'backgroundColor': cardFill.toARGB32(),
         'foregroundColor': cs.onSurface.toARGB32(),

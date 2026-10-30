@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/local_timezone_resolver.dart';
 import '../core/notification_history_policy.dart';
+import '../core/pomodoro_floating_window_size.dart';
 import '../core/report_reminder_config.dart';
 import '../core/web_target.dart';
 import '../models/goal.dart' show ReminderKind;
@@ -157,6 +158,8 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kShowHomeCalendar = 'pref_show_home_calendar';
   static const _kShowCompletedTodos = 'pref_show_completed_todos';
   static const _kDefaultPomodoroMinutes = 'pref_default_pomodoro_minutes';
+  static const _kPomodoroFloatingWindowSize =
+      'pref_pomodoro_floating_window_size';
   static const _kQuickCaptureFab = 'pref_quick_capture_fab';
   static const _kNotificationQuickAdd = 'pref_notification_quick_add';
   static const _kNotificationTodayProgress = 'pref_notification_today_progress';
@@ -218,6 +221,8 @@ class PreferencesProvider extends ChangeNotifier {
   bool _showHomeCalendar = false;
   bool _showCompletedTodos = false;
   int _defaultPomodoroMinutes = 25;
+  PomodoroFloatingWindowSize _pomodoroFloatingWindowSize =
+      PomodoroFloatingWindowSize.defaultSize;
   bool _quickCaptureFab = true;
   bool _notificationQuickAdd = false;
   bool _notificationTodayProgress = false;
@@ -267,6 +272,8 @@ class PreferencesProvider extends ChangeNotifier {
   bool get showHomeCalendar => _showHomeCalendar;
   bool get showCompletedTodos => _showCompletedTodos;
   int get defaultPomodoroMinutes => _defaultPomodoroMinutes;
+  PomodoroFloatingWindowSize get pomodoroFloatingWindowSize =>
+      _pomodoroFloatingWindowSize;
   bool get quickCaptureFab => _quickCaptureFab;
   bool get notificationQuickAdd => _notificationQuickAdd;
   bool get notificationTodayProgress => _notificationTodayProgress;
@@ -409,6 +416,7 @@ class PreferencesProvider extends ChangeNotifier {
     _showHomeCalendar = false;
     _showCompletedTodos = false;
     _defaultPomodoroMinutes = 25;
+    _pomodoroFloatingWindowSize = PomodoroFloatingWindowSize.defaultSize;
     _quickCaptureFab = true;
     _notificationQuickAdd = false;
     _notificationTodayProgress = false;
@@ -498,6 +506,9 @@ class PreferencesProvider extends ChangeNotifier {
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
     _defaultPomodoroMinutes = p.getInt(_kDefaultPomodoroMinutes) ?? 25;
+    _pomodoroFloatingWindowSize = PomodoroFloatingWindowSize.parse(
+      p.getString(_kPomodoroFloatingWindowSize),
+    );
     _quickCaptureFab = p.getBool(_kQuickCaptureFab) ?? true;
     _notificationQuickAdd = p.getBool(_kNotificationQuickAdd) ?? false;
     _notificationTodayProgress =
@@ -1053,6 +1064,17 @@ class PreferencesProvider extends ChangeNotifier {
     final p = await SharedPreferences.getInstance();
     await p.setInt(_kDefaultPomodoroMinutes, _defaultPomodoroMinutes);
     _notifyPreferenceKeys(const [_kDefaultPomodoroMinutes]);
+  }
+
+  /// 悬浮窗尺寸是设备本地的外观偏好：写入后只通知 UI 刷新，
+  /// 不经过 `onChangedKeys`，避免把本地外观偏好标记为云同步改动。
+  Future<void> setPomodoroFloatingWindowSize(
+    PomodoroFloatingWindowSize value,
+  ) async {
+    _pomodoroFloatingWindowSize = value;
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_kPomodoroFloatingWindowSize, value.storageValue);
+    notifyListeners();
   }
 
   Future<void> setQuickCaptureFab(bool value) async {

@@ -102,7 +102,7 @@ jobs:
       - name: Analyze and verify timer integration
         run: |
           flutter analyze
-          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart
+          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/providers/pomodoro_floating_window_size_preference_test.dart test/services/platform_logo_assets_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart
 
       - name: Build universal macOS application
         run: python3 scripts/flutter_with_config.py build macos --release --no-pub

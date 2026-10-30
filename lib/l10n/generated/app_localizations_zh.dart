@@ -973,6 +973,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preferencesPomodoroLengthTitle => '默认番茄钟长度';
 
   @override
+  String get preferencesFloatingWindowSize => '番茄悬浮窗尺寸';
+
+  @override
+  String get preferencesFloatingWindowSubtitle => '仅 macOS 生效，尺寸保存在本机';
+
+  @override
+  String get preferencesFloatingWindowLarge => '标准';
+
+  @override
+  String get preferencesFloatingWindowCompact => '紧凑';
+
+  @override
   String get preferencesSectionBottomNav => '底部导航栏';
 
   @override

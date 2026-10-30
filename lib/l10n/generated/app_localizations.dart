@@ -2000,6 +2000,30 @@ abstract class AppLocalizations {
   /// **'默认番茄钟长度'**
   String get preferencesPomodoroLengthTitle;
 
+  /// No description provided for @preferencesFloatingWindowSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'番茄悬浮窗尺寸'**
+  String get preferencesFloatingWindowSize;
+
+  /// No description provided for @preferencesFloatingWindowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅 macOS 生效，尺寸保存在本机'**
+  String get preferencesFloatingWindowSubtitle;
+
+  /// No description provided for @preferencesFloatingWindowLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get preferencesFloatingWindowLarge;
+
+  /// No description provided for @preferencesFloatingWindowCompact.
+  ///
+  /// In zh, this message translates to:
+  /// **'紧凑'**
+  String get preferencesFloatingWindowCompact;
+
   /// No description provided for @preferencesSectionBottomNav.
   ///
   /// In zh, this message translates to:

@@ -1031,6 +1031,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferencesPomodoroLengthTitle => 'Default Pomodoro length';
 
   @override
+  String get preferencesFloatingWindowSize => 'Floating window size';
+
+  @override
+  String get preferencesFloatingWindowSubtitle =>
+      'macOS only; stored on this device';
+
+  @override
+  String get preferencesFloatingWindowLarge => 'Standard';
+
+  @override
+  String get preferencesFloatingWindowCompact => 'Compact';
+
+  @override
   String get preferencesSectionBottomNav => 'Bottom navigation';
 
   @override

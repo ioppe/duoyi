@@ -148,12 +148,129 @@ struct PomodoroFloatingPanelAppearance {
   }
 }
 
+
+// MARK: - Size
+
+/// Card density pushed from Dart's device-local preference (`windowSize`).
+///
+/// Missing or unknown values fall back to `.large`, so an older Dart payload or
+/// a standalone native run keeps the original 320 x 88 card.
+enum PomodoroFloatingPanelSize: String {
+  case large
+  case compact
+
+  static let fallback = PomodoroFloatingPanelSize.large
+
+  init?(string: String?) {
+    guard let raw = string?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+          !raw.isEmpty else {
+      return nil
+    }
+    self.init(rawValue: raw)
+  }
+
+  /// Borderless panel content size. The compact card must stay visibly smaller.
+  var panelSize: NSSize {
+    switch self {
+    case .large: return NSSize(width: 320, height: 88)
+    case .compact: return NSSize(width: 236, height: 64)
+    }
+  }
+
+  var horizontalPadding: CGFloat {
+    switch self {
+    case .large: return 16
+    case .compact: return 12
+    }
+  }
+
+  var verticalPadding: CGFloat {
+    switch self {
+    case .large: return 12
+    case .compact: return 8
+    }
+  }
+
+  var statusToTimeSpacing: CGFloat {
+    switch self {
+    case .large: return 6
+    case .compact: return 2
+    }
+  }
+
+  var timeToToggleSpacing: CGFloat {
+    switch self {
+    case .large: return 8
+    case .compact: return 8
+    }
+  }
+
+  var toggleToCloseSpacing: CGFloat {
+    switch self {
+    case .large: return 12
+    case .compact: return 8
+    }
+  }
+
+  var toggleButtonSize: NSSize {
+    switch self {
+    case .large: return NSSize(width: 96, height: 44)
+    case .compact: return NSSize(width: 34, height: 30)
+    }
+  }
+
+  var closeButtonSize: NSSize {
+    switch self {
+    case .large: return NSSize(width: 32, height: 32)
+    case .compact: return NSSize(width: 24, height: 24)
+    }
+  }
+
+  /// Only the large card pairs the symbol with the localized title; the compact
+  /// card keeps the accessibility label and tooltip instead.
+  var showsToggleTitle: Bool {
+    switch self {
+    case .large: return true
+    case .compact: return false
+    }
+  }
+
+  var closeSymbolPointSize: CGFloat {
+    switch self {
+    case .large: return 14
+    case .compact: return 11
+    }
+  }
+
+  func toggleSymbolPointSize(buttonFontSize: CGFloat) -> CGFloat {
+    switch self {
+    case .large: return max(12, buttonFontSize + 2)
+    case .compact: return max(11, buttonFontSize - 1)
+    }
+  }
+
+  /// Keeps the compact digits legible while leaving room for "1440:00" between
+  /// the paddings and the two controls.
+  func timeFontSize(_ appearanceSize: CGFloat) -> CGFloat {
+    switch self {
+    case .large: return appearanceSize
+    case .compact: return min(appearanceSize, 26)
+    }
+  }
+
+  func captionFontSize(_ appearanceSize: CGFloat) -> CGFloat {
+    switch self {
+    case .large: return appearanceSize
+    case .compact: return min(appearanceSize, 11)
+    }
+  }
+}
 // MARK: - State
 
 /// Snapshot pushed from Dart. Field names match the channel contract:
 /// `timeText`, `isRunning`, `isPaused`, `canToggle`, `isBreak`, `stateLabel`,
 /// `playLabel`, `pauseLabel`, `resumeLabel`, `closeLabel`, `windowTitle`,
-/// `appearance`.
+/// `appearance`, and `windowSize` (missing or unknown means `.large`).
 struct PomodoroFloatingPanelState {
   static let defaultPlayLabel = "Play"
   static let defaultPauseLabel = "Pause"
@@ -171,6 +288,7 @@ struct PomodoroFloatingPanelState {
   let closeLabel: String
   let windowTitle: String
   let appearance: PomodoroFloatingPanelAppearance
+  let windowSize: PomodoroFloatingPanelSize
 
   /// Returns nil when `timeText` is missing, which the channel reports back to
   /// Dart as `invalid_arguments`.
@@ -198,6 +316,9 @@ struct PomodoroFloatingPanelState {
     self.appearance = PomodoroFloatingPanelAppearance(
       dictionary: arguments["appearance"] as? [String: Any]
     ) ?? PomodoroFloatingPanelAppearance.semanticFallback
+    self.windowSize =
+      PomodoroFloatingPanelSize(string: arguments["windowSize"] as? String)
+      ?? PomodoroFloatingPanelSize.fallback
   }
 
   /// Label and symbol for the single shared play/pause control: paused wins
@@ -315,15 +436,6 @@ final class PomodoroFloatingPanelContentView: NSView {
   static let toggleIdentifier = NSUserInterfaceItemIdentifier("pomodoro.toggle")
   static let closeIdentifier = NSUserInterfaceItemIdentifier("pomodoro.close")
 
-  // Card geometry: 320 x 88, 16pt horizontal / 12pt vertical padding, 8/12pt control gaps.
-  static let horizontalPadding: CGFloat = 16
-  static let verticalPadding: CGFloat = 12
-  static let statusToTimeSpacing: CGFloat = 6
-  static let timeToToggleSpacing: CGFloat = 8
-  static let toggleToCloseSpacing: CGFloat = 12
-  static let toggleButtonSize = NSSize(width: 96, height: 44)
-  static let closeButtonSize = NSSize(width: 32, height: 32)
-
   var onToggle: (() -> Void)?
   var onClose: (() -> Void)?
 
@@ -331,6 +443,20 @@ final class PomodoroFloatingPanelContentView: NSView {
   private let timeLabel = PomodoroTimeLabel(labelWithString: "")
   private let playPauseButton = PomodoroIconButton()
   private let closeButton = PomodoroIconButton()
+  private let textColumn = PomodoroTextColumn(views: [])
+
+  // Size-dependent constraints. Both densities share one view tree, so a
+  // preference change only moves constraints and never rebuilds the panel.
+  private var textColumnLeading: NSLayoutConstraint?
+  private var textColumnHeight: NSLayoutConstraint?
+  private var textColumnTrailing: NSLayoutConstraint?
+  private var timeTrailing: NSLayoutConstraint?
+  private var toggleTrailing: NSLayoutConstraint?
+  private var toggleWidth: NSLayoutConstraint?
+  private var toggleHeight: NSLayoutConstraint?
+  private var closeTrailing: NSLayoutConstraint?
+  private var closeWidth: NSLayoutConstraint?
+  private var closeHeight: NSLayoutConstraint?
 
   override init(frame frameRect: NSRect) {
     super.init(frame: frameRect)
@@ -383,38 +509,73 @@ final class PomodoroFloatingPanelContentView: NSView {
     closeButton.setAccessibilityIdentifier(Self.closeIdentifier.rawValue)
     addSubview(closeButton)
 
-    let timeTrailing = timeLabel.trailingAnchor.constraint(
-      lessThanOrEqualTo: playPauseButton.leadingAnchor, constant: -Self.timeToToggleSpacing)
-    timeTrailing.priority = .defaultHigh
-
-    let textColumn = PomodoroTextColumn(views: [statusLabel, timeLabel])
     textColumn.orientation = .vertical
     textColumn.alignment = .leading
-    textColumn.spacing = Self.statusToTimeSpacing
     textColumn.translatesAutoresizingMaskIntoConstraints = false
+    textColumn.addArrangedSubview(statusLabel)
+    textColumn.addArrangedSubview(timeLabel)
     addSubview(textColumn)
 
-    NSLayoutConstraint.activate([
-      textColumn.leadingAnchor.constraint(
-        equalTo: leadingAnchor, constant: Self.horizontalPadding),
-      textColumn.trailingAnchor.constraint(
-        lessThanOrEqualTo: playPauseButton.leadingAnchor, constant: -Self.timeToToggleSpacing),
-      textColumn.centerYAnchor.constraint(equalTo: centerYAnchor),
-      textColumn.heightAnchor.constraint(
-        lessThanOrEqualTo: heightAnchor, constant: -2 * Self.verticalPadding),
-      timeTrailing,
-      playPauseButton.trailingAnchor.constraint(
-        equalTo: closeButton.leadingAnchor, constant: -Self.toggleToCloseSpacing),
-      playPauseButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-      playPauseButton.widthAnchor.constraint(equalToConstant: Self.toggleButtonSize.width),
-      playPauseButton.heightAnchor.constraint(equalToConstant: Self.toggleButtonSize.height),
+    let textColumnLeading = textColumn.leadingAnchor.constraint(equalTo: leadingAnchor)
+    let textColumnTrailing = textColumn.trailingAnchor.constraint(
+      lessThanOrEqualTo: playPauseButton.leadingAnchor)
+    let textColumnHeight = textColumn.heightAnchor.constraint(lessThanOrEqualTo: heightAnchor)
+    // The digits keep their intrinsic width; this is the slack allowed to break.
+    let timeTrailing = timeLabel.trailingAnchor.constraint(
+      lessThanOrEqualTo: playPauseButton.leadingAnchor)
+    timeTrailing.priority = .defaultHigh
+    let toggleTrailing = playPauseButton.trailingAnchor.constraint(
+      equalTo: closeButton.leadingAnchor)
+    let toggleWidth = playPauseButton.widthAnchor.constraint(equalToConstant: 0)
+    let toggleHeight = playPauseButton.heightAnchor.constraint(equalToConstant: 0)
+    let closeTrailing = closeButton.trailingAnchor.constraint(equalTo: trailingAnchor)
+    let closeWidth = closeButton.widthAnchor.constraint(equalToConstant: 0)
+    let closeHeight = closeButton.heightAnchor.constraint(equalToConstant: 0)
 
-      closeButton.trailingAnchor.constraint(
-        equalTo: trailingAnchor, constant: -Self.horizontalPadding),
+    self.textColumnLeading = textColumnLeading
+    self.textColumnTrailing = textColumnTrailing
+    self.textColumnHeight = textColumnHeight
+    self.timeTrailing = timeTrailing
+    self.toggleTrailing = toggleTrailing
+    self.toggleWidth = toggleWidth
+    self.toggleHeight = toggleHeight
+    self.closeTrailing = closeTrailing
+    self.closeWidth = closeWidth
+    self.closeHeight = closeHeight
+
+    NSLayoutConstraint.activate([
+      textColumnLeading,
+      textColumnTrailing,
+      textColumnHeight,
+      textColumn.centerYAnchor.constraint(equalTo: centerYAnchor),
+      timeTrailing,
+      toggleTrailing,
+      toggleWidth,
+      toggleHeight,
+      playPauseButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+      closeTrailing,
+      closeWidth,
+      closeHeight,
       closeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-      closeButton.widthAnchor.constraint(equalToConstant: Self.closeButtonSize.width),
-      closeButton.heightAnchor.constraint(equalToConstant: Self.closeButtonSize.height),
     ])
+
+    applyLayout(for: .large)
+  }
+
+  /// Applies the metrics of `size`. Called from `apply(state:fonts:)`, so a
+  /// density change lands as an `update` and never as a new `show`.
+  private func applyLayout(for size: PomodoroFloatingPanelSize) {
+    textColumn.spacing = size.statusToTimeSpacing
+    textColumnLeading?.constant = size.horizontalPadding
+    textColumnTrailing?.constant = -size.timeToToggleSpacing
+    textColumnHeight?.constant = -2 * size.verticalPadding
+    timeTrailing?.constant = -size.timeToToggleSpacing
+    toggleTrailing?.constant = -size.toggleToCloseSpacing
+    toggleWidth?.constant = size.toggleButtonSize.width
+    toggleHeight?.constant = size.toggleButtonSize.height
+    closeTrailing?.constant = -size.horizontalPadding
+    closeWidth?.constant = size.closeButtonSize.width
+    closeHeight?.constant = size.closeButtonSize.height
   }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -425,9 +586,10 @@ final class PomodoroFloatingPanelContentView: NSView {
     window?.performDrag(with: event)
   }
 
-
   func apply(state: PomodoroFloatingPanelState, fonts: PomodoroFloatingPanelFonts) {
     let appearance = state.appearance
+    let size = state.windowSize
+    applyLayout(for: size)
 
     layer?.backgroundColor = appearance.backgroundColor.cgColor
     layer?.cornerRadius = appearance.cornerRadius
@@ -455,17 +617,27 @@ final class PomodoroFloatingPanelContentView: NSView {
     let label = state.toggleLabel
     playPauseButton.setSymbol(
       state.toggleSymbolName,
-      pointSize: max(12, appearance.buttonFontSize + 2),
+      pointSize: size.toggleSymbolPointSize(buttonFontSize: appearance.buttonFontSize),
       accessibilityLabel: label,
       toolTip: label
     )
     playPauseButton.setFill(appearance.primaryColor, cornerRadius: appearance.controlRadius)
-    playPauseButton.setTitle(label, font: fonts.button, color: appearance.onPrimaryColor)
+    // The compact card draws the SF Symbol only; the accessibility label and
+    // tooltip above still carry the full localized action.
+    playPauseButton.setTitle(
+      size.showsToggleTitle ? label : "",
+      font: fonts.button,
+      color: appearance.onPrimaryColor
+    )
     playPauseButton.isEnabled = state.canToggle
     playPauseButton.alphaValue = state.canToggle ? 1 : 0.35
 
     closeButton.setSymbol(
-      "xmark", pointSize: 14, accessibilityLabel: state.closeLabel, toolTip: state.closeLabel)
+      "xmark",
+      pointSize: size.closeSymbolPointSize,
+      accessibilityLabel: state.closeLabel,
+      toolTip: state.closeLabel
+    )
     closeButton.setFill(nil, cornerRadius: appearance.controlRadius)
     closeButton.setTitle("", font: fonts.caption, color: appearance.secondaryColor)
     closeButton.setTint(appearance.secondaryColor)
@@ -651,7 +823,9 @@ private extension NSColor {
 final class PomodoroFloatingPanelController {
   static let shared = PomodoroFloatingPanelController()
 
-  static let panelSize = NSSize(width: 320, height: 88)
+  /// Initial content size. Every show/update then sizes the card from the
+  /// snapshot's `windowSize`, keeping the remembered origin.
+  static let panelSize = PomodoroFloatingPanelSize.large.panelSize
   static let frameAutosaveName = "DuoyiPomodoroFloatingPanel"
 
   weak var delegate: PomodoroFloatingPanelDelegate?
@@ -791,7 +965,28 @@ final class PomodoroFloatingPanelController {
     guard let contentView = panel.contentView as? PomodoroFloatingPanelContentView else {
       return
     }
-    contentView.apply(state: state, fonts: fonts(for: state.appearance))
+    // Apply the target layout before resizing: AppKit keeps the window at least
+    // as wide as the currently active required constraints, so resizing first
+    // would leave the compact card wider than its own metrics.
+    let targetSize = state.windowSize.panelSize
+    let sizeChanged = panel.frame.size != targetSize
+    contentView.apply(state: state, fonts: fonts(for: state))
+    resize(panel, to: targetSize)
+    // A compact card can be flush with the right edge. Growing it to large
+    // must keep the close control reachable, while ordinary updates and theme
+    // changes must continue to preserve the user's exact position.
+    if sizeChanged {
+      clampIntoVisibleFrame(panel)
+    }
+  }
+
+  /// Resizes the card from its current origin, so switching density never looks
+  /// like a drag and the per-second `update` cannot move the panel.
+  private func resize(_ panel: NSPanel, to size: NSSize) {
+    guard panel.frame.size != size else {
+      return
+    }
+    panel.setFrame(NSRect(origin: panel.frame.origin, size: size), display: true)
   }
 
   // MARK: Placement
@@ -888,11 +1083,14 @@ final class PomodoroFloatingPanelController {
 
   /// Every visible string uses the bundled `Noto Sans SC` variable font that
   /// Flutter already ships inside `App.framework`, at the size the current
-  /// appearance asks for. Weights: time 600, caption 400, button 500.
-  private func fonts(for appearance: PomodoroFloatingPanelAppearance) -> PomodoroFloatingPanelFonts {
+  /// appearance asks for (clamped for the compact card). Weights: time 600,
+  /// caption 400, button 500.
+  private func fonts(for state: PomodoroFloatingPanelState) -> PomodoroFloatingPanelFonts {
+    let appearance = state.appearance
+    let size = state.windowSize
     return PomodoroFloatingPanelFonts(
-      time: font(size: appearance.timeFontSize, weight: .semibold),
-      caption: font(size: appearance.captionFontSize, weight: .regular),
+      time: font(size: size.timeFontSize(appearance.timeFontSize), weight: .semibold),
+      caption: font(size: size.captionFontSize(appearance.captionFontSize), weight: .regular),
       button: font(size: appearance.buttonFontSize, weight: .medium)
     )
   }
