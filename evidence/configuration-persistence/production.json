@@ -1,0 +1,53 @@
+{
+  "implementation_commit": "dccb2c8571e4428e834c45ff46ce842f675f00a5",
+  "branch": "build/macos-dmg",
+  "public_base": "https://todo.skydrow.site",
+  "backend": {
+    "image": "duoyi-backend:1.1.47-persistence-dccb2c8",
+    "image_id": "sha256:8d22a55bf7edd7bc994d6f30aa1560582adfe141ab6948a329c06f6961dca209",
+    "identical_to_tested_candidate": true,
+    "health": "healthy",
+    "api_contract_version": "2026-06-01.7",
+    "persistent_login_sessions": true,
+    "current_version": "1.1.47",
+    "current_version_code": 140013,
+    "required_routes_hash": "48881df2412c4ae0",
+    "sqlite_quick_check": "ok",
+    "settings_count": 76,
+    "administrator_settings_unchanged": true,
+    "cloud_preferences_unchanged": true,
+    "private_environment_unchanged": true,
+    "password_salt_unchanged": true,
+    "data_mounts_unchanged": true,
+    "protected_routes_401": true,
+    "existing_table_count_changes": {}
+  },
+  "web": {
+    "current_release": "/var/www/duoyi/releases/v1.1.47-persistence-dccb2c8",
+    "previous_release": "/var/www/duoyi/releases/v1.1.47-9332b18-webfonts",
+    "uploaded_files_matched": 116,
+    "origin_files_matched": ["version.json", "main.dart.js", "flutter_bootstrap.js", "assets/FontManifest.json"],
+    "public_assets_hash_matched": ["main.dart.js", "flutter_bootstrap.js", "flutter.js", "assets/FontManifest.json", "assets/web-font-policy.json", "version.json"],
+    "atomic_switch": true,
+    "previous_release_retained": true,
+    "entry_base_href_valid": true
+  },
+  "public_health_200": true,
+  "rollback": {
+    "backup": "/opt/duoyi/deploy-backups/persistence-20261031T103307Z",
+    "previous_backend_image": "duoyi-backend:1.1.47-9b7f326",
+    "database_and_env_backed_up": true,
+    "directory_mode": "700",
+    "database_and_env_mode": "600",
+    "database_not_replaced": true
+  },
+  "cleanup": {
+    "isolated_probe_directories_removed": 3,
+    "obsolete_candidate_image_removed": true,
+    "browser_and_preview_cleaned": true,
+    "production_source_files_matched": 8,
+    "protected_original_files_unchanged": 7,
+    "production_healthy_after_cleanup": true,
+    "rollback_image_and_web_retained": true
+  }
+}
