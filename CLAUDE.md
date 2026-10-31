@@ -71,9 +71,31 @@ All brands, app controls, input text and secondary pages share `NotoSansSC` (bun
 
 Web startup is the exception to complete offline font loading: the configured build wrapper registers one checked-in variable-font subset, then the app loads the complete Noto font after the first frame and idle delay. Native full-font registrations remain intact; rare Web glyphs may need the engine's on-demand fallback before the complete font is ready. See `docs/web-font-loading.md`.
 
+### User configuration survives normal updates
+
+User preferences belong in platform user storage, outside APK/`.app` bundles and Web static releases. Android, iOS, macOS, Linux and Web share the Flutter persistence/cleanup rules; their actual preference files are platform-specific. Normal in-place updates must retain saved settings and must not clear storage just because the version changed. Keep application IDs/Bundle IDs, signing identity, macOS sandbox/data-directory conventions, Linux application id/binary name and Web origin stable.
+
+Device date/navigation/timezone/reminder settings and the selected theme survive ordinary account cleanup. Account business caches, sync baselines, notification registries and private integration credentials still follow server/account isolation. The explicit device-key list documents ownership and is checked by tests; runtime cleanup uses the account deletion lists, so do not introduce a broad `pref_*` deletion. New defaults fill missing values; any explicit migration needs documented conditions and tests preserving existing choices.
+
+Uninstalling, clearing app/browser data, switching application identity or deliberately restoring a backup is different from an application update. Newer cloud preferences may also update local values under the sync contract. Backend deployment does not update already installed native clients. See `docs/configuration-persistence.md` for platform storage, upgrade conditions and verification limits.
+
+### Approved cross-platform application logo
+
+The user-approved logo is the red rounded square (`#C85656`) with three white geometric blocks shown in `docs/branding.md`. It is fixed across all platforms and themes. Use `assets/logo/duoyi_app_logo.svg` as the editable master and `assets/logo/duoyi_app_logo_1024.png` as the packaged source. Preserve `assets/logo/duoyi_logo_reference.png` as the original approval reference; do not substitute the old calendar `duoyi_logo_redesign_1024.png`, hourglass assets or a template icon.
+
+Regenerate all platform icon resources together and verify them from the project root:
+
+```bash
+python3 scripts/sync_app_icons.py
+python3 scripts/sync_app_icons.py --check
+flutter test --no-pub test/services/platform_logo_assets_test.dart --reporter expanded
+```
+
+The Android adaptive foreground uses the matching transparent derivative and red background. Authentication headers use the fixed logo image instead of theme-colored icon-font recreation. Keep platform-required scaling/masking, application identity, text/layout and user data intact. Resource generation alone does not establish actual installed-app, Dock/launcher or browser-cache behavior; record those checks separately.
+
 ### Version bump touches two files
 
-The app version lives in **both** `pubspec.yaml` (`version: 1.1.37+140003`) and `lib/core/app_version.dart` (`name` / `build`). Bump them together or version checks will disagree.
+The app version lives in **both** `pubspec.yaml` (`version: <name>+<build>`) and `lib/core/app_version.dart` (`name` / `build`). Read the current values from those files and bump them together; historical version examples are not a release baseline.
 
 ### Backend routes are contract-pinned
 
@@ -87,7 +109,7 @@ The app version lives in **both** `pubspec.yaml` (`version: 1.1.37+140003`) and 
 
 ### Documentation layout
 
-Canonical requirement/design/task docs live in `docs/` (`requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, etc.). The many `*_REPORT.md` / `*_SUMMARY.md` files in the repo root are historical working-session notes — don't treat them as current guidance and don't add new ones there.
+Canonical requirement/design/task docs live in `docs/` (`requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, `branding.md`, `configuration-persistence.md`, etc.). The many `*_REPORT.md` / `*_SUMMARY.md` files in the repo root are historical working-session notes — don't treat them as current guidance and don't add new ones there.
 
 ## Architecture
 

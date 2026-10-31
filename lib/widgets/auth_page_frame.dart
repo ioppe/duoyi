@@ -9,6 +9,12 @@ import '../providers/theme_provider.dart';
 import 'brand_background.dart';
 import 'surface_components.dart';
 
+/// Canonical application logo: the pure red tile with the white three-block
+/// glyph, rendered from `assets/logo/duoyi_app_logo.svg` by
+/// `scripts/sync_app_icons.py`. The auth tile must look the same in every
+/// theme, so it is the shared brand image instead of a theme-coloured icon.
+const String _brandLogoAsset = 'assets/logo/duoyi_app_logo_1024.png';
+
 /// Shared, stable-size authentication surface for Web and installed clients.
 class AuthPageFrame extends StatelessWidget {
   final String title;
@@ -156,16 +162,14 @@ class AuthPageFrame extends StatelessWidget {
                                 ),
                                 const SizedBox(width: DesignTokens.spaceSm),
                               ],
-                              Container(
-                                width: DesignTokens.authLogoSize,
-                                height: DesignTokens.authLogoSize,
-                                decoration: BoxDecoration(
-                                  color: cs.primary,
-                                  borderRadius: DesignTokens.borderRadiusLg,
-                                ),
-                                child: Icon(
-                                  Icons.space_dashboard_rounded,
-                                  color: cs.onPrimary,
+                              ClipRRect(
+                                borderRadius: DesignTokens.borderRadiusLg,
+                                child: Image.asset(
+                                  _brandLogoAsset,
+                                  width: DesignTokens.authLogoSize,
+                                  height: DesignTokens.authLogoSize,
+                                  fit: BoxFit.cover,
+                                  excludeFromSemantics: true,
                                 ),
                               ),
                               const SizedBox(width: DesignTokens.spaceMd),
