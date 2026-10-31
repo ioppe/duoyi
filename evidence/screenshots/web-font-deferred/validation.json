@@ -158,7 +158,7 @@
     "local_release": true,
     "same_origin_public_config_fixture": true,
     "real_account_login": false,
-    "production_verified": false
+    "production_verified": true
   },
   "rare_glyph_503_fallback": {
     "inputs": [
@@ -250,5 +250,83 @@
       }
     ],
     "inputMethod": "CDP mouse + Input.insertText"
+  },
+  "production_first_frame": {
+    "fonts": [
+      {
+        "decoded": 2098692,
+        "duration": 1833.79999999702,
+        "name": "https://todo.skydrow.site/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 4512.0999999940395,
+        "transfer": 1470060
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 6711.899999991059
+      }
+    ],
+    "paint": [
+      {
+        "name": "first-paint",
+        "t": 7240
+      },
+      {
+        "name": "first-contentful-paint",
+        "t": 7240
+      }
+    ]
+  },
+  "production_loaded": {
+    "fonts": [
+      {
+        "decoded": 2098692,
+        "duration": 1833.79999999702,
+        "name": "https://todo.skydrow.site/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 4512.0999999940395,
+        "transfer": 1470060
+      },
+      {
+        "decoded": 17772300,
+        "duration": 3722.70000000298,
+        "name": "https://todo.skydrow.site/assets/assets/fonts/NotoSansSC-Variable.ttf",
+        "start": 21714,
+        "transfer": 17772600
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 6711.899999991059
+      },
+      {
+        "name": "duoyi-font-download-start",
+        "t": 21713.29999999702
+      },
+      {
+        "name": "duoyi-font-loaded",
+        "t": 25473
+      }
+    ],
+    "paint": [
+      {
+        "name": "first-paint",
+        "t": 7240
+      },
+      {
+        "name": "first-contentful-paint",
+        "t": 7240
+      }
+    ],
+    "ready": "complete"
+  },
+  "production_release": {
+    "commit": "9332b18fb545ff953478c065493b98c3c6d07d9d",
+    "target": "/var/www/duoyi/releases/v1.1.47-9332b18-webfonts",
+    "url": "https://todo.skydrow.site/",
+    "backend_unchanged": true,
+    "bootstrap_js_manifest_hashes_match": true,
+    "html_modified_only_by_cloudflare_injection": true
   }
 }
