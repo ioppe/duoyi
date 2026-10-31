@@ -7,7 +7,7 @@
 - SHA-256：`a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da`。
 - 授权：[SIL Open Font License 1.1](NotoSansSC-OFL.txt)，随应用一起打包。
 
-`pubspec.yaml` 把同一个变量文件按 400 / 500 / 600 / 700 四档注册为 `NotoSansSC`，引擎按请求字重选择该资源并应用 `wght` 变体；`assets/fonts/` 整目录仍作为普通资源打包。
+`pubspec.yaml` 把同一个变量文件按 400 / 500 / 600 / 700 四档注册为 `NotoSansSC`，引擎按请求字重选择该资源并应用 `wght` 变体。PDF 导出字体作为单独普通 asset 保留；不再把整个 `assets/fonts/` 目录打入 Web 资产清单。
 
 界面入口统一在 `lib/core/design_tokens.dart`：
 
@@ -20,6 +20,6 @@
 
 ## 旧字库
 
-`ResourceHanRoundedCN-Bold.ttf`（资源圆体 CN Bold，700，13,978,508 字节，SHA-256 `f713907a21a10701cd68a7ce3e345ccdce46c789e1809d65ace54e095d7107c3`，授权见 `ResourceHanRounded-OFL.txt`）是此前的全粗体界面字体，现已不再被界面引用，仅作为历史资源保留打包，以免移除资产影响既有构建与截图证据。新代码不得再引用 `ResourceHanRounded`。
+`ResourceHanRoundedCN-Bold.ttf`（资源圆体 CN Bold，700，13,978,508 字节，SHA-256 `f713907a21a10701cd68a7ce3e345ccdce46c789e1809d65ace54e095d7107c3`，授权见 `ResourceHanRounded-OFL.txt`）是此前的全粗体界面字体，现已不再被界面引用，仅作为历史资源保留在仓库中；当前 Flutter Web 构建不再将它打包。新代码不得再引用 `ResourceHanRounded`。
 
 `DroidSansFallbackFull.ttf` 仍用于 PDF 报告，导出字体处理与应用界面独立。

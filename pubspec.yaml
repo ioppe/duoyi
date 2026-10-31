@@ -88,7 +88,7 @@ flutter:
     - assets/backgrounds/
     - assets/logo/
     - assets/icons/
-    - assets/fonts/
+    - assets/fonts/DroidSansFallbackFull.ttf
     - assets/sounds/white_noise/
     - assets/sounds/reminders/
 
@@ -103,10 +103,6 @@ flutter:
         - asset: assets/fonts/NotoSansSC-Variable.ttf
           weight: 600
         - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 700
-    - family: ResourceHanRounded
-      fonts:
-        - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
           weight: 700
 
   # To add assets to your application, add an assets section, like this:
