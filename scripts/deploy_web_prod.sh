@@ -102,6 +102,28 @@ verify_web_build() {
         exit 1
     fi
     echo "   ✓ no stale version strings found in critical web artifacts"
+
+    "$PYTHON_BIN" - "$dir" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+policy = json.loads((root / 'assets/web-font-policy.json').read_text())
+manifest = json.loads((root / 'assets/FontManifest.json').read_text())
+families = [item for item in manifest if item.get('family') == 'NotoSansSC']
+expected = 'assets/fonts/NotoSansSC-Startup.ttf'
+if len(families) != 1 or families[0].get('fonts') != [{'asset': expected}]:
+    raise SystemExit('Web startup font manifest is missing or still blocks on the full font')
+startup = root / 'assets' / expected
+if hashlib.sha256(startup.read_bytes()).hexdigest() != policy['startup_sha256']:
+    raise SystemExit('Web startup font hash mismatch')
+if not (root / 'assets' / policy['complete_asset']).is_file():
+    raise SystemExit('Deferred complete font is missing')
+if not (root / 'assets/assets/fonts/NotoSansSC-OFL.txt').is_file():
+    raise SystemExit('Bundled font license is missing')
+print('   ✓ startup font subset and deferred complete font verified')
+PY
 }
 
 echo "=================================================="

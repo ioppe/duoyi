@@ -56,6 +56,7 @@ import 'models/todo.dart' show TodoItem, TodoPriorityX;
 import 'services/alarm_service.dart';
 import 'services/account_local_data_cleaner.dart';
 import 'services/calendar_sync_service.dart';
+import 'services/deferred_web_font_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
@@ -1956,6 +1957,7 @@ void main() async {
       ),
     );
     unawaited(runPostFrameStartupTasks());
+    DeferredWebFontService.instance.schedule();
   });
 }
 

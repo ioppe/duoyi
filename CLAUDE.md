@@ -43,13 +43,13 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 # Run all backend tests (unittest-style; pytest also works)
-python -m unittest test_workspaces -v
+python -m unittest discover -s . -v
 
 # Run a single backend test
 python -m unittest test_workspaces.WorkspaceApiTest.test_admin_current_management_routes_do_not_404
 ```
 
-Despite its name, `backend/test_workspaces.py` (~150 tests in `WorkspaceApiTest`) is the **entire backend test suite**: route contracts, auth, admin, sync, feedback, coins — not just workspaces.
+`backend/test_workspaces.py` covers route contracts, auth, admin, sync, feedback and coins. Run unittest discovery to also include the separate access-token, configuration and Web-font-build policy tests.
 
 **Backend configuration**: process environment > ignored `backend/.env` (`DUOYI_ENV_FILE`) > public `config/deployment.json` (`DUOYI_CONFIG_FILE`) > schema defaults. Only a genuinely fresh database receives the bootstrap admin (default `admin`); an empty/unset `ADMIN_BOOTSTRAP_PASSWORD` generates a random password once and saves local credentials to `<DUOYI_DB_PATH>.bootstrap-admin.json` with mode `0600` (default `backend/duoyi.db.bootstrap-admin.json`). Explicit bootstrap passwords remain supported. Existing installations never gain/reset/promote bootstrap accounts; restarts preserve password hashes, data and PASSWORD_HASH_SALT. Database runtime settings only receive missing initial values. See `docs/configuration.md` and `backend/.env.example`.
 
@@ -68,6 +68,8 @@ The release gate. Runs 8 groups: batched Flutter tests (static guards, screens, 
 Roughly 95 of ~240 Flutter test files match `*_static_test.dart`. These regex-scan `lib/` source and **fail when banned patterns appear anywhere in the codebase**. Typography guards require the shared `DesignTokens.fontFamily` family and the three shared weight tokens (`fontWeightRegular` 400 / `fontWeightMedium` 500 / `fontWeightStrong` 600); local `FontWeight` literals and raw `fontFamily` strings are forbidden. When your change trips a guard, read the test's `reason` message and fix the code to comply — do not weaken the guard. Expect any UI change to be checked against them.
 
 All brands, app controls, input text and secondary pages share `NotoSansSC` (bundled Noto Sans SC variable font, offline) through `DesignTokens.fontFamily`. Body copy, secondary copy, input hints, menus and snackbars are Regular (`DesignTokens.fontWeightRegular`, 400); buttons, navigation labels, chips and floating labels are Medium (`DesignTokens.fontWeightMedium`, 500); titles, AppBar titles and emphasis are Semibold (`DesignTokens.fontWeightStrong`, 600). Sizes come from the `DesignTokens.fontSize*` scale (body 16 / secondary 14 / caption 12 / page title 20), and shared buttons use `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Keep the existing color/spacing hierarchy and one shared navigation style across primary pages. The font is bundled for consistent offline display; its source, checksum and SIL Open Font License live in `assets/fonts/`. PDF/report font handling is independent.
+
+Web startup is the exception to complete offline font loading: the configured build wrapper registers one checked-in variable-font subset, then the app loads the complete Noto font after the first frame and idle delay. Native full-font registrations remain intact; rare Web glyphs may need the engine's on-demand fallback before the complete font is ready. See `docs/web-font-loading.md`.
 
 ### Version bump touches two files
 
@@ -205,7 +207,7 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 - Flutter tests live under `test/{core,models,providers,screens,services,widgets}/` (~240 files); shared helpers in `test/test_support/`
 - `*_static_test.dart` files are source-scanning convention guards (see Critical Conventions above)
 - Integration smoke test: `integration_test/app_alignment_smoke_test.dart`
-- Backend API tests: `backend/test_workspaces.py` (the full backend suite, unittest-style)
+- Backend API tests: `backend/test_workspaces.py`; discover `backend/test_*.py` to include access-token, config and Web build-policy tests (unittest-style).
 - CI runs Flutter and Python tests on every push/PR; `scripts/alignment_regression_gate.sh` is the heavier pre-release gate
 
 ## Deployment Notes

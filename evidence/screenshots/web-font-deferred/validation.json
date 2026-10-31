@@ -1,0 +1,254 @@
+{
+  "cold_local": {
+    "fonts": [
+      {
+        "decoded": 2098692,
+        "duration": 52.8999999910593,
+        "name": "http://127.0.0.1:18748/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 1739.5,
+        "transfer": 1417924
+      },
+      {
+        "decoded": 17772300,
+        "duration": 455.79999999701977,
+        "name": "http://127.0.0.1:18748/assets/assets/fonts/NotoSansSC-Variable.ttf",
+        "start": 18460.20000000298,
+        "transfer": 11297046
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 3453.3999999910593
+      },
+      {
+        "name": "duoyi-font-download-start",
+        "t": 18458.5
+      },
+      {
+        "name": "duoyi-font-loaded",
+        "t": 18948.39999999106
+      }
+    ],
+    "paint": [
+      {
+        "name": "first-paint",
+        "t": 3988
+      },
+      {
+        "name": "first-contentful-paint",
+        "t": 3988
+      }
+    ],
+    "ready": "complete"
+  },
+  "input_retained": {
+    "before": {
+      "inputs": [
+        {
+          "label": "Username or email",
+          "value": "font-input-kept"
+        },
+        {
+          "label": "Password",
+          "value": ""
+        }
+      ],
+      "fullRequests": 0
+    },
+    "after": {
+      "inputs": [
+        {
+          "label": "Username or email",
+          "value": "font-input-kept"
+        },
+        {
+          "label": "Password",
+          "value": ""
+        }
+      ],
+      "marks": [
+        {
+          "name": "duoyi-font-first-frame",
+          "t": 579.9000000059605
+        },
+        {
+          "name": "duoyi-font-download-start",
+          "t": 15581.90000000596
+        },
+        {
+          "name": "duoyi-font-loaded",
+          "t": 15671.40000000596
+        }
+      ],
+      "fonts": [
+        {
+          "name": "http://localhost:18748/assets/assets/fonts/NotoSansSC-Startup.ttf",
+          "start": 278,
+          "transfer": 1417924,
+          "decoded": 2098692
+        },
+        {
+          "name": "http://localhost:18748/assets/assets/fonts/NotoSansSC-Variable.ttf",
+          "start": 15582.79999999702,
+          "transfer": 11297046,
+          "decoded": 17772300
+        }
+      ]
+    },
+    "inputMethod": "CDP mouse + Input.insertText"
+  },
+  "complete_font_503": {
+    "fonts": [
+      {
+        "decoded": 2098692,
+        "name": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 458.70000000298023,
+        "transfer": 1417924
+      },
+      {
+        "decoded": 380,
+        "name": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Variable.ttf",
+        "start": 17461,
+        "transfer": 680
+      }
+    ],
+    "inputs": [
+      {
+        "label": "Username or email",
+        "value": "font-preview-user"
+      },
+      {
+        "label": "Password",
+        "value": ""
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 2458.20000000298
+      },
+      {
+        "name": "duoyi-font-download-start",
+        "t": 17459.59999999404
+      },
+      {
+        "name": "duoyi-font-error",
+        "t": 17464.40000000596
+      }
+    ]
+  },
+  "chinese_startup": {
+    "fonts": [
+      {
+        "decoded": 2098692,
+        "name": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 244.9000000059605,
+        "transfer": 1417924
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 562
+      }
+    ]
+  },
+  "scope": {
+    "local_release": true,
+    "same_origin_public_config_fixture": true,
+    "real_account_login": false,
+    "production_verified": false
+  },
+  "rare_glyph_503_fallback": {
+    "inputs": [
+      {
+        "label": "用户名或邮箱",
+        "value": ""
+      },
+      {
+        "label": "密码",
+        "value": "测试密码龘"
+      }
+    ],
+    "marks": [
+      {
+        "name": "duoyi-font-first-frame",
+        "t": 517.2999999970198
+      },
+      {
+        "name": "duoyi-font-download-start",
+        "t": 15519.79999999702
+      },
+      {
+        "name": "duoyi-font-error",
+        "t": 15526.09999999404
+      }
+    ],
+    "fonts": [
+      {
+        "name": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "start": 209.79999999701977,
+        "transfer": 1417924,
+        "decoded": 2098692
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.116.woff2",
+        "start": 835.7999999970198,
+        "transfer": 28516,
+        "decoded": 28216
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.115.woff2",
+        "start": 835.8999999910593,
+        "transfer": 30356,
+        "decoded": 30056
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.117.woff2",
+        "start": 836.0999999940395,
+        "transfer": 28252,
+        "decoded": 27952
+      },
+      {
+        "name": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.21.woff2",
+        "start": 836.2000000029802,
+        "transfer": 6512,
+        "decoded": 6212
+      },
+      {
+        "name": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Variable.ttf",
+        "start": 15520.59999999404,
+        "transfer": 680,
+        "decoded": 380
+      }
+    ],
+    "responses": [
+      {
+        "url": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Startup.ttf",
+        "status": 200
+      },
+      {
+        "url": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.21.woff2",
+        "status": 200
+      },
+      {
+        "url": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.116.woff2",
+        "status": 200
+      },
+      {
+        "url": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.115.woff2",
+        "status": 200
+      },
+      {
+        "url": "https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_FnYkldv7JjxkkgFsFSSOPMOkySAZ73y9ViAt3acb8NexQ2w.117.woff2",
+        "status": 200
+      },
+      {
+        "url": "http://localhost:18749/assets/assets/fonts/NotoSansSC-Variable.ttf",
+        "status": 503
+      }
+    ],
+    "inputMethod": "CDP mouse + Input.insertText"
+  }
+}

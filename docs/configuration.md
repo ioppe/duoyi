@@ -110,6 +110,8 @@ python3 scripts/flutter_with_config.py build web --release \
 
 入口生成 `build/config/client-defines.json`，只导出允许进入客户端的公开键，然后使用 Flutter 的 `--dart-define-from-file`。后续显式 `--dart-define` 优先，已有手动构建方式仍可使用。直接调用 Flutter 时，应自己传入配置；仅设置 shell 环境变量不会让 Dart 自动读取它们。
 
+统一入口在成功的 Web 构建后还会校验并应用轻量首屏字体清单，完整字库不阻塞首屏、在首帧后空闲时后台加载；原生字体不变。直接使用 Flutter 构建时需另行运行字体后处理，详见 [Web 字体加载与验证](web-font-loading.md)。
+
 本机可执行文件位置使用 `FLUTTER_BIN`、`PYTHON_BIN`、`ADB_BIN`、`ANDROID_SDK_ROOT` / `ANDROID_HOME` 等环境变量；未指定时从 SDK 路径或 PATH 查找，不绑定某位开发者的用户目录。
 
 ## 后端配置与兼容性

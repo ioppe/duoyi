@@ -118,7 +118,7 @@ Web 的 `/api/*`、`/ws/*` 默认请求当前站点，`DUOYI_SERVER_URL` 不会�
 
 ```bash
 # 留空: 走相对路径
-flutter build web --release --base-href=/duoyi/ --dart-define=DUOYI_SERVER_URL=
+python3 scripts/flutter_with_config.py build web --release --base-href=/duoyi/ --dart-define=DUOYI_SERVER_URL=
 ```
 
 nginx 配置：

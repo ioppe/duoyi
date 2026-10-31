@@ -89,6 +89,7 @@ flutter:
     - assets/logo/
     - assets/icons/
     - assets/fonts/DroidSansFallbackFull.ttf
+    - assets/fonts/NotoSansSC-OFL.txt
     - assets/sounds/white_noise/
     - assets/sounds/reminders/
 

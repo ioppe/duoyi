@@ -11,10 +11,10 @@ dart format .
 flutter test                        # ~240 test files under test/
 flutter test test/screens/todo_screen_test.dart   # single file
 
-# Backend (backend/test_workspaces.py is the ENTIRE backend suite despite its name)
+# Backend (test_workspaces covers API routes; discover also includes auth/config/Web build policy)
 cd backend && pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-python -m unittest test_workspaces -v
+python -m unittest discover -s . -v
 
 # Release gate: Flutter tests + backend tests + analyze + debug APK build + device regression
 scripts/alignment_regression_gate.sh
@@ -27,6 +27,7 @@ scripts/alignment_regression_gate.sh
 ~96 files named `test/**/*_static_test.dart` regex-scan `lib/` and **fail the whole suite when banned patterns appear anywhere** — e.g. locally hardcoded font weights, raw values instead of design tokens (`lib/core/design_tokens.dart`), screens not using the i18n wrapper. When one trips: read the test's `reason` message (Chinese) and fix the code — never weaken the guard. Any UI change should be checked against them.
 
 - **Typography**: all application UI uses the bundled `NotoSansSC` variable font (Noto Sans SC, offline) through `DesignTokens.fontFamily`. Body/secondary copy, input hints, menus and snackbars use `DesignTokens.fontWeightRegular` (400); buttons, navigation labels, chips and floating labels use `DesignTokens.fontWeightMedium` (500); titles, AppBar titles and emphasis use `DesignTokens.fontWeightStrong` (600). Sizes come from the `DesignTokens.fontSize*` scale (body 16 / secondary 14 / caption 12 / page title 20); shared buttons keep `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Use theme text styles; do not hardcode `FontWeight` values or raw `fontFamily` strings, restore system serif/monospace families or add page-specific bottom-navigation typography. Font attribution and SIL OFL are in `assets/fonts/`; PDF export typography remains separate.
+- **Web font loading**: `scripts/flutter_with_config.py build web` replaces only the generated Web FontManifest with a checked-in variable subset; the complete Noto font loads once after the first frame and idle delay. Native full-font registrations stay unchanged. Preserve this boundary; see `docs/web-font-loading.md`.
 - **Subpage navigation**: use `AppPageTabs` / `AppPageSwitcher` (`lib/widgets/app_page_tabs.dart`) for content views within a screen. All themes share medium-weight labels, start alignment, horizontally scrollable labels and the short `PageTabIndicator`; avoid local pill/filled tab decorations. Date-range filters and form choices remain selection controls.
 
 - **Version bump touches two files**: `pubspec.yaml` (`version: 1.1.41+140007`) AND `lib/core/app_version.dart` (`name`/`build`) — change together or update checks disagree.

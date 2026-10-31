@@ -49,8 +49,12 @@ def main(argv: list[str] | None = None) -> int:
             raise ConfigurationError("Flutter executable not found; install the pinned toolchain or set FLUTTER_BIN")
         if arguments[0] in {"run", "test", "build"}:
             write_json(defines_file, config.client_defines())
-        return subprocess.run(command, cwd=PROJECT_ROOT).returncode
-    except (ConfigurationError, OSError) as error:
+        result = subprocess.run(command, cwd=PROJECT_ROOT).returncode
+        if result == 0 and arguments[:2] == ["build", "web"]:
+            from prepare_web_fonts import prepare_web_fonts, web_output_directory
+            prepare_web_fonts(PROJECT_ROOT, web_output_directory(arguments, PROJECT_ROOT))
+        return result
+    except (ConfigurationError, OSError, ValueError) as error:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 2
 
