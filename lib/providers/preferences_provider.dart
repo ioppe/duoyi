@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -210,7 +212,18 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
 
   Future<void> Function()? onAppTimeZoneChanged;
-  void Function(Iterable<String> keys)? onChangedKeys;
+  FutureOr<void> Function(Iterable<String> keys)? onChangedKeys;
+
+  /// 每次内存变更自增；[loadFromStorage] 用它判断读盘期间是否有 setter 插入，
+  /// 并在需要时重读，避免“载入覆盖刚刚保存的值”。
+  int _mutationVersion = 0;
+
+  /// 最新一次持久化写入的尾部 Future。多个 setter 串行写盘，
+  /// 载入前先等这条尾巴完成，保证读到的是最新磁盘状态。
+  Future<void>? _writeTail;
+
+  /// 进行中的载入 Future；并发调用共享同一次载入（含中途自动重试）。
+  Future<void>? _loadInFlight;
 
   int _firstDayOfWeek = 1; // 1=周一, 7=周日
   String _dateFormat = 'yyyy-MM-dd';
@@ -458,10 +471,78 @@ class PreferencesProvider extends ChangeNotifier {
     _appTimeZone = LocalTimezoneResolver.currentIana;
   }
 
-  Future<void> loadFromStorage() async {
-    final generation = _storageGeneration;
+  Future<void> loadFromStorage() {
+    final inFlight = _loadInFlight;
+    if (inFlight != null) return inFlight;
+    final future = _reloadFromStorage();
+    _loadInFlight = future;
+    return future.whenComplete(() {
+      if (identical(_loadInFlight, future)) _loadInFlight = null;
+    });
+  }
+
+  Future<void> _reloadFromStorage() async {
+    while (true) {
+      final generation = _storageGeneration;
+      // 版本必须在等待写队列之前捕获：等待期间或读盘期间开始的 setter
+      // 都会让版本变化，从而触发重读。
+      final mutationVersion = _mutationVersion;
+      await _awaitPendingWrites();
+      if (generation != _storageGeneration) return;
+      final needsRetry = await _loadStoredPreferences(
+        generation,
+        mutationVersion,
+      );
+      if (generation != _storageGeneration) return;
+      if (!needsRetry) return;
+    }
+  }
+
+  /// 标记一次内存变更，供进行中的 [loadFromStorage] 检测并重读。
+  void _markMutation() {
+    _mutationVersion++;
+  }
+
+  /// 串行写入队列：内存更新已在 setter 内同步完成，这里只保证落盘顺序，
+  /// 并让下一次载入能等到最新磁盘状态。
+  Future<void> _runWrite(Future<void> Function() write) async {
+    final previous = _writeTail;
+    final completer = Completer<void>();
+    final active = completer.future;
+    _writeTail = active;
+    try {
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {
+          // 上一次写入的失败已传播给它的调用方；队列仍要继续前进。
+        }
+      }
+      await write();
+    } finally {
+      completer.complete();
+      if (identical(_writeTail, active)) _writeTail = null;
+    }
+  }
+
+  Future<void> _awaitPendingWrites() async {
+    final tail = _writeTail;
+    if (tail == null) return;
+    try {
+      await tail;
+    } catch (_) {
+      // 失败已传播给对应 setter，载入不应被历史失败卡住。
+    }
+  }
+
+  /// 返回 true 表示读盘期间有 setter 插入，需要重读同一份存储。
+  Future<bool> _loadStoredPreferences(
+    int generation,
+    int mutationVersion,
+  ) async {
     final p = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration) return;
+    if (generation != _storageGeneration) return false;
+    if (mutationVersion != _mutationVersion) return true;
     _firstDayOfWeek = p.getInt(_kFirstDayOfWeek) ?? 1;
     _dateFormat = p.getString(_kDateFormat) ?? 'yyyy-MM-dd';
     _followSystemTimeZone =
@@ -473,7 +554,7 @@ class PreferencesProvider extends ChangeNotifier {
           ? LocalTimezoneResolver.followSystemValue
           : (p.getString(_kAppTimeZone) ?? LocalTimezoneResolver.defaultIana),
     );
-    if (generation != _storageGeneration) return;
+    if (generation != _storageGeneration) return false;
     _appTimeZone = LocalTimezoneResolver.currentIana;
     final storedOrder = p.getStringList(_kBottomNavOrder);
     final storedVisible = p.getStringList(_kBottomNavVisible);
@@ -624,7 +705,7 @@ class PreferencesProvider extends ChangeNotifier {
           : storedVisible?.map(int.tryParse).whereType<int>(),
       order: _bottomNavOrder,
     );
-    if (generation != _storageGeneration) return;
+    if (generation != _storageGeneration) return false;
     if ((WebTarget.isWebBuild || legacyFocusDefault) &&
         storedVisible != null &&
         !setEquals(storedVisibleSet, _bottomNavVisible)) {
@@ -632,28 +713,39 @@ class PreferencesProvider extends ChangeNotifier {
         _kBottomNavVisible,
         _bottomNavVisible.map((tab) => '$tab').toList(),
       );
-      if (generation != _storageGeneration) return;
+      if (generation != _storageGeneration) return false;
     }
     if (needsWebNavMigration) {
       await p.setBool(_kWebNavigationMigrated, true);
-      if (generation != _storageGeneration) return;
+      if (generation != _storageGeneration) return false;
     }
     if (needsFocusNavMigration) {
       await p.setBool(_kFocusNavigationMigrated, true);
-      if (generation != _storageGeneration) return;
+      if (generation != _storageGeneration) return false;
+    }
+    if (mutationVersion != _mutationVersion) {
+      // 读盘期间有 setter 写入：重读，确保所有字段都基于最新磁盘状态。
+      return true;
     }
     notifyListeners();
+    return false;
   }
 
-  void _notifyPreferenceKeys(Iterable<String> keys) {
+  /// 先刷新 UI，再等待 `onChangedKeys`（云同步标记）完成。
+  ///
+  /// UI 刷新不等云同步，但 setter 必须等标记落盘完成才算保存结束。
+  Future<void> _notifyPreferenceKeys(Iterable<String> keys) async {
     final cleanKeys = keys
         .map((key) => key.trim())
         .where((key) => key.isNotEmpty)
         .toSet();
-    if (cleanKeys.isNotEmpty) {
-      onChangedKeys?.call(cleanKeys);
-    }
     notifyListeners();
+    if (cleanKeys.isNotEmpty) {
+      final callback = onChangedKeys;
+      if (callback != null) {
+        await callback(cleanKeys);
+      }
+    }
   }
 
   List<String> _dailyReminderSlotKeys(int index) {
@@ -685,10 +777,14 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> setFirstDayOfWeek(int value) async {
-    _firstDayOfWeek = value.clamp(1, 7);
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kFirstDayOfWeek, _firstDayOfWeek);
-    _notifyPreferenceKeys(const [_kFirstDayOfWeek]);
+    _markMutation();
+    final next = value.clamp(1, 7);
+    _firstDayOfWeek = next;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kFirstDayOfWeek, next);
+    });
+    await _notifyPreferenceKeys(const [_kFirstDayOfWeek]);
   }
 
   void refreshResolvedTimeZone() {
@@ -704,10 +800,11 @@ class PreferencesProvider extends ChangeNotifier {
         : value.isEmpty
         ? LocalTimezoneResolver.defaultIana
         : value;
+    _markMutation();
     _followSystemTimeZone = next == LocalTimezoneResolver.followSystemValue;
-    await LocalTimezoneResolver.setApplicationTimeZone(next);
+    await _runWrite(() => LocalTimezoneResolver.setApplicationTimeZone(next));
     _appTimeZone = LocalTimezoneResolver.currentIana;
-    _notifyPreferenceKeys(const [_kAppTimeZoneMode, _kAppTimeZone]);
+    await _notifyPreferenceKeys(const [_kAppTimeZoneMode, _kAppTimeZone]);
     await onAppTimeZoneChanged?.call();
   }
 
@@ -717,6 +814,7 @@ class PreferencesProvider extends ChangeNotifier {
     if (_sameDailyReminderSlot(_dailyReminderSlots[index], normalizedSlot)) {
       return;
     }
+    _markMutation();
     final next = [..._dailyReminderSlots];
     next[index] = normalizedSlot;
     _dailyReminderSlots = List.unmodifiable(next);
@@ -735,66 +833,80 @@ class PreferencesProvider extends ChangeNotifier {
       _dailyReminderPauseHolidays = normalizedSlot.pauseHolidays;
     }
 
-    final p = await SharedPreferences.getInstance();
     final prefix = index == 0 ? null : '$_kDailyReminderSlotPrefix${index + 1}';
-    if (index == 0) {
-      await p.setBool(_kDailyReminderEnabled, normalizedSlot.enabled);
-      await p.setString(_kDailyReminderKind, normalizedSlot.kind.name);
-      await p.setInt(_kDailyReminderHour, normalizedSlot.hour);
-      await p.setInt(_kDailyReminderMinute, normalizedSlot.minute);
-      await p.setBool(
-        _kDailyReminderIncludeTodayTasks,
-        normalizedSlot.includeTodayTasks,
-      );
-      await p.setBool(
-        _kDailyReminderIncludeTomorrowPlan,
-        normalizedSlot.includeTomorrowPlan,
-      );
-      await p.setBool(
-        _kDailyReminderIncludeOverdue,
-        normalizedSlot.includeOverdue,
-      );
-      await p.setStringList(
-        _kDailyReminderRepeatDays,
-        DailyReminderSlot._normalizeDays(
-          normalizedSlot.repeatDays,
-        ).map((d) => d.toString()).toList(),
-      );
-      await p.setBool(
-        _kDailyReminderPauseHolidays,
-        normalizedSlot.pauseHolidays,
-      );
-    } else {
-      await p.setBool('${prefix}_enabled', normalizedSlot.enabled);
-      await p.setString('${prefix}_kind', normalizedSlot.kind.name);
-      await p.setInt('${prefix}_hour', normalizedSlot.hour);
-      await p.setInt('${prefix}_minute', normalizedSlot.minute);
-      await p.setBool('${prefix}_today', normalizedSlot.includeTodayTasks);
-      await p.setBool('${prefix}_tomorrow', normalizedSlot.includeTomorrowPlan);
-      await p.setBool('${prefix}_overdue', normalizedSlot.includeOverdue);
-      await p.setStringList(
-        '${prefix}_repeat_days',
-        DailyReminderSlot._normalizeDays(
-          normalizedSlot.repeatDays,
-        ).map((d) => d.toString()).toList(),
-      );
-      await p.setBool('${prefix}_pause_holidays', normalizedSlot.pauseHolidays);
-    }
-    _notifyPreferenceKeys(_dailyReminderSlotKeys(index));
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      if (index == 0) {
+        await p.setBool(_kDailyReminderEnabled, normalizedSlot.enabled);
+        await p.setString(_kDailyReminderKind, normalizedSlot.kind.name);
+        await p.setInt(_kDailyReminderHour, normalizedSlot.hour);
+        await p.setInt(_kDailyReminderMinute, normalizedSlot.minute);
+        await p.setBool(
+          _kDailyReminderIncludeTodayTasks,
+          normalizedSlot.includeTodayTasks,
+        );
+        await p.setBool(
+          _kDailyReminderIncludeTomorrowPlan,
+          normalizedSlot.includeTomorrowPlan,
+        );
+        await p.setBool(
+          _kDailyReminderIncludeOverdue,
+          normalizedSlot.includeOverdue,
+        );
+        await p.setStringList(
+          _kDailyReminderRepeatDays,
+          DailyReminderSlot._normalizeDays(
+            normalizedSlot.repeatDays,
+          ).map((d) => d.toString()).toList(),
+        );
+        await p.setBool(
+          _kDailyReminderPauseHolidays,
+          normalizedSlot.pauseHolidays,
+        );
+      } else {
+        await p.setBool('${prefix}_enabled', normalizedSlot.enabled);
+        await p.setString('${prefix}_kind', normalizedSlot.kind.name);
+        await p.setInt('${prefix}_hour', normalizedSlot.hour);
+        await p.setInt('${prefix}_minute', normalizedSlot.minute);
+        await p.setBool('${prefix}_today', normalizedSlot.includeTodayTasks);
+        await p.setBool(
+          '${prefix}_tomorrow',
+          normalizedSlot.includeTomorrowPlan,
+        );
+        await p.setBool('${prefix}_overdue', normalizedSlot.includeOverdue);
+        await p.setStringList(
+          '${prefix}_repeat_days',
+          DailyReminderSlot._normalizeDays(
+            normalizedSlot.repeatDays,
+          ).map((d) => d.toString()).toList(),
+        );
+        await p.setBool(
+          '${prefix}_pause_holidays',
+          normalizedSlot.pauseHolidays,
+        );
+      }
+    });
+    await _notifyPreferenceKeys(_dailyReminderSlotKeys(index));
   }
 
   Future<void> setWeeklyReportReminder(bool value) async {
+    _markMutation();
     _weeklyReportReminder = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kWeeklyReportReminder, value);
-    _notifyPreferenceKeys(const [_kWeeklyReportReminder]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kWeeklyReportReminder, value);
+    });
+    await _notifyPreferenceKeys(const [_kWeeklyReportReminder]);
   }
 
   Future<void> setDailyReportReminder(bool value) async {
+    _markMutation();
     _dailyReportReminder = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReportReminder, value);
-    _notifyPreferenceKeys(const [_kDailyReportReminder]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReportReminder, value);
+    });
+    await _notifyPreferenceKeys(const [_kDailyReportReminder]);
   }
 
   Future<void> setDailyReportReminderConfig(ReportReminderConfig config) async {
@@ -806,14 +918,17 @@ class PreferencesProvider extends ChangeNotifier {
         _dailyReportReminderMinute == nextMinute) {
       return;
     }
+    _markMutation();
     _dailyReportReminder = nextEnabled;
     _dailyReportReminderHour = nextHour;
     _dailyReportReminderMinute = nextMinute;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReportReminder, _dailyReportReminder);
-    await p.setInt(_kDailyReportReminderHour, _dailyReportReminderHour);
-    await p.setInt(_kDailyReportReminderMinute, _dailyReportReminderMinute);
-    _notifyPreferenceKeys(const [
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReportReminder, nextEnabled);
+      await p.setInt(_kDailyReportReminderHour, nextHour);
+      await p.setInt(_kDailyReportReminderMinute, nextMinute);
+    });
+    await _notifyPreferenceKeys(const [
       _kDailyReportReminder,
       _kDailyReportReminderHour,
       _kDailyReportReminderMinute,
@@ -833,16 +948,19 @@ class PreferencesProvider extends ChangeNotifier {
         _weeklyReportReminderMinute == nextMinute) {
       return;
     }
+    _markMutation();
     _weeklyReportReminder = nextEnabled;
     _weeklyReportReminderWeekday = nextWeekday;
     _weeklyReportReminderHour = nextHour;
     _weeklyReportReminderMinute = nextMinute;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kWeeklyReportReminder, _weeklyReportReminder);
-    await p.setInt(_kWeeklyReportReminderWeekday, _weeklyReportReminderWeekday);
-    await p.setInt(_kWeeklyReportReminderHour, _weeklyReportReminderHour);
-    await p.setInt(_kWeeklyReportReminderMinute, _weeklyReportReminderMinute);
-    _notifyPreferenceKeys(const [
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kWeeklyReportReminder, nextEnabled);
+      await p.setInt(_kWeeklyReportReminderWeekday, nextWeekday);
+      await p.setInt(_kWeeklyReportReminderHour, nextHour);
+      await p.setInt(_kWeeklyReportReminderMinute, nextMinute);
+    });
+    await _notifyPreferenceKeys(const [
       _kWeeklyReportReminder,
       _kWeeklyReportReminderWeekday,
       _kWeeklyReportReminderHour,
@@ -851,10 +969,13 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> setMonthlyReportReminder(bool value) async {
+    _markMutation();
     _monthlyReportReminder = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kMonthlyReportReminder, value);
-    _notifyPreferenceKeys(const [_kMonthlyReportReminder]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kMonthlyReportReminder, value);
+    });
+    await _notifyPreferenceKeys(const [_kMonthlyReportReminder]);
   }
 
   Future<void> setMonthlyReportReminderConfig(
@@ -870,16 +991,19 @@ class PreferencesProvider extends ChangeNotifier {
         _monthlyReportReminderMinute == nextMinute) {
       return;
     }
+    _markMutation();
     _monthlyReportReminder = nextEnabled;
     _monthlyReportReminderDay = nextDay;
     _monthlyReportReminderHour = nextHour;
     _monthlyReportReminderMinute = nextMinute;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kMonthlyReportReminder, _monthlyReportReminder);
-    await p.setInt(_kMonthlyReportReminderDay, _monthlyReportReminderDay);
-    await p.setInt(_kMonthlyReportReminderHour, _monthlyReportReminderHour);
-    await p.setInt(_kMonthlyReportReminderMinute, _monthlyReportReminderMinute);
-    _notifyPreferenceKeys(const [
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kMonthlyReportReminder, nextEnabled);
+      await p.setInt(_kMonthlyReportReminderDay, nextDay);
+      await p.setInt(_kMonthlyReportReminderHour, nextHour);
+      await p.setInt(_kMonthlyReportReminderMinute, nextMinute);
+    });
+    await _notifyPreferenceKeys(const [
       _kMonthlyReportReminder,
       _kMonthlyReportReminderDay,
       _kMonthlyReportReminderHour,
@@ -888,10 +1012,13 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> setYearlyReportReminder(bool value) async {
+    _markMutation();
     _yearlyReportReminder = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kYearlyReportReminder, value);
-    _notifyPreferenceKeys(const [_kYearlyReportReminder]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kYearlyReportReminder, value);
+    });
+    await _notifyPreferenceKeys(const [_kYearlyReportReminder]);
   }
 
   Future<void> setYearlyReportReminderConfig(
@@ -909,18 +1036,21 @@ class PreferencesProvider extends ChangeNotifier {
         _yearlyReportReminderMinute == nextMinute) {
       return;
     }
+    _markMutation();
     _yearlyReportReminder = nextEnabled;
     _yearlyReportReminderMonth = nextMonth;
     _yearlyReportReminderDay = nextDay;
     _yearlyReportReminderHour = nextHour;
     _yearlyReportReminderMinute = nextMinute;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kYearlyReportReminder, _yearlyReportReminder);
-    await p.setInt(_kYearlyReportReminderMonth, _yearlyReportReminderMonth);
-    await p.setInt(_kYearlyReportReminderDay, _yearlyReportReminderDay);
-    await p.setInt(_kYearlyReportReminderHour, _yearlyReportReminderHour);
-    await p.setInt(_kYearlyReportReminderMinute, _yearlyReportReminderMinute);
-    _notifyPreferenceKeys(const [
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kYearlyReportReminder, nextEnabled);
+      await p.setInt(_kYearlyReportReminderMonth, nextMonth);
+      await p.setInt(_kYearlyReportReminderDay, nextDay);
+      await p.setInt(_kYearlyReportReminderHour, nextHour);
+      await p.setInt(_kYearlyReportReminderMinute, nextMinute);
+    });
+    await _notifyPreferenceKeys(const [
       _kYearlyReportReminder,
       _kYearlyReportReminderMonth,
       _kYearlyReportReminderDay,
@@ -944,13 +1074,17 @@ class PreferencesProvider extends ChangeNotifier {
     } else if (next.length > 2) {
       next.remove(tab);
     }
-    _bottomNavVisible = _normalizeNavVisible(next, order: _bottomNavOrder);
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList(
-      _kBottomNavVisible,
-      _bottomNavVisible.map((v) => v.toString()).toList(),
-    );
-    _notifyPreferenceKeys(const [_kBottomNavVisible]);
+    _markMutation();
+    final normalized = _normalizeNavVisible(next, order: _bottomNavOrder);
+    _bottomNavVisible = normalized;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList(
+        _kBottomNavVisible,
+        normalized.map((v) => v.toString()).toList(),
+      );
+    });
+    await _notifyPreferenceKeys(const [_kBottomNavVisible]);
   }
 
   Future<void> moveBottomNavTab(int tab, int delta) async {
@@ -961,13 +1095,17 @@ class PreferencesProvider extends ChangeNotifier {
     if (nextIndex == index) return;
     list.removeAt(index);
     list.insert(nextIndex, tab);
-    _bottomNavOrder = _normalizeNavOrder(list);
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList(
-      _kBottomNavOrder,
-      _bottomNavOrder.map((v) => v.toString()).toList(),
-    );
-    _notifyPreferenceKeys(const [_kBottomNavOrder]);
+    _markMutation();
+    final normalized = _normalizeNavOrder(list);
+    _bottomNavOrder = normalized;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList(
+        _kBottomNavOrder,
+        normalized.map((v) => v.toString()).toList(),
+      );
+    });
+    await _notifyPreferenceKeys(const [_kBottomNavOrder]);
   }
 
   static List<int> _normalizeNavOrder(Iterable<int>? source) {
@@ -1017,53 +1155,75 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> setDateFormat(String format) async {
+    _markMutation();
     _dateFormat = format;
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_kDateFormat, format);
-    _notifyPreferenceKeys(const [_kDateFormat]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_kDateFormat, format);
+    });
+    await _notifyPreferenceKeys(const [_kDateFormat]);
   }
 
   Future<void> setDefaultTab(int tab) async {
     final normalized = normalizeDefaultTab(tab);
+    _markMutation();
     _defaultTab = normalized;
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kDefaultTab, normalized);
-    _notifyPreferenceKeys(const [_kDefaultTab]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kDefaultTab, normalized);
+    });
+    await _notifyPreferenceKeys(const [_kDefaultTab]);
   }
 
   Future<void> setHaptic(bool value) async {
+    _markMutation();
     _haptic = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kHapticFeedback, value);
-    _notifyPreferenceKeys(const [_kHapticFeedback]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kHapticFeedback, value);
+    });
+    await _notifyPreferenceKeys(const [_kHapticFeedback]);
   }
 
   Future<void> setShowLunar(bool value) async {
+    _markMutation();
     _showLunar = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kShowLunar, value);
-    _notifyPreferenceKeys(const [_kShowLunar]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kShowLunar, value);
+    });
+    await _notifyPreferenceKeys(const [_kShowLunar]);
   }
 
   Future<void> setShowHomeCalendar(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!await prefs.setBool(_kShowHomeCalendar, value)) return;
+    _markMutation();
     _showHomeCalendar = value;
+    await _runWrite(() async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kShowHomeCalendar, value);
+    });
     notifyListeners();
   }
 
   Future<void> setShowCompletedTodos(bool value) async {
+    _markMutation();
     _showCompletedTodos = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kShowCompletedTodos, value);
-    _notifyPreferenceKeys(const [_kShowCompletedTodos]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kShowCompletedTodos, value);
+    });
+    await _notifyPreferenceKeys(const [_kShowCompletedTodos]);
   }
 
   Future<void> setDefaultPomodoroMinutes(int value) async {
-    _defaultPomodoroMinutes = value.clamp(5, 180);
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kDefaultPomodoroMinutes, _defaultPomodoroMinutes);
-    _notifyPreferenceKeys(const [_kDefaultPomodoroMinutes]);
+    _markMutation();
+    final next = value.clamp(5, 180);
+    _defaultPomodoroMinutes = next;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kDefaultPomodoroMinutes, next);
+    });
+    await _notifyPreferenceKeys(const [_kDefaultPomodoroMinutes]);
   }
 
   /// 悬浮窗尺寸是设备本地的外观偏好：写入后只通知 UI 刷新，
@@ -1071,45 +1231,65 @@ class PreferencesProvider extends ChangeNotifier {
   Future<void> setPomodoroFloatingWindowSize(
     PomodoroFloatingWindowSize value,
   ) async {
+    _markMutation();
     _pomodoroFloatingWindowSize = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_kPomodoroFloatingWindowSize, value.storageValue);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_kPomodoroFloatingWindowSize, value.storageValue);
+    });
     notifyListeners();
   }
 
   Future<void> setQuickCaptureFab(bool value) async {
+    _markMutation();
     _quickCaptureFab = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kQuickCaptureFab, value);
-    _notifyPreferenceKeys(const [_kQuickCaptureFab]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kQuickCaptureFab, value);
+    });
+    await _notifyPreferenceKeys(const [_kQuickCaptureFab]);
   }
 
   Future<void> setNotificationQuickAdd(bool value) async {
+    _markMutation();
     _notificationQuickAdd = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kNotificationQuickAdd, value);
-    _notifyPreferenceKeys(const [_kNotificationQuickAdd]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kNotificationQuickAdd, value);
+    });
+    await _notifyPreferenceKeys(const [_kNotificationQuickAdd]);
   }
 
   Future<void> setNotificationTodayProgress(bool value) async {
+    _markMutation();
     _notificationTodayProgress = value;
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kNotificationTodayProgress, value);
-    _notifyPreferenceKeys(const [_kNotificationTodayProgress]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kNotificationTodayProgress, value);
+    });
+    await _notifyPreferenceKeys(const [_kNotificationTodayProgress]);
   }
 
   Future<void> setNotificationHistoryLimit(int value) async {
-    _notificationHistoryLimit = NotificationHistoryPolicy.normalize(value);
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kNotificationHistoryLimit, _notificationHistoryLimit);
-    _notifyPreferenceKeys(const [_kNotificationHistoryLimit]);
+    _markMutation();
+    final next = NotificationHistoryPolicy.normalize(value);
+    _notificationHistoryLimit = next;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kNotificationHistoryLimit, next);
+    });
+    await _notifyPreferenceKeys(const [_kNotificationHistoryLimit]);
   }
 
   Future<void> setAutoArchiveCompletedDays(int days) async {
-    _autoArchiveCompletedDays = days.clamp(0, 365);
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kAutoArchiveCompletedDays, _autoArchiveCompletedDays);
-    _notifyPreferenceKeys(const [_kAutoArchiveCompletedDays]);
+    _markMutation();
+    final next = days.clamp(0, 365);
+    _autoArchiveCompletedDays = next;
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kAutoArchiveCompletedDays, next);
+    });
+    await _notifyPreferenceKeys(const [_kAutoArchiveCompletedDays]);
   }
 
   Future<void> setDailyReminderEnabled(bool value) async {
@@ -1117,6 +1297,7 @@ class PreferencesProvider extends ChangeNotifier {
     final nextSlot = value && currentSlot.kind == ReminderKind.off
         ? currentSlot.copyWith(enabled: true, kind: ReminderKind.push)
         : currentSlot.copyWith(enabled: value);
+    _markMutation();
     _dailyReminderEnabled = nextSlot.enabled;
     _dailyReminderKind = nextSlot.kind;
     _dailyReminderSlots = _replaceSlot(0, nextSlot);
@@ -1126,90 +1307,111 @@ class PreferencesProvider extends ChangeNotifier {
       changedKeys.add(_kDailyReminderKind);
     }
 
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReminderEnabled, nextSlot.enabled);
-    if (nextSlot.kind != currentSlot.kind) {
-      await p.setString(_kDailyReminderKind, nextSlot.kind.name);
-    }
-    _notifyPreferenceKeys(changedKeys);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReminderEnabled, nextSlot.enabled);
+      if (nextSlot.kind != currentSlot.kind) {
+        await p.setString(_kDailyReminderKind, nextSlot.kind.name);
+      }
+    });
+    await _notifyPreferenceKeys(changedKeys);
   }
 
   Future<void> setDailyReminderTime(int hour, int minute) async {
-    _dailyReminderHour = hour.clamp(0, 23);
-    _dailyReminderMinute = minute.clamp(0, 59);
+    _markMutation();
+    final nextHour = hour.clamp(0, 23);
+    final nextMinute = minute.clamp(0, 59);
+    _dailyReminderHour = nextHour;
+    _dailyReminderMinute = nextMinute;
     _dailyReminderSlots = _replaceSlot(
       0,
-      _dailyReminderSlots[0].copyWith(
-        hour: _dailyReminderHour,
-        minute: _dailyReminderMinute,
-      ),
+      _dailyReminderSlots[0].copyWith(hour: nextHour, minute: nextMinute),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setInt(_kDailyReminderHour, _dailyReminderHour);
-    await p.setInt(_kDailyReminderMinute, _dailyReminderMinute);
-    _notifyPreferenceKeys(const [_kDailyReminderHour, _kDailyReminderMinute]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setInt(_kDailyReminderHour, nextHour);
+      await p.setInt(_kDailyReminderMinute, nextMinute);
+    });
+    await _notifyPreferenceKeys(const [
+      _kDailyReminderHour,
+      _kDailyReminderMinute,
+    ]);
   }
 
   Future<void> setDailyReminderIncludeTodayTasks(bool value) async {
+    _markMutation();
     _dailyReminderIncludeTodayTasks = value;
     _dailyReminderSlots = _replaceSlot(
       0,
       _dailyReminderSlots[0].copyWith(includeTodayTasks: value),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReminderIncludeTodayTasks, value);
-    _notifyPreferenceKeys(const [_kDailyReminderIncludeTodayTasks]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReminderIncludeTodayTasks, value);
+    });
+    await _notifyPreferenceKeys(const [_kDailyReminderIncludeTodayTasks]);
   }
 
   Future<void> setDailyReminderIncludeTomorrowPlan(bool value) async {
+    _markMutation();
     _dailyReminderIncludeTomorrowPlan = value;
     _dailyReminderSlots = _replaceSlot(
       0,
       _dailyReminderSlots[0].copyWith(includeTomorrowPlan: value),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReminderIncludeTomorrowPlan, value);
-    _notifyPreferenceKeys(const [_kDailyReminderIncludeTomorrowPlan]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReminderIncludeTomorrowPlan, value);
+    });
+    await _notifyPreferenceKeys(const [_kDailyReminderIncludeTomorrowPlan]);
   }
 
   Future<void> setDailyReminderIncludeOverdue(bool value) async {
+    _markMutation();
     _dailyReminderIncludeOverdue = value;
     _dailyReminderSlots = _replaceSlot(
       0,
       _dailyReminderSlots[0].copyWith(includeOverdue: value),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReminderIncludeOverdue, value);
-    _notifyPreferenceKeys(const [_kDailyReminderIncludeOverdue]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReminderIncludeOverdue, value);
+    });
+    await _notifyPreferenceKeys(const [_kDailyReminderIncludeOverdue]);
   }
 
   Future<void> setDailyReminderRepeatDays(List<int> days) async {
     final normalized = days.where((d) => d >= 1 && d <= 7).toSet().toList()
       ..sort();
-    _dailyReminderRepeatDays = normalized.isEmpty
-        ? const [1, 2, 3, 4, 5, 6, 7]
-        : normalized;
+    _markMutation();
+    final next = normalized.isEmpty ? const [1, 2, 3, 4, 5, 6, 7] : normalized;
+    _dailyReminderRepeatDays = next;
     _dailyReminderSlots = _replaceSlot(
       0,
-      _dailyReminderSlots[0].copyWith(repeatDays: _dailyReminderRepeatDays),
+      _dailyReminderSlots[0].copyWith(repeatDays: next),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList(
-      _kDailyReminderRepeatDays,
-      _dailyReminderRepeatDays.map((d) => d.toString()).toList(),
-    );
-    _notifyPreferenceKeys(const [_kDailyReminderRepeatDays]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList(
+        _kDailyReminderRepeatDays,
+        next.map((d) => d.toString()).toList(),
+      );
+    });
+    await _notifyPreferenceKeys(const [_kDailyReminderRepeatDays]);
   }
 
   Future<void> setDailyReminderPauseHolidays(bool value) async {
+    _markMutation();
     _dailyReminderPauseHolidays = value;
     _dailyReminderSlots = _replaceSlot(
       0,
       _dailyReminderSlots[0].copyWith(pauseHolidays: value),
     );
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kDailyReminderPauseHolidays, value);
-    _notifyPreferenceKeys(const [_kDailyReminderPauseHolidays]);
+    await _runWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(_kDailyReminderPauseHolidays, value);
+    });
+    await _notifyPreferenceKeys(const [_kDailyReminderPauseHolidays]);
   }
 
   List<DailyReminderSlot> _replaceSlot(int index, DailyReminderSlot slot) {

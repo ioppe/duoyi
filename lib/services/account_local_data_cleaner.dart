@@ -5,21 +5,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Clears data that belongs to the signed-in account.
 ///
-/// Device-level settings such as locale and app lock are intentionally not
-/// listed here. Account data, sync metadata, notification history, backup
-/// targets and cached integration payloads must not survive logout or account
-/// switching.
+/// Device-level settings such as locale, app lock and the
+/// [devicePreferenceKeys] set are intentionally not listed here. Account data,
+/// sync metadata, notification history, backup targets and cached integration
+/// payloads must not survive logout or account switching.
 class AccountLocalDataCleaner {
   AccountLocalDataCleaner._();
 
   static const accountDataOwnerKey = 'duoyi_account_data_owner_v1';
   // 只有游客在外观页主动选择后才写入；登录/切换/退出仍将它一并清理。
   static const guestAppearanceMarkerKey = 'duoyi_guest_appearance_v1';
+
+  /// 设备级外观视图：只有“当前主题”和切换次数跟随设备。
+  /// 解锁名单、商店状态与奖励属于账号数据，仍按账号隔离清理。
   static const appearancePreferenceKeys = <String>{
     'active_brand',
     'theme_switch_count',
-    'theme_unlocked_brands',
-    'theme_shop_state',
   };
   static int _accountDataGeneration = 0;
 
@@ -32,6 +33,83 @@ class AccountLocalDataCleaner {
   static void invalidateInFlightAccountWrites() {
     _accountDataGeneration++;
   }
+
+  /// 设备/用户习惯偏好：只描述“这台设备怎么用”，不承载账号业务数据，
+  /// 因此登出与切号都保留。账号私有的提醒调度注册表、通知历史等仍按账号清理。
+  ///
+  /// 动态键 `pref_daily_reminder_slot{2,3}_*` 与
+  /// `pref_reminder_ringtone_fallback_channel_sound_*` 同属设备习惯；
+  /// 这里不再声明任何 `pref` 清理前缀，因此它们的任意取值都不会被清掉。
+  static const devicePreferenceKeys = <String>{
+    'active_brand',
+    'theme_switch_count',
+    'pref_show_home_calendar',
+    'pref_pomodoro_floating_window_size',
+    'pref_haptic_feedback',
+    'pref_show_lunar',
+    'pref_show_completed_todos',
+    'pref_quick_capture_fab',
+    'pref_notification_quick_add',
+    'pref_notification_today_progress',
+    'pref_notification_history_limit',
+    'pref_daily_reminder_enabled',
+    'pref_daily_reminder_today_tasks',
+    'pref_daily_reminder_tomorrow_plan',
+    'pref_daily_reminder_overdue',
+    'pref_daily_reminder_pause_holidays',
+    'pref_daily_reminder_slot2_enabled',
+    'pref_daily_reminder_slot2_today',
+    'pref_daily_reminder_slot2_tomorrow',
+    'pref_daily_reminder_slot2_overdue',
+    'pref_daily_reminder_slot2_pause_holidays',
+    'pref_daily_reminder_slot3_enabled',
+    'pref_daily_reminder_slot3_today',
+    'pref_daily_reminder_slot3_tomorrow',
+    'pref_daily_reminder_slot3_overdue',
+    'pref_daily_reminder_slot3_pause_holidays',
+    'pref_daily_report_reminder',
+    'pref_weekly_report_reminder',
+    'pref_monthly_report_reminder',
+    'pref_yearly_report_reminder',
+    'pref_first_day_of_week',
+    'pref_default_tab',
+    'pref_default_pomodoro_minutes',
+    'pref_auto_archive_completed_days',
+    'pref_daily_reminder_hour',
+    'pref_daily_reminder_minute',
+    'pref_daily_reminder_slot2_hour',
+    'pref_daily_reminder_slot2_minute',
+    'pref_daily_reminder_slot3_hour',
+    'pref_daily_reminder_slot3_minute',
+    'pref_daily_report_reminder_hour',
+    'pref_daily_report_reminder_minute',
+    'pref_weekly_report_reminder_weekday',
+    'pref_weekly_report_reminder_hour',
+    'pref_weekly_report_reminder_minute',
+    'pref_monthly_report_reminder_day',
+    'pref_monthly_report_reminder_hour',
+    'pref_monthly_report_reminder_minute',
+    'pref_yearly_report_reminder_month',
+    'pref_yearly_report_reminder_day',
+    'pref_yearly_report_reminder_hour',
+    'pref_yearly_report_reminder_minute',
+    'pref_reminder_ringtone_volume_percent',
+    'pref_reminder_ringtone_alarm_migrated_to_soft',
+    'pref_reminder_ringtone_sound',
+    'pref_date_format',
+    'pref_app_timezone_iana',
+    'pref_app_timezone_mode',
+    'pref_daily_reminder_kind',
+    'pref_daily_reminder_slot2_kind',
+    'pref_daily_reminder_slot3_kind',
+    'pref_daily_reminder_repeat_days',
+    'pref_daily_reminder_slot2_repeat_days',
+    'pref_daily_reminder_slot3_repeat_days',
+    'pref_bottom_nav_order',
+    'pref_bottom_nav_visible',
+    'pref_web_navigation_v2',
+    'pref_focus_navigation_v1',
+  };
 
   static const accountScopedKeys = <String>{
     accountDataOwnerKey,
@@ -59,8 +137,7 @@ class AccountLocalDataCleaner {
     'duoyi_virtual_rewards',
     'duoyi_custom_focus_sounds',
     'duoyi_focus_rooms',
-    'active_brand',
-    'theme_switch_count',
+    // 解锁名单与商店状态属于账号奖励，不随设备保留。
     'theme_unlocked_brands',
     'theme_shop_state',
     'duoyi_quick_capture_templates_v1',
@@ -96,78 +173,11 @@ class AccountLocalDataCleaner {
     'sync_preferences_changed_keys',
     'sync_quick_capture_templates_updated_at',
     'sync_merge_decisions',
-    'pref_haptic_feedback',
-    'pref_show_lunar',
-    'pref_show_completed_todos',
-    'pref_quick_capture_fab',
-    'pref_notification_quick_add',
-    'pref_notification_today_progress',
-    'pref_daily_reminder_enabled',
-    'pref_daily_reminder_today_tasks',
-    'pref_daily_reminder_tomorrow_plan',
-    'pref_daily_reminder_overdue',
-    'pref_daily_reminder_pause_holidays',
-    'pref_daily_reminder_slot2_enabled',
-    'pref_daily_reminder_slot2_today',
-    'pref_daily_reminder_slot2_tomorrow',
-    'pref_daily_reminder_slot2_overdue',
-    'pref_daily_reminder_slot2_pause_holidays',
-    'pref_daily_reminder_slot3_enabled',
-    'pref_daily_reminder_slot3_today',
-    'pref_daily_reminder_slot3_tomorrow',
-    'pref_daily_reminder_slot3_overdue',
-    'pref_daily_reminder_slot3_pause_holidays',
-    'pref_daily_report_reminder',
-    'pref_weekly_report_reminder',
-    'pref_monthly_report_reminder',
-    'pref_yearly_report_reminder',
-    'pref_first_day_of_week',
-    'pref_default_tab',
-    'pref_default_pomodoro_minutes',
-    'pref_notification_history_limit',
-    'pref_auto_archive_completed_days',
-    'pref_daily_reminder_hour',
-    'pref_daily_reminder_minute',
-    'pref_daily_reminder_slot2_hour',
-    'pref_daily_reminder_slot2_minute',
-    'pref_daily_reminder_slot3_hour',
-    'pref_daily_reminder_slot3_minute',
-    'pref_daily_report_reminder_hour',
-    'pref_daily_report_reminder_minute',
-    'pref_weekly_report_reminder_weekday',
-    'pref_weekly_report_reminder_hour',
-    'pref_weekly_report_reminder_minute',
-    'pref_monthly_report_reminder_day',
-    'pref_monthly_report_reminder_hour',
-    'pref_monthly_report_reminder_minute',
-    'pref_yearly_report_reminder_month',
-    'pref_yearly_report_reminder_day',
-    'pref_yearly_report_reminder_hour',
-    'pref_yearly_report_reminder_minute',
-    'pref_reminder_ringtone_volume_percent',
-    'pref_reminder_ringtone_alarm_migrated_to_soft',
-    'pref_date_format',
-    'pref_app_timezone_iana',
-    'pref_app_timezone_mode',
-    'pref_daily_reminder_kind',
-    'pref_daily_reminder_slot2_kind',
-    'pref_daily_reminder_slot3_kind',
-    'pref_reminder_ringtone_sound',
-    'pref_daily_reminder_repeat_days',
-    'pref_daily_reminder_slot2_repeat_days',
-    'pref_daily_reminder_slot3_repeat_days',
-    'pref_bottom_nav_order',
-    'pref_bottom_nav_visible',
-    'pref_web_navigation_v2',
-    'pref_focus_navigation_v1',
   };
 
   static const accountScopedPrefixes = <String>[
     'sync_',
     'widget_display_mode_',
-    'pref_daily_reminder_slot',
-    'pref_reminder_ringtone_fallback_channel_sound_',
-    'pref_reminder_ringtone_fallback_channel_sound_schema_',
     'duoyi_ics_',
     'duoyi_ics_events_',
     'duoyi_oauth_calendar_',

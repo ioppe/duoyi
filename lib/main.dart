@@ -443,6 +443,9 @@ void main() async {
         critical: true,
       );
       await clearLocalFiles();
+      // 偏好与 active_brand 属于设备习惯，第二遍清理后按磁盘重载，
+      // 让内存与磁盘一致；theme_shop_state 已随账号数据清掉。
+      await guarded('theme reload', themeProvider.loadFromStorage);
     });
 
     if (!localFilesCleaned) retryLocalFilesCleanup();
@@ -926,7 +929,7 @@ void main() async {
       notificationService.cancelCalendarReminder;
   preferencesProvider.onChangedKeys = cloudSyncProvider.markPreferencesChanged;
   ReminderRingtoneSettings.onChanged = (keys) {
-    cloudSyncProvider.markPreferencesChanged(keys);
+    final persisted = cloudSyncProvider.markPreferencesChanged(keys);
     if (keys.contains(ReminderRingtoneSettings.soundPreferenceKey) ||
         keys.contains(ReminderRingtoneSettings.volumePreferenceKey)) {
       unawaited(() async {
@@ -937,6 +940,7 @@ void main() async {
         );
       }());
     }
+    return persisted;
   };
   quickCaptureTemplateProvider.addListener(
     cloudSyncProvider.markQuickCaptureTemplatesChanged,

@@ -414,7 +414,7 @@ void main() {
       expect(auth.state.coinBalance, 0);
       expect(persisted['user_id'], 'test-id');
       expect(prefs.getString('habits'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      expect(prefs.getString('active_brand'), 'admin-theme');
       expect(prefs.getString('theme_shop_state'), isNull);
       expect(prefs.getString('duoyi_virtual_rewards'), isNull);
       expect(
@@ -488,7 +488,7 @@ void main() {
       expect(auth.state.token, 'new-token');
       expect(auth.state.coinBalance, 0);
       expect(prefs.getString('habits'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      expect(prefs.getString('active_brand'), 'old-theme');
       expect(prefs.getString('duoyi_virtual_rewards'), isNull);
     },
   );
@@ -546,7 +546,7 @@ void main() {
       expect(auth.state.isLoggedIn, isFalse);
       expect(prefs.getString('auth_state'), isNull);
       expect(prefs.getString('habits'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      expect(prefs.getString('active_brand'), 'admin-theme');
       expect(prefs.getString('duoyi_virtual_rewards'), isNull);
       expect(
         prefs.getString(
@@ -605,7 +605,7 @@ void main() {
       expect(auth.state.userId, 'test-id');
       expect(auth.state.token, 'test-token');
       expect(prefs.getString('habits'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      expect(prefs.getString('active_brand'), 'admin-theme');
       expect(prefs.getString('duoyi_virtual_rewards'), isNull);
       expect(
         prefs.getString(
@@ -636,7 +636,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(auth.state.isLoggedIn, isFalse);
     expect(prefs.getString('habits'), isNull);
-    expect(prefs.getString('active_brand'), isNull);
+    expect(prefs.getString('active_brand'), 'admin-theme');
     expect(prefs.getString('duoyi_virtual_rewards'), isNull);
     expect(
       prefs.getString(

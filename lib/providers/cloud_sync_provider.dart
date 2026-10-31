@@ -156,6 +156,7 @@ class CloudSyncProvider extends ChangeNotifier {
   String? _pendingPreferencesUpdatedAt;
   final Set<String> _pendingPreferenceKeys = <String>{};
   bool _pendingPreferencesFullSync = false;
+  Future<void>? _preferenceMarkTail;
   String? _pendingQuickCaptureTemplatesUpdatedAt;
 
   /// 按集合的解码缓存：原始存储内容不变时复用解码结果与哈希，
@@ -288,21 +289,52 @@ class CloudSyncProvider extends ChangeNotifier {
     _scheduleAutoSync();
   }
 
-  void markPreferencesChanged([Iterable<String>? keys]) {
+  /// 标记偏好改动，并等待标记（时间戳、changed keys、待同步状态）落盘。
+  ///
+  /// 并发调用串行写入，且写入时读取“当前最新”的待同步状态，
+  /// 因此旧调用的落盘不会覆盖后来者的标记。
+  Future<void> markPreferencesChanged([Iterable<String>? keys]) async {
     if (_suppressDirtyMark) return;
     final normalizedKeys = _normalizePreferenceChangedKeys(keys);
     if (keys != null && normalizedKeys.isEmpty) return;
-    final stamp = DateTime.now().toUtc().toIso8601String();
-    _pendingPreferencesUpdatedAt = stamp;
-    unawaited(_persistSyncStamp(_preferencesUpdatedAtStorageKey, stamp));
+    _pendingPreferencesUpdatedAt = DateTime.now().toUtc().toIso8601String();
     if (keys == null) {
       _pendingPreferencesFullSync = true;
       _pendingPreferenceKeys.clear();
     } else if (!_pendingPreferencesFullSync) {
       _pendingPreferenceKeys.addAll(normalizedKeys);
     }
-    unawaited(_persistPreferenceChangedKeys());
     markPendingLocalChange();
+    await _persistPreferenceMark(_accountGeneration);
+  }
+
+  Future<void> _persistPreferenceMark(int generation) async {
+    final previous = _preferenceMarkTail;
+    final completer = Completer<void>();
+    final active = completer.future;
+    _preferenceMarkTail = active;
+    try {
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {
+          // 前一次标记写入的失败已传播给它的调用方，队列继续前进。
+        }
+      }
+      // 切号/清理之后，旧 generation 不得重建旧账号的待同步标记。
+      if (!_isCurrentAccountGeneration(generation)) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (!_isCurrentAccountGeneration(generation)) return;
+      final stamp = _pendingPreferencesUpdatedAt;
+      if (stamp != null) {
+        await prefs.setString(_preferencesUpdatedAtStorageKey, stamp);
+      }
+      await _persistPreferenceChangedKeys();
+      await _writePendingChanges(prefs, true);
+    } finally {
+      completer.complete();
+      if (identical(_preferenceMarkTail, active)) _preferenceMarkTail = null;
+    }
   }
 
   void markQuickCaptureTemplatesChanged() {
@@ -545,6 +577,16 @@ class CloudSyncProvider extends ChangeNotifier {
     final activeWriteback = _activeLocalWriteback;
     if (activeWriteback != null) {
       await activeWriteback;
+    }
+    // 等旧的 preferences 标记尾巴写完。这些写入受 account generation 保护，
+    // 不会在切号/清理之后重建旧账号的待同步标记。
+    final preferenceMarkTail = _preferenceMarkTail;
+    if (preferenceMarkTail != null) {
+      try {
+        await preferenceMarkTail;
+      } catch (_) {
+        // 旧账号标记写入失败不应阻塞切号清理。
+      }
     }
     _isSyncing = false;
     _syncQueued = false;
@@ -2383,6 +2425,11 @@ class CloudSyncProvider extends ChangeNotifier {
     }
   }
 
+  /// 远端 preferences 是否比本地更旧。
+  ///
+  /// 旧实现只要没有 pending keys 就直接接受远端，会把“本地已更新、只是不再
+  /// 带待同步标记”的设备/习惯配置回滚成旧云端值。现在只要本地有合法 UTC
+  /// 时间戳且比远端新就保留本地；远端确实更新时仍照常应用。
   bool _remotePreferencesAreOlderThanLocal(
     SharedPreferences prefs,
     Map<String, dynamic> remotePayload,
@@ -2392,13 +2439,13 @@ class CloudSyncProvider extends ChangeNotifier {
         prefs.getString(_preferencesUpdatedAtStorageKey) ??
         '';
     final remoteUpdatedAt = remotePayload['updatedAt']?.toString() ?? '';
-    final hasPendingKeys =
-        _pendingPreferencesFullSync ||
-        _pendingPreferenceKeys.isNotEmpty ||
-        _readPendingPreferenceChangedKeys(prefs).isNotEmpty;
-    if (!hasPendingKeys) return false;
-    if (localUpdatedAt.isNotEmpty && remoteUpdatedAt.isEmpty) return true;
-    if (localUpdatedAt.isEmpty || remoteUpdatedAt.isEmpty) return false;
+    if (localUpdatedAt.isEmpty) return false;
+    if (remoteUpdatedAt.isEmpty) {
+      // 远端没有时间戳可比较时，只有本地仍有待同步内容才拒绝远端。
+      return _pendingPreferencesFullSync ||
+          _pendingPreferenceKeys.isNotEmpty ||
+          _readPendingPreferenceChangedKeys(prefs).isNotEmpty;
+    }
     return _timestampGt(localUpdatedAt, remoteUpdatedAt);
   }
 

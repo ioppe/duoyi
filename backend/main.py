@@ -48,7 +48,7 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.6"
+API_CONTRACT_VERSION = "2026-06-01.7"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_code_login_gating": True,
@@ -59,6 +59,7 @@ API_CONTRACT_FEATURES = {
     "profile_update": True,
     "password_change": True,
     "auth_session": True,
+    "persistent_login_sessions": True,
     "access_tokens": True,
     "admin_coins": True,
     "admin_groups": True,
@@ -170,6 +171,7 @@ ADMIN_BOOTSTRAP_PASSWORD = SETTINGS.admin_bootstrap_password
 TOKENS: dict[str, str] = {}  # user_id -> token
 TOKEN_LAST_ACTIVE: dict[str, datetime] = {}
 ACCESS_TOKEN_LIMIT = 50  # Active, unexpired tokens per account.
+LOGIN_SESSION_TTL = timedelta(days=30)  # Fixed lifetime of a login session.
 SESSION_ONLINE_SECONDS = SETTINGS.session_online_seconds
 FOCUS_ROOM_ONLINE_SECONDS = SETTINGS.focus_room_online_seconds
 FOCUS_ROOM_MAX_WEEKLY_SECONDS = SETTINGS.focus_room_max_weekly_seconds
@@ -288,9 +290,36 @@ def _touch_session(user_id: str) -> None:
         db.close()
 
 
-def _drop_session(user_id: str) -> None:
+def _hash_login_session_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _clear_session_cache(user_id: str) -> None:
+    """Drop the compatibility cache alias; the database row stays authoritative."""
     TOKENS.pop(user_id, None)
     TOKEN_LAST_ACTIVE.pop(user_id, None)
+
+
+def _forget_cached_token(token: str) -> None:
+    """Forget a cached credential the database no longer accepts."""
+    for user_id, cached in list(TOKENS.items()):
+        if isinstance(cached, str) and secrets.compare_digest(cached, token):
+            _clear_session_cache(user_id)
+
+
+def _drop_session(user_id: str, db=None) -> None:
+    """Revoke the account's persistent login session and its cache alias."""
+    _clear_session_cache(user_id)
+    own_connection = db is None
+    if own_connection:
+        db = get_db()
+    try:
+        db.execute("DELETE FROM login_sessions WHERE user_id=?", (user_id,))
+        if own_connection:
+            db.commit()
+    finally:
+        if own_connection:
+            db.close()
 
 
 def _hash_access_token(token: str) -> str:
@@ -299,11 +328,12 @@ def _hash_access_token(token: str) -> str:
 
 def _revoke_user_token(user_id: str, db=None) -> None:
     """Invalidate all credentials for account security changes, in one transaction."""
-    _drop_session(user_id)
+    _clear_session_cache(user_id)
     own_connection = db is None
     if own_connection:
         db = get_db()
     try:
+        db.execute("DELETE FROM login_sessions WHERE user_id=?", (user_id,))
         db.execute(
             "UPDATE access_tokens SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL",
             (_utc_now_text(), user_id),
@@ -332,20 +362,38 @@ def _online_user_ids(
         if ids is not None:
             user_filter = "AND u.id IN (" + ",".join("?" for _ in ids) + ")"
             params.extend(ids)
-        # One batch for enabled users and their recently used, unrevoked PATs.
+        # One batch for enabled users, their recent login session and recent PATs.
         rows = db.execute(
-            "SELECT u.id, t.last_used_at, t.expires_at FROM users u "
+            "SELECT u.id, t.last_used_at, t.expires_at, "
+            "s.last_used_at AS session_last_used_at, s.expires_at AS session_expires_at "
+            "FROM users u "
             "LEFT JOIN access_tokens t ON t.user_id=u.id AND t.revoked_at IS NULL "
-            "AND t.last_used_at>=? WHERE u.is_disabled=0 " + user_filter,
+            "AND t.last_used_at>=? "
+            "LEFT JOIN login_sessions s ON s.user_id=u.id "
+            "WHERE u.is_disabled=0 " + user_filter,
             params,
         ).fetchall()
         online = set()
         for row in rows:
             user_id = row["id"]
             session_activity = TOKEN_LAST_ACTIVE.get(user_id)
-            if user_id in TOKENS and session_activity is not None and session_activity >= cutoff:
-                online.add(user_id)
-                continue
+            if user_id in TOKENS:
+                # A cached alias stays authoritative for this process' live session.
+                if session_activity is not None and session_activity >= cutoff:
+                    online.add(user_id)
+                    continue
+            else:
+                # After a restart the persisted session carries recent activity.
+                session_last_used = _parse_server_time(row["session_last_used_at"])
+                session_expires = _parse_server_time(row["session_expires_at"])
+                if (
+                    session_last_used is not None
+                    and session_last_used >= cutoff
+                    and session_expires is not None
+                    and session_expires > now
+                ):
+                    online.add(user_id)
+                    continue
             last_used = _parse_server_time(row["last_used_at"])
             expires_at = _parse_server_time(row["expires_at"])
             if last_used is not None and last_used >= cutoff and (
@@ -1668,6 +1716,16 @@ def _initialize_database(conn, fresh_database: bool):
             FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY(friend_user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS login_sessions (
+            user_id TEXT PRIMARY KEY,
+            token_hash TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            last_used_at TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_login_sessions_expires
+            ON login_sessions(expires_at);
         """
     # This static schema contains only table/index definitions. Execute each
     # statement in the caller's transaction; executescript would commit it first.
@@ -3148,14 +3206,25 @@ def _verify_token_in_db(db, token: Optional[str], *, expected_user_id: Optional[
     """Validate the original credential using the caller's write transaction."""
     if not token:
         raise HTTPException(status_code=401, detail="Missing token")
-    user_id = next((uid for uid, t in TOKENS.items() if t == token), None)
+    session = db.execute(
+        "SELECT * FROM login_sessions WHERE token_hash=?",
+        (_hash_login_session_token(token),),
+    ).fetchone()
     access_token = None
-    if user_id is None:
+    if session is not None:
+        # The persisted session row is authoritative; never trust the cache alone.
+        expires_at = _parse_server_time(session["expires_at"])
+        if expires_at is None or expires_at <= _utc_now():
+            _forget_cached_token(token)
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        user_id = session["user_id"]
+    else:
         access_token = db.execute(
             "SELECT * FROM access_tokens WHERE token_hash=?",
             (_hash_access_token(token),),
         ).fetchone()
         if access_token is None or access_token["revoked_at"] is not None:
+            _forget_cached_token(token)
             raise HTTPException(status_code=401, detail="Invalid or expired token")
         expires_at = _parse_server_time(access_token["expires_at"])
         if access_token["expires_at"] is not None and (
@@ -3167,7 +3236,7 @@ def _verify_token_in_db(db, token: Optional[str], *, expected_user_id: Optional[
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     row = db.execute("SELECT is_disabled FROM users WHERE id=?", (user_id,)).fetchone()
     if row is None:
-        _drop_session(user_id)
+        _drop_session(user_id, db)
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     if row["is_disabled"]:
         _revoke_user_token(user_id, db)
@@ -3188,6 +3257,11 @@ def _verify_token_value(token: Optional[str]) -> str:
             db.execute(
                 "UPDATE access_tokens SET last_used_at=? WHERE id=?",
                 (now_text, access_token["id"]),
+            )
+        else:
+            db.execute(
+                "UPDATE login_sessions SET last_used_at=? WHERE user_id=? AND token_hash=?",
+                (now_text, user_id, _hash_login_session_token(token or "")),
             )
         db.execute("UPDATE users SET last_active_at=? WHERE id=?", (now_text, user_id))
         db.commit()
@@ -5833,18 +5907,31 @@ def _auth_payload(data: dict) -> dict:
     return {"user": data, **data}
 
 
-def _issue_login_session(db, row, *, action: str) -> dict:
+def _issue_login_session(db, row, *, action: str, audit: bool = True) -> dict:
+    """Persist the account's single login session, then refresh the cache alias."""
     token = secrets.token_hex(32)
-    TOKENS[row["id"]] = token
     now = _utc_now()
     now_text = _format_utc(now)
-    TOKEN_LAST_ACTIVE[row["id"]] = now
+    db.execute(
+        "INSERT OR REPLACE INTO login_sessions(user_id, token_hash, created_at, expires_at, last_used_at) "
+        "VALUES(?,?,?,?,NULL)",
+        (
+            row["id"],
+            _hash_login_session_token(token),
+            now_text,
+            _format_utc(now + LOGIN_SESSION_TTL),
+        ),
+    )
     db.execute(
         "UPDATE users SET last_login_at=?, last_active_at=? WHERE id=?",
         (now_text, now_text, row["id"]),
     )
-    _audit(db, row["id"], row["username"], action)
+    if audit:
+        _audit(db, row["id"], row["username"], action)
     db.commit()
+    # Only a committed session may enter the compatibility cache.
+    TOKENS[row["id"]] = token
+    TOKEN_LAST_ACTIVE[row["id"]] = now
     fresh = db.execute("SELECT * FROM users WHERE id=?", (row["id"],)).fetchone()
     return _auth_payload(_user_response(fresh, token=token, db=db))
 
@@ -5970,12 +6057,9 @@ def register(req: RegisterRequest):
             )
 
         _audit(db, user_id, username, "register", user_id)
-        db.commit()
-        token = secrets.token_hex(32)
-        TOKENS[user_id] = token
-        TOKEN_LAST_ACTIVE[user_id] = _utc_now()
         row = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
-        return _auth_payload(_user_response(row, token=token, db=db))
+        # Same transaction: the registration audit and the initial session commit together.
+        return _issue_login_session(db, row, action="register", audit=False)
     finally:
         db.close()
 
@@ -6789,21 +6873,31 @@ def logout(
     user_id: str = Depends(_verify_token),
     authorization: Optional[str] = Header(None),
 ):
-    if isinstance(authorization, str):
-        db = get_db()
-        try:
+    db = get_db()
+    try:
+        revoked_pat = False
+        if isinstance(authorization, str):
             result = db.execute(
                 "UPDATE access_tokens SET revoked_at=COALESCE(revoked_at, ?) "
                 "WHERE user_id=? AND token_hash=?",
                 (_utc_now_text(), user_id, _hash_access_token(authorization[7:])),
             )
-            db.commit()
-            if result.rowcount:
-                return {"status": "ok"}
-        finally:
-            db.close()
-    _drop_session(user_id)
-    return {"status": "ok"}
+            revoked_pat = bool(result.rowcount)
+        if not revoked_pat:
+            # A request authenticated before a new login must not revoke the new session.
+            if isinstance(authorization, str):
+                token = authorization[7:]
+                db.execute(
+                    "DELETE FROM login_sessions WHERE user_id=? AND token_hash=?",
+                    (user_id, _hash_login_session_token(token)),
+                )
+                _forget_cached_token(token)
+            else:
+                _drop_session(user_id, db)
+        db.commit()
+        return {"status": "ok"}
+    finally:
+        db.close()
 
 
 # ---- Focus Rooms ----

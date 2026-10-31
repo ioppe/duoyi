@@ -45,18 +45,19 @@ void main() {
       expect(prefs.containsKey('${prefix}legacy'), isFalse, reason: prefix);
     }
     expect(prefs.containsKey('sync_future_metadata'), isFalse);
-    expect(prefs.containsKey('pref_daily_reminder_slot9_enabled'), isFalse);
+    // 动态 pref 键属于设备习惯：不再声明 pref 清理前缀后必须保留。
+    expect(prefs.getBool('pref_daily_reminder_slot9_enabled'), isTrue);
     expect(
-      prefs.containsKey(
+      prefs.getString(
         'pref_reminder_ringtone_fallback_channel_sound_duoyi_general_alerts_v18',
       ),
-      isFalse,
+      'duoyi_soft',
     );
     expect(
-      prefs.containsKey(
+      prefs.getInt(
         'pref_reminder_ringtone_fallback_channel_sound_schema_duoyi_general_alerts_v18',
       ),
-      isFalse,
+      2,
     );
     expect(prefs.containsKey('duoyi_ics_events_work'), isFalse);
     expect(prefs.containsKey('duoyi_oauth_calendar_events_google'), isFalse);
@@ -100,7 +101,14 @@ void main() {
       'habits': '[{"title":"admin habit"}]',
       'user_profile': '{"coin_balance":999}',
       'active_brand': 'admin-theme',
+      'theme_switch_count': 12,
       'theme_unlocked_brands': <String>['admin-brand'],
+      'theme_shop_state': '{"activeBrand":"admin-theme"}',
+      'pref_show_lunar': false,
+      'pref_first_day_of_week': 7,
+      'pref_date_format': 'dd/MM/yyyy',
+      'pref_bottom_nav_order': <String>['1', '0'],
+      'pref_app_timezone_iana': 'Asia/Tokyo',
       'duoyi_notif_history': '[{"title":"admin notification"}]',
       'ai_review_history': '[{"summary":"admin review"}]',
       'sync_pending_local_changes': true,
@@ -127,8 +135,17 @@ void main() {
     expect(prefs.getString('todos'), isNull);
     expect(prefs.getString('habits'), isNull);
     expect(prefs.getString('user_profile'), isNull);
-    expect(prefs.getString('active_brand'), isNull);
+    // 设备视图选择与设备习惯保留。
+    expect(prefs.getString('active_brand'), 'admin-theme');
+    expect(prefs.getInt('theme_switch_count'), 12);
+    expect(prefs.getBool('pref_show_lunar'), isFalse);
+    expect(prefs.getInt('pref_first_day_of_week'), 7);
+    expect(prefs.getString('pref_date_format'), 'dd/MM/yyyy');
+    expect(prefs.getStringList('pref_bottom_nav_order'), <String>['1', '0']);
+    expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
+    // 账号奖励/商店状态与通知历史仍按账号清理。
     expect(prefs.getStringList('theme_unlocked_brands'), isNull);
+    expect(prefs.getString('theme_shop_state'), isNull);
     expect(prefs.getString('duoyi_notif_history'), isNull);
     expect(prefs.getString('ai_review_history'), isNull);
     expect(prefs.getBool('sync_pending_local_changes'), isNull);
@@ -170,8 +187,8 @@ void main() {
           'duoyi_caldav_write_target_v1',
           'duoyi_caldav_pushed_uids_v1',
           'duoyi_caldav_pushed_etags_v1',
-          'pref_daily_reminder_kind',
-          'pref_daily_reminder_repeat_days',
+          'theme_unlocked_brands',
+          'theme_shop_state',
         ]),
       );
       expect(
@@ -195,6 +212,42 @@ void main() {
       );
     },
   );
+
+  test('设备偏好与设备外观视图不属于账号清理范围', () {
+    final accountKeys = AccountLocalDataCleaner.accountScopedKeys;
+    expect(
+      accountKeys.where((key) => key.startsWith('pref_')),
+      isEmpty,
+      reason: 'pref_* 是设备/用户习惯，不应按账号清理',
+    );
+    expect(
+      AccountLocalDataCleaner.accountScopedPrefixes.where(
+        (prefix) => prefix.startsWith('pref_'),
+      ),
+      isEmpty,
+    );
+    expect(
+      AccountLocalDataCleaner.devicePreferenceKeys.intersection(accountKeys),
+      isEmpty,
+    );
+    for (final key in const [
+      'active_brand',
+      'theme_switch_count',
+      'pref_show_lunar',
+      'pref_date_format',
+      'pref_first_day_of_week',
+      'pref_bottom_nav_order',
+      'pref_daily_reminder_hour',
+      'pref_app_timezone_iana',
+      'pref_reminder_ringtone_sound',
+    ]) {
+      expect(
+        AccountLocalDataCleaner.devicePreferenceKeys,
+        contains(key),
+        reason: key,
+      );
+    }
+  });
 
   test(
     'account cleanup entrypoint clears native schedulers and service caches',

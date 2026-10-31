@@ -55,7 +55,7 @@ void main() {
     final auth = AuthProvider();
     await auth.loadFromStorage(refreshServerConfig: false);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('active_brand'), isNull);
+    expect(prefs.getString('active_brand'), 're0');
     expect(prefs.getString('theme_shop_state'), isNull);
     expect(
       prefs.getBool(AccountLocalDataCleaner.guestAppearanceMarkerKey),
@@ -72,7 +72,7 @@ void main() {
     final auth = AuthProvider();
     await auth.loadFromStorage(refreshServerConfig: false);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('active_brand'), isNull);
+    expect(prefs.getString('active_brand'), 're0');
     expect(prefs.getString('theme_shop_state'), isNull);
     auth.dispose();
   });
@@ -85,7 +85,7 @@ void main() {
       prefs.getBool(AccountLocalDataCleaner.guestAppearanceMarkerKey),
       isNull,
     );
-    expect(prefs.getString('active_brand'), isNull);
+    expect(prefs.getString('active_brand'), 're0');
     expect(prefs.getString('theme_shop_state'), isNull);
   });
 }

@@ -199,8 +199,11 @@ void main() {
     expect(mainSource, contains('ReminderRingtoneSettings.onChanged = (keys)'));
     expect(
       mainSource,
-      contains('cloudSyncProvider.markPreferencesChanged(keys);'),
+      contains(
+        'final persisted = cloudSyncProvider.markPreferencesChanged(keys);',
+      ),
     );
+    expect(mainSource, contains('return persisted;'));
     expect(
       mainSource,
       isNot(
@@ -955,7 +958,8 @@ void main() {
       'locationReminderProvider.addListener(syncLocationGeofences);',
       'preferencesProvider.onChangedKeys = cloudSyncProvider.markPreferencesChanged;',
       'ReminderRingtoneSettings.onChanged = (keys)',
-      'cloudSyncProvider.markPreferencesChanged(keys);',
+      'final persisted = cloudSyncProvider.markPreferencesChanged(keys);',
+      'return persisted;',
       'await ReminderRingtoneSettings.applyPersistedSettingsToNative();',
     ]) {
       expect(mainSource, contains(field), reason: field);
@@ -972,7 +976,7 @@ void main() {
 
     for (final field in const [
       'static const _preferencesChangedKeysStorageKey',
-      'void markPreferencesChanged([Iterable<String>? keys])',
+      'Future<void> markPreferencesChanged([Iterable<String>? keys])',
       'if (keys != null && normalizedKeys.isEmpty) return;',
       'final changedKeys = _readPendingPreferenceChangedKeys(prefs);',
       "if (changedKeys.isNotEmpty) 'changedKeys': changedKeys",
@@ -990,8 +994,8 @@ void main() {
       'lib/services/reminder_ringtone_settings.dart',
     ).readAsStringSync();
     for (final field in const [
-      'void Function(Iterable<String> keys)? onChangedKeys;',
-      'onChangedKeys?.call(cleanKeys);',
+      'FutureOr<void> Function(Iterable<String> keys)? onChangedKeys;',
+      'await callback(cleanKeys);',
       '_notifyPreferenceKeys(const [_kFirstDayOfWeek]);',
       '_notifyPreferenceKeys(_dailyReminderSlotKeys(index));',
       '_notifyPreferenceKeys(const [_kBottomNavVisible]);',
@@ -1000,9 +1004,9 @@ void main() {
       expect(preferencesProvider, contains(field), reason: field);
     }
     for (final field in const [
-      'static void Function(Iterable<String> keys)? onChanged;',
-      'onChanged?.call(const [volumePreferenceKey]);',
-      'onChanged?.call(const [soundPreferenceKey]);',
+      'static FutureOr<void> Function(Iterable<String> keys)? onChanged;',
+      'await onChanged?.call(const [volumePreferenceKey]);',
+      'await onChanged?.call(const [soundPreferenceKey]);',
     ]) {
       expect(ringtoneSettings, contains(field), reason: field);
     }
@@ -1191,6 +1195,97 @@ void main() {
       'await _persist();',
       'notifyListeners();',
     );
+  });
+
+  test('无待同步标记时较旧的云端偏好不会回滚本地设备设置', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_show_lunar': false,
+      'pref_date_format': 'dd/MM/yyyy',
+      'sync_preferences_updated_at': '2026-06-10T00:00:00.000Z',
+      'todos': '[]',
+    });
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/sync') {
+          return http.Response(
+            json.encode({
+              'server_updated_at': '2026-06-11T00:00:00.000Z',
+              'server_version': 2,
+              'todos': [
+                {
+                  'id': 'remote-todo',
+                  'title': '远端待办',
+                  'updatedAt': '2026-06-11T00:00:00.000Z',
+                },
+              ],
+              'preferences': {
+                'updatedAt': '2026-06-05T00:00:00.000Z',
+                'values': {'pref_show_lunar': true},
+              },
+            }),
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 200);
+      }),
+    );
+    final provider = CloudSyncProvider();
+    provider.apiClientGetter = () => client;
+    provider.serverConfigGetter = () => {'backup_enabled': true};
+
+    await provider.syncNow();
+
+    final prefs = await SharedPreferences.getInstance();
+    // 旧云端偏好被拒绝，业务条目仍应用。
+    expect(prefs.getBool('pref_show_lunar'), isFalse);
+    expect(prefs.getString('pref_date_format'), 'dd/MM/yyyy');
+    // 业务条目仍照常消费远端新值。
+    expect(prefs.getString('todos'), contains('remote-todo'));
+
+    provider.dispose();
+  });
+
+  test('较新的云端偏好仍会应用到本地', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_show_lunar': false,
+      'sync_preferences_updated_at': '2026-06-01T00:00:00.000Z',
+      'todos': '[]',
+    });
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/sync') {
+          return http.Response(
+            json.encode({
+              'server_updated_at': '2026-06-21T00:00:00.000Z',
+              'server_version': 3,
+              'preferences': {
+                'updatedAt': '2026-06-20T00:00:00.000Z',
+                'values': {'pref_show_lunar': true},
+              },
+            }),
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 200);
+      }),
+    );
+    final provider = CloudSyncProvider();
+    provider.apiClientGetter = () => client;
+    provider.serverConfigGetter = () => {'backup_enabled': true};
+
+    await provider.syncNow();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('pref_show_lunar'), isTrue);
+    expect(prefs.getString('sync_preferences_updated_at'), isNotNull);
+
+    provider.dispose();
   });
 }
 

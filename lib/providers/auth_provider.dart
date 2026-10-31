@@ -1672,8 +1672,9 @@ bool _isRecoverableUploadFieldError(ApiException error) {
 
 bool _isAuthExpired(ApiException error) {
   final message = error.message.trim().toLowerCase();
+  // 只有 401 或服务端明确表示账号失效才算会话过期。
+  // 通用 403（权限不足）不应触发本地账号数据与设备偏好清理。
   return message.startsWith('401:') ||
-      message.startsWith('403:') ||
       message.contains('token expired') ||
       message.contains('invalid token') ||
       message.contains('account disabled') ||
