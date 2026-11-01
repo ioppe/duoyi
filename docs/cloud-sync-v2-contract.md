@@ -4,9 +4,18 @@
 
 ## 特性开关
 
-`lib/core/feature_flags.dart` 中 `FeatureFlags.cloudSyncV2`（默认 `false`）。
-- 关闭：所有 Goal/Todo/Habit/Anniversary 只落本地 `SharedPreferences`，网络层不发请求；
-- 开启：客户端按下述契约推送；失败进入排队 + 指数退避（≤5 次）。
+`lib/core/feature_flags.dart` 中 `FeatureFlags.cloudSyncV2` 当前默认 `true`，测试可显式覆盖。
+- 关闭：业务记录只落本地 `SharedPreferences`，不发出个人数据同步请求；公开功能配置仍可独立刷新。
+- 开启：已登录账号按下述契约同步；管理员的 `backup_enabled` 仍有最终控制权，手动操作不能绕过。
+
+## 后端配置与同步触发时机
+
+- 每次应用冷启动在首帧后立即刷新 `/api/config`，不再等待约 75 秒的后台闲时队列。已保存登录且开启自动同步时，配置就绪后主动同步个人数据，不再固定等待约 120 秒。
+- 登录或切换账号后启动同步；本地改动沿用既有节流队列，远端 SSE/版本探针继续按修订变化拉取。回到前台时刷新配置并在符合条件时同步。
+- 用户点击我的页的「云同步」卡片会主动刷新服务器配置并执行一次数据同步；手动刷新绕过配置的 30 秒成功缓存，但复用并升级在途的后台请求，不叠加第二个配置请求。自动同步关闭时仍可手动执行一次；管理员关闭云端备份时不能强制上传。
+- `BackendSyncCoordinator` 统一配置刷新、身份校验和业务同步，UI 经 `SyncStatusController` 请求操作，不直接调用底层同步 Provider。同步中禁止重复点击；失败保留可诊断状态并可再次点击。
+- `/api/config` 是公开功能配置，不是 AI 模型调用，也不是用户数据备份。访客只拉公开配置；个人数据请求必须有当前登录身份。配置与同步结果均遵守服务器/账号代际隔离。
+- AI 配置明确区分未知、加载中、成功和失败。「时光足迹」进入时按 30 秒缓存刷新，失败可原地重试；只有配置成功且 `ai_enabled=false` 时才提示管理员开启，未知或断网不能显示为管理员关闭。
 
 ## Goal 请求体（POST /api/v1/goals）
 
@@ -107,7 +116,7 @@
 - 每次尝试后持久化"最后状态"（`pending / syncing / failed / synced`）；
 - UI 侧在有 `pending` 时显示红点角标（建议挂在 `MineScreen` 头像或侧栏）。
 
-## 客户端待改点（Task 23 的剩余子任务）
+## 早期任务索引（Task 23 历史拆分）
 
 | 子任务 | 文件 | 说明 |
 |--------|------|------|
@@ -115,4 +124,4 @@
 | 23.3 | `backend/main.py` | 已验证：当前存储为 opaque JSON TEXT + `_merge_by_timestamp` on list items，新 Goal/Todo 字段自动直通，无需服务端 schema 变更。未来若要按字段级索引查询（如"按 kind=alarm 过滤"），再单独加列。 |
 | 23.4 | `lib/screens/mine_screen.dart` / `lib/widgets/...` | "有未同步改动"角标（命中 cloud sync 队列非空时显示）。 |
 
-> 这三条属于**与后端联动**的工作；在没有 staging 可用的前提下，先冻结契约文档，等用户或 DevOps 放行再统一推流到后端与前端 ApiClient。CloudSync 队列的指数退避已有 `CloudSyncProvider` 雏形，`FeatureFlags.cloudSyncV2 = false` 时不触发任何网络行为，保障离线纯本地可用。
+> 上表保留早期任务拆分供追溯；当前客户端已通过 `lib/providers/cloud_sync_provider.dart` 与 `/api/sync/*` 实现同步，触发时机以前文为准。关闭 `cloudSyncV2` 仅停止个人数据同步，不阻止公开配置刷新，本地内容继续可用。

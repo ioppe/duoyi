@@ -41,7 +41,10 @@ void main() {
       mainSource,
       contains('await cloudSyncProvider.resetForAccountChange();'),
     );
-    expect(mainSource, contains('cloudSyncProvider.resumeForActiveAccount();'));
+    expect(
+      File('lib/services/backend_sync_coordinator.dart').readAsStringSync(),
+      contains('_cloud.resumeForActiveAccount();'),
+    );
   });
 
   test('resetForAccountChange 后旧账号 sync 响应不会写回本地', () async {
@@ -246,6 +249,9 @@ void main() {
       'lib/providers/cloud_sync_provider.dart',
     ).readAsStringSync();
     final mainSource = File('lib/main.dart').readAsStringSync();
+    final coordinatorSource = File(
+      'lib/services/backend_sync_coordinator.dart',
+    ).readAsStringSync();
 
     expect(providerSource, contains('static const _remotePollDelay'));
     expect(providerSource, contains('Timer? _remotePollTimer'));
@@ -271,9 +277,12 @@ void main() {
     expect(providerSource, contains('_hasPendingChanges || _isSyncing'));
     expect(providerSource, contains('_scheduleRemotePoll();'));
     expect(mainSource, contains('Future<void> startCloudSyncAfterAuth'));
-    expect(mainSource, contains("'server config before cloud sync'"));
-    expect(mainSource, contains(r"'cloud sync $reason'"));
-    expect(mainSource, contains('cloudSyncProvider.startRemotePolling();'));
+    expect(mainSource, contains('await backendSyncCoordinator.refresh();'));
+    expect(
+      coordinatorSource,
+      contains('await _auth.refreshServerConfigFromServer(force: force);'),
+    );
+    expect(coordinatorSource, contains('_cloud.startRemotePolling();'));
     expect(mainSource, contains('cloudSyncProvider.stopRemotePolling();'));
   });
 
@@ -763,7 +772,7 @@ void main() {
     expect(backendSource, contains('_timestamp_gt(client_ts, server_ts)'));
   });
 
-  test('屏幕和组件层不暴露手动云同步入口', () {
+  test('UI 层只经 SyncStatusController 请求同步，不直接引用 CloudSyncProvider', () {
     final uiFiles = <File>[
       ...Directory('lib/screens')
           .listSync(recursive: true)
@@ -788,8 +797,33 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: '云同步应由 main.dart/provider 后台排队触发，UI 层不能重新出现立即同步按钮。',
+      reason:
+          'UI 层的手动同步必须经 SyncStatusController.requestSync()；'
+          '应用级刷新（先公共后端配置 / 账号 AI 配置，再业务数据同步）由 main.dart '
+          '注入回调完成，UI 不能直接引用 CloudSyncProvider 或调用 syncNow()。',
     );
+
+    // 卡片只是把手势转发给 controller，入口契约留在 controller 上。
+    final cardSource = File(
+      'lib/widgets/sync_status_card.dart',
+    ).readAsStringSync();
+    expect(cardSource, contains('controller.requestSync()'));
+    expect(cardSource, contains('controller.canSync'));
+    expect(cardSource, contains('onTap:'));
+    expect(cardSource, isNot(contains('CloudSyncProvider')));
+
+    final presenterSource = File(
+      'lib/providers/sync_status_presenter.dart',
+    ).readAsStringSync();
+    expect(presenterSource, contains('Future<void> requestSync()'));
+    expect(
+      presenterSource,
+      contains('Future<void> Function()? onSyncRequested'),
+    );
+    expect(presenterSource, contains('bool get canSync'));
+    expect(presenterSource, contains('bool get syncRequestFailed'));
+    // 展示层控制器只通过应用层回调触发同步，不自行调用 provider 同步方法。
+    expect(presenterSource, isNot(contains('.syncNow(')));
   });
 
   test('共享空间合并保留可解释的冲突决策记录', () {

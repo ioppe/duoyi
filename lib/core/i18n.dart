@@ -831,6 +831,11 @@ const Map<String, String> _zh = <String, String>{
   'statistics.ai.retry_save': '重试保存',
   'statistics.ai.unsaved_title': '解读已生成，但暂未存档',
   'statistics.ai.disabled_hint': '管理员启用 AI 后可生成云端个性化解读',
+  'statistics.ai.config.loading': '正在获取 AI 配置…',
+  'statistics.ai.config.failed': '暂时无法获取 AI 配置，请检查连接后重试。',
+  'statistics.ai.config.retry': '重新获取',
+  'sync.action.sync_now': '立即同步',
+  'sync.config.failed': '无法获取服务器配置，请检查连接后重试',
   'statistics.ai.error.session_changed': '账号状态已变化，本次解读未保存。',
   'statistics.ai.error.archive_failed': '解读已生成，但暂未存档。请重试保存，或先复制保留。',
   'statistics.ai.error.storage_failed': '暂时无法保存历史变更，请重试。',
@@ -2284,6 +2289,13 @@ const Map<String, String> _en = <String, String>{
   'statistics.ai.unsaved_title': 'Insight generated but not saved yet',
   'statistics.ai.disabled_hint':
       'An administrator must enable AI before a cloud insight can be generated',
+  'statistics.ai.config.loading': 'Loading AI configuration…',
+  'statistics.ai.config.failed':
+      'Could not load AI configuration. Check your connection and try again.',
+  'statistics.ai.config.retry': 'Retry',
+  'sync.action.sync_now': 'Sync now',
+  'sync.config.failed':
+      'Could not load server settings. Check your connection and try again.',
   'statistics.ai.error.session_changed':
       'Your account changed, so this insight was not saved.',
   'statistics.ai.error.archive_failed':

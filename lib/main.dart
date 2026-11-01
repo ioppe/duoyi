@@ -63,6 +63,7 @@ import 'services/home_widget_service.dart';
 import 'services/ai_service.dart';
 import 'services/app_update_service.dart';
 import 'services/backend_reminder_email_sink.dart';
+import 'services/backend_sync_coordinator.dart';
 import 'services/foreground_reminder_popup_sink.dart';
 import 'services/holiday_calendar.dart';
 import 'services/local_notifications.dart';
@@ -1416,9 +1417,21 @@ void main() async {
   cloudSyncProvider.apiClientGetter = () => authProvider.client;
   cloudSyncProvider.serverConfigGetter = () => authProvider.serverConfig;
 
-  authProvider.onServerConfigChanged = (cfg) {
-    aiService.updateFromServerConfig(cfg);
-  };
+  // 配置 map 与配置状态分两路绑定：先让 AI 拿到新 map（置 ready 并更新开关），
+  // 再广播 ready；failed / unknown 只改状态，绝不冒充「管理员关闭 AI」。
+  authProvider.onServerConfigChanged = aiService.updateFromServerConfig;
+  authProvider.onServerConfigStatusChanged = aiService.updateServerConfigStatus;
+  if (authProvider.serverConfig.isNotEmpty) {
+    aiService.updateFromServerConfig(authProvider.serverConfig);
+  }
+  aiService.updateServerConfigStatus(authProvider.serverConfigStatus);
+
+  // 配置刷新 → 身份校验 → 按需同步，集中在一个可测试服务里。
+  final backendSyncCoordinator = BackendSyncCoordinator(
+    auth: authProvider,
+    cloud: cloudSyncProvider,
+  );
+
   var lastUpdateServer = authProvider.baseUrl;
   authProvider.addListener(() {
     if (lastUpdateServer != authProvider.baseUrl) {
@@ -1428,9 +1441,6 @@ void main() async {
     aiService.attachClient(authProvider.client);
     focusRoomProvider.apiClientGetter = () => authProvider.client;
   });
-  if (authProvider.serverConfig.isNotEmpty) {
-    aiService.updateFromServerConfig(authProvider.serverConfig);
-  }
   cloudSyncProvider.onSynced = (changedCollections) async {
     // 同步完成后服务端回写可能覆盖本地数据；这段 reload 不应被当作“脏改动”。
     await cloudSyncProvider.suppressDirtyMarkWhile(() async {
@@ -1567,41 +1577,28 @@ void main() async {
     return '${authProvider.baseUrl}|${state.token}';
   }
 
+  /// 配置刷新 + 按需同步的唯一入口（`main` 与认证变更、恢复前台共用）。
+  ///
+  /// 真正的顺序（配置 → 身份校验 → 同步 → 轮询）由 [BackendSyncCoordinator]
+  /// 负责；这里只保留「旧启动取消」的 serial 保护与启动阶段的超时兜底。
+  /// 冷启动首帧后即调用（`delay: Duration.zero`），不再等 120s。
   Future<void> startCloudSyncAfterAuth({
     required String reason,
     Duration delay = const Duration(milliseconds: 1600),
   }) async {
     final serial = ++cloudSyncStartSerial;
-    await Future<void>.delayed(delay);
+    if (delay > Duration.zero) {
+      await Future<void>.delayed(delay);
+    }
     if (serial != cloudSyncStartSerial) return;
-    if (!authProvider.state.isLoggedIn || !cloudSyncProvider.config.autoSync) {
-      cloudSyncProvider.stopRemotePolling();
-      return;
-    }
-    await _startupGuard(
-      'server config before cloud sync',
-      () => authProvider.refreshServerConfigFromServer(),
-      timeout: const Duration(seconds: 5),
-    );
-    if (serial != cloudSyncStartSerial) return;
-    if (!authProvider.state.isLoggedIn || !cloudSyncProvider.config.autoSync) {
-      cloudSyncProvider.stopRemotePolling();
-      return;
-    }
-    if (authProvider.serverConfig['backup_enabled'] == false) {
-      cloudSyncProvider.stopRemotePolling();
-      return;
-    }
-    cloudSyncProvider.resumeForActiveAccount();
-    await _startupGuard(
-      'cloud sync $reason',
-      () => cloudSyncProvider.syncNow(),
-      timeout: const Duration(seconds: 12),
-    );
-    if (serial != cloudSyncStartSerial) return;
-    if (authProvider.state.isLoggedIn && cloudSyncProvider.config.autoSync) {
-      cloudSyncProvider.startRemotePolling();
-    }
+    await _startupGuard('backend config and sync $reason', () async {
+      try {
+        await backendSyncCoordinator.refresh();
+      } on BackendSyncConfigException catch (e) {
+        // 配置失败：不冒充同步成功，也不启动轮询；文案由界面按状态展示。
+        debugPrint('[cloud-sync] $reason: ${e.message}');
+      }
+    }, timeout: const Duration(seconds: 20));
   }
 
   var lastAuthReminderIdentity = currentAuthReminderIdentity();
@@ -1635,13 +1632,9 @@ void main() async {
   if (authProvider.state.isLoggedIn) {
     shareProvider.load();
   }
+  // 首次「配置 + 同步」不在这里排程：它由首帧后的 runPostFrameStartupTasks
+  // 立即触发（冷启动不再等 120s）。这里只保留原有的提醒恢复延迟。
   if (authProvider.state.isLoggedIn && cloudSyncProvider.config.autoSync) {
-    unawaited(
-      startCloudSyncAfterAuth(
-        reason: 'initial logged-in startup',
-        delay: const Duration(seconds: 120),
-      ),
-    );
     unawaited(
       queueStartupReminderResync(
         delay: const Duration(seconds: 110),
@@ -1788,6 +1781,14 @@ void main() async {
   }
 
   Future<void> runPostFrameStartupTasks() async {
+    // 轻量入口：首帧后立即拉公开的 /api/config，并在已登录时立刻开始首次同步。
+    // guest 也走这里（只 GET 公开配置），但不发任何个人数据请求。
+    unawaited(
+      startCloudSyncAfterAuth(
+        reason: 'initial post-frame startup',
+        delay: Duration.zero,
+      ),
+    );
     unawaited(
       Future<void>.delayed(const Duration(seconds: 14), () async {
         await ensureDeferredLocalStorageStartup();
@@ -1920,10 +1921,15 @@ void main() async {
         ChangeNotifierProvider.value(value: pomodoroProvider),
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: cloudSyncProvider),
-        // 云同步状态只读展示层：状态卡仅消费状态，无手动触发入口。
+        // 云同步状态展示层：状态只读，手动同步经 coordinator（先刷新配置再同步）。
         ChangeNotifierProvider.value(
-          value: SyncStatusController(source: cloudSyncProvider),
+          value: SyncStatusController(
+            source: cloudSyncProvider,
+            onSyncRequested: () => backendSyncCoordinator.refresh(force: true),
+          ),
         ),
+        // 恢复前台时用同一个 coordinator 做非强制刷新（保留 30s 配置 TTL）。
+        Provider<BackendSyncCoordinator>.value(value: backendSyncCoordinator),
         ChangeNotifierProvider.value(value: calendarProvider),
         ChangeNotifierProvider.value(value: userProvider),
         ChangeNotifierProvider.value(value: countdownProvider),
@@ -3700,6 +3706,7 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       lock.onAppLifecycleResume();
       _checkUpdatePolicy(force: true);
       _refreshAccountProfileOnResume();
+      _refreshBackendConfigOnResume();
       // 先处理时区变更（可能影响调度），再做跨日 rollover。
       unawaited(() async {
         await _maybeResyncOnTimezoneChange();
@@ -3736,6 +3743,29 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
         debugPrint('[DuoyiApp] refresh account profile failed: $e\n$st');
       }
     });
+  }
+
+  /// 回到前台时用同一个 coordinator 做**非强制**刷新：配置仍受 30s TTL 约束，
+  /// 同步仍受 provider 的 autoSync / 账号代际保护，不会重复拉配置或强推个人数据。
+  void _refreshBackendConfigOnResume() {
+    final ctx = mainShellKey.currentContext ?? context;
+    BackendSyncCoordinator? coordinator;
+    try {
+      coordinator = Provider.of<BackendSyncCoordinator>(ctx, listen: false);
+    } on ProviderNotFoundException {
+      // 独立 widget 夹具可能没有注入 coordinator；此时不做任何网络动作。
+      return;
+    }
+    final active = coordinator;
+    unawaited(() async {
+      try {
+        await active.refresh();
+      } on BackendSyncConfigException catch (e) {
+        debugPrint('[DuoyiApp] resume config failed: ${e.message}');
+      } catch (e, st) {
+        debugPrint('[DuoyiApp] resume config failed: $e\n$st');
+      }
+    }());
   }
 
   void _checkUpdatePolicy({bool force = false}) {

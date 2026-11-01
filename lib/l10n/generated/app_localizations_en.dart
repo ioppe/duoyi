@@ -2659,6 +2659,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'An administrator must enable AI before a cloud insight can be generated';
 
   @override
+  String get statisticsAiConfigLoading => 'Loading AI configuration…';
+
+  @override
+  String get statisticsAiConfigFailed =>
+      'Could not load AI configuration. Check your connection and try again.';
+
+  @override
+  String get statisticsAiConfigRetry => 'Retry';
+
+  @override
+  String get syncActionSyncNow => 'Sync now';
+
+  @override
+  String get syncConfigFailed =>
+      'Could not load server settings. Check your connection and try again.';
+
+  @override
   String get statisticsAiErrorSessionChanged =>
       'Your account changed, so this insight was not saved.';
 

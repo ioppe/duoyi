@@ -52,10 +52,17 @@ void main() {
         contains('Future<void>.delayed(const Duration(seconds: 90)'),
       );
       expect(main, contains('delay: const Duration(seconds: 110)'));
-      expect(main, contains('delay: const Duration(seconds: 120)'));
+      expect(main, isNot(contains('delay: const Duration(seconds: 120)')));
       final startupTasks = main.substring(
         main.indexOf('Future<void> runPostFrameStartupTasks() async'),
         main.indexOf('// 首屏关键配置已完成'),
+      );
+      expect(startupTasks, contains("reason: 'initial post-frame startup'"));
+      expect(startupTasks, contains('delay: Duration.zero'));
+      expect(
+        startupTasks.indexOf("reason: 'initial post-frame startup'"),
+        lessThan(startupTasks.indexOf('const Duration(seconds: 14)')),
+        reason: '公开配置与首次同步应在首帧后启动，不依赖延迟的数据补载。',
       );
       expect(
         startupTasks,

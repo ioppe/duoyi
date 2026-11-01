@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show File;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -30,8 +31,10 @@ import '../models/ai_report_context.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
+import '../models/server_config_status.dart';
 import '../models/time_entry.dart';
 import '../models/todo.dart';
+import '../providers/auth_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -61,6 +64,33 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   StatisticsWindow get _window =>
       StatisticsWindow(StatisticsPeriod.values[_range.index]);
+
+  @override
+  void initState() {
+    super.initState();
+    // 进入统计页时补一次配置（复用 30s TTL 与在途 singleflight）：
+    // 冷启动没打开过设置页也能拿到真实的 AI 开关，不再误报「管理员关闭」。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshAiServerConfig();
+    });
+  }
+
+  /// 旧 widget 夹具可能没注入 AuthProvider；缺失时保持只读、不发网络请求。
+  AuthProvider? _maybeAuthProvider() {
+    try {
+      return Provider.of<AuthProvider>(context, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  /// [force] 只用于「获取失败」后的原地重试。
+  void _refreshAiServerConfig({bool force = false}) {
+    final auth = _maybeAuthProvider();
+    if (auth == null) return;
+    unawaited(auth.refreshServerConfigFromServer(force: force));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -403,6 +433,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               cs: cs,
               onCopy: () => _copyDigest(context, digest),
               aiEnabled: ai.enabled,
+              aiConfigStatus: ai.configStatus,
+              onRetryAiConfig: () => _refreshAiServerConfig(force: true),
               aiReportContext: reportContext,
               aiJob: reportJob,
               aiLatestEntry: latestReport,
@@ -2372,6 +2404,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     AiReportContext reportContext,
   ) async {
     final ai = context.read<AiService>();
+    // 非 ready（加载中/失败/未知）时一律不发新请求：旧实现会把「还没加载」
+    // 当管理员关闭，这里也要避免穿透到上游。
+    if (!ai.enabled) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await ai.personalizedReportReview(
@@ -3968,6 +4003,7 @@ class _PeriodReportDigestCard extends StatelessWidget {
   final ColorScheme cs;
   final VoidCallback onCopy;
   final bool aiEnabled;
+  final ServerConfigStatus aiConfigStatus;
   final AiReportContext aiReportContext;
   final AiReportReviewJob? aiJob;
   final AiReviewEntry? aiLatestEntry;
@@ -3976,12 +4012,15 @@ class _PeriodReportDigestCard extends StatelessWidget {
   final VoidCallback onRetryArchive;
   final VoidCallback onOpenAiHistory;
   final VoidCallback onShareImage;
+  final VoidCallback onRetryAiConfig;
 
   const _PeriodReportDigestCard({
     required this.digest,
     required this.cs,
     required this.onCopy,
     required this.aiEnabled,
+    required this.aiConfigStatus,
+    required this.onRetryAiConfig,
     required this.aiReportContext,
     required this.aiJob,
     required this.aiLatestEntry,
@@ -4096,6 +4135,8 @@ class _PeriodReportDigestCard extends StatelessWidget {
           ReportAiReviewPanel(
             key: ValueKey('statistics_ai_panel_${aiReportContext.key}'),
             aiEnabled: aiEnabled,
+            configStatus: aiConfigStatus,
+            onRetryConfig: onRetryAiConfig,
             job: aiJob,
             latestEntry: aiLatestEntry,
             onGenerate: onAiReview,

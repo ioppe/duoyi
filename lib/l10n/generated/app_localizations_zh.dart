@@ -2524,6 +2524,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statisticsAiDisabledHint => '管理员启用 AI 后可生成云端个性化解读';
 
   @override
+  String get statisticsAiConfigLoading => '正在获取 AI 配置…';
+
+  @override
+  String get statisticsAiConfigFailed => '暂时无法获取 AI 配置，请检查连接后重试。';
+
+  @override
+  String get statisticsAiConfigRetry => '重新获取';
+
+  @override
+  String get syncActionSyncNow => '立即同步';
+
+  @override
+  String get syncConfigFailed => '无法获取服务器配置，请检查连接后重试';
+
+  @override
   String get statisticsAiErrorSessionChanged => '账号状态已变化，本次解读未保存。';
 
   @override

@@ -5048,6 +5048,36 @@ abstract class AppLocalizations {
   /// **'管理员启用 AI 后可生成云端个性化解读'**
   String get statisticsAiDisabledHint;
 
+  /// No description provided for @statisticsAiConfigLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在获取 AI 配置…'**
+  String get statisticsAiConfigLoading;
+
+  /// No description provided for @statisticsAiConfigFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法获取 AI 配置，请检查连接后重试。'**
+  String get statisticsAiConfigFailed;
+
+  /// No description provided for @statisticsAiConfigRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新获取'**
+  String get statisticsAiConfigRetry;
+
+  /// No description provided for @syncActionSyncNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即同步'**
+  String get syncActionSyncNow;
+
+  /// No description provided for @syncConfigFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法获取服务器配置，请检查连接后重试'**
+  String get syncConfigFailed;
+
   /// No description provided for @statisticsAiErrorSessionChanged.
   ///
   /// In zh, this message translates to:

@@ -21,6 +21,7 @@ import '../models/goal.dart'
         ReminderPlan,
         ReminderRule,
         ReminderRuleType;
+import '../models/server_config_status.dart';
 import '../models/todo.dart';
 import 'account_local_data_cleaner.dart';
 import 'ai_review_history_store.dart';
@@ -39,6 +40,7 @@ class AiService extends ChangeNotifier {
   ApiClient _client = ApiClient();
   bool _enabled = false;
   String _model = '';
+  ServerConfigStatus _configStatus = ServerConfigStatus.unknown;
   List<AiReviewEntry> _reviewHistory = [];
 
   /// 周期解读任务只存在内存：应用存活期间独立于统计页运行，退出后不恢复，
@@ -57,8 +59,12 @@ class AiService extends ChangeNotifier {
   Future<void> _historyTail = Future<void>.value();
   int _storageGeneration = 0;
 
-  bool get enabled => _enabled;
-  bool get isConfigured => _enabled;
+  /// `/api/config` 的拉取状态：unknown/loading/failed 时不得显示成管理员关闭。
+  ServerConfigStatus get configStatus => _configStatus;
+
+  /// 只有拿到真实配置且管理员开启过才算可用。
+  bool get enabled => _configStatus == ServerConfigStatus.ready && _enabled;
+  bool get isConfigured => enabled;
   String get model => _model;
   List<AiReviewEntry> get reviewHistory => List.unmodifiable(_reviewHistory);
 
@@ -76,9 +82,31 @@ class AiService extends ChangeNotifier {
     _client = client;
   }
 
+  /// 收到服务端配置：非空 map 视为一次成功读取（置 ready 再更新开关），
+  /// 空 map 表示连接已切换/登出，回到 unknown 并清除模型信息。
+  ///
+  /// 配置刷新不触碰报告历史、进行中的解读任务或模型预算。
   void updateFromServerConfig(Map<String, dynamic> cfg) {
+    if (cfg.isEmpty) {
+      _configStatus = ServerConfigStatus.unknown;
+      _enabled = false;
+      _model = '';
+      notifyListeners();
+      return;
+    }
+    _configStatus = ServerConfigStatus.ready;
     _enabled = cfg['ai_enabled'] == true;
     _model = (cfg['ai_model'] ?? '').toString();
+    notifyListeners();
+  }
+
+  /// 只更新配置拉取状态（loading / failed / unknown / ready）。
+  ///
+  /// 与 [updateFromServerConfig] 分开，这样 AuthProvider 可以在拿到 map 之前/之后
+  /// 如实广播状态，而不会把 unknown/failed 误判成「管理员关闭 AI」。
+  void updateServerConfigStatus(ServerConfigStatus status) {
+    if (_configStatus == status) return;
+    _configStatus = status;
     notifyListeners();
   }
 
@@ -365,7 +393,7 @@ class AiService extends ChangeNotifier {
     // 推理型模型会先消耗大量 reasoning token，预算需覆盖“思考 + 正文”。
     int maxTokens = 1200,
   }) async {
-    if (!_enabled) throw const AiException('AI 功能未启用，请联系管理员');
+    if (!enabled) throw const AiException('AI 功能未启用，请联系管理员');
     // MiniMax M3.1 的 reasoning_content 与正文共用输出预算，网关未必单列计数。
     final modelId = _model.toLowerCase().split('/').last;
     final requestMaxTokens =
@@ -401,7 +429,7 @@ class AiService extends ChangeNotifier {
     }
     final localNow = now ?? DateTime.now();
     final baseDraft = _fallbackScheduleDraft(trimmed, now: localNow);
-    if (!_enabled) return baseDraft.withSource(AiScheduleSource.localParser);
+    if (!enabled) return baseDraft.withSource(AiScheduleSource.localParser);
 
     final prompt = [
       '当前本地时间：${localNow.toIso8601String()}',

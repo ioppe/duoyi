@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,16 +9,20 @@ import '../core/i18n_date_format.dart';
 import '../providers/sync_status_presenter.dart';
 import 'surface_components.dart';
 
-/// 我的页"云同步状态卡"（纯展示）。
+/// 我的页"云同步状态卡"。
 ///
 /// 只读消费 [SyncStatusController]（底层云同步 Provider 状态的展示层
 /// 包装）：四态渲染——失败（lastError 红字 + 自动重试提示）、同步中
 /// （转圈）、从未同步（引导文案）、已同步（上次同步时间，
 /// hasPendingChanges 时附"待同步"角标）。
 ///
-/// 依据架构守卫（test/services/cloud_sync_provider_test.dart
-/// 「屏幕和组件层不暴露手动云同步入口」），本卡片**不提供任何手动
-/// 触发同步的按钮**：同步仅由后台排队触发，失败后自动重试。
+/// 手动同步入口：整卡可点击，点击调用 `SyncStatusController.requestSync()`，
+/// 由应用层注入的回调先刷新公共后端配置 / 账号 AI 配置，再同步业务数据。
+/// 本卡片不直接引用底层云同步 Provider（架构守卫见
+/// test/services/cloud_sync_provider_test.dart「UI 层只经
+/// SyncStatusController 请求同步」）；未注入回调时整卡不可点击、也不显示
+/// 刷新图标。同步中禁用点击并保留既有转圈，空闲时右侧显示小型刷新图标
+/// （tooltip + button 语义）。失败后可再次点击重试。
 class SyncStatusCard extends StatelessWidget {
   const SyncStatusCard({super.key});
 
@@ -25,6 +31,7 @@ class SyncStatusCard extends StatelessWidget {
     final controller = context.watch<SyncStatusController?>();
     if (controller == null) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
+    final canSync = controller.canSync;
 
     final String stateLabel;
     final Color stateColor;
@@ -34,13 +41,17 @@ class SyncStatusCard extends StatelessWidget {
     String? autoRetryHint;
     Widget? trailing;
 
-    if (controller.lastError != null) {
+    final lastError = controller.lastError;
+    if (lastError != null || controller.syncRequestFailed) {
       stateLabel = I18n.tr('sync.state.failed');
       stateColor = cs.error;
       stateIcon = Icons.sync_problem_outlined;
-      detail = controller.lastError ?? '';
-      detailColor = cs.error;
-      autoRetryHint = I18n.tr('sync.state.auto_retry_hint');
+      // 手动请求失败只呈现失败态，不展示异常文本（可能含地址 / token）。
+      detail = lastError ?? '';
+      detailColor = lastError != null ? cs.error : null;
+      if (lastError != null) {
+        autoRetryHint = I18n.tr('sync.state.auto_retry_hint');
+      }
     } else if (controller.isSyncing) {
       stateLabel = I18n.tr('sync.state.syncing');
       stateColor = cs.primary;
@@ -92,6 +103,7 @@ class SyncStatusCard extends StatelessWidget {
       child: AppSurfaceCard(
         key: const ValueKey('sync_status_card'),
         padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        onTap: canSync ? () => unawaited(controller.requestSync()) : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -156,6 +168,22 @@ class SyncStatusCard extends StatelessWidget {
             if (trailing != null) ...[
               const SizedBox(width: DesignTokens.spaceSm),
               trailing,
+            ],
+            if (canSync) ...[
+              const SizedBox(width: DesignTokens.spaceSm),
+              Tooltip(
+                key: const ValueKey('sync_status_card_sync_action'),
+                message: I18n.tr('sync.action.sync_now'),
+                child: Semantics(
+                  button: true,
+                  label: I18n.tr('sync.action.sync_now'),
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    size: 18,
+                    color: cs.primary,
+                  ),
+                ),
+              ),
             ],
           ],
         ),

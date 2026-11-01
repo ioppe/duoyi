@@ -1,0 +1,154 @@
+{
+  "suite": "startup-sync-browser-e2e",
+  "origin": "http://127.0.0.1:18806/ (loopback fixture serving repo/build/web)",
+  "build": {
+    "mainDartJsSha256": "379c9b81b52e6c986850d611e94f307c6b37948dc757f580669b71c9ed5c2009",
+    "mainDartJsBytes": 9683351,
+    "receiptAllOk": true,
+    "receiptBuildExit": 0,
+    "baseCommit": "f061f2c17d18b1339a8aa0a18093b5ee7adc1474",
+    "shaMatchesReceipt": true
+  },
+  "model": "fixture envelopes only; /api/ai/chat never called",
+  "browser": { "cli": "agent-browser 0.20.7", "session": "startup-sync-e2e", "isolated": true, "locale": "en (default, no locale override written)", "viewport": [[1280,1000],[390,844]] },
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "fresh guest startup requests only public config",
+      "result": "PASS",
+      "requests": [
+        {"seq":1,"method":"GET","path":"/api/config","authenticated":false},
+        {"seq":2,"method":"GET","path":"/api/mobile/apps/duoyi/update","authenticated":false},
+        {"seq":3,"method":"GET","path":"/api/config","authenticated":false}
+      ],
+      "counts": {"config":2,"sync":0,"model":0,"unauthenticated_sync":0},
+      "observations": [
+        "no /api/sync*, no /api/auth/me, no personal endpoints before login",
+        "two GET /api/config per guest load, 56ms apart (both public, authenticated=false)",
+        "in this build the unauthenticated surface is the entry login screen; no separate guest shell UI was found (WebAuthGate renders LoginScreen(asEntry: true) when no saved identity)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "saved login cold start: config before personal sync, no settings visit, no 120s delay",
+      "result": "PASS",
+      "timingFromReload": {"workspaces":0.741,"mentions":0.743,"authMe":0.754,"config":0.775,"appUpdate":0.775,"syncPost":0.832,"config2":0.833,"syncEvents":0.836},
+      "requests": [
+        {"seq":1,"method":"GET","path":"/api/workspaces","authenticated":true},
+        {"seq":2,"method":"GET","path":"/api/workspaces/mentions","authenticated":true},
+        {"seq":3,"method":"GET","path":"/api/auth/me","authenticated":true},
+        {"seq":4,"method":"GET","path":"/api/config","authenticated":true},
+        {"seq":5,"method":"GET","path":"/api/mobile/apps/duoyi/update","authenticated":false},
+        {"seq":6,"method":"POST","path":"/api/sync","authenticated":true},
+        {"seq":7,"method":"GET","path":"/api/config","authenticated":false},
+        {"seq":8,"method":"GET","path":"/api/sync/events","authenticated":true}
+      ],
+      "counts": {"config":2,"sync":1,"model":0,"unauthenticated_sync":0},
+      "observations": [
+        "all startup requests complete within 0.84s of reload; no 120s delay and no settings visit needed",
+        "config precedes POST /api/sync; sync carries the authenticated fixture token",
+        "profile reads (workspaces, mentions, auth/me) precede config on cold start; second /api/config (unauthenticated header) fires 58ms after the first",
+        "login itself issued POST /api/auth/login then config(auth) + auth/me + workspaces, POST /api/sync 2.68s after login"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "direct entry to statistics: no false admin-closed, config in flight shows loading, ready state allows generation",
+      "result": "PASS",
+      "observations": [
+        "ai_enabled=true: entering statistics issued one GET /api/config and the AI action stayed enabled with no admin-closed hint",
+        "config_hold=true plus statistics entry produced 'Loading AI configuration…' with the AI action disabled; screenshot captured ~1s into the hold",
+        "the hold was released later than the client's 8s timeout, so the panel moved to 'Could not load AI configuration. Check your connection and try again.' with an in-place Retry action",
+        "Retry after clearing the fault fetched config again and restored the enabled AI action; the generate control was never clicked"
+      ],
+      "countsAtReset": {"config":5,"sync":1,"model":0,"unauthenticated_sync":0}
+    },
+    {
+      "id": 4,
+      "name": "cloud-sync card forces config then sync, double click coalesces, spinner/disabled restore",
+      "result": "PASS",
+      "requests": [
+        {"seq":1,"method":"GET","path":"/api/config","authenticated":true,"note":"single fetch despite two card clicks 0.4s apart while config_hold=true"},
+        {"seq":2,"method":"POST","path":"/api/sync","authenticated":true,"note":"exactly one data sync after release"}
+      ],
+      "countsHeld": {"config":1,"sync":0,"model":0,"unauthenticated_sync":0},
+      "countsAfterRelease": {"config":1,"sync":1,"model":0,"unauthenticated_sync":0},
+      "observations": [
+        "held state text 'Cloud sync Syncing…' with the card rendered non-interactive; restored to 'Synced / Last synced Nov 1 12:20 PM' after release",
+        "second click during the hold produced no additional GET"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "config failure vs recovery, sync-card failure does not fake success",
+      "result": "PASS",
+      "observations": [
+        "config_fail=true: one GET /api/config with fixture_failed=true produced 'Could not load AI configuration. Check your connection and try again.' and a Retry action; no admin-closed text",
+        "Retry after config_fail=false produced a second GET /api/config that succeeded and restored the enabled AI action",
+        "sync_fail=true: config succeeded then POST /api/sync failed, card showed 'Sync failed 503: Fixture sync temporarily unavailable Will retry automatically' (no success state, no new last-sync time)",
+        "entering statistics inside the 30s success window issued zero config requests, confirming cache reuse rather than refetch"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "admin AI disabled only after successful config, history stays reachable, restore true",
+      "result": "PASS",
+      "observations": [
+        "ai_enabled=false with a successful GET /api/config showed 'An administrator must enable AI before a cloud insight can be generated' and no connection error",
+        "AI insight history screen opened with heading 'AI insight history' and the current-week period filter while AI was disabled",
+        "after ai_enabled=true and cache expiry, the hint disappeared and the AI action was enabled again",
+        "no legacy history entries were seeded; the history list was empty in this fresh session"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "manual sync failure then retry recovers",
+      "result": "PASS",
+      "requests": [
+        {"seq":3,"method":"GET","path":"/api/config","authenticated":true,"fixtureFailed":false},
+        {"seq":4,"method":"POST","path":"/api/sync","authenticated":true,"fixtureFailed":false}
+      ],
+      "observations": ["retry after sync_fail=false produced config then sync and the card returned to 'Synced / Last synced Nov 1 12:23 PM'"]
+    },
+    {
+      "id": 8,
+      "name": "light default surface screenshots at 1280x1000 and 390x844 without overflow",
+      "result": "PASS",
+      "observations": [
+        "7 screenshots at 1280x1000 and 2 at 390x844",
+        "console contained no RenderFlex overflow entries while resizing to 390x844 and navigating statistics and settings"
+      ]
+    }
+  ],
+  "counts": {
+    "final": {"config":4,"sync":2,"model":0,"unauthenticated_sync":0},
+    "maxObservedAcrossSnapshots": {"model":0,"unauthenticated_sync":0},
+    "pathHistogramAcrossSnapshots": {"/api/auth/login":2,"/api/auth/me":7,"/api/config":34,"/api/mobile/apps/duoyi/update":8,"/api/sync":12,"/api/sync/events":6,"/api/sync/status":3,"/api/workspaces":6,"/api/workspaces/mentions":6},
+    "aiChatRequests": 0,
+    "resetsPerformed": "counts reset between scenarios; pre-reset snapshots saved in scratch as startup-sync-e2e-*-pre-reset.json"
+  },
+  "control": {"config_hold":false,"config_fail":false,"sync_hold":false,"sync_fail":false,"ai_enabled":true,"backup_enabled":true},
+  "console": {
+    "entries": 121,
+    "levels": {"log":118,"error":2,"debug":1},
+    "pageErrors": 0,
+    "renderFlexOverflow": 0,
+    "fixtureContractWarnings": 0,
+    "nullCheck": {
+      "message": "Null check operator used on a null value",
+      "occurrences": 1,
+      "phase": "after login, immediately following [auth-sync] refreshMe#1 skipped (mutation=1 login path)",
+      "stackHead": ["K6.bV (main.dart.js:183582:13)","a65.gdD (main.dart.js:198207:32)","Object.d9J (main.dart.js:51393:5)"],
+      "attribution": "reported as observed; carried over from the previous acceptance run, not attributed to the startup/sync changes and not fixed here"
+    },
+    "missingPluginWarnings": 7
+  },
+  "limitations": [
+    "one config hold exceeded the client's 8s timeout before release, so that panel transitioned from loading to failure; the loading text and screenshot were captured inside the first second",
+    "guest mode in this build has no separate shell surface; the measurable guest claim (public config only, no personal/sync requests) is what was verified",
+    "two GET /api/config per page load were observed; recorded as fact, not asserted as a defect",
+    "business-level manual verification only; no native install, no real model, no production host",
+    "screenshots are light default theme at 1280x1000 and 390x844; dark theme and 320px are out of scope for this run"
+  ],
+  "credentials": "isolated fixture account (archive-preview) only; token is the fixture value; not reproduced in this report or in this JSON"
+}

@@ -1,7 +1,7 @@
 /// 特性开关（Task 23.1 / Requirements 12.6）。
 ///
-/// 集中管理"分阶段上线"的布尔开关。默认都关闭，给生产环境留回滚余地；
-/// CI / QA / dogfood 构建可以在启动前通过 `FeatureFlags.override(...)` 翻开。
+/// 集中管理可回滚的特性开关；当前主要功能默认开启。
+/// CI / QA 构建可以通过 `FeatureFlags.override(...)` 覆盖。
 ///
 /// 后续如需按用户/租户/Remote Config 动态控制，可以在此基础上加
 /// `SharedPreferences` 持久化或 `RemoteConfig` 拉取，对外 API 保持不变。
@@ -15,7 +15,7 @@ class FeatureFlags {
   // -----------------------
 
   /// 后端 CloudSync v2 契约：Goal/Todo 字段对齐、排队重试。
-  /// 默认 false——客户端完全离线可用；翻开后才启用 API 同步。
+  /// 默认开启；关闭时仍可使用本地数据，但不发出个人数据同步请求。
   static const bool _kCloudSyncV2Default = true;
 
   /// 多次提醒 v2：ReminderRule / ReminderPlan 及新编辑器。

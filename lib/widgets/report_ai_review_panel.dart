@@ -9,6 +9,7 @@ import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
 import '../models/ai_report_context.dart';
+import '../models/server_config_status.dart';
 import '../services/ai_service.dart';
 import 'ai_review_markdown.dart';
 
@@ -22,14 +23,26 @@ class ReportAiReviewPanel extends StatefulWidget {
   const ReportAiReviewPanel({
     super.key,
     required this.aiEnabled,
+    this.configStatus = ServerConfigStatus.ready,
+    this.onRetryConfig,
     required this.job,
     required this.latestEntry,
     required this.onGenerate,
     required this.onRetrySave,
   });
 
-  /// 管理员是否启用 AI。未启用时历史仍可查看，只是不能再生成。
+  /// AI 是否真的可用（`AiService.enabled` 已经内建 configStatus==ready 判断）。
+  /// 未启用时历史仍可查看，只是不能再生成。
   final bool aiEnabled;
+
+  /// `/api/config` 的拉取状态。
+  ///
+  /// 默认 [ServerConfigStatus.ready]：旧的独立调用方不传时行为不变（显示原有的
+  /// 「管理员已关闭」提示）；统计页会显式传入，避免把「还没加载」误报成管理员关闭。
+  final ServerConfigStatus configStatus;
+
+  /// 配置获取失败时的重试回调；为 null 时不显示重试按钮。
+  final VoidCallback? onRetryConfig;
 
   /// 当前周期的任务：生成中 / 存档中 / 失败（含未存档正文）。
   final AiReportReviewJob? job;
@@ -92,7 +105,7 @@ class _ReportAiReviewPanelState extends State<ReportAiReviewPanel> {
         _failedBlock(theme, cs, job),
       if (latest != null && latest.content.trim().isNotEmpty)
         _latestBlock(theme, cs, latest),
-      if (!widget.aiEnabled) _disabledHint(theme, cs),
+      if (!widget.aiEnabled) _configStateHint(theme, cs),
     ];
     if (blocks.isEmpty) return const SizedBox.shrink();
 
@@ -308,12 +321,70 @@ class _ReportAiReviewPanelState extends State<ReportAiReviewPanel> {
     );
   }
 
-  Widget _disabledHint(ThemeData theme, ColorScheme cs) => Text(
-    I18n.tr('statistics.ai.disabled_hint'),
-    style: theme.textTheme.bodySmall?.copyWith(
-      color: cs.onSurfaceVariant,
-      fontWeight: DesignTokens.fontWeightRegular,
-    ),
+  /// 不可生成时的说明：只有 ready 才是「管理员关闭」，其余如实显示加载/失败。
+  Widget _configStateHint(ThemeData theme, ColorScheme cs) {
+    switch (widget.configStatus) {
+      case ServerConfigStatus.ready:
+        return Text(
+          I18n.tr('statistics.ai.disabled_hint'),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: DesignTokens.fontWeightRegular,
+          ),
+        );
+      case ServerConfigStatus.unknown:
+      case ServerConfigStatus.loading:
+        return _configLoadingHint(theme, cs);
+      case ServerConfigStatus.failed:
+        return _configFailedHint(theme, cs);
+    }
+  }
+
+  /// 细加载提示：沿用任务进行中的不确定细线，不伪造百分比、不新增加卡片。
+  Widget _configLoadingHint(ThemeData theme, ColorScheme cs) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _thinProgress(cs),
+      const SizedBox(height: DesignTokens.spaceSm),
+      Text(
+        I18n.tr('statistics.ai.config.loading'),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: cs.onSurfaceVariant,
+          fontWeight: DesignTokens.fontWeightRegular,
+        ),
+      ),
+    ],
+  );
+
+  /// 获取失败：说明 + 原地重试，不弹对话框、不阻塞已有历史。
+  Widget _configFailedHint(ThemeData theme, ColorScheme cs) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.cloud_off_outlined, size: 16, color: cs.onSurfaceVariant),
+          const SizedBox(width: DesignTokens.spaceXs),
+          Expanded(
+            child: Text(
+              I18n.tr('statistics.ai.config.failed'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: DesignTokens.fontWeightRegular,
+              ),
+            ),
+          ),
+        ],
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          onPressed: widget.onRetryConfig,
+          icon: const Icon(Icons.refresh, size: 16),
+          label: Text(I18n.tr('statistics.ai.config.retry')),
+        ),
+      ),
+    ],
   );
 
   Widget _metaLine(ThemeData theme, ColorScheme cs, String text) => Padding(

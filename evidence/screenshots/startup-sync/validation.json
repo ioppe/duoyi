@@ -1,0 +1,90 @@
+{
+  "scope": "Startup backend refresh, manual cloud sync card, explicit AI configuration states",
+  "base_commit": "f061f2c17d18b1339a8aa0a18093b5ee7adc1474",
+  "version": "1.1.47+140013",
+  "automated_tests": {
+    "unique_test_files": 28,
+    "unique_passed": 256,
+    "failed": 0,
+    "skipped": 0,
+    "deduplication": "Latest final result by full suite path and test name; excludes synthetic loading entries, setUpAll/tearDownAll lifecycle hooks, and repeated successful retests.",
+    "source_logs": [
+      "startup-sync-card-tests.jsonl",
+      "startup-sync-final-core-tests.jsonl",
+      "startup-sync-accepted-tests.jsonl",
+      "startup-sync-accepted-r2-coordinator.jsonl"
+    ],
+    "commands": [
+      "flutter test --no-pub --reporter json <explicit card test file>",
+      "flutter test --no-pub --reporter json <explicit 14 core files>",
+      "flutter test --no-pub --reporter json <explicit 15 configuration/UI/static files>",
+      "flutter test --no-pub --reporter json test/services/backend_sync_coordinator_test.dart"
+    ],
+    "covered_behaviors": [
+      "First-frame startup wiring and configuration-before-sync ordering",
+      "Guest public configuration only; no protected personal sync requests",
+      "30-second successful configuration cache and shared in-flight requests",
+      "Manual force and upgrade of an in-flight background refresh",
+      "Auto-sync preference, administrator backup gate and feature gate",
+      "Old account/server responses and disposal cannot start stale sync",
+      "Card clicks, busy state, duplicate requests, failure and recovery",
+      "Unknown/loading/failed/ready AI configuration and retry",
+      "Actual StatisticsScreen entry automatically loads configuration",
+      "AI report archives, preserved history, clipboard and narrow large-text layout",
+      "Account/profile isolation, preference survival, typography and existing UI guards"
+    ],
+    "early_failures": "Initial missing legacy interfaces, test-fixture errors and formatting issues were corrected. Their logs remain in session scratch; final counts use the successful corrected results."
+  },
+  "analysis": {
+    "command": "dart analyze --fatal-infos",
+    "exit_code": 0,
+    "output": "No issues found!",
+    "log": "startup-sync-accepted-r2-analyze.jsonl"
+  },
+  "format": {
+    "command": "dart format --output=none --set-exit-if-changed <all changed/new non-generated Dart>",
+    "files": 20,
+    "changed": 0,
+    "exit_code": 0
+  },
+  "diff_check": {"command": "git diff --check", "exit_code": 0},
+  "documentation": {
+    "reviewed": true,
+    "obsolete_read_only_sync_contract_updated": true,
+    "new_i18n_keys": 5,
+    "generated_localizations_checked": true,
+    "stray_edit_headers": 0
+  },
+  "code_review": {"read_only": true, "blocking_findings": 0},
+  "web_build": {
+    "command": "FLUTTER_BIN=<pinned Flutter 3.44.1>/bin/flutter python3 scripts/flutter_with_config.py build web --release --base-href=/",
+    "exit_code": 0,
+    "started_at": "2026-11-01T17:10:33Z",
+    "finished_at": "2026-11-01T17:11:15Z",
+    "duration_seconds": 42,
+    "inputs_before_after_matched": 396,
+    "new_model_and_coordinator_included": true,
+    "additional_settings_matched_to_baseline": ["l10n.yaml", "analysis_options.yaml"],
+    "additional_settings_boundary": "The two unchanged root settings were verified against the baseline git blobs separately; they are not included in the 396 before/after count.",
+    "runtime_files": 120,
+    "runtime_bytes": 107507584,
+    "main_dart_js_bytes": 9683351,
+    "main_dart_js_sha256": "379c9b81b52e6c986850d611e94f307c6b37948dc757f580669b71c9ed5c2009",
+    "excluded_non_runtime_marker": ".last_build_id",
+    "startup_font_bytes": 2098692,
+    "complete_font_bytes": 17772300,
+    "font_license_bytes": 4387,
+    "font_manifest_and_deferred_loading_preserved": true,
+    "approved_logo_hash_matched": true,
+    "transparent_favicon_hashes_matched": true,
+    "version_unchanged": true
+  },
+  "boundaries": {
+    "backend_code_changed": false,
+    "database_migration_performed": false,
+    "version_or_ci_changed": false,
+    "production_account_login_performed": false,
+    "production_model_called": false,
+    "native_installation_tested_locally": false
+  }
+}

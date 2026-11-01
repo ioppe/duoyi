@@ -9,6 +9,8 @@ import 'package:duoyi/core/i18n_date_format.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/statistics_period.dart';
 import 'package:duoyi/models/ai_report_context.dart';
+import 'package:duoyi/models/server_config_status.dart';
+import 'package:duoyi/providers/auth_provider.dart';
 import 'package:duoyi/providers/goal_provider.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
@@ -109,6 +111,7 @@ Widget _app(
   String? captureKey,
   bool textScaleTwo = false,
   bool reduceMotion = false,
+  AuthProvider? auth,
 }) {
   final bool capture = captureKey != null;
   Widget app = MultiProvider(
@@ -119,6 +122,7 @@ Widget _app(
       ChangeNotifierProvider(create: (_) => HabitProvider()),
       ChangeNotifierProvider(create: (_) => PomodoroProvider()),
       ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
+      if (auth != null) ChangeNotifierProvider<AuthProvider>.value(value: auth),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -527,6 +531,10 @@ void main() {
     });
     final ai = AiService();
     await ai.loadFromStorage();
+    // 面板把「还没拿到配置」显示为加载态；这里显式给出真实配置：ready + 管理员关闭，
+    // 保持本用例「AI 确实被关闭但历史仍可读」的断言语义。
+    ai.updateFromServerConfig(<String, dynamic>{'ai_enabled': false});
+    expect(ai.configStatus, ServerConfigStatus.ready);
     expect(ai.enabled, isFalse);
 
     await tester.pumpWidget(_app(ai, const StatisticsScreen()));
@@ -545,6 +553,65 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     ai.dispose();
+  });
+
+  testWidgets('进入统计页自动拉取配置，无需打开设置即可恢复 AI 可用', (tester) async {
+    tester.view.physicalSize = const Size(390, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    var configRequests = 0;
+    final auth = AuthProvider(
+      baseUrl: 'https://cfg.test',
+      client: ApiClient(
+        baseUrl: 'https://cfg.test',
+        httpClient: MockClient((request) async {
+          if (request.url.path != '/api/config') {
+            return http.Response('unexpected ${request.url.path}', 404);
+          }
+          configRequests++;
+          return http.Response(
+            jsonEncode(<String, dynamic>{
+              'ai_enabled': true,
+              'ai_model': 'cfg-model',
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      ),
+    );
+    final ai = AiService();
+    // 与 main.dart 的接线一致：配置 map 先到 AI，随后才广播 ready。
+    auth.onServerConfigChanged = ai.updateFromServerConfig;
+    auth.onServerConfigStatusChanged = ai.updateServerConfigStatus;
+    addTearDown(() {
+      ai.dispose();
+      auth.dispose();
+    });
+
+    expect(auth.serverConfigStatus, ServerConfigStatus.unknown);
+    expect(ai.configStatus, ServerConfigStatus.unknown);
+    expect(ai.enabled, isFalse);
+
+    await tester.pumpWidget(_app(ai, const StatisticsScreen(), auth: auth));
+    // 首帧后由统计页的 postFrameCallback 发起请求；加载细线持续动画，
+    // 所以只做有界帧推进，不等待未知长度的网络状态。
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    expect(configRequests, 1, reason: '进入统计页即应自动请求 /api/config');
+    expect(auth.serverConfigStatus, ServerConfigStatus.ready);
+    expect(ai.configStatus, ServerConfigStatus.ready);
+    expect(ai.enabled, isTrue, reason: '拿到真实开关后无需打开设置即可用 AI');
+    expect(ai.model, 'cfg-model');
+    expect(find.text(I18n.tr('statistics.ai.disabled_hint')), findsNothing);
+    expect(find.text(I18n.tr('statistics.ai.config.loading')), findsNothing);
+    expect(find.text(I18n.tr('statistics.ai.config.failed')), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('正文已生成但存档失败时可复制并只重试保存', (tester) async {
