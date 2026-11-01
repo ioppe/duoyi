@@ -30,3 +30,9 @@
 浏览器使用隔离的 loopback 服务与可丢弃测试账号，不使用生产账号或模型。Web 文件发布不会替换后端容器、环境文件或数据库。原始 `duoyi` 工作区存在其他并行修改，本轮只写入独立的 `duoyi-macos-dmg-build`；保护核对如实记录在 `unrelated-worktree-check.json`，不会回退用户修改。
 
 本机没有完整 Xcode/CocoaPods；Flutter/Web 与 CI 构建结果不代表原生安装、DMG 拖动、签名、公证或 Gatekeeper 已验证。
+
+## 生产发布
+
+本轮 Web 已发布到 <https://todo.skydrow.site/>，源码提交 `1944aed25bfa99eba31b7654afd7ca1a1ddce9f4`。整包 120 个文件、源站 14 个关键文件及公网 13 个关键资源哈希匹配；后端镜像、启动时间、环境摘要和数据挂载未变，详见 `production.json`。源站首页逐字节匹配，公网首页仅验证启动与 favicon 引用，不声称代理后的 HTML 字节完全相同。
+
+Android/macOS 安装包由本分支推送后的同 SHA 自动构建生成，结果以 Actions 任务和实际产物为准；Web 发布结果不代替安装包或原生安装验证。
