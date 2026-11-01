@@ -1,0 +1,88 @@
+{
+  "scope": "Test fixture and startup guard alignment after full CI revealed obsolete expectations",
+  "base_sha": "d422358498b42c5dd5885dd229b70eaba8687e59",
+  "runtime_source_commit": "1944aed25bfa99eba31b7654afd7ca1a1ddce9f4",
+  "version": "1.1.47+140013",
+  "initial_ci": {
+    "run_id": 41332885315,
+    "url": "https://github.com/ioppe/duoyi/actions/runs/41332885315",
+    "conclusion": "failure",
+    "job": "analyze",
+    "step": "Run tests (if any)",
+    "public_annotation": "2330 tests passed, 6 failed, 3 skipped.",
+    "exact_test_names_available_anonymously": false,
+    "job_log_download_http_status": 403,
+    "android_and_macos_skipped": true,
+    "artifacts": []
+  },
+  "local_full_reproduction": {
+    "command": "FLUTTER_BIN=<pinned Flutter 3.44.1>/bin/flutter python3 scripts/flutter_with_config.py test --no-pub --reporter=json",
+    "exit_code": 1,
+    "environment": "Local system time zone; results are separate from the Ubuntu CI annotation",
+    "passed_excluding_loaders_and_hooks": 2331,
+    "failed": 8,
+    "skipped": 0,
+    "suite_files": 342,
+    "identified_failures": {
+      "statistics_period_pump_and_settle_timeouts": 4,
+      "mine_to_statistics_pump_and_settle_timeout": 1,
+      "obsolete_120_second_startup_guard": 1,
+      "additional_date_assertions": 2
+    },
+    "raw_log": "startup-sync-ci-reproduce-tests.jsonl",
+    "summary": "startup-sync-ci-reproduction-summary.json"
+  },
+  "test_only_changes": [
+    {
+      "path": "test/screens/statistics_period_test.dart",
+      "change": "Explicitly supply successfully fetched AI-disabled configuration to period-summary fixtures; retain period assertions"
+    },
+    {
+      "path": "test/screens/today_mine_smoke_test.dart",
+      "change": "Explicitly supply successfully fetched AI-disabled configuration in the shared layout/navigation fixture; retain navigation assertions"
+    },
+    {
+      "path": "test/services/notification_quick_add_static_test.dart",
+      "change": "Replace the obsolete 120-second initial sync requirement with first-frame zero-delay checks; preserve 65/75/90/110-second platform staggering guards"
+    }
+  ],
+  "post_fix_targeted_tests": {
+    "command": "TZ=UTC FLUTTER_BIN=<pinned Flutter 3.44.1>/bin/flutter python3 scripts/flutter_with_config.py test --no-pub --reporter=json test/screens/statistics_period_test.dart test/screens/today_mine_smoke_test.dart test/services/notification_quick_add_static_test.dart test/core/completion_visibility_pbt_test.dart",
+    "exit_code": 0,
+    "passed": 58,
+    "failed": 0,
+    "skipped": 0,
+    "files": {
+      "test/screens/statistics_period_test.dart": 4,
+      "test/screens/today_mine_smoke_test.dart": 43,
+      "test/services/notification_quick_add_static_test.dart": 6,
+      "test/core/completion_visibility_pbt_test.dart": 5
+    },
+    "deduplication": "Latest result by suite path and test name, excluding loaders and setUpAll/tearDownAll hooks; do not add to the earlier 256-result subset",
+    "date_assertions_passed_under_ci_utc_environment": true,
+    "raw_log": "startup-sync-ci-fix-tests.jsonl",
+    "summary": "startup-sync-ci-fix-test-summary.json"
+  },
+  "checks": {
+    "analysis_command": "dart analyze --fatal-infos",
+    "analysis_exit_code": 0,
+    "analysis_output": "No issues found!",
+    "analysis_log": "startup-sync-ci-fix-analyze.log",
+    "format_files": 3,
+    "format_changed": 0,
+    "format_exit_code": 0,
+    "diff_check_exit_code": 0,
+    "deployed_build_inputs_matched": 396,
+    "input_path_set_matches": true,
+    "hash_mismatches": [],
+    "additional_unchanged_settings": ["l10n.yaml", "analysis_options.yaml"],
+    "build_input_receipt": "startup-sync-ci-fix-input-checks.json"
+  },
+  "boundaries": {
+    "application_source_changed_by_this_follow_up": false,
+    "backend_or_database_changed": false,
+    "version_or_workflows_changed": false,
+    "web_rebuild_or_redeployment_needed": false,
+    "new_ci_and_installer_result": "To be verified from the next push run and actual artifacts; targeted tests do not establish a full CI pass or native installation"
+  }
+}

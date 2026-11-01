@@ -110,7 +110,11 @@ Widget _wrap(
         ChangeNotifierProvider(create: (_) => AuthProvider())
       else
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-      ChangeNotifierProvider(create: (_) => AiService()),
+      // 页面布局与导航夹具提供已获取的配置，避免等待未发起的配置加载。
+      ChangeNotifierProvider(
+        create: (_) =>
+            AiService()..updateFromServerConfig({'ai_enabled': false}),
+      ),
       ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ChangeNotifierProvider(create: (_) => LocationReminderProvider()),
       ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),

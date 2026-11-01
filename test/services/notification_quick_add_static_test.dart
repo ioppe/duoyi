@@ -283,13 +283,24 @@ void main() {
       reason: '用户反馈进入 App 约 30 秒后持续卡顿，启动期重任务不能集中在 30 秒附近触发。',
     );
     expect(main, contains('achievementProvider.resumeUnlockFeedback'));
-    for (final delayed in const [65, 75, 90, 110, 120]) {
+    for (final delayed in const [65, 75, 90, 110]) {
       expect(
         main,
         contains('Duration(seconds: $delayed)'),
-        reason: '启动后平台服务、通知恢复、日历/云同步需要错峰，避免 30 秒附近形成持续卡顿。',
+        reason: '启动后平台服务、通知恢复与日历同步需要错峰，避免 30 秒附近形成持续卡顿。',
       );
     }
+    expect(
+      startupTasks,
+      contains("reason: 'initial post-frame startup'"),
+      reason: '轻量后端配置刷新与按需云同步应由首帧入口触发。',
+    );
+    expect(startupTasks, contains('delay: Duration.zero'));
+    expect(
+      startupTasks,
+      isNot(contains('Duration(seconds: 120)')),
+      reason: '首次配置刷新不能再随平台重任务延迟 120 秒。',
+    );
     expect(deepLinkService, contains('takeInitialLink'));
     expect(deepLinkService, contains('_isDuoyiDeepLink(uri)'));
     expect(mainActivity, contains('pendingInitialDeepLink'));
