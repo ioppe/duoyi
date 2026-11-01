@@ -39,9 +39,9 @@ python3 scripts/flutter_with_config.py build apk --release
 
 GitHub Actions 需要在本仓库配置 `DUOYI_KEYSTORE_BASE64`、`DUOYI_KEYSTORE_PASSWORD`、`DUOYI_KEY_ALIAS`、`DUOYI_KEY_PASSWORD`。Secrets 不随 Fork 复制；后续 APK 应持续使用自己的同一份签名密钥。
 
-推送到 `self-hosted-skydrow` 或 `main` 会自动运行 `.github/workflows/build-apk.yml`：先校验配置、分析并测试，再构建正式签名的通用 APK 和各 ABI APK。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
+每次推送到 `self-hosted-skydrow`、`main` 或 `build/macos-dmg` 都会自动运行 `.github/workflows/build-apk.yml`：先校验共享配置、分析并测试，再从同一提交并行构建正式签名的通用/各 ABI Android APK，以及 macOS 通用 DMG/ZIP。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建；手动输入 `build_macos` 默认开启。macOS 子工作流不再独立响应 push，避免重复构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
 
-构建成功后，在该次运行的 Artifacts 中下载 `duoyi-android`，解压后安装通用包 `duoyi-<日期>-<提交>.apk` 或以 `-arm64-v8a.apk` 结尾的手机专用包。产物保留 30 天；`v*` tag 仍按原流程生成 AAB 和 GitHub Release。
+构建成功后，在该次主 `build` 运行的 Artifacts 中下载 `duoyi-android` 或 `duoyi-macos-universal-unsigned`。Android 解压后安装通用包 `duoyi-<日期>-<提交>.apk` 或以 `-arm64-v8a.apk` 结尾的手机专用包；macOS 包含同一提交的 DMG、ZIP 与校验文件，当前仍未签名/公证，具体边界见 [macOS 客户端说明](macos.md)。产物保留 30 天并按提交区分；普通分支推送不创建正式 Release，`v*` tag 仍按原流程生成 AAB 并在各端构建全部成功后发布 GitHub Release。
 
 安装版登录页默认显示服务器地址和访问令牌。首次可在网页版登录并进入“我的 → 个人资料 → 访问令牌”创建令牌，再填写 `https://todo.skydrow.site` 和令牌连接。也可使用安装版的账号密码入口。服务器地址保存在本机，可在退出登录后修改，无需重新打包。
 

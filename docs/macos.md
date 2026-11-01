@@ -47,11 +47,11 @@ macOS 提醒使用系统通知授权。初始化通知服务时系统可弹出�
 
 ## GitHub Actions 构建
 
-`.github/workflows/build-apk.yml` 的主 `build` 流程在推送 `main` / `self-hosted-skydrow`、PR 和 `v*` 标签时，通过可复用的 `.github/workflows/build-macos.yml` 构建 macOS 安装包。手动运行主流程时，`build_macos` 默认开启，可关闭以跳过 macOS；macOS 与 Android/Web 使用同一份已验证的公开部署配置。也可以单独手动运行 `build-macos.yml`，选择公开配置路径和初始服务器地址。
+`.github/workflows/build-apk.yml` 的主 `build` 是多端安装包的统一自动入口：推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` 或 `v*` 标签都会触发，面向 `main` / `self-hosted-skydrow` 的 PR 保留原有触发规则。配置校验、分析与测试通过后，同一提交的 Android 和 macOS 安装包并行构建，macOS 通过可复用的 `.github/workflows/build-macos.yml` 运行，并与 Android 使用同一份已验证的公开部署配置。手动运行主流程时，`build_macos` 默认开启，也可明确关闭；单独手动运行 `build-macos.yml` 仍可选择公开配置路径和初始服务器地址。
 
 独立手动入口首次需要工作流文件进入仓库默认分支后才会显示；自动主流程在目标分支推送包含工作流与macOS源码的提交后生效。
 
-独立构建分支 `build/macos-dmg` 的 push 直接触发 **macOS DMG** 工作流，便于在不修改默认分支、不创建版本标签的情况下验证真实安装包；该入口只上传构建产物。
+构建分支 `build/macos-dmg` 也走上述统一流程，不再单独 push 触发 **macOS DMG**，避免同一提交重复构建 Mac 或漏掉 Android。子工作流只接受主流程调用和手动运行。无需为日常安装包创建或覆盖版本标签；普通分支推送仅上传 Actions artifacts，同一分支连续推送时只保留最新运行，尚未完成的旧运行会取消。
 
 macOS 作业在分析与回归通过后运行，使用完整 Xcode 的 `macos-15` runner、固定 Flutter/Python 工具链和 CocoaPods，构建 Release 应用，并用 `lipo` 验证主程序同时包含 `arm64`、`x86_64`。常规运行上传 Actions artifacts；推送 `v*` 标签时，主流程等待 Android、Web、macOS 都成功，再把 DMG、ZIP 和校验文件一起加入 GitHub Release。独立 macOS 手动流程只上传 artifacts，不创建 Release、不发布标签。
 
