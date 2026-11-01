@@ -19,12 +19,14 @@ import '../widgets/focus_task_stats_card.dart';
 import '../core/focus_tag_stats.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
+import '../core/local_timezone_resolver.dart';
 import '../core/project_efficiency.dart';
 import '../core/report_cross_analysis.dart';
 import '../core/report_engine.dart';
 import '../core/report_time_slices.dart';
 import '../core/statistics_period.dart';
 import '../core/todo_quadrant_style.dart';
+import '../models/ai_report_context.dart';
 import '../models/goal.dart';
 import '../models/habit.dart';
 import '../models/pomodoro.dart';
@@ -36,9 +38,9 @@ import '../providers/pomodoro_provider.dart';
 import '../providers/time_audit_provider.dart';
 import '../providers/todo_provider.dart';
 import '../services/ai_service.dart';
-import '../widgets/ai_review_markdown.dart';
-import '../widgets/statistics_activity_card.dart';
+import '../widgets/report_ai_review_panel.dart';
 import '../widgets/result_states.dart';
+import '../widgets/statistics_activity_card.dart';
 import '../widgets/surface_components.dart';
 import 'ai_history_screen.dart';
 import 'time_audit_screen.dart';
@@ -56,9 +58,6 @@ class StatisticsScreen extends StatefulWidget {
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
   _Range _range = _Range.week;
-  bool _aiReportBusy = false;
-  String? _aiReportReview;
-  String? _aiReportError;
 
   StatisticsWindow get _window =>
       StatisticsWindow(StatisticsPeriod.values[_range.index]);
@@ -121,6 +120,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       comparison: comparison,
       generatedAt: AppClock.now(),
     );
+    // 存档身份只看「周期类型 + 完整自然周期 + 生成时区」，与标题、语言、
+    // 数据截止到哪天都无关；同一周的周二、周三再生成会落进同一个分组。
+    final reportContext = AiReportContext.fromWindow(
+      window,
+      timeZone: LocalTimezoneResolver.currentIana,
+    );
+    final reportJob = ai.reportJobFor(reportContext);
+    final reportHistory = ai.reportHistoryFor(reportContext);
+    final latestReport = reportHistory.isEmpty ? null : reportHistory.first;
     final productivityTrend = _buildProductivityTrend(
       range: _range,
       start: start,
@@ -278,11 +286,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
               ],
               selected: {_range},
-              onSelectionChanged: (s) => setState(() {
-                _range = s.first;
-                _aiReportReview = null;
-                _aiReportError = null;
-              }),
+              onSelectionChanged: (s) => setState(() => _range = s.first),
             ),
           ),
         ),
@@ -399,13 +403,19 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               cs: cs,
               onCopy: () => _copyDigest(context, digest),
               aiEnabled: ai.enabled,
-              aiBusy: _aiReportBusy,
-              aiReview: _aiReportReview,
-              aiError: _aiReportError,
-              onAiReview: () => _runDigestAiReview(context, digest),
+              aiReportContext: reportContext,
+              aiJob: reportJob,
+              aiLatestEntry: latestReport,
+              aiHistoryCount: reportHistory.length,
+              onAiReview: () =>
+                  _runDigestAiReview(context, digest, reportContext),
+              onRetryArchive: () => _retryReportArchive(context, reportContext),
               onOpenAiHistory: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AiHistoryScreen()),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AiHistoryScreen(initialReportContext: reportContext),
+                ),
               ),
               onShareImage: () => _showReportShareCard(
                 context,
@@ -2354,31 +2364,52 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
+  /// 生成当前自然周期的解读。任务状态与存档由 [AiService] 持有，
+  /// 因此离开统计页再回来仍能看到同一周期的进度或结果。
   Future<void> _runDigestAiReview(
     BuildContext context,
     PeriodReportDigest digest,
+    AiReportContext reportContext,
   ) async {
-    setState(() {
-      _aiReportBusy = true;
-      _aiReportError = null;
-    });
+    final ai = context.read<AiService>();
+    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
-      final review = await context.read<AiService>().personalizedReportReview(
+      await ai.personalizedReportReview(
         periodLabel: digest.title,
         reportMarkdown: _digestMarkdown(digest),
+        reportContext: reportContext,
+        dataThrough: digest.report.end,
       );
-      if (!mounted) return;
-      if (review.trim().isEmpty) {
-        setState(() => _aiReportError = '模型未返回正文，请重试或让管理员检查 AI 配置');
-        return;
+    } catch (_) {
+      // 失败详情由 service 的 job.error 呈现；这里只保证 future 异常不冒泡，
+      // 若 service 未落错误状态则补一条本地提示。
+      if (ai.reportJobFor(reportContext)?.error == null) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(I18n.tr('statistics.ai.error.request_failed')),
+          ),
+        );
       }
-      setState(() => _aiReportReview = review);
-    } on AiException catch (e) {
-      if (mounted) setState(() => _aiReportError = e.message);
-    } catch (e) {
-      if (mounted) setState(() => _aiReportError = e.toString());
-    } finally {
-      if (mounted) setState(() => _aiReportBusy = false);
+    }
+  }
+
+  /// 仅重试存档，不重新请求模型；失败时任务仍保留未存档正文。
+  Future<void> _retryReportArchive(
+    BuildContext context,
+    AiReportContext reportContext,
+  ) async {
+    final ai = context.read<AiService>();
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await ai.retryReportArchive(reportContext);
+    } catch (_) {
+      if (ai.reportJobFor(reportContext)?.error == null) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(I18n.tr('statistics.ai.error.storage_failed')),
+          ),
+        );
+      }
     }
   }
 
@@ -3937,10 +3968,12 @@ class _PeriodReportDigestCard extends StatelessWidget {
   final ColorScheme cs;
   final VoidCallback onCopy;
   final bool aiEnabled;
-  final bool aiBusy;
-  final String? aiReview;
-  final String? aiError;
+  final AiReportContext aiReportContext;
+  final AiReportReviewJob? aiJob;
+  final AiReviewEntry? aiLatestEntry;
+  final int aiHistoryCount;
   final VoidCallback onAiReview;
+  final VoidCallback onRetryArchive;
   final VoidCallback onOpenAiHistory;
   final VoidCallback onShareImage;
 
@@ -3949,13 +3982,26 @@ class _PeriodReportDigestCard extends StatelessWidget {
     required this.cs,
     required this.onCopy,
     required this.aiEnabled,
-    required this.aiBusy,
-    required this.aiReview,
-    required this.aiError,
+    required this.aiReportContext,
+    required this.aiJob,
+    required this.aiLatestEntry,
+    required this.aiHistoryCount,
     required this.onAiReview,
+    required this.onRetryArchive,
     required this.onOpenAiHistory,
     required this.onShareImage,
   });
+
+  bool get _aiRunning => aiJob?.isRunning ?? false;
+
+  /// 同一个周期再次生成会新建一个存档版本，因此按钮明确区分生成/重新生成/进行中。
+  String get _aiActionLabel {
+    if (_aiRunning) return I18n.tr('statistics.ai.generating');
+    if (aiLatestEntry != null || aiJob != null) {
+      return I18n.tr('statistics.ai.regenerate');
+    }
+    return I18n.tr('statistics.ai.generate');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -4025,78 +4071,36 @@ class _PeriodReportDigestCard extends StatelessWidget {
                 label: const Text('复制报告'),
               ),
               TextButton.icon(
-                onPressed: aiEnabled && !aiBusy ? onAiReview : null,
-                icon: aiBusy
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_awesome, size: 16),
-                label: const Text('AI 解读'),
+                onPressed: aiEnabled && !_aiRunning ? onAiReview : null,
+                icon: const Icon(Icons.auto_awesome, size: 16),
+                label: Text(_aiActionLabel),
               ),
               TextButton.icon(
                 onPressed: onShareImage,
                 icon: const Icon(Icons.image_outlined, size: 16),
                 label: const Text('分享图'),
               ),
-              if (aiReview != null)
-                TextButton.icon(
-                  onPressed: onOpenAiHistory,
-                  icon: const Icon(Icons.history, size: 16),
-                  label: const Text('AI 历史'),
+              TextButton.icon(
+                onPressed: onOpenAiHistory,
+                icon: const Icon(Icons.history, size: 16),
+                label: Text(
+                  aiHistoryCount > 0
+                      ? I18n.tr(
+                          'statistics.ai.history_count',
+                        ).replaceAll('{count}', '$aiHistoryCount')
+                      : I18n.tr('statistics.ai.history'),
                 ),
+              ),
             ],
           ),
-          if (!aiEnabled) ...[
-            const SizedBox(height: 4),
-            Text(
-              '管理员启用 AI 后可生成云端个性化解读',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-            ),
-          ],
-          if (aiError != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              aiError!,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: cs.error),
-            ),
-          ],
-          if (aiReview != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.auto_awesome, size: 16, color: cs.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '云端个性化解读',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelLarge?.copyWith(color: cs.primary),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  AiReviewMarkdown(data: aiReview!),
-                ],
-              ),
-            ),
-          ],
+          ReportAiReviewPanel(
+            key: ValueKey('statistics_ai_panel_${aiReportContext.key}'),
+            aiEnabled: aiEnabled,
+            job: aiJob,
+            latestEntry: aiLatestEntry,
+            onGenerate: onAiReview,
+            onRetrySave: onRetryArchive,
+          ),
         ],
       ),
     );
@@ -4943,6 +4947,9 @@ class _ProductivityComparisonCard extends StatelessWidget {
     final score = comparison.productivityScore;
     final trendColor = _trendColor(score.direction);
     final trendIcon = _trendIcon(score.direction);
+    // 圆内数值和标签随系统字号增长，圆也同步扩展，避免大字号被固定高度裁切。
+    final scoreDiameter =
+        76.0 * math.max(1.0, MediaQuery.textScalerOf(context).scale(24) / 24);
     return AppSurfaceCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       borderRadius: BorderRadius.circular(16),
@@ -5004,8 +5011,8 @@ class _ProductivityComparisonCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 76,
-                height: 76,
+                width: scoreDiameter,
+                height: scoreDiameter,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,

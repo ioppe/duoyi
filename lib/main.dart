@@ -423,6 +423,9 @@ void main() async {
       guardedSync('shares', shareProvider.resetLocalState);
       guardedSync('calendar sync', calendarSyncProvider.resetLocalState);
       guardedSync('ai service', aiService.resetLocalState);
+      // resetLocalState 已同步失效旧代际；这里先排空在途历史写入，
+      // 避免旧代际的写入在最终 prefs 清理之后才落地，让 AI 历史复活。
+      await guarded('ai history writes', aiService.waitForHistoryWrites);
       guardedSync('notification service', notificationService.resetLocalState);
       guardedSync('preferences', preferencesProvider.resetLocalState);
       await guarded(

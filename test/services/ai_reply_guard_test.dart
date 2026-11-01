@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/services/api_client.dart';
+import 'package:duoyi/widgets/ai_review_markdown.dart';
+import 'package:duoyi/widgets/report_ai_review_panel.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -200,11 +204,31 @@ void main() {
     expect(source, contains('推理型模型会先消耗大量 reasoning token'));
   });
 
-  test('解读面板不会把空正文渲染成空白卡片', () {
-    final statistics = File(
-      'lib/screens/statistics_screen.dart',
-    ).readAsStringSync();
-    expect(statistics, contains("review.trim().isEmpty"));
-    expect(statistics, contains('模型未返回正文'));
+  testWidgets('解读面板不会把空正文渲染成空白卡片', (tester) async {
+    final emptyEntry = AiReviewEntry(
+      id: 'empty-legacy-review',
+      createdAt: DateTime.utc(2026, 11, 1),
+      content: '  \n  ',
+      summary: '统计报告 AI 解读：早期空记录',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ReportAiReviewPanel(
+            aiEnabled: true,
+            job: null,
+            latestEntry: emptyEntry,
+            onGenerate: () {},
+            onRetrySave: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(AiReviewMarkdown), findsNothing);
+    expect(find.text(I18n.tr('statistics.ai.result_title')), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

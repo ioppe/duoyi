@@ -1,13 +1,18 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+
 import '../core/ai_todo_breakdown.dart';
 import '../core/app_clock.dart';
 import '../core/app_config.dart';
+import '../core/diary_deep_review.dart';
+import '../core/i18n.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/smart_date_parser.dart';
 import '../core/smart_todo_draft.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../core/diary_deep_review.dart';
+import '../core/statistics_period.dart';
+import '../models/ai_report_context.dart';
 import '../models/diary_entry.dart';
 import '../models/goal.dart'
     show
@@ -17,6 +22,8 @@ import '../models/goal.dart'
         ReminderRule,
         ReminderRuleType;
 import '../models/todo.dart';
+import 'account_local_data_cleaner.dart';
+import 'ai_review_history_store.dart';
 import 'api_client.dart';
 
 /// AI 客户端：**不再持有任何 key/base_url**，所有调用通过 `/api/ai/chat`
@@ -24,10 +31,30 @@ import 'api_client.dart';
 ///
 /// `enabled` 状态来自 `/api/config`。
 class AiService extends ChangeNotifier {
+  AiService({AiReviewHistoryStore? historyStore})
+    : _historyStore = historyStore ?? SharedPreferencesAiReviewHistoryStore();
+
+  /// 历史只读写 `ai_review_history` 这一个账号私有键。
+  final AiReviewHistoryStore _historyStore;
   ApiClient _client = ApiClient();
   bool _enabled = false;
   String _model = '';
   List<AiReviewEntry> _reviewHistory = [];
+
+  /// 周期解读任务只存在内存：应用存活期间独立于统计页运行，退出后不恢复，
+  /// 也不代表服务端或操作系统在后台继续执行。
+  final Map<String, AiReportReviewJob> _reportJobs = {};
+  final Map<String, _ScopedReportDraft> _reportDrafts = {};
+  final Map<String, Future<String>> _reportRequests = {};
+
+  /// 存档重试单飞：同一周期的重复“仅重试保存”共享同一个 Future。
+  final Map<String, Future<void>> _reportRetries = {};
+
+  /// 待保存条目的稳定身份：重试复用同一条，避免同一次生成被存成多个版本。
+  final Map<String, AiReviewEntry> _reportPendingArchives = {};
+
+  /// 历史读写串行队列：load/append/delete/clear 不会互相覆盖。
+  Future<void> _historyTail = Future<void>.value();
   int _storageGeneration = 0;
 
   bool get enabled => _enabled;
@@ -35,8 +62,15 @@ class AiService extends ChangeNotifier {
   String get model => _model;
   List<AiReviewEntry> get reviewHistory => List.unmodifiable(_reviewHistory);
 
-  static const _kReviewHistory = 'ai_review_history';
   static const weeklyReviewKind = 'weekly_review';
+
+  /// 新统计报告条目的显式类型；旧条目没有该字段仍然有效。
+  static const statisticsReportKind = 'statistics_report';
+
+  /// 每个自然周期存档组最多保留 50 条；无周期元数据的老记录共用原有 50 条池。
+  static const maxReviewEntriesPerGroup = 50;
+
+  static const _unscopedPoolKey = 'legacy:unscoped';
 
   void attachClient(ApiClient client) {
     _client = client;
@@ -48,48 +82,280 @@ class AiService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadFromStorage() async {
+  Future<void> loadFromStorage() {
     final generation = _storageGeneration;
-    final p = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration) return;
-    final raw = p.getStringList(_kReviewHistory) ?? [];
-    _reviewHistory = raw
-        .map((e) {
-          try {
-            return AiReviewEntry.fromJson(jsonDecode(e));
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<AiReviewEntry>()
-        .toList();
-    notifyListeners();
+    return _serialize(() async {
+      if (generation != _storageGeneration) return;
+      List<String> raw;
+      try {
+        raw = await _historyStore.read();
+      } catch (_) {
+        // 读失败保持现有内存内容，不要把历史清空。
+        return;
+      }
+      if (generation != _storageGeneration) return;
+      _reviewHistory = _decodeHistory(raw);
+      notifyListeners();
+    });
   }
 
+  /// 账号切换/退出：同步失效旧代际并清空内存。晚到的响应和晚到的写入都不会
+  /// 重新生成 `ai_review_history`。
   void resetLocalState() {
     _storageGeneration++;
     _reviewHistory = [];
+    _reportJobs.clear();
+    _reportDrafts.clear();
+    _reportRequests.clear();
+    _reportRetries.clear();
+    _reportPendingArchives.clear();
     notifyListeners();
   }
 
-  Future<void> _saveHistory() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setStringList(
-      _kReviewHistory,
-      _reviewHistory.map((e) => jsonEncode(e.toJson())).toList(),
-    );
+  /// 排空历史读写队列：账号清理在最终 prefs 清理前调用，避免旧写入在清理后落地。
+  Future<void> waitForHistoryWrites() async {
+    var tail = _historyTail;
+    while (true) {
+      try {
+        await tail;
+      } catch (_) {
+        // 队列尾部的失败已被吸收，这里只负责排空。
+      }
+      if (identical(tail, _historyTail)) return;
+      tail = _historyTail;
+    }
   }
 
+  /// 删除单条历史。
+  ///
+  /// 计算、内存移除、落盘与回滚全部在历史串行区内完成：并发 load/append 不会
+  /// 让删除静默失效，写入失败时也只回滚到队列内看到的最新列表。
   Future<void> deleteReview(String id) async {
-    _reviewHistory.removeWhere((e) => e.id == id);
-    notifyListeners();
-    await _saveHistory();
+    final generation = _storageGeneration;
+    await _serialize(() async {
+      if (generation != _storageGeneration) return;
+      final previous = _reviewHistory;
+      final next = previous.where((entry) => entry.id != id).toList();
+      // 队列内已没有这一条（例如刚被清空或并发删除）：不需要写盘。
+      if (next.length == previous.length) return;
+      _reviewHistory = next;
+      notifyListeners();
+      try {
+        await _saveHistory();
+      } catch (_) {
+        if (generation == _storageGeneration) {
+          _reviewHistory = previous;
+          notifyListeners();
+        }
+        rethrow;
+      }
+    });
   }
 
+  /// 清空全部历史（所有周期）：同时让进行中的旧请求失效，避免清空后被写回。
   Future<void> clearReviewHistory() async {
-    _reviewHistory.clear();
+    _storageGeneration++;
+    final generation = _storageGeneration;
+    _reviewHistory = [];
+    _reportJobs.clear();
+    _reportDrafts.clear();
+    _reportRequests.clear();
+    _reportRetries.clear();
+    _reportPendingArchives.clear();
     notifyListeners();
-    await _saveHistory();
+    await _serialize(() async {
+      if (generation != _storageGeneration) return;
+      await _saveHistory();
+    });
+  }
+
+  /// 指定自然周期的历史解读，最新在前。
+  List<AiReviewEntry> reportHistoryFor(AiReportContext context) {
+    final key = context.key;
+    final entries =
+        _reviewHistory
+            .where((entry) => entry.reportContext?.key == key)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return List<AiReviewEntry>.unmodifiable(entries);
+  }
+
+  /// 指定周期当前的未完成任务（generating/saving）或存档失败任务。
+  AiReportReviewJob? reportJobFor(AiReportContext context) =>
+      _reportJobs[context.key];
+
+  /// 历史选择器可选的自然周期：已存档分组 + 进行中/存档失败分组，最新在前。
+  List<AiReportContext> get reportContexts {
+    final contexts = <String, AiReportContext>{};
+    final activity = <String, DateTime>{};
+    for (final entry in _reviewHistory) {
+      final context = entry.reportContext;
+      if (context == null) continue;
+      contexts.putIfAbsent(context.key, () => context);
+      final seen = activity[context.key];
+      if (seen == null || entry.createdAt.isAfter(seen)) {
+        activity[context.key] = entry.createdAt;
+      }
+    }
+    for (final job in _reportJobs.values) {
+      if (!_isPickerVisibleJob(job)) continue;
+      final key = job.context.key;
+      contexts.putIfAbsent(key, () => job.context);
+      final seen = activity[key];
+      if (seen == null || job.startedAt.isAfter(seen)) {
+        activity[key] = job.startedAt;
+      }
+    }
+    final keys = contexts.keys.toList()
+      ..sort((a, b) {
+        final left = activity[a];
+        final right = activity[b];
+        if (left == null && right == null) return a.compareTo(b);
+        if (left == null) return 1;
+        if (right == null) return -1;
+        return right.compareTo(left);
+      });
+    return List<AiReportContext>.unmodifiable([
+      for (final key in keys) contexts[key]!,
+    ]);
+  }
+
+  List<AiReviewEntry> _decodeHistory(List<String> raw) {
+    final entries = <AiReviewEntry>[];
+    for (final item in raw) {
+      try {
+        final decoded = jsonDecode(item);
+        if (decoded is Map) {
+          entries.add(
+            AiReviewEntry.fromJson(Map<String, dynamic>.from(decoded)),
+          );
+        }
+      } catch (_) {
+        // 损坏的单条记录不影响其它历史条目。
+        continue;
+      }
+    }
+    return entries;
+  }
+
+  /// 串行执行历史 IO。返回的 Future 保留本次操作的真实异常，
+  /// 而队列尾部永远正常完成，后续操作不会被前一次失败卡住。
+  Future<T> _serialize<T>(Future<T> Function() action) async {
+    final previous = _historyTail;
+    final done = Completer<void>();
+    _historyTail = done.future;
+    try {
+      try {
+        await previous;
+      } catch (_) {
+        // 吸收上一次排队的失败。
+      }
+      return await action();
+    } finally {
+      if (!done.isCompleted) done.complete();
+    }
+  }
+
+  Future<void> _saveHistory() => _saveEntries(_reviewHistory);
+
+  Future<void> _saveEntries(List<AiReviewEntry> entries) {
+    final payload = [for (final entry in entries) jsonEncode(entry.toJson())];
+    return _historyStore.write(payload);
+  }
+
+  /// 每个自然周期分组各自最多 50 条；无元数据的老记录共用原有 50 条池，
+  /// 其它周期不会因为本周期新增而被挤掉。
+  List<AiReviewEntry> _capHistory(List<AiReviewEntry> entries) {
+    final counts = <String, int>{};
+    final kept = <AiReviewEntry>[];
+    for (final entry in entries) {
+      final key = entry.reportContext?.key ?? _unscopedPoolKey;
+      final count = counts[key] ?? 0;
+      if (count >= maxReviewEntriesPerGroup) continue;
+      counts[key] = count + 1;
+      kept.add(entry);
+    }
+    return kept;
+  }
+
+  /// 先落盘再入内存：只有写入成功才把条目提交为可读历史。
+  ///
+  /// 追加目标列表在串行区内计算，保证并发 load/append 不会互相丢记录。
+  Future<bool> _commitEntry(
+    AiReviewEntry entry, {
+    required int generation,
+    required int accountGeneration,
+  }) {
+    return _serialize(() async {
+      if (_isRequestStale(generation, accountGeneration)) return false;
+      final candidate = _capHistory(<AiReviewEntry>[entry, ..._reviewHistory]);
+      try {
+        await _saveEntries(candidate);
+      } catch (_) {
+        if (_isRequestStale(generation, accountGeneration)) return false;
+        rethrow;
+      }
+      if (_isRequestStale(generation, accountGeneration)) {
+        await _repairStaleWrite();
+        return false;
+      }
+      _reviewHistory.insert(0, entry);
+      _reviewHistory = _capHistory(_reviewHistory);
+      notifyListeners();
+      return true;
+    });
+  }
+
+  /// 旧代际的写入已经落地时，用当前内存（重置后为空）覆盖回去。
+  Future<void> _repairStaleWrite() async {
+    try {
+      await _saveHistory();
+    } catch (_) {
+      // 尽力而为：账号清理随后还会再清一遍该键。
+    }
+  }
+
+  bool _isRequestStale(int generation, int accountGeneration) =>
+      generation != _storageGeneration ||
+      !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+        accountGeneration,
+      );
+
+  void _throwIfStale(int generation, int accountGeneration) {
+    if (_isRequestStale(generation, accountGeneration)) {
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+    }
+  }
+
+  void _discardJob(String key, DateTime startedAt) {
+    if (_reportJobs[key]?.startedAt != startedAt) return;
+    _reportJobs.remove(key);
+    _reportDrafts.remove(key);
+    // 任务结束后不再需要“待保存条目身份”，避免下一次生成误用旧 id。
+    _reportPendingArchives.remove(key);
+    notifyListeners();
+  }
+
+  /// 生成失败的本地化错误留在任务上供内联展示（没有可存档正文）。
+  void _markGenerationFailed(String key, DateTime startedAt, String message) {
+    final current = _reportJobs[key];
+    if (current == null || current.startedAt != startedAt) return;
+    _reportJobs[key] = current.copyWith(
+      phase: AiReportReviewPhase.failed,
+      error: message,
+    );
+    notifyListeners();
+  }
+
+  /// 历史选择器只列出“进行中”或“有未存档正文”的分组；
+  /// 纯生成失败的分组没有可查看内容，不进选择器。
+  bool _isPickerVisibleJob(AiReportReviewJob job) =>
+      job.isRunning || (job.unsavedContent?.trim().isNotEmpty ?? false);
+
+  String _newEntryId(DateTime instant, AiReportContext? context) {
+    final stamp = instant.microsecondsSinceEpoch.toString();
+    if (context == null) return stamp;
+    return '$stamp@${context.key}';
   }
 
   Future<String> _chat(
@@ -252,6 +518,10 @@ class AiService extends ChangeNotifier {
     final createdAt = now ?? DateTime.now();
     final cached = weeklyReviewForDay(createdAt);
     if (cached != null) return cached.content;
+    // 网络请求前先固定代际与模型，晚到的响应不能写进新账号的历史。
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final model = _model;
     final summary =
         '$periodLabel数据：完成 $completedTodos / $totalTodos 项待办，专注 $weeklyFocusMinutes 分钟，习惯连续打卡 $habitStreak 天。';
     final out = await _chat(
@@ -272,20 +542,23 @@ class AiService extends ChangeNotifier {
       weeklyFocusMinutes: weeklyFocusMinutes,
       habitStreak: habitStreak,
     );
+    _throwIfStale(storageGeneration, accountGeneration);
     final entry = AiReviewEntry(
       id: createdAt.millisecondsSinceEpoch.toString(),
       createdAt: createdAt,
       content: review,
       summary: summary,
-      model: _model,
+      model: model,
       kind: weeklyReviewKind,
     );
-    _reviewHistory.insert(0, entry);
-    if (_reviewHistory.length > 50) {
-      _reviewHistory = _reviewHistory.sublist(0, 50);
+    final applied = await _commitEntry(
+      entry,
+      generation: storageGeneration,
+      accountGeneration: accountGeneration,
+    );
+    if (!applied) {
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
     }
-    await _saveHistory();
-    notifyListeners();
     return review;
   }
 
@@ -306,11 +579,280 @@ class AiService extends ChangeNotifier {
     return _runReview(summary, periodLabel);
   }
 
+  /// 生成统计报告的个性化解读。
+  ///
+  /// 传入 [reportContext] 时，本服务负责按自然周期去重、任务状态和存档；
+  /// 不传时保持旧的“无周期元数据”行为（进入原有 latest-50 池）。
   Future<String> personalizedReportReview({
     required String periodLabel,
     required String reportMarkdown,
+    AiReportContext? reportContext,
+    DateTime? dataThrough,
+  }) {
+    final context = reportContext;
+    if (context == null) {
+      return _runUnscopedReportReview(
+        periodLabel: periodLabel,
+        reportMarkdown: reportMarkdown,
+        dataThrough: dataThrough,
+      );
+    }
+    // 同一自然周期已有进行中的请求：复用同一个 Future，只发一次上游请求。
+    final running = _reportRequests[context.key];
+    if (running != null) return running;
+    return _startScopedReportReview(
+      periodLabel: periodLabel,
+      reportMarkdown: reportMarkdown,
+      context: context,
+      dataThrough: dataThrough,
+    );
+  }
+
+  /// 存档失败后只重试“保存”，不再调用模型。
+  ///
+  /// 同一周期的重复点击共享同一个 Future，并复用同一条待保存条目身份，
+  /// 因此阻塞或连续重试最多只落一条存档，不会把同一次生成存成多个版本。
+  Future<void> retryReportArchive(AiReportContext context) {
+    final key = context.key;
+    final running = _reportRetries[key];
+    if (running != null) return running;
+    final job = _reportJobs[key];
+    final content = (job?.unsavedContent ?? '').trim();
+    // 没有待保存正文时不做任何事，绝不能凭空生成一条空存档。
+    if (job == null || content.isEmpty) return Future<void>.value();
+    final completer = Completer<void>();
+    final future = completer.future;
+    _reportRetries[key] = future;
+    Future<void>.sync(() => _runArchiveRetry(context, job, content)).then(
+      (_) {
+        if (identical(_reportRetries[key], future)) {
+          _reportRetries.remove(key);
+        }
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (Object error, StackTrace stack) {
+        if (identical(_reportRetries[key], future)) {
+          _reportRetries.remove(key);
+        }
+        if (!completer.isCompleted) completer.completeError(error, stack);
+      },
+    );
+    return future;
+  }
+
+  Future<void> _runArchiveRetry(
+    AiReportContext context,
+    AiReportReviewJob job,
+    String content,
+  ) async {
+    final key = context.key;
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final entry = _pendingArchiveEntry(context, content);
+    _reportJobs[key] = job.copyWith(
+      phase: AiReportReviewPhase.saving,
+      clearError: true,
+    );
+    notifyListeners();
+    final bool applied;
+    try {
+      applied = await _commitEntry(
+        entry,
+        generation: storageGeneration,
+        accountGeneration: accountGeneration,
+      );
+    } catch (_) {
+      _markArchiveFailed(key, job, content);
+      rethrow;
+    }
+    if (!applied) {
+      _discardJob(key, job.startedAt);
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+    }
+    _discardJob(key, job.startedAt);
+  }
+
+  /// 同一次生成只有一个待保存条目身份；正文变了（新的生成又失败）才换新条目。
+  AiReviewEntry _pendingArchiveEntry(AiReportContext context, String content) {
+    final key = context.key;
+    final pending = _reportPendingArchives[key];
+    if (pending != null && pending.content == content) return pending;
+    final draft = _reportDrafts[key];
+    final createdAt = DateTime.now();
+    final entry = AiReviewEntry(
+      id: _newEntryId(createdAt, context),
+      createdAt: createdAt,
+      content: content,
+      summary: draft?.summary ?? _statisticsSummary(context.period.name),
+      model: draft?.model ?? _model,
+      kind: statisticsReportKind,
+      reportContext: context,
+      dataThrough: draft?.dataThrough,
+    );
+    _reportPendingArchives[key] = entry;
+    return entry;
+  }
+
+  Future<String> _startScopedReportReview({
+    required String periodLabel,
+    required String reportMarkdown,
+    required AiReportContext context,
+    DateTime? dataThrough,
+  }) {
+    final key = context.key;
+    final completer = Completer<String>();
+    _reportRequests[key] = completer.future;
+    Future<String>.sync(
+      () => _runScopedReportReview(
+        periodLabel: periodLabel,
+        reportMarkdown: reportMarkdown,
+        context: context,
+        dataThrough: dataThrough,
+      ),
+    ).then(
+      (value) {
+        if (identical(_reportRequests[key], completer.future)) {
+          _reportRequests.remove(key);
+        }
+        if (!completer.isCompleted) completer.complete(value);
+      },
+      onError: (Object error, StackTrace stack) {
+        if (identical(_reportRequests[key], completer.future)) {
+          _reportRequests.remove(key);
+        }
+        if (!completer.isCompleted) completer.completeError(error, stack);
+      },
+    );
+    return completer.future;
+  }
+
+  Future<String> _runScopedReportReview({
+    required String periodLabel,
+    required String reportMarkdown,
+    required AiReportContext context,
+    DateTime? dataThrough,
   }) async {
-    final out = await _chat(
+    final key = context.key;
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final model = _model;
+    final startedAt = DateTime.now();
+    final snapshot = _resolveDataThrough(context, dataThrough);
+    final summary = _statisticsSummary(periodLabel);
+    _reportDrafts[key] = _ScopedReportDraft(
+      model: model,
+      summary: summary,
+      dataThrough: snapshot,
+    );
+    _reportJobs[key] = AiReportReviewJob(
+      context: context,
+      startedAt: startedAt,
+      phase: AiReportReviewPhase.generating,
+    );
+    notifyListeners();
+
+    final String out;
+    try {
+      out = await _requestReportMarkdown(periodLabel, reportMarkdown);
+    } catch (error) {
+      // 生成失败没有可存档正文；本地化的 AI 错误留在任务上供内联展示，
+      // 其它异常仍由调用方按原异常处理。
+      if (error is AiException) {
+        _markGenerationFailed(key, startedAt, error.message);
+      } else {
+        _discardJob(key, startedAt);
+      }
+      rethrow;
+    }
+    if (_isRequestStale(storageGeneration, accountGeneration)) {
+      _discardJob(key, startedAt);
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+    }
+    final content = out.trim();
+    if (content.isEmpty) {
+      _discardJob(key, startedAt);
+      throw AiException(I18n.tr('statistics.ai.error.empty'));
+    }
+    final createdAt = DateTime.now();
+    final entry = AiReviewEntry(
+      id: _newEntryId(createdAt, context),
+      createdAt: createdAt,
+      content: content,
+      summary: summary,
+      model: model,
+      kind: statisticsReportKind,
+      reportContext: context,
+      dataThrough: snapshot,
+    );
+    final savingJob = AiReportReviewJob(
+      context: context,
+      startedAt: startedAt,
+      phase: AiReportReviewPhase.saving,
+    );
+    _reportJobs[key] = savingJob;
+    notifyListeners();
+    final bool applied;
+    try {
+      applied = await _commitEntry(
+        entry,
+        generation: storageGeneration,
+        accountGeneration: accountGeneration,
+      );
+    } catch (_) {
+      // 存档失败：正文留在内存供复制/仅重试保存，不谎报成功。
+      _markArchiveFailed(key, savingJob, content);
+      return content;
+    }
+    if (!applied) {
+      _discardJob(key, startedAt);
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+    }
+    _discardJob(key, startedAt);
+    return content;
+  }
+
+  /// 旧调用方（无周期元数据）保持原有行为：写入无 scope 的 latest-50 池。
+  Future<String> _runUnscopedReportReview({
+    required String periodLabel,
+    required String reportMarkdown,
+    DateTime? dataThrough,
+  }) async {
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final model = _model;
+    final snapshot = _floatingDate(dataThrough);
+    final out = await _requestReportMarkdown(periodLabel, reportMarkdown);
+    _throwIfStale(storageGeneration, accountGeneration);
+    final content = out.trim();
+    if (content.isEmpty) {
+      throw AiException(I18n.tr('statistics.ai.error.empty'));
+    }
+    final createdAt = DateTime.now();
+    final entry = AiReviewEntry(
+      id: _newEntryId(createdAt, null),
+      createdAt: createdAt,
+      content: content,
+      summary: '统计报告 AI 解读：$periodLabel',
+      model: model,
+      kind: statisticsReportKind,
+      dataThrough: snapshot,
+    );
+    final applied = await _commitEntry(
+      entry,
+      generation: storageGeneration,
+      accountGeneration: accountGeneration,
+    );
+    if (!applied) {
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+    }
+    return content;
+  }
+
+  Future<String> _requestReportMarkdown(
+    String periodLabel,
+    String reportMarkdown,
+  ) {
+    return _chat(
       '你是多仪的云端效率报告分析师。基于用户的周期统计报告，输出一段结构化中文个性化解读。'
           '要求：1) 先给一句总判断；2) 分析待办、专注、习惯、时间足迹中最值得保留和最需要调整的点；'
           '3) 给出未来 7 天 3 条可执行动作；4) 不要泛泛鼓励，不要重复原始数据堆砌。',
@@ -318,20 +860,35 @@ class AiService extends ChangeNotifier {
       temperature: 0.5,
       maxTokens: 2200,
     );
-    final entry = AiReviewEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      createdAt: DateTime.now(),
-      content: out,
-      summary: '统计报告 AI 解读：$periodLabel',
-      model: _model,
+  }
+
+  String _statisticsSummary(String periodLabel) => '统计报告 AI 解读：$periodLabel';
+
+  /// `dataThrough` 是浮动快照日，只能落在本周期内；UI 正常会显式传入。
+  DateTime? _resolveDataThrough(
+    AiReportContext context,
+    DateTime? dataThrough,
+  ) {
+    final provided = _floatingDate(dataThrough);
+    if (provided != null) return provided;
+    final today = StatisticsSpan.calendarDate(AppClock.today());
+    if (today.isBefore(context.start)) return context.start;
+    if (today.isAfter(context.end)) return context.end;
+    return today;
+  }
+
+  DateTime? _floatingDate(DateTime? value) =>
+      value == null ? null : StatisticsSpan.calendarDate(value);
+
+  void _markArchiveFailed(String key, AiReportReviewJob job, String content) {
+    final current = _reportJobs[key];
+    if (current == null || current.startedAt != job.startedAt) return;
+    _reportJobs[key] = current.copyWith(
+      phase: AiReportReviewPhase.failed,
+      error: I18n.tr('statistics.ai.error.archive_failed'),
+      unsavedContent: content,
     );
-    _reviewHistory.insert(0, entry);
-    if (_reviewHistory.length > 50) {
-      _reviewHistory = _reviewHistory.sublist(0, 50);
-    }
-    await _saveHistory();
     notifyListeners();
-    return out;
   }
 
   Future<String> deepDiaryReview({
@@ -339,25 +896,32 @@ class AiService extends ChangeNotifier {
     DateTime? today,
   }) async {
     final prompt = DiaryDeepReviewBuilder.build(entries: entries, today: today);
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final model = _model;
     final out = await _chat(
       prompt.systemPrompt,
       prompt.userPrompt,
       temperature: 0.55,
       maxTokens: 1600,
     );
+    _throwIfStale(storageGeneration, accountGeneration);
+    final createdAt = DateTime.now();
     final entry = AiReviewEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      createdAt: DateTime.now(),
+      id: createdAt.millisecondsSinceEpoch.toString(),
+      createdAt: createdAt,
       content: out,
       summary: '日记深度复盘：${prompt.summary}',
-      model: _model,
+      model: model,
     );
-    _reviewHistory.insert(0, entry);
-    if (_reviewHistory.length > 50) {
-      _reviewHistory = _reviewHistory.sublist(0, 50);
+    final applied = await _commitEntry(
+      entry,
+      generation: storageGeneration,
+      accountGeneration: accountGeneration,
+    );
+    if (!applied) {
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
     }
-    await _saveHistory();
-    notifyListeners();
     return out;
   }
 
@@ -376,6 +940,9 @@ class AiService extends ChangeNotifier {
     String kind = '',
     DateTime? createdAt,
   }) async {
+    final storageGeneration = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final model = _model;
     final out = await _chat(
       '你是一个温柔且实用的效率教练。基于$periodLabel完成情况写一段 80-150 字的中文回顾，'
       '开头必须明确写“$periodLabel回顾：”。语气积极不空洞，先肯定 1-2 点亮点，'
@@ -384,21 +951,24 @@ class AiService extends ChangeNotifier {
       temperature: 0.6,
       maxTokens: 1000,
     );
+    _throwIfStale(storageGeneration, accountGeneration);
     final entryTime = createdAt ?? DateTime.now();
     final entry = AiReviewEntry(
       id: entryTime.millisecondsSinceEpoch.toString(),
       createdAt: entryTime,
       content: out,
       summary: summary,
-      model: _model,
+      model: model,
       kind: kind,
     );
-    _reviewHistory.insert(0, entry);
-    if (_reviewHistory.length > 50) {
-      _reviewHistory = _reviewHistory.sublist(0, 50);
+    final applied = await _commitEntry(
+      entry,
+      generation: storageGeneration,
+      accountGeneration: accountGeneration,
+    );
+    if (!applied) {
+      throw AiException(I18n.tr('statistics.ai.error.session_changed'));
     }
-    await _saveHistory();
-    notifyListeners();
     return out;
   }
 
@@ -1087,7 +1657,10 @@ String _friendlyAiError(String raw) {
   return text;
 }
 
-/// 持久化的 AI 周报条目。
+/// 持久化的 AI 解读条目（周报、日记复盘、统计报告解读共用）。
+///
+/// 旧的 JSON（没有 `kind`/`reportContext`/`dataThrough`）仍然可读；
+/// 缺失或损坏的周期元数据只会让该条退化为“无周期”记录，不会丢正文。
 class AiReviewEntry {
   final String id;
   final DateTime createdAt;
@@ -1096,6 +1669,12 @@ class AiReviewEntry {
   final String model;
   final String kind;
 
+  /// 统计报告解读所属的自然周期；旧条目为 null。
+  final AiReportContext? reportContext;
+
+  /// 生成时的数据截止日（浮动日历日，不做时区换算）。
+  final DateTime? dataThrough;
+
   const AiReviewEntry({
     required this.id,
     required this.createdAt,
@@ -1103,16 +1682,25 @@ class AiReviewEntry {
     required this.summary,
     this.model = '',
     this.kind = '',
+    this.reportContext,
+    this.dataThrough,
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'createdAt': createdAt.toIso8601String(),
-    'content': content,
-    'summary': summary,
-    'model': model,
-    'kind': kind,
-  };
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{
+      'id': id,
+      'createdAt': createdAt.toIso8601String(),
+      'content': content,
+      'summary': summary,
+      'model': model,
+      'kind': kind,
+    };
+    final context = reportContext;
+    if (context != null) json['reportContext'] = context.toJson();
+    final through = dataThrough;
+    if (through != null) json['dataThrough'] = _calendarDateKey(through);
+    return json;
+  }
 
   factory AiReviewEntry.fromJson(Map<String, dynamic> j) => AiReviewEntry(
     id: j['id'].toString(),
@@ -1121,7 +1709,36 @@ class AiReviewEntry {
     summary: (j['summary'] ?? '').toString(),
     model: (j['model'] ?? '').toString(),
     kind: (j['kind'] ?? '').toString(),
+    reportContext: AiReportContext.tryFromJson(j['reportContext']),
+    dataThrough: _tryCalendarDate(j['dataThrough']),
   );
+}
+
+/// 周期解读任务的私有附加信息（模型、摘要、快照日），只用于存档失败后的重试。
+class _ScopedReportDraft {
+  final String model;
+  final String summary;
+  final DateTime? dataThrough;
+
+  const _ScopedReportDraft({
+    required this.model,
+    required this.summary,
+    this.dataThrough,
+  });
+}
+
+String _calendarDateKey(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
+DateTime? _tryCalendarDate(Object? raw) {
+  if (raw == null) return null;
+  final text = raw.toString().trim();
+  if (text.isEmpty) return null;
+  final parsed = DateTime.tryParse(text);
+  if (parsed == null) return null;
+  return StatisticsSpan.calendarDate(parsed);
 }
 
 class AiException implements Exception {

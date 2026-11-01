@@ -2534,24 +2534,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLockDisabledMessage => 'App lock disabled';
 
   @override
-  String get aiHistoryTitle => 'AI weekly review history';
+  String get aiHistoryTitle => 'AI insight history';
 
   @override
   String get aiHistoryClearTooltip => 'Clear history';
 
   @override
-  String get aiHistoryClearTitle => 'Clear all reviews?';
+  String get aiHistoryClearTitle => 'Clear all insights?';
 
   @override
   String get aiHistoryClearContent =>
-      'Locally saved AI reviews will be deleted and cannot be recovered';
+      'All AI insights, including other periods, will be deleted and cannot be recovered';
 
   @override
   String get aiHistoryClearAction => 'Clear';
 
   @override
   String get aiHistoryEmpty =>
-      'No AI reviews yet\nGenerate one from the Me page';
+      'No AI insights yet\nGenerate one from the statistics page';
 
   @override
   String get aiHistoryCopy => 'Copy';
@@ -2561,6 +2561,122 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiHistoryDelete => 'Delete';
+
+  @override
+  String get aiHistoryFilterAll => 'All history';
+
+  @override
+  String aiHistoryPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String aiHistoryPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String get aiHistoryPeriodEmpty => 'No AI insight for this period yet';
+
+  @override
+  String get aiHistoryPeriodUnknown => 'Older record without period details';
+
+  @override
+  String get aiHistoryExpand => 'Expand insight';
+
+  @override
+  String get aiHistoryCollapse => 'Collapse insight';
+
+  @override
+  String get statisticsAiGenerate => 'AI insight';
+
+  @override
+  String get statisticsAiRegenerate => 'Regenerate insight';
+
+  @override
+  String get statisticsAiGenerating => 'Generating…';
+
+  @override
+  String get statisticsAiHistory => 'AI history';
+
+  @override
+  String statisticsAiHistoryCount(Object count) {
+    return 'AI history ($count)';
+  }
+
+  @override
+  String get statisticsAiResultTitle => 'Cloud personalized insight';
+
+  @override
+  String get statisticsAiStageGenerating => 'Generating your insight';
+
+  @override
+  String get statisticsAiStageSaving => 'Saving your insight';
+
+  @override
+  String statisticsAiElapsed(Object seconds) {
+    return '${seconds}s elapsed';
+  }
+
+  @override
+  String get statisticsAiLeaveHint =>
+      'You can leave this page: the result is archived while the app keeps running. Closing the app will not continue the request.';
+
+  @override
+  String statisticsAiDataThrough(Object date) {
+    return 'Data through $date';
+  }
+
+  @override
+  String statisticsAiGeneratedAt(Object time) {
+    return 'Generated $time';
+  }
+
+  @override
+  String statisticsAiPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String statisticsAiPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String get statisticsAiCopyInsight => 'Copy insight';
+
+  @override
+  String get statisticsAiRetryGenerate => 'Retry';
+
+  @override
+  String get statisticsAiRetrySave => 'Retry save';
+
+  @override
+  String get statisticsAiUnsavedTitle => 'Insight generated but not saved yet';
+
+  @override
+  String get statisticsAiDisabledHint =>
+      'An administrator must enable AI before a cloud insight can be generated';
+
+  @override
+  String get statisticsAiErrorSessionChanged =>
+      'Your account changed, so this insight was not saved.';
+
+  @override
+  String get statisticsAiErrorArchiveFailed =>
+      'The insight was generated but is not archived yet. Retry saving, or copy it to keep it.';
+
+  @override
+  String get statisticsAiErrorStorageFailed =>
+      'History changes cannot be saved right now. Please retry.';
+
+  @override
+  String get statisticsAiErrorEmpty =>
+      'The model returned no insight text. Retry.';
+
+  @override
+  String get statisticsAiErrorRequestFailed =>
+      'Generation failed. Please try again later.';
 
   @override
   String get syncConflictTitle => 'Sync conflict log';

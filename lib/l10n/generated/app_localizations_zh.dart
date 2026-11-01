@@ -2403,22 +2403,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appLockDisabledMessage => '应用锁已关闭';
 
   @override
-  String get aiHistoryTitle => 'AI 周回顾历史';
+  String get aiHistoryTitle => 'AI 解读历史';
 
   @override
   String get aiHistoryClearTooltip => '清空历史';
 
   @override
-  String get aiHistoryClearTitle => '清空全部回顾?';
+  String get aiHistoryClearTitle => '清空全部解读?';
 
   @override
-  String get aiHistoryClearContent => '本地保留的 AI 回顾将被删除，无法恢复';
+  String get aiHistoryClearContent => '全部 AI 解读（含其他周期）将被删除，无法恢复';
 
   @override
   String get aiHistoryClearAction => '清空';
 
   @override
-  String get aiHistoryEmpty => '还没有 AI 回顾\n在\"我的\"页生成一份吧';
+  String get aiHistoryEmpty => '还没有 AI 解读\n在统计页生成一份吧';
 
   @override
   String get aiHistoryCopy => '复制';
@@ -2428,6 +2428,115 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiHistoryDelete => '删除';
+
+  @override
+  String get aiHistoryFilterAll => '全部历史';
+
+  @override
+  String aiHistoryPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String aiHistoryPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String get aiHistoryPeriodEmpty => '这个周期还没有 AI 解读';
+
+  @override
+  String get aiHistoryPeriodUnknown => '旧版本记录，未包含周期信息';
+
+  @override
+  String get aiHistoryExpand => '展开解读';
+
+  @override
+  String get aiHistoryCollapse => '收起解读';
+
+  @override
+  String get statisticsAiGenerate => 'AI 解读';
+
+  @override
+  String get statisticsAiRegenerate => '重新生成解读';
+
+  @override
+  String get statisticsAiGenerating => '解读中…';
+
+  @override
+  String get statisticsAiHistory => 'AI 历史';
+
+  @override
+  String statisticsAiHistoryCount(Object count) {
+    return 'AI 历史（$count）';
+  }
+
+  @override
+  String get statisticsAiResultTitle => '云端个性化解读';
+
+  @override
+  String get statisticsAiStageGenerating => 'AI 正在生成解读';
+
+  @override
+  String get statisticsAiStageSaving => '解读已生成，正在存档';
+
+  @override
+  String statisticsAiElapsed(Object seconds) {
+    return '已用 $seconds 秒';
+  }
+
+  @override
+  String get statisticsAiLeaveHint => '可以离开本页：应用保持运行时结果会自动存档，退出应用则不会继续。';
+
+  @override
+  String statisticsAiDataThrough(Object date) {
+    return '数据截至 $date';
+  }
+
+  @override
+  String statisticsAiGeneratedAt(Object time) {
+    return '生成于 $time';
+  }
+
+  @override
+  String statisticsAiPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String statisticsAiPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String get statisticsAiCopyInsight => '复制解读';
+
+  @override
+  String get statisticsAiRetryGenerate => '重试生成';
+
+  @override
+  String get statisticsAiRetrySave => '重试保存';
+
+  @override
+  String get statisticsAiUnsavedTitle => '解读已生成，但暂未存档';
+
+  @override
+  String get statisticsAiDisabledHint => '管理员启用 AI 后可生成云端个性化解读';
+
+  @override
+  String get statisticsAiErrorSessionChanged => '账号状态已变化，本次解读未保存。';
+
+  @override
+  String get statisticsAiErrorArchiveFailed => '解读已生成，但暂未存档。请重试保存，或先复制保留。';
+
+  @override
+  String get statisticsAiErrorStorageFailed => '暂时无法保存历史变更，请重试。';
+
+  @override
+  String get statisticsAiErrorEmpty => '模型未返回解读正文，请重试。';
+
+  @override
+  String get statisticsAiErrorRequestFailed => '生成失败，请稍后重试。';
 
   @override
   String get syncConflictTitle => '同步冲突记录';

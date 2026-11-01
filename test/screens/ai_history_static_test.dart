@@ -15,7 +15,9 @@ void main() {
     );
     expect(source, contains("ValueKey('ai_history_toggle_\${e.id}')"));
     expect(source, contains("ValueKey('ai_history_content_\${e.id}')"));
-    expect(source, contains("tooltip: expanded ? '收起回顾' : '展开回顾'"));
+    expect(source, contains('tooltip: expanded'));
+    expect(source, contains("I18n.tr('ai_history.collapse')"));
+    expect(source, contains("I18n.tr('ai_history.expand')"));
     expect(source, contains('overflow: TextOverflow.ellipsis'));
     expect(source, contains('maxLines: 1'));
     expect(source, contains('_expandedReviewIds.remove(e.id)'));

@@ -4841,7 +4841,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'AI 周回顾历史'**
+  /// **'AI 解读历史'**
   String get aiHistoryTitle;
 
   /// No description provided for @aiHistoryClearTooltip.
@@ -4853,13 +4853,13 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryClearTitle.
   ///
   /// In zh, this message translates to:
-  /// **'清空全部回顾?'**
+  /// **'清空全部解读?'**
   String get aiHistoryClearTitle;
 
   /// No description provided for @aiHistoryClearContent.
   ///
   /// In zh, this message translates to:
-  /// **'本地保留的 AI 回顾将被删除，无法恢复'**
+  /// **'全部 AI 解读（含其他周期）将被删除，无法恢复'**
   String get aiHistoryClearContent;
 
   /// No description provided for @aiHistoryClearAction.
@@ -4871,7 +4871,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'还没有 AI 回顾\n在\"我的\"页生成一份吧'**
+  /// **'还没有 AI 解读\n在统计页生成一份吧'**
   String get aiHistoryEmpty;
 
   /// No description provided for @aiHistoryCopy.
@@ -4891,6 +4891,192 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'删除'**
   String get aiHistoryDelete;
+
+  /// No description provided for @aiHistoryFilterAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部历史'**
+  String get aiHistoryFilterAll;
+
+  /// No description provided for @aiHistoryPeriodRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range}'**
+  String aiHistoryPeriodRange(Object period, Object range);
+
+  /// No description provided for @aiHistoryPeriodLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range} · {zone}'**
+  String aiHistoryPeriodLine(Object period, Object range, Object zone);
+
+  /// No description provided for @aiHistoryPeriodEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个周期还没有 AI 解读'**
+  String get aiHistoryPeriodEmpty;
+
+  /// No description provided for @aiHistoryPeriodUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版本记录，未包含周期信息'**
+  String get aiHistoryPeriodUnknown;
+
+  /// No description provided for @aiHistoryExpand.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开解读'**
+  String get aiHistoryExpand;
+
+  /// No description provided for @aiHistoryCollapse.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起解读'**
+  String get aiHistoryCollapse;
+
+  /// No description provided for @statisticsAiGenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 解读'**
+  String get statisticsAiGenerate;
+
+  /// No description provided for @statisticsAiRegenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新生成解读'**
+  String get statisticsAiRegenerate;
+
+  /// No description provided for @statisticsAiGenerating.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读中…'**
+  String get statisticsAiGenerating;
+
+  /// No description provided for @statisticsAiHistory.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 历史'**
+  String get statisticsAiHistory;
+
+  /// No description provided for @statisticsAiHistoryCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 历史（{count}）'**
+  String statisticsAiHistoryCount(Object count);
+
+  /// No description provided for @statisticsAiResultTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'云端个性化解读'**
+  String get statisticsAiResultTitle;
+
+  /// No description provided for @statisticsAiStageGenerating.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 正在生成解读'**
+  String get statisticsAiStageGenerating;
+
+  /// No description provided for @statisticsAiStageSaving.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，正在存档'**
+  String get statisticsAiStageSaving;
+
+  /// No description provided for @statisticsAiElapsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已用 {seconds} 秒'**
+  String statisticsAiElapsed(Object seconds);
+
+  /// No description provided for @statisticsAiLeaveHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'可以离开本页：应用保持运行时结果会自动存档，退出应用则不会继续。'**
+  String get statisticsAiLeaveHint;
+
+  /// No description provided for @statisticsAiDataThrough.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据截至 {date}'**
+  String statisticsAiDataThrough(Object date);
+
+  /// No description provided for @statisticsAiGeneratedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成于 {time}'**
+  String statisticsAiGeneratedAt(Object time);
+
+  /// No description provided for @statisticsAiPeriodLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range} · {zone}'**
+  String statisticsAiPeriodLine(Object period, Object range, Object zone);
+
+  /// No description provided for @statisticsAiPeriodRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range}'**
+  String statisticsAiPeriodRange(Object period, Object range);
+
+  /// No description provided for @statisticsAiCopyInsight.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制解读'**
+  String get statisticsAiCopyInsight;
+
+  /// No description provided for @statisticsAiRetryGenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试生成'**
+  String get statisticsAiRetryGenerate;
+
+  /// No description provided for @statisticsAiRetrySave.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试保存'**
+  String get statisticsAiRetrySave;
+
+  /// No description provided for @statisticsAiUnsavedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，但暂未存档'**
+  String get statisticsAiUnsavedTitle;
+
+  /// No description provided for @statisticsAiDisabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理员启用 AI 后可生成云端个性化解读'**
+  String get statisticsAiDisabledHint;
+
+  /// No description provided for @statisticsAiErrorSessionChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号状态已变化，本次解读未保存。'**
+  String get statisticsAiErrorSessionChanged;
+
+  /// No description provided for @statisticsAiErrorArchiveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，但暂未存档。请重试保存，或先复制保留。'**
+  String get statisticsAiErrorArchiveFailed;
+
+  /// No description provided for @statisticsAiErrorStorageFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法保存历史变更，请重试。'**
+  String get statisticsAiErrorStorageFailed;
+
+  /// No description provided for @statisticsAiErrorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型未返回解读正文，请重试。'**
+  String get statisticsAiErrorEmpty;
+
+  /// No description provided for @statisticsAiErrorRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成失败，请稍后重试。'**
+  String get statisticsAiErrorRequestFailed;
 
   /// No description provided for @syncConflictTitle.
   ///

@@ -504,4 +504,45 @@ void main() {
     expect(preflight.ok, isTrue);
     expect(preflight.firstScheduledTime, DateTime(2026, 5, 24, 10, 30));
   });
+
+  test(
+    'statistics report review without period metadata stays unscoped',
+    () async {
+      final service = AiService();
+      service.attachClient(
+        ApiClient(
+          baseUrl: 'https://duoyi.test',
+          token: 'token',
+          httpClient: MockClient((request) async {
+            return http.Response(
+              jsonEncode({'content': '无周期元数据解读'}),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        ),
+      );
+      service.updateFromServerConfig({
+        'ai_enabled': true,
+        'ai_model': 'gpt-test',
+      });
+
+      // 旧调用方签名不变：不传 reportContext/dataThrough 仍然可用。
+      final review = await service.personalizedReportReview(
+        periodLabel: '本周周报',
+        reportMarkdown: '# 本周周报',
+      );
+      await service.waitForHistoryWrites();
+
+      expect(review, '无周期元数据解读');
+      final entry = service.reviewHistory.single;
+      expect(entry.content, review);
+      expect(entry.reportContext, isNull);
+      expect(entry.dataThrough, isNull);
+      expect(entry.kind, AiService.statisticsReportKind);
+      expect(entry.summary, '统计报告 AI 解读：本周周报');
+      expect(service.reportContexts, isEmpty);
+      service.dispose();
+    },
+  );
 }
