@@ -93,6 +93,8 @@ flutter test --no-pub test/services/platform_logo_assets_test.dart --reporter ex
 
 The Android adaptive foreground uses the matching transparent derivative and red background. Authentication headers use the fixed logo image instead of theme-colored icon-font recreation. Keep platform-required scaling/masking, application identity, text/layout and user data intact. Resource generation alone does not establish actual installed-app, Dock/launcher or browser-cache behavior; record those checks separately.
 
+Browser tabs use the generated transparent `web/favicon.svg` first and a transparent 32px PNG compatibility fallback. Derive both from the master without its opaque canvas, preserve the red/white mark, and verify light/dark backgrounds. SVG does not imply transparency: do not reintroduce a fixed page-colored background rectangle or use native icon bitmaps as favicons. The browser owns tab-strip colors; `theme-color` and PWA launch backgrounds are separate concerns.
+
 ### Version bump touches two files
 
 The app version lives in **both** `pubspec.yaml` (`version: <name>+<build>`) and `lib/core/app_version.dart` (`name` / `build`). Read the current values from those files and bump them together; historical version examples are not a release baseline.

@@ -31,10 +31,19 @@
 | iOS | `ios/Runner/Assets.xcassets/AppIcon.appiconset/` | 全部声明尺寸来自统一源图；iOS 当前为脚手架目标，资源一致不代表已完成签名发布 |
 | macOS | `macos/Runner/Assets.xcassets/AppIcon.appiconset/` | 全部声明尺寸来自统一源图 |
 | Linux | `linux/duoyi.png` | 512×512，保持既有应用身份和桌面资源引用 |
-| Web/PWA | `web/favicon.png`、`web/icons/Icon-*.png`、`web/icons/Icon-maskable-*.png` | favicon、普通图标与 maskable 图标保持同一设计 |
+| Web 标签页 | `web/favicon.svg`（优先）、`web/favicon.png`（32×32 兼容回退） | 同一母版派生，圆角外必须透明，不能烘焙浅色方底；SVG 保持矢量轮廓 |
+| Web/PWA 安装图标 | `web/icons/Icon-*.png`、`web/icons/Icon-maskable-*.png` | 按平台需求保留既有不透明画布与安全区，与标签页 favicon 分开生成 |
 | 应用内登录/注册标志 | `lib/widgets/auth_page_frame.dart` | 显示统一图片，保留既有尺寸、圆角和布局，不随主题换图或重新着色 |
 
 各平台可以按系统规范缩放、裁剪和留安全区，但不能改成日历、沙漏、渐变插画或另一套几何图案。通知状态栏等系统功能图标与应用身份图标分别遵守其平台规则。以后新增平台时也必须从本母版生成，不另选默认模板图标。
+
+### 浏览器明暗主题与 favicon
+
+标签页优先声明 `image/svg+xml`、`sizes="any"` 的 `favicon.svg`；为不支持 SVG favicon 的浏览器保留透明 RGBA PNG 回退，SVG 声明排在 PNG 后。两者都从本母版去掉最外层衬底派生，而不是重新设计或对不透明缩略图简单扣色。PNG 回退 URL 带格式修订标识，避免继续使用旧的 16×16 不透明图标缓存。
+
+固定品牌红 `#C85656` 和白色标志不随主题改色。圆角外透明区域直接露出浏览器自己的标签页底色，因此明暗背景都不会出现浅色方框；SVG 本身并不自动保证透明，不能把不透明背景矩形重新加回。网页不能控制所有桌面浏览器的标签栏颜色，`theme-color`/PWA 启动背景也不等同于 favicon 背景，本规则不改这些浏览器或平台设置。
+
+校验 favicon 时同时检查 SVG 不含位图嵌入和最外层衬底、与母版的红块及白色路径同源、PNG 四角透明，并在浅色与深色背景上检查边缘。原生、PWA 安装图标和认证页资源保持各自既有尺寸与规范。
 
 ## 生成与校验
 

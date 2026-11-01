@@ -15,6 +15,10 @@ Usage::
 files on disk, requires the two 1024 marketing icons to be byte-identical to
 ``duoyi_app_logo_1024.png``, verifies the audited reference screenshot and the
 pubspec / Android adaptive-background declarations.
+The browser favicon is derived from the same master instead of the artboard
+render: ``web/favicon.svg`` drops the opaque ``#F6F7F9`` background rect so the
+rounded corners stay transparent (the browser paints its own tab colour behind
+them), and ``web/favicon.png`` is the matching 32 px RGBA fallback.
 
 Dependencies: ``Pillow`` (raster) and ``fontTools`` (SVG path parsing +
 cubic sampling). No cairosvg, no native librsvg/Inkscape, no machine-specific
@@ -133,10 +137,17 @@ WEB_ICONS = (
     ("web/icons/Icon-512.png", 512),
     ("web/icons/Icon-maskable-192.png", 192),
     ("web/icons/Icon-maskable-512.png", 512),
-    ("web/favicon.png", 16),
 )
 
 LINUX_ICONS = (("linux/duoyi.png", 512),)
+
+# Browser tab favicon. Deliberately not an ARTWORK_TARGET: it is neither an RGB
+# square-canvas render nor a native icon. The SVG is derived from the master
+# with the opaque artboard dropped, and the PNG is the same geometry as RGBA.
+FAVICON_SVG_RELATIVE = "web/favicon.svg"
+FAVICON_PNG_RELATIVE = "web/favicon.png"
+FAVICON_SIZE = 32
+FAVICON_FILES = (FAVICON_PNG_RELATIVE, FAVICON_SVG_RELATIVE)
 
 # Legacy (non-adaptive) launcher PNGs: full logo artwork, 48dp..192dp.
 ANDROID_LAUNCHER_ICONS = (
@@ -182,6 +193,12 @@ FOREGROUND_TARGETS = [
     Target(relative, size, srgb_profile=False)
     for relative, size in ANDROID_FOREGROUND_ICONS
 ]
+
+
+def _checked_file_count() -> int:
+    """Rendered/verified files: canonical PNG, foreground PNG, favicon PNG+SVG."""
+
+    return len(ARTWORK_TARGETS) + len(FOREGROUND_TARGETS) + len(FAVICON_FILES) + 2
 
 
 # --------------------------------------------------------------------------- #
@@ -439,6 +456,52 @@ def load_master(path: Path = MASTER_SVG) -> Master:
     return Master(background=background, tile=tile, glyph=glyph)
 
 
+_FAVICON_SVG_TEMPLATE = (
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88">\n'
+    '  <rect x="{x}" y="{y}" width="{width}" height="{height}" rx="{radius}"'
+    ' fill="{tile_fill}"/>\n'
+    '  <path fill="{glyph_fill}" transform="{transform}" d="{path_data}"/>\n'
+    "</svg>\n"
+)
+
+
+def _format_number(value: float) -> str:
+    text = f"{value:.6f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def derive_favicon_svg(path: Path = MASTER_SVG) -> str:
+    """Derive the tab favicon SVG from the canonical master.
+
+    The master's first child is the opaque ``#F6F7F9`` artboard canvas. The
+    favicon keeps only the red rounded tile and the white glyph, so everything
+    outside the tile stays transparent and dark browser tabs no longer show a
+    light square behind the logo. The output is fully determined by the master:
+    attribute order is fixed here and the glyph data is copied verbatim.
+    """
+
+    master = load_master(path)
+    children = list(ET.parse(path).getroot())
+    canvas = _parse_rect(children[0], "svg[0]")
+    if canvas.radius != 0.0:
+        raise MasterError("favicon: svg[0] must be the square background canvas")
+    path_data = children[2].get("d")
+    if not path_data:
+        raise MasterError("favicon: svg[2] has no path data")
+    return _FAVICON_SVG_TEMPLATE.format(
+        x=_format_number(master.tile.x),
+        y=_format_number(master.tile.y),
+        width=_format_number(master.tile.width),
+        height=_format_number(master.tile.height),
+        radius=_format_number(master.tile.radius),
+        tile_fill=BRAND_RED_HEX,
+        glyph_fill="#FFFFFF",
+        transform=children[2].get("transform", ""),
+        path_data=path_data,
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Rendering
 # --------------------------------------------------------------------------- #
@@ -493,6 +556,33 @@ def render_foreground(master: Master, size: int) -> Image.Image:
     return image
 
 
+def render_favicon(master: Master, size: int = FAVICON_SIZE) -> Image.Image:
+    """Tab favicon: red rounded tile + white glyph on a transparent canvas.
+
+    Same geometry and palette as the artwork, but the ``#F6F7F9`` artboard is
+    replaced by transparency so the rounded corners expose the browser's own tab
+    colour instead of a light square. Transparent pixels keep the brand red as
+    their RGB, so downsampling cannot bleed a pale halo along the tile edge.
+    """
+
+    supersample = _supersample(size)
+    pixels = size * supersample
+    scale = pixels / ARTBOARD
+    tile_mask = Image.new("L", (pixels, pixels), 0)
+    ImageDraw.Draw(tile_mask).rounded_rectangle(
+        (0, 0, pixels - 1, pixels - 1),
+        radius=master.tile.radius * scale,
+        fill=255,
+    )
+    image = Image.new("RGBA", (pixels, pixels), (*master.tile.fill, 0))
+    image.putalpha(tile_mask)
+    glyph_layer = Image.new(
+        "RGBA", (pixels, pixels), (*master.glyph.fill, 255)
+    )
+    image = Image.composite(glyph_layer, image, _glyph_mask(master, pixels, scale))
+    return image.resize((size, size), Image.Resampling.LANCZOS)
+
+
 def _srgb_profile_bytes() -> bytes:
     """Byte-stable sRGB ICC profile for the colour-managed PNG outputs.
 
@@ -537,6 +627,7 @@ def _render_cache(master: Master) -> dict[tuple[str, int], Image.Image]:
         cache[("artwork", size)] = render_artwork(master, size)
     for size in sorted({target.size for target in FOREGROUND_TARGETS} | {CANONICAL_SIZE}):
         cache[("foreground", size)] = render_foreground(master, size)
+    cache[("favicon", FAVICON_SIZE)] = render_favicon(master, FAVICON_SIZE)
     return cache
 
 
@@ -571,6 +662,15 @@ def write_all(master: Master, cache: dict[tuple[str, int], Image.Image]) -> None
             REPO_ROOT / target.relative,
             srgb_profile=target.srgb_profile,
         )
+
+    _save_rgba(
+        cache[("favicon", FAVICON_SIZE)],
+        REPO_ROOT / FAVICON_PNG_RELATIVE,
+        srgb_profile=True,
+    )
+    favicon_svg = REPO_ROOT / FAVICON_SVG_RELATIVE
+    favicon_svg.parent.mkdir(parents=True, exist_ok=True)
+    favicon_svg.write_text(derive_favicon_svg(), encoding="utf-8", newline="\n")
 
 
 # --------------------------------------------------------------------------- #
@@ -674,6 +774,52 @@ def _config_problems() -> list[str]:
     return problems
 
 
+def _favicon_svg_problems(expected_text: str | None) -> list[str]:
+    """Read-only verification of the derived favicon SVG (text + structure)."""
+
+    path = REPO_ROOT / FAVICON_SVG_RELATIVE
+    if not path.is_file():
+        return [f"{FAVICON_SVG_RELATIVE}: missing"]
+    problems: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    if expected_text is not None and text != expected_text:
+        problems.append(
+            f"{FAVICON_SVG_RELATIVE}: file text is not the master-derived favicon"
+        )
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as error:
+        return problems + [f"{FAVICON_SVG_RELATIVE}: invalid XML: {error}"]
+
+    for element in root.iter():
+        if _local_name(element.tag) == "image":
+            problems.append(
+                f"{FAVICON_SVG_RELATIVE}: must stay vector, found an <image> element"
+            )
+    children = list(root)
+    tags = [_local_name(child.tag) for child in children]
+    if tags != ["rect", "path"]:
+        return problems + [
+            f"{FAVICON_SVG_RELATIVE}: expected one rounded tile rect and one glyph"
+            f" path, found {tags}"
+        ]
+    try:
+        tile = _parse_rect(children[0], "favicon[0]")
+        glyph = _parse_path(children[1], "favicon[1]")
+    except MasterError as error:
+        return problems + [f"{FAVICON_SVG_RELATIVE}: {error}"]
+    if tile.radius <= 0.0:
+        problems.append(
+            f"{FAVICON_SVG_RELATIVE}: the tile needs its rounded corners, "
+            "a square rect reintroduces the opaque canvas"
+        )
+    if tile.fill != BRAND_RED_RGB:
+        problems.append(f"{FAVICON_SVG_RELATIVE}: tile fill must be {BRAND_RED_HEX}")
+    if glyph.fill != GLYPH_RGB:
+        problems.append(f"{FAVICON_SVG_RELATIVE}: glyph fill must be #FFFFFF")
+    return problems
+
+
 def verify(
     master: Master, cache: dict[tuple[str, int], Image.Image]
 ) -> list[str]:
@@ -720,6 +866,20 @@ def verify(
         if problem:
             problems.append(f"{target.relative}: {problem}")
 
+    problem = _compare_pixels(
+        REPO_ROOT / FAVICON_PNG_RELATIVE, cache[("favicon", FAVICON_SIZE)]
+    )
+    if problem:
+        problems.append(f"{FAVICON_PNG_RELATIVE}: {problem}")
+
+    expected_svg: str | None
+    try:
+        expected_svg = derive_favicon_svg()
+    except MasterError as error:
+        expected_svg = None
+        problems.append(f"{FAVICON_SVG_RELATIVE}: cannot derive from master: {error}")
+    problems.extend(_favicon_svg_problems(expected_svg))
+
     return problems
 
 
@@ -746,7 +906,7 @@ def main(argv: list[str] | None = None) -> int:
     cache = _render_cache(master)
     if not arguments.check:
         write_all(master, cache)
-        print(f"rendered {len(ARTWORK_TARGETS) + len(FOREGROUND_TARGETS) + 2} icon files")
+        print(f"rendered {_checked_file_count()} icon files")
 
     problems = verify(master, cache)
     if problems:
@@ -757,12 +917,10 @@ def main(argv: list[str] | None = None) -> int:
 
     canonical = REPO_ROOT / CANONICAL_RELATIVE
     digest = hashlib.sha256(canonical.read_bytes()).hexdigest() if canonical.is_file() else "missing"
-    checked = (
-        len(ARTWORK_TARGETS)
-        + len(FOREGROUND_TARGETS)
-        + 2
-    )
+    checked = _checked_file_count()
     print(f"ok: {checked} icon files match {CANONICAL_RELATIVE}")
+    print(f"favicon: {FAVICON_PNG_RELATIVE} ({FAVICON_SIZE}x{FAVICON_SIZE}, RGBA)"
+          f" + {FAVICON_SVG_RELATIVE} derived from {MASTER_SVG.name}")
     print(f"canonical sha256: {digest}")
     print(f"reference sha256: {REFERENCE_SHA256} (unchanged)")
     return 0

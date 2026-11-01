@@ -307,12 +307,103 @@ void main() {
       expect(_pngSize('web/icons/Icon-maskable-192.png'), (192, 192));
       expect(_pngSize('web/icons/Icon-512.png'), (512, 512));
       expect(_pngSize('web/icons/Icon-maskable-512.png'), (512, 512));
-      expect(_pngSize('web/favicon.png'), (16, 16));
+      expect(_pngSize('web/favicon.png'), (32, 32));
       expect(_pngSize('linux/duoyi.png'), (512, 512));
       expect(
         File('web/icons/Icon-512.png').readAsBytesSync(),
         File('linux/duoyi.png').readAsBytesSync(),
       );
+    },
+  );
+
+  test(
+    'web favicon is a transparent rounded tile with a PNG fallback',
+    () async {
+      final index = File('web/index.html').readAsStringSync();
+      final pngLink = RegExp(
+        r'<link rel="icon" type="image/png" sizes="32x32" '
+        r'href="favicon\.png\?v=transparent-v1"',
+      ).firstMatch(index);
+      expect(pngLink, isNotNull, reason: 'PNG fallback with a fresh cache key');
+      final svgLink = RegExp(
+        r'<link rel="icon" type="image/svg\+xml" sizes="any" '
+        r'href="favicon\.svg"',
+      ).firstMatch(index);
+      expect(svgLink, isNotNull, reason: 'vector favicon link');
+      expect(
+        pngLink!.start,
+        lessThan(svgLink!.start),
+        reason: 'the PNG fallback must be declared before the SVG',
+      );
+
+      final faviconSvg = File('web/favicon.svg').readAsStringSync();
+      expect(faviconSvg, contains('xmlns="http://www.w3.org/2000/svg"'));
+      expect(faviconSvg, contains('viewBox="0 0 88 88"'));
+      expect(
+        faviconSvg,
+        isNot(contains('<image')),
+        reason: 'the favicon must stay vector, never embed a bitmap',
+      );
+
+      // Same geometry and palette as the canonical master: the red rounded
+      // tile and the white glyph path are copied from it. Only the #F6F7F9
+      // artboard is dropped, so the corners stay transparent on dark tabs.
+      final master = File(_masterSvgPath).readAsStringSync();
+      final masterGlyph = RegExp(
+        r'<path fill="#FFFFFF"[^>]*d="([^"]+)"',
+      ).firstMatch(master);
+      expect(masterGlyph, isNotNull, reason: 'canonical master glyph path');
+      expect(faviconSvg, contains('d="${masterGlyph!.group(1)}"'));
+      expect(
+        faviconSvg,
+        contains('transform="translate(20 68) scale(0.09375 -0.09375)"'),
+      );
+      final tileRects = RegExp(
+        r'<rect\b[^>]*>',
+      ).allMatches(faviconSvg).map((match) => match.group(0)!).toList();
+      expect(
+        tileRects,
+        hasLength(1),
+        reason: 'only the rounded tile rect may remain',
+      );
+      expect(tileRects.single, contains('rx="32"'));
+      expect(tileRects.single, contains('fill="#C85656"'));
+      expect(faviconSvg, contains('fill="#FFFFFF"'));
+      expect(
+        faviconSvg,
+        isNot(contains('#F6F7F9')),
+        reason: 'an opaque artboard would repaint the light square',
+      );
+
+      final favicon = await _Artwork.load('web/favicon.png');
+      expect(favicon.width, 32);
+      expect(favicon.height, 32);
+      for (final corner in const <(double, double)>[
+        (1, 1),
+        (86, 1),
+        (1, 86),
+        (86, 86),
+      ]) {
+        expect(
+          favicon.alphaAt(corner.$1, corner.$2),
+          0,
+          reason:
+              'corner (${corner.$1}, ${corner.$2}) must be transparent, '
+              'not a light artboard square',
+        );
+      }
+      _expectColor(favicon, 1, 44, _brandRed, reason: 'opaque red tile edge');
+      _expectColor(favicon, 34, 44, _glyphWhite, reason: 'left white bar');
+      _expectColor(favicon, 54, 48, _glyphWhite, reason: 'top right block');
+      _expectColor(favicon, 54, 28, _glyphWhite, reason: 'bottom right block');
+      _expectColor(
+        favicon,
+        54,
+        42,
+        _brandRed,
+        reason: 'red gap between the right blocks',
+      );
+      expect(favicon.alphaAt(34, 44), 255, reason: 'glyph stays opaque');
     },
   );
 }
