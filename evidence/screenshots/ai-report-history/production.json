@@ -1,0 +1,50 @@
+{
+  "source_commit": "9da3b89888c4c5483038ac680d47784d3f454a52",
+  "source_inputs_matched_to_commit": 394,
+  "observed_at": "2026-11-01T13:50:30.173562+00:00",
+  "url": "https://todo.skydrow.site/",
+  "current_release": "/var/www/duoyi/releases/v1.1.47-9da3b89-ai-report-history",
+  "previous_release": "/var/www/duoyi/releases/v1.1.47-4b0cf45-favicon-svg",
+  "backup": "/opt/duoyi/web-backups/ai-report-history-20261101T134611Z-9da3b89",
+  "server_manifest": "/opt/duoyi-staging/web-ai-report-9da3b89/ai-report-web-manifest.json",
+  "runtime_files": 120,
+  "runtime_bytes": 107499622,
+  "all_uploaded_file_hashes_matched": true,
+  "excluded_non_runtime_marker": ".last_build_id",
+  "atomic_switch": true,
+  "previous_release_retained": true,
+  "origin_hash_matched": [
+    "index.html", "main.dart.js", "flutter_bootstrap.js", "flutter.js", "version.json",
+    "assets/FontManifest.json", "assets/web-font-policy.json", "assets/assets/logo/duoyi_app_logo_1024.png",
+    "favicon.svg", "favicon.png", "icons/Icon-192.png", "icons/Icon-512.png",
+    "icons/Icon-maskable-192.png", "icons/Icon-maskable-512.png"
+  ],
+  "public_hash_matched": [
+    "main.dart.js", "flutter_bootstrap.js", "flutter.js", "version.json",
+    "assets/FontManifest.json", "assets/web-font-policy.json", "assets/assets/logo/duoyi_app_logo_1024.png",
+    "favicon.svg", "favicon.png", "icons/Icon-192.png", "icons/Icon-512.png",
+    "icons/Icon-maskable-192.png", "icons/Icon-maskable-512.png"
+  ],
+  "main_dart_js_sha256": "b4a11bad04d1d1d7aba762355746a5b12298e9d63ad2f1478f0e5bd36034a574",
+  "public_favicon_svg_mime": "image/svg+xml",
+  "public_html_bootstrap_reference": true,
+  "public_html_exact_hash": false,
+  "html_verification_boundary": "Origin index.html matched byte-for-byte; public HTML was checked for bootstrap reference, without claiming byte equality through the public proxy.",
+  "backend": {
+    "unchanged": true,
+    "image": "duoyi-backend:1.1.47-persistence-dccb2c8",
+    "image_id": "sha256:8d22a55bf7edd7bc994d6f30aa1560582adfe141ab6948a329c06f6961dca209",
+    "started_at": "2026-10-31T10:38:54.313268938Z",
+    "health": "healthy",
+    "public_health_response_received": true,
+    "build_git_sha": "dccb2c8571e4428e834c45ff46ce842f675f00a5",
+    "api_contract_version": "2026-06-01.7",
+    "persistent_login_sessions": true,
+    "private_environment_hash_unchanged": true,
+    "existing_data_bind_verified": true,
+    "database_migration_performed": false
+  },
+  "production_model_called": false,
+  "production_account_login_performed": false,
+  "browser_behavior_evidence": "browser-validation.json (same Web main.dart.js, isolated local account and fixed model responses)"
+}
