@@ -3954,7 +3954,7 @@ class MainShell extends StatefulWidget {
 
 class MainShellState extends State<MainShell> {
   static const _tabCount = 7;
-  static const _fallbackVisibleTabs = <int>[0, 1, 2, 4, 6];
+  static const _fallbackVisibleTabs = <int>[0, 2, 4, 6];
 
   int _currentIndex = 0; // Today first
   bool _allowHiddenCurrentIndex = false;
@@ -3970,12 +3970,14 @@ class MainShellState extends State<MainShell> {
   static final GlobalKey mineKey = GlobalKey();
 
   List<int> _visibleBottomNavTabs(PreferencesProvider prefs) {
+    // 一级导航再过滤一次：待办（槽位 1）已不再是可配置入口，只在深链/
+    // 今日指标卡/更多应用里进入；兜底集合同步去掉待办。
     final result = prefs.visibleBottomNavTabs
         .where(
           (tab) =>
               tab >= 0 &&
               tab < _tabCount &&
-              PreferencesProvider.isBottomNavTabSupported(tab),
+              PreferencesProvider.isPrimaryNavigationTabSupported(tab),
         )
         .toList(growable: false);
     final visible = result.length < 2 ? _fallbackVisibleTabs : result;
@@ -4051,6 +4053,9 @@ class MainShellState extends State<MainShell> {
         }
       });
     }
+    // 槽位 1（待办）有意保留：allDestinations 与 _buildTab 的索引映射必须
+    // 稳定，旧深链 `duoyi://tab/todo` / `duoyi://todo/<id>` 仍按 1 打开；
+    // 它只是不再出现在 safeVisibleTabs，因此不渲染在底栏/rail 里。
     final allDestinations = [
       NavigationDestination(
         icon: const Icon(Icons.today_outlined),

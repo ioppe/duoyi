@@ -16,7 +16,7 @@ const _devicePreferences = <String, Object>{
   'pref_show_lunar': false,
   'pref_date_format': 'dd/MM/yyyy',
   'pref_first_day_of_week': 7,
-  'pref_bottom_nav_order': <String>['1', '0'],
+  'pref_bottom_nav_order': <String>['2', '0', '6'],
   'pref_daily_reminder_hour': 7,
   'pref_app_timezone_iana': 'UTC',
   'pref_app_timezone_mode': 'fixed',
@@ -45,7 +45,7 @@ void _expectDevicePreferencesKept(SharedPreferences prefs) {
   expect(prefs.getBool('pref_show_lunar'), isFalse);
   expect(prefs.getString('pref_date_format'), 'dd/MM/yyyy');
   expect(prefs.getInt('pref_first_day_of_week'), 7);
-  expect(prefs.getStringList('pref_bottom_nav_order'), <String>['1', '0']);
+  expect(prefs.getStringList('pref_bottom_nav_order'), <String>['2', '0', '6']);
   expect(prefs.getInt('pref_daily_reminder_hour'), 7);
   expect(prefs.getString('pref_app_timezone_iana'), 'UTC');
   expect(prefs.getString('pref_app_timezone_mode'), 'fixed');
@@ -99,7 +99,7 @@ void main() {
       expect(preferences.dailyReminderHour, 7);
       expect(preferences.followSystemTimeZone, isFalse);
       expect(preferences.appTimeZoneSelection, 'UTC');
-      expect(preferences.bottomNavOrder.first, 1);
+      expect(preferences.bottomNavOrder.first, 2);
 
       final theme = ThemeProvider();
       await theme.loadFromStorage();

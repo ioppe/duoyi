@@ -140,16 +140,26 @@ List<DailyReminderScheduleSlot> effectiveDailyReminderScheduleSlots(
 class PreferencesProvider extends ChangeNotifier {
   static const maxBottomNavTabs = 5;
   static const fixedBottomNavTabs = <int>{6};
-  static const mobileDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6};
-  static const webDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6};
+
+  /// 待办（Todo）保留页面、深链与内部入口，但不再是可配置的一级导航入口。
+  /// 槽位 1 有意保留在 main 的 `allDestinations` 里，避免旧深链错位。
+  static const legacyTodoNavTab = 1;
+  static const mobileDefaultBottomNavTabs = <int>{0, 2, 4, 6};
+  static const webDefaultBottomNavTabs = <int>{0, 2, 4, 6};
   static Set<int> get defaultBottomNavTabs => WebTarget.isWebBuild
       ? webDefaultBottomNavTabs
       : mobileDefaultBottomNavTabs;
   static bool isBottomNavTabSupported(int tab) =>
       !(WebTarget.isWebBuild && tab == 5);
+
+  /// 一级导航（底栏 / 桌面 rail / 默认页 / 导航设置）可配置的入口：
+  /// 平台能力过滤 + 移除待办。待办仍能通过深链、今日指标卡与“更多应用”打开。
+  static bool isPrimaryNavigationTabSupported(int tab) =>
+      tab != legacyTodoNavTab && isBottomNavTabSupported(tab);
+
   static int normalizeDefaultTab(int tab) {
     final normalized = tab.clamp(0, 6).toInt();
-    return isBottomNavTabSupported(normalized) ? normalized : 0;
+    return isPrimaryNavigationTabSupported(normalized) ? normalized : 0;
   }
 
   static const _kFirstDayOfWeek = 'pref_first_day_of_week';
@@ -271,7 +281,7 @@ class PreferencesProvider extends ChangeNotifier {
   int _yearlyReportReminderDay = 1;
   int _yearlyReportReminderHour = 9;
   int _yearlyReportReminderMinute = 0;
-  List<int> _bottomNavOrder = const [0, 1, 2, 3, 4, 5, 6];
+  List<int> _bottomNavOrder = const [0, 2, 3, 4, 5, 6];
   Set<int> _bottomNavVisible = defaultBottomNavTabs;
   String _appTimeZone = LocalTimezoneResolver.defaultIana;
   bool _followSystemTimeZone = true;
@@ -344,15 +354,20 @@ class PreferencesProvider extends ChangeNotifier {
     hour: _yearlyReportReminderHour,
     minute: _yearlyReportReminderMinute,
   );
-  List<int> get bottomNavOrder => List.unmodifiable(_bottomNavOrder);
-  Set<int> get bottomNavVisible => Set.unmodifiable(_bottomNavVisible);
+
+  /// 一级导航顺序：待办（槽位 1）不参与排序/展示，旧存储里的 1 在此被滤掉。
+  List<int> get bottomNavOrder =>
+      List.unmodifiable(_bottomNavOrder.where(isPrimaryNavigationTabSupported));
+  Set<int> get bottomNavVisible => Set.unmodifiable(
+    _bottomNavVisible.where(isPrimaryNavigationTabSupported),
+  );
   String get appTimeZone => _appTimeZone;
   bool get followSystemTimeZone => _followSystemTimeZone;
   String get appTimeZoneSelection => _followSystemTimeZone
       ? LocalTimezoneResolver.followSystemValue
       : _appTimeZone;
-  List<int> get enabledBottomNavTabs => _bottomNavOrder
-      .where((tab) => _bottomNavVisible.contains(tab))
+  List<int> get enabledBottomNavTabs => bottomNavOrder
+      .where((tab) => bottomNavVisible.contains(tab))
       .toList(growable: false);
   List<int> get visibleBottomNavTabs => normalizedVisibleBottomNavTabs(
     order: _bottomNavOrder,
@@ -465,7 +480,7 @@ class PreferencesProvider extends ChangeNotifier {
     _yearlyReportReminderDay = 1;
     _yearlyReportReminderHour = 9;
     _yearlyReportReminderMinute = 0;
-    _bottomNavOrder = const [0, 1, 2, 3, 4, 5, 6];
+    _bottomNavOrder = const [0, 2, 3, 4, 5, 6];
     _bottomNavVisible = defaultBottomNavTabs;
     _followSystemTimeZone = true;
     _appTimeZone = LocalTimezoneResolver.currentIana;
@@ -578,7 +593,8 @@ class PreferencesProvider extends ChangeNotifier {
     final isOldBottomNavConfig =
         (storedOrder == null || !storedOrder.contains('6')) &&
         (storedVisible == null || !storedVisible.contains('6'));
-    final storedDefaultTab = p.getInt(_kDefaultTab) ?? 0;
+    final storedDefaultTabRaw = p.getInt(_kDefaultTab);
+    final storedDefaultTab = storedDefaultTabRaw ?? 0;
     _defaultTab = normalizeDefaultTab(
       isOldBottomNavConfig && storedDefaultTab == 5 ? 6 : storedDefaultTab,
     );
@@ -706,6 +722,12 @@ class PreferencesProvider extends ChangeNotifier {
       order: _bottomNavOrder,
     );
     if (generation != _storageGeneration) return false;
+    // 待办（槽位 1）不再是一级导航入口：旧存储里残留的 1 在载入时清洗并
+    // 回写，避免下次启动再被读回，或被兜底默认集重新引入。
+    final storedOrderHasLegacyTodo =
+        storedOrder?.map(int.tryParse).contains(legacyTodoNavTab) ?? false;
+    final storedVisibleHasLegacyTodo =
+        storedVisible?.map(int.tryParse).contains(legacyTodoNavTab) ?? false;
     if ((WebTarget.isWebBuild || legacyFocusDefault) &&
         storedVisible != null &&
         !setEquals(storedVisibleSet, _bottomNavVisible)) {
@@ -713,6 +735,26 @@ class PreferencesProvider extends ChangeNotifier {
         _kBottomNavVisible,
         _bottomNavVisible.map((tab) => '$tab').toList(),
       );
+      if (generation != _storageGeneration) return false;
+    }
+    if (storedVisibleHasLegacyTodo) {
+      await p.setStringList(
+        _kBottomNavVisible,
+        _bottomNavVisible.map((tab) => '$tab').toList(),
+      );
+      if (generation != _storageGeneration) return false;
+    }
+    if (storedOrderHasLegacyTodo) {
+      await p.setStringList(
+        _kBottomNavOrder,
+        _bottomNavOrder.map((tab) => '$tab').toList(),
+      );
+      if (generation != _storageGeneration) return false;
+    }
+    // 默认页同样只允许一级导航入口：旧存储里指向待办（1）的值归零并回写，
+    // 否则每次冷启动都要重新纠正一次。
+    if (storedDefaultTabRaw != null && storedDefaultTabRaw != _defaultTab) {
+      await p.setInt(_kDefaultTab, _defaultTab);
       if (generation != _storageGeneration) return false;
     }
     if (needsWebNavMigration) {
@@ -1061,7 +1103,7 @@ class PreferencesProvider extends ChangeNotifier {
 
   Future<void> setBottomNavVisible(int tab, bool visible) async {
     if (tab < 0 || tab > 6) return;
-    if (!isBottomNavTabSupported(tab)) return;
+    if (!isPrimaryNavigationTabSupported(tab)) return;
     if (fixedBottomNavTabs.contains(tab) && !visible) return;
     if (visible &&
         !_bottomNavVisible.contains(tab) &&
@@ -1088,6 +1130,7 @@ class PreferencesProvider extends ChangeNotifier {
   }
 
   Future<void> moveBottomNavTab(int tab, int delta) async {
+    if (!isPrimaryNavigationTabSupported(tab)) return;
     final list = [..._bottomNavOrder];
     final index = list.indexOf(tab);
     if (index < 0) return;
@@ -1113,13 +1156,15 @@ class PreferencesProvider extends ChangeNotifier {
     for (final tab in source ?? const <int>[]) {
       if (tab >= 0 &&
           tab <= 6 &&
-          isBottomNavTabSupported(tab) &&
+          isPrimaryNavigationTabSupported(tab) &&
           !result.contains(tab)) {
         result.add(tab);
       }
     }
     for (var i = 0; i < 7; i++) {
-      if (isBottomNavTabSupported(i) && !result.contains(i)) result.add(i);
+      if (isPrimaryNavigationTabSupported(i) && !result.contains(i)) {
+        result.add(i);
+      }
     }
     return List.unmodifiable(result);
   }
@@ -1131,7 +1176,7 @@ class PreferencesProvider extends ChangeNotifier {
     final orderList = _normalizeNavOrder(order);
     final result = <int>{};
     for (final tab in source ?? const <int>[]) {
-      if (tab >= 0 && tab <= 6 && isBottomNavTabSupported(tab)) {
+      if (tab >= 0 && tab <= 6 && isPrimaryNavigationTabSupported(tab)) {
         result.add(tab);
       }
     }

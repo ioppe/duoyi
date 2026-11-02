@@ -20,6 +20,7 @@ import '../core/todo_quadrant_style.dart';
 import '../models/course_schedule.dart' show CourseItem, ScheduleSettings;
 import '../models/todo.dart';
 import '../providers/anniversary_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/course_provider.dart';
 import '../providers/goal_provider.dart';
 import '../providers/habit_provider.dart';
@@ -155,11 +156,18 @@ class TodayScreen extends StatelessWidget {
         !reminderGroups.isEmpty || suggestions.isNotEmpty;
 
     // 问候语随主题品牌文案变化（BrandStrings.greetingFor 按时段取词）。
-    // 分隔符与用户名兜底跟随 locale：en 下为 "Good afternoon, User"。
-    final rawUsername = user.profile.username.trim();
-    final displayUsername = rawUsername.isEmpty || rawUsername == '用户'
-        ? I18n.tr('profile.default_user')
-        : rawUsername;
+    // 分隔符与昵称兜底跟随 locale：en 下为 "Good afternoon, User"。
+    // 昵称优先级与「我的」页一致：账号显示名 → 本地显示名 → 用户名 →
+    // 本地化默认名。这里不再直接用资料里的 username，否则在资料页改了昵称
+    // 之后首页仍会显示登录账号名（admin）。
+    // AuthProvider 在纯本地/单元测试场景可能没有注册，用可空 watch 安全降级。
+    final authState = context.watch<AuthProvider?>()?.state;
+    final isSignedIn = authState?.isLoggedIn == true;
+    final displayUsername = user.profile.effectiveDisplayName(
+      I18n.tr('profile.default_user'),
+      preferredDisplayName: isSignedIn ? authState?.displayName : null,
+      preferredUsername: isSignedIn ? authState?.username : null,
+    );
     final greeting =
         '${s.greetingFor(now)}${I18n.tr('greeting.separator')}$displayUsername';
     final almanacCard = _TodayAlmanacCard(

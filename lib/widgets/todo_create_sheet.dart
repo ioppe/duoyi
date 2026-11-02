@@ -108,6 +108,12 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
   bool _groupManuallyChanged = false;
   bool _quadrantManuallyChanged = false;
   bool _reminderManuallyChanged = false;
+
+  /// Deadline ownership: once the user picks or clears the deadline, later text
+  /// input and AI results must not overwrite the explicit choice.
+  bool _dueManuallyOwned = false;
+  DateTime? _dueManualDay;
+  TimeOfDay? _dueManualTime;
   String? _feedbackMessage;
   Timer? _feedbackTimer;
 
@@ -160,8 +166,7 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               _aiHasTimeOfDay &&
               _sameDay(_parsed.dateTime!, _aiDateTime!)));
 
-  SmartDateParseResult get _effectiveParsed {
-    final draft = _buildDraft();
+  SmartDateParseResult _effectiveParsedFor(SmartTodoDraft draft) {
     if (!_parsed.isSuccess &&
         !draft.recurrence.isActive &&
         _aiDateTime == null) {
@@ -175,6 +180,60 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     );
   }
 
+  SmartDateParseResult get _effectiveParsed =>
+      _effectiveParsedFor(_buildDraft());
+
+  /// Deadline recognised from the typed text or the AI result. A recognised day
+  /// without a wall time floats as a date-only value instead of inventing 09:00.
+  ({DateTime? value, bool hasTime}) _automaticDue(SmartTodoDraft draft) {
+    if (_useAiDate(draft)) {
+      final at = _aiDateTime!;
+      return _aiHasTimeOfDay
+          ? (value: at, hasTime: true)
+          : (value: AppClock.dateOnly(at), hasTime: false);
+    }
+    if (!_parsed.isSuccess && !draft.recurrence.isActive) {
+      return (value: null, hasTime: false);
+    }
+    if (_parsed.hasTimeOfDay) return (value: draft.date, hasTime: true);
+    return (value: AppClock.dateOnly(draft.date), hasTime: false);
+  }
+
+  DateTime? get _manualDueValue {
+    final day = _dueManualDay;
+    if (day == null) return null;
+    final time = _dueManualTime;
+    if (time == null) return AppClock.dateOnly(day);
+    return AppClock.date(day.year, day.month, day.day, time.hour, time.minute);
+  }
+
+  /// Visible deadline row: an explicit manual choice wins over recognised input,
+  /// including an explicit clear (owned but empty).
+  ({DateTime? value, bool hasTime}) _dueFor(SmartTodoDraft draft) {
+    if (_dueManuallyOwned) {
+      return (value: draft.dueDate, hasTime: _dueManualTime != null);
+    }
+    return _automaticDue(draft);
+  }
+
+  /// A wall time skipped by the zone (daylight saving gap) is never normalised.
+  String? get _dueGapErrorKey {
+    if (!_dueManuallyOwned) return null;
+    final day = _dueManualDay;
+    final time = _dueManualTime;
+    if (day == null || time == null) return null;
+    final at = AppClock.date(
+      day.year,
+      day.month,
+      day.day,
+      time.hour,
+      time.minute,
+    );
+    final exists =
+        _sameDay(at, day) && at.hour == time.hour && at.minute == time.minute;
+    return exists ? null : 'todo.create.due_gap_error';
+  }
+
   SmartTodoDraft _buildDraft() {
     final draft = SmartTodoDraftBuilder.fromText(
       _sourceInput,
@@ -185,9 +244,9 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     return SmartTodoDraft(
       title: _aiApplied ? _titleCtrl.text.trim() : draft.title,
       date: useAiDate ? _aiDateTime! : draft.date,
-      dueDate: useAiDate
-          ? (_aiHasTimeOfDay ? _aiDateTime : null)
-          : draft.dueDate,
+      // The deadline owns its own state: a manual choice wins, otherwise the
+      // recognised date is kept (floating when no wall time was stated).
+      dueDate: _dueManuallyOwned ? _manualDueValue : _automaticDue(draft).value,
       reminder: useAiDate ? const ReminderConfig.disabled() : draft.reminder,
       reminderPlan: useAiDate
           ? const ReminderPlan.disabled()
@@ -299,6 +358,83 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
       _reminderManuallyChanged = true;
       _reminderTime = picked;
       _reminderErrorKey = null;
+    });
+  }
+
+  /// Manual deadline edits never touch the task entry date (`date`) or the
+  /// reminder anchor; they only own the independent `dueDate` field.
+  Future<void> _pickDueDate() async {
+    final auth = context.read<AuthProvider>();
+    final identity = (auth.baseUrl, auth.state.userId);
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
+    final zone = LocalTimezoneResolver.currentIana;
+    final current = _dueFor(_buildDraft()).value;
+    final picked = await AppDatePicker.pickSolar(
+      context,
+      initialDate: current == null
+          ? AppClock.today()
+          : AppClock.dateOnly(current),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2099, 12, 31),
+      title: I18n.tr('todo.create.due_pick_date'),
+    );
+    if (!mounted ||
+        picked == null ||
+        _submitting ||
+        identity != (auth.baseUrl, auth.state.userId) ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation) ||
+        zone != LocalTimezoneResolver.currentIana) {
+      return;
+    }
+    setState(() {
+      _dueManuallyOwned = true;
+      _dueManualDay = AppClock.dateOnly(picked);
+    });
+  }
+
+  Future<void> _pickDueTime() async {
+    final auth = context.read<AuthProvider>();
+    final identity = (auth.baseUrl, auth.state.userId);
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
+    final zone = LocalTimezoneResolver.currentIana;
+    final current = _dueFor(_buildDraft()).value;
+    if (current == null) return;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _dueManualTime ?? TimeOfDay.fromDateTime(current),
+      helpText: I18n.tr('todo.create.due_pick_time'),
+    );
+    if (!mounted ||
+        picked == null ||
+        _submitting ||
+        identity != (auth.baseUrl, auth.state.userId) ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation) ||
+        zone != LocalTimezoneResolver.currentIana) {
+      return;
+    }
+    setState(() {
+      _dueManuallyOwned = true;
+      _dueManualDay ??= AppClock.dateOnly(current);
+      _dueManualTime = picked;
+    });
+  }
+
+  void _clearDueDate() {
+    setState(() {
+      _dueManuallyOwned = true;
+      _dueManualDay = null;
+      _dueManualTime = null;
+    });
+  }
+
+  void _clearDueTime() {
+    final current = _dueFor(_buildDraft()).value;
+    setState(() {
+      _dueManuallyOwned = true;
+      if (_dueManualDay == null && current != null) {
+        _dueManualDay = AppClock.dateOnly(current);
+      }
+      _dueManualTime = null;
     });
   }
 
@@ -472,6 +608,12 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
         return;
       }
     }
+    final dueGapError = _dueGapErrorKey;
+    if (dueGapError != null) {
+      // A deadline wall time that the zone skips is never saved normalised.
+      _feedback(I18n.tr(dueGapError));
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final todos = context.read<TodoProvider>();
@@ -607,7 +749,14 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
     final strings = context.watch<ThemeProvider>().brand.strings;
     final aiEnabled = context.watch<AiService>().enabled;
     final cs = Theme.of(context).colorScheme;
-    final parsed = _effectiveParsed;
+    final draft = _buildDraft();
+    final parsed = _effectiveParsedFor(draft);
+    final due = _dueFor(draft);
+    final dueValue = due.value;
+    final dueTime = due.hasTime && dueValue != null
+        ? TimeOfDay.fromDateTime(dueValue)
+        : null;
+    final dueErrorKey = _dueGapErrorKey;
     final todos = context.watch<TodoProvider>();
     final shares = context.watch<ShareProvider>();
     final custom = context.watch<ListGroupProvider?>();
@@ -755,6 +904,77 @@ class _TodoCreateSheetState extends State<_TodoCreateSheet> {
               },
             ),
           ),
+          const SizedBox(height: 20),
+          Text(
+            I18n.tr('todo.create.due_date'),
+            style: appSecondaryControlLabelStyle(context),
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          Wrap(
+            spacing: DesignTokens.spaceMd,
+            runSpacing: DesignTokens.spaceXs,
+            children: [
+              TextButton.icon(
+                key: const ValueKey('todo_create_due_date'),
+                icon: const Icon(
+                  Icons.event_outlined,
+                  size: DesignTokens.controlIconSize,
+                ),
+                label: Text(
+                  dueValue == null
+                      ? I18n.tr('todo.create.due_none')
+                      : I18nDateFormat.date(dueValue),
+                ),
+                onPressed: _submitting ? null : _pickDueDate,
+              ),
+              if (dueValue != null)
+                TextButton.icon(
+                  key: const ValueKey('todo_create_due_time'),
+                  icon: const Icon(
+                    Icons.access_time,
+                    size: DesignTokens.controlIconSize,
+                  ),
+                  label: Text(
+                    dueTime == null
+                        ? I18n.tr('todo.create.due_time_none')
+                        : I18nDateFormat.timeOfDay(
+                            hour: dueTime.hour,
+                            minute: dueTime.minute,
+                          ),
+                  ),
+                  onPressed: _submitting ? null : _pickDueTime,
+                ),
+              if (dueTime != null)
+                IconButton(
+                  key: const ValueKey('todo_create_due_clear_time'),
+                  tooltip: I18n.tr('todo.create.due_time_clear'),
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: _submitting ? null : _clearDueTime,
+                ),
+              if (dueValue != null)
+                TextButton.icon(
+                  key: const ValueKey('todo_create_due_clear'),
+                  icon: const Icon(
+                    Icons.clear,
+                    size: DesignTokens.controlIconSize,
+                  ),
+                  label: Text(I18n.tr('todo.create.due_clear')),
+                  onPressed: _submitting ? null : _clearDueDate,
+                ),
+            ],
+          ),
+          if (dueErrorKey != null)
+            Padding(
+              padding: const EdgeInsets.only(top: DesignTokens.spaceXs),
+              child: Text(
+                I18n.tr(dueErrorKey),
+                key: const ValueKey('todo_create_due_error'),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: cs.error),
+              ),
+            ),
           const SizedBox(height: 20),
           Text(
             I18n.tr('todo.create.reminder'),

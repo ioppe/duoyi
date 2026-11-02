@@ -129,15 +129,20 @@ void main() {
     expect(preferencesProvider, contains('webDefaultBottomNavTabs'));
     expect(
       preferencesProvider,
-      contains('webDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6}'),
+      contains('webDefaultBottomNavTabs = <int>{0, 2, 4, 6}'),
     );
     expect(preferencesProvider, contains('isBottomNavTabSupported'));
+    expect(preferencesProvider, contains('isPrimaryNavigationTabSupported'));
+    expect(preferencesProvider, contains('legacyTodoNavTab = 1'));
     expect(preferencesProvider, contains('normalizeDefaultTab'));
     expect(preferencesProvider, contains('tab == 5'));
 
     final main = File('lib/main.dart').readAsStringSync();
     expect(preferencesProvider, contains('WebTarget.isWebBuild'));
-    expect(main, contains('PreferencesProvider.isBottomNavTabSupported(tab)'));
+    expect(
+      main,
+      contains('PreferencesProvider.isPrimaryNavigationTabSupported(tab)'),
+    );
     expect(main, isNot(contains('_desktopWebVisibleBottomNavTabs')));
 
     final moreApps = File(
@@ -152,10 +157,13 @@ void main() {
       'lib/screens/preferences_screen.dart',
     ).readAsStringSync();
     expect(preferencesScreen, isNot(contains('WebTarget.isDesktopWebBuild')));
-    expect(preferencesScreen, contains('isBottomNavTabSupported(tab)'));
     expect(
       preferencesScreen,
-      contains('where(PreferencesProvider.isBottomNavTabSupported)'),
+      contains('PreferencesProvider.isPrimaryNavigationTabSupported(tab)'),
+    );
+    expect(
+      preferencesScreen,
+      contains('where(PreferencesProvider.isPrimaryNavigationTabSupported)'),
     );
 
     final widgetScreen = File(

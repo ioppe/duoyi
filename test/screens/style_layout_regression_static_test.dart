@@ -22,6 +22,7 @@ void main() {
   ];
 
   test('二级页面使用共享粗体且避免大标题和厚边框回退', () {
+    final tokens = File('lib/core/design_tokens.dart').readAsStringSync();
     for (final path in scopedScreens) {
       final source = File(path).readAsStringSync();
       expect(
@@ -49,6 +50,21 @@ void main() {
         final width = RegExp(
           r'width:\s*([0-9]+(?:\.[0-9]+)?)',
         ).firstMatch(call);
+        final tokenWidth = RegExp(
+          r'width:\s*DesignTokens\.(\w+)',
+        ).firstMatch(call);
+        final tokenValue = tokenWidth == null
+            ? null
+            : RegExp(
+                r'static const double ' +
+                    RegExp.escape(tokenWidth.group(1)!) +
+                    r'\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*;',
+              ).firstMatch(tokens);
+        final resolvedWidth = width != null
+            ? double.parse(width.group(1)!)
+            : tokenValue == null
+            ? null
+            : double.parse(tokenValue.group(1)!);
         final sharedInputWidth = RegExp(
           r'OutlineInputBorder inputBorder\(Color color, \{double width = ([0-9]+(?:\.[0-9]+)?)\}\)',
         ).firstMatch(source);
@@ -57,13 +73,13 @@ void main() {
             sharedInputWidth != null &&
             double.parse(sharedInputWidth.group(1)!) <= 0.5;
         expect(
-          width != null || usesSharedInputWidth,
+          resolvedWidth != null || usesSharedInputWidth,
           isTrue,
           reason: '$path uses default 1px border:\n$call',
         );
-        if (width != null) {
+        if (resolvedWidth != null) {
           expect(
-            double.parse(width.group(1)!),
+            resolvedWidth,
             lessThanOrEqualTo(0.6),
             reason: '$path uses a thick border:\n$call',
           );

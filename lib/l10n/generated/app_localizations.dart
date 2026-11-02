@@ -602,6 +602,54 @@ abstract class AppLocalizations {
   /// **'优先级标记'**
   String get todoCreatePriority;
 
+  /// No description provided for @todoCreateDueDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'截止日期'**
+  String get todoCreateDueDate;
+
+  /// No description provided for @todoCreateDueNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'无截止日期'**
+  String get todoCreateDueNone;
+
+  /// No description provided for @todoCreateDuePickDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择截止日期'**
+  String get todoCreateDuePickDate;
+
+  /// No description provided for @todoCreateDueTimeNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'可选时刻'**
+  String get todoCreateDueTimeNone;
+
+  /// No description provided for @todoCreateDuePickTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择截止时刻'**
+  String get todoCreateDuePickTime;
+
+  /// No description provided for @todoCreateDueTimeClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消具体时刻'**
+  String get todoCreateDueTimeClear;
+
+  /// No description provided for @todoCreateDueClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除截止日期'**
+  String get todoCreateDueClear;
+
+  /// No description provided for @todoCreateDueGapError.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前时区不存在这个时刻（夏令时跳变），请重新选择'**
+  String get todoCreateDueGapError;
+
   /// No description provided for @todoCreateReminder.
   ///
   /// In zh, this message translates to:

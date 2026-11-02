@@ -388,15 +388,14 @@ class _PersonalizationSettingsScreenState
                     trailing: _compactDropdown<int>(
                       value: p.defaultTab,
                       items: [
-                        for (var tab = 0; tab <= 6; tab++)
-                          if (PreferencesProvider.isBottomNavTabSupported(tab))
-                            DropdownMenuItem(
-                              value: tab,
-                              child: Text(
-                                _tabLabel(tab),
-                                style: appSecondaryControlTextStyle(context),
-                              ),
+                        for (final tab in primaryNavigationTabChoices())
+                          DropdownMenuItem(
+                            value: tab,
+                            child: Text(
+                              _tabLabel(tab),
+                              style: appSecondaryControlTextStyle(context),
                             ),
+                          ),
                       ],
                       onChanged: (v) => v == null
                           ? null
@@ -599,8 +598,10 @@ class _BottomNavSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<PreferencesProvider>();
+    // 待办只保留内部页面与深链，不再出现在导航设置里（primary helper 同时
+    // 处理 Web 隐藏小组件这类平台能力差异）。
     final tabs = p.bottomNavOrder
-        .where(PreferencesProvider.isBottomNavTabSupported)
+        .where(PreferencesProvider.isPrimaryNavigationTabSupported)
         .toList(growable: false);
     return AppSettingsSection(
       title: I18n.tr('preferences.section.bottom_nav'),
@@ -617,6 +618,13 @@ class _BottomNavSettingsSection extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+/// 默认页可选的一级导航入口：待办只保留内部页面与深链，不在候选里。
+Iterable<int> primaryNavigationTabChoices() sync* {
+  for (var tab = 0; tab <= 6; tab++) {
+    if (PreferencesProvider.isPrimaryNavigationTabSupported(tab)) yield tab;
   }
 }
 
@@ -786,6 +794,9 @@ class _NavConfigActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final atMinimum =
+        visible &&
+        context.watch<PreferencesProvider>().bottomNavVisible.length <= 2;
     Widget compactIconButton({
       required String tooltip,
       required VoidCallback? onPressed,
@@ -837,7 +848,7 @@ class _NavConfigActions extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Switch(
                 value: visible,
-                onChanged: lockedVisible || reachedLimit
+                onChanged: lockedVisible || reachedLimit || atMinimum
                     ? null
                     : (v) => context
                           .read<PreferencesProvider>()

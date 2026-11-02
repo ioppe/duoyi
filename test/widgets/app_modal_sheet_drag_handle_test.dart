@@ -1,7 +1,19 @@
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/widgets/surface_components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// 路由层手柄/贴底断言只适用于 native 底部面板：显式声明 Android 宿主，
+/// 避免测试进程所在宿主（macOS）走进居中对齐的桌面对话框分支。
+void useNativeAndroidHost() {
+  expect(defaultTargetPlatform, TargetPlatform.android);
+  WebTarget.debugWebBuild = false;
+  addTearDown(() {
+    WebTarget.debugWebBuild = null;
+  });
+}
 
 /// 路由层（showModalBottomSheet 的 Material）曾沿用 bottomSheetTheme 的
 /// showDragHandle: true 与 modalElevation: 4，于是卡片上方多出一条拖动示意
@@ -23,6 +35,7 @@ void main() {
   }
 
   Future<void> pumpSheet(WidgetTester tester) async {
+    useNativeAndroidHost();
     await tester.binding.setSurfaceSize(const Size(400, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -68,8 +81,7 @@ void main() {
     // modalElevation:4；解析后的有效值必须显式关闭。
     final effectiveShowDragHandle =
         sheet.showDragHandle ?? theme.showDragHandle ?? false;
-    final effectiveElevation =
-        sheet.elevation ?? theme.modalElevation ?? 0;
+    final effectiveElevation = sheet.elevation ?? theme.modalElevation ?? 0;
     expect(effectiveShowDragHandle, isFalse);
     expect(effectiveElevation, 0);
     expect(sheet.backgroundColor, Colors.transparent);
@@ -86,6 +98,7 @@ void main() {
   });
 
   testWidgets('贴底后仍保留底部安全区留白', (tester) async {
+    useNativeAndroidHost();
     await tester.binding.setSurfaceSize(const Size(400, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     // 全面屏底部手势条：模态路由读的是 view 的 padding，不是外层 MediaQuery；
@@ -105,10 +118,8 @@ void main() {
               child: ElevatedButton(
                 onPressed: () => showAppModalSheet<void>(
                   context: context,
-                  builder: (_) => const AppModalSheet(
-                    title: '新建任务',
-                    child: Text('内容'),
-                  ),
+                  builder: (_) =>
+                      const AppModalSheet(title: '新建任务', child: Text('内容')),
                 ),
                 child: const Text('open'),
               ),

@@ -283,6 +283,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreatePriority => 'Priority flag';
 
   @override
+  String get todoCreateDueDate => 'Due date';
+
+  @override
+  String get todoCreateDueNone => 'No due date';
+
+  @override
+  String get todoCreateDuePickDate => 'Choose due date';
+
+  @override
+  String get todoCreateDueTimeNone => 'Add a time';
+
+  @override
+  String get todoCreateDuePickTime => 'Choose due time';
+
+  @override
+  String get todoCreateDueTimeClear => 'Remove time';
+
+  @override
+  String get todoCreateDueClear => 'Clear due date';
+
+  @override
+  String get todoCreateDueGapError =>
+      'That time does not exist in the current time zone (daylight saving jump). Choose another time.';
+
+  @override
   String get todoCreateReminder => 'Reminder';
 
   @override

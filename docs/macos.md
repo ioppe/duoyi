@@ -29,6 +29,10 @@ python3 scripts/flutter_with_config.py build macos --release
 
 Flutter 不在 PATH 时设置 `FLUTTER_BIN`。构建产物位于 `build/macos/Build/Products/Release/` 下的 `.app`。服务器初始地址从 `config/deployment.json` 注入，安装后仍可在登录页修改；支持本地模式、访问令牌与账号密码连接，不在构建参数中放置凭据。
 
+## 创建弹窗
+
+macOS 的共享新建、日期与选择弹层居中呈现，默认最大宽度为 720px，调用处的特定宽度上限继续生效；长内容在卡片内滚动。弹窗使用轻淡入和小幅缩放，支持关闭按钮、Escape、遮罩关闭与焦点循环，减少动态效果时直接显示最终状态。原生手机的底部面板与番茄悬浮窗分别保持各自交互。
+
 ## 使用悬浮窗
 
 1. 打开「专注」计时页，点击标题栏的悬浮窗按钮。

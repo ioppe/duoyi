@@ -1,4 +1,7 @@
 class UserProfile {
+  /// 历史默认占位名：未设置昵称时沿用它，展示层应换成本地化默认名。
+  static const defaultUsername = '用户';
+
   String username;
   String avatarInitials;
   String displayName;
@@ -14,7 +17,7 @@ class UserProfile {
   DateTime? lastSyncTime;
 
   UserProfile({
-    this.username = '用户',
+    this.username = defaultUsername,
     this.avatarInitials = '我',
     this.displayName = '',
     this.email = '',
@@ -46,7 +49,7 @@ class UserProfile {
   };
 
   factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-    username: json['username'] ?? '用户',
+    username: json['username'] ?? defaultUsername,
     avatarInitials: json['avatarInitials'] ?? '我',
     displayName: json['displayName'] ?? '',
     email: json['email'] ?? '',
@@ -64,6 +67,28 @@ class UserProfile {
         ? DateTime.parse(json['lastSyncTime'])
         : null,
   );
+
+  /// 展示用昵称，优先级与「我的」页一致：
+  /// 账号显示名 [preferredDisplayName] → 本地 [displayName] → 账号用户名，
+  /// 再回落本地 [username]；未设置时使用本地化 [fallbackName]。
+  /// 首尾空白视为未设置，避免把空白/纯空格当成昵称。
+  String effectiveDisplayName(
+    String fallbackName, {
+    String? preferredDisplayName,
+    String? preferredUsername,
+  }) {
+    for (final candidate in <String?>[preferredDisplayName, displayName]) {
+      final trimmed = candidate?.trim() ?? '';
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    for (final candidate in <String?>[preferredUsername, username]) {
+      final accountName = candidate?.trim() ?? '';
+      if (accountName.isNotEmpty && accountName != defaultUsername) {
+        return accountName;
+      }
+    }
+    return fallbackName.trim();
+  }
 
   int get productivityScore {
     int score = 0;

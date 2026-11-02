@@ -74,6 +74,19 @@ class DesignTokens {
   static const double modalSheetMaxHeightFactor = 2 / 3;
   static const double modalSheetDragThreshold = 24;
 
+  // ----- Modal 居中弹层（Web / macOS 桌面） -----
+  // Web 与 native macOS 不渲染底部半屏面板：同一个 sharedAppModalSheet 内容
+  // 改由居中对话框承载。宽度仍取调用点的 maxWidth（默认
+  // creationFormMaxWidth，特殊面板 860/520 原样保留），这里只定义视口内边距、
+  // 高度上限与四角圆角。高度是"上不去"的上限而不是最小高度：短内容自适应，
+  // 长内容在卡片内部滚动。
+  static const double appModalCenteredRadius = radiusXl;
+  static const double appModalCenteredMaxHeightFactor = 0.86;
+  static const double appModalCenteredMargin = spaceXxl;
+  static const double appModalCenteredNarrowMargin = spaceMd;
+  static const double appModalCenteredNarrowBreakpoint = 480;
+  static const double appModalCenteredBorderWidth = 0.55;
+  static const double appModalCenteredScaleBegin = 0.96;
   // ----- Default palette -----
   static const Color defaultPageBackground = Color(0xFFF6F7F9);
   static const Color defaultSurface = Color(0xFFFFFFFF);

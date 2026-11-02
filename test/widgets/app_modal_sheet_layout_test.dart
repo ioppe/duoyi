@@ -1,7 +1,19 @@
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/widgets/surface_components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// 居中弹层只在 Web / macOS 生效。native 几何断言显式声明 Android 宿主，
+/// 避免测试进程所在宿主（macOS）把面板带进桌面对话框分支。
+void useNativeAndroidHost() {
+  expect(defaultTargetPlatform, TargetPlatform.android);
+  WebTarget.debugWebBuild = false;
+  addTearDown(() {
+    WebTarget.debugWebBuild = null;
+  });
+}
 
 Finder sheetCard() => find
     .descendant(of: find.byType(AppModalSheet), matching: find.byType(Material))
@@ -20,6 +32,7 @@ Future<void> openSheet(
   bool scrollable = true,
   double textScale = 1,
 }) async {
+  useNativeAndroidHost();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);

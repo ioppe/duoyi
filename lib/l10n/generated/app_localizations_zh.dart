@@ -263,6 +263,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreatePriority => '优先级标记';
 
   @override
+  String get todoCreateDueDate => '截止日期';
+
+  @override
+  String get todoCreateDueNone => '无截止日期';
+
+  @override
+  String get todoCreateDuePickDate => '选择截止日期';
+
+  @override
+  String get todoCreateDueTimeNone => '可选时刻';
+
+  @override
+  String get todoCreateDuePickTime => '选择截止时刻';
+
+  @override
+  String get todoCreateDueTimeClear => '取消具体时刻';
+
+  @override
+  String get todoCreateDueClear => '清除截止日期';
+
+  @override
+  String get todoCreateDueGapError => '当前时区不存在这个时刻（夏令时跳变），请重新选择';
+
+  @override
   String get todoCreateReminder => '提醒';
 
   @override
