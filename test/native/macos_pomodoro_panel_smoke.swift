@@ -332,6 +332,8 @@ struct MacOSPomodoroPanelSmoke {
           let compactContent = compactPanel.contentView,
           let compactTime = view(PomodoroFloatingPanelContentView.timeIdentifier, in: compactContent)
             as? NSTextField,
+          let compactStatus = view(PomodoroFloatingPanelContentView.statusIdentifier, in: compactContent)
+            as? NSTextField,
           let compactToggle = view(PomodoroFloatingPanelContentView.toggleIdentifier, in: compactContent)
             as? NSButton,
           let compactClose = view(PomodoroFloatingPanelContentView.closeIdentifier, in: compactContent)
@@ -341,11 +343,18 @@ struct MacOSPomodoroPanelSmoke {
         userInfo: [NSLocalizedDescriptionKey: "compact panel content is missing"])
     }
     compactContent.layoutSubtreeIfNeeded()
+    func compactTextGap() -> CGFloat {
+      let timeFrame = compactTime.convert(compactTime.bounds, to: compactContent)
+      let toggleFrame = compactToggle.convert(compactToggle.bounds, to: compactContent)
+      return toggleFrame.minX - timeFrame.maxX
+    }
+    let longCompactWidth = compactPanel.frame.width
     try check(
-      compactPanel.frame.size == NSSize(width: 236, height: 64)
-        && compactPanel.frame.width < PomodoroFloatingPanelSize.large.panelSize.width
-        && compactPanel.frame.height < PomodoroFloatingPanelSize.large.panelSize.height,
-      "compact card is visibly smaller than the large card")
+      compactPanel.frame.height == PomodoroFloatingPanelSize.compact.panelSize.height
+        && longCompactWidth >= PomodoroFloatingPanelSize.compact.panelSize.width
+        && longCompactWidth <= 210
+        && longCompactWidth < PomodoroFloatingPanelSize.large.panelSize.width,
+      "compact card is visibly smaller than large and grows only for long durations")
     try check(
       compactToggle.title.isEmpty && compactClose.title.isEmpty,
       "compact controls draw symbols without visible titles")
@@ -361,6 +370,9 @@ struct MacOSPomodoroPanelSmoke {
     try check(
       compactTime.stringValue == "1440:00" && compactTextWidth <= compactTime.frame.width,
       "compact card fits the longest configured duration without truncation")
+    try check(
+      compactTextGap() >= 2,
+      "long duration keeps a visible gap before the play button (gap: \(compactTextGap()))")
     let compactOffset = try capture(
       compactContent, to: output.appendingPathComponent("panel-compact.png"))
     try check(
@@ -368,7 +380,7 @@ struct MacOSPomodoroPanelSmoke {
       "compact visible text is vertically centered (offset: \(compactOffset))")
 
     let runningCompact = snapshot(
-      "24:59", running: true, size: .compact, appearance: defaultAppearancePayload)
+      "24:58", running: true, size: .compact, appearance: defaultAppearancePayload)
     try check(
       runningCompact.toggleSymbolName == "pause.fill",
       "running compact card uses the pause symbol")
@@ -377,8 +389,33 @@ struct MacOSPomodoroPanelSmoke {
     try check(
       compactToggle.accessibilityLabel() == pauseLabel && compactToggle.toolTip == pauseLabel,
       "a running compact card exposes the pause action")
+    let normalCompactWidth = compactPanel.frame.width
+    let runningFrame = compactPanel.frame
+    try check(
+      normalCompactWidth < longCompactWidth
+        && normalCompactWidth <= 190
+        && normalCompactWidth >= PomodoroFloatingPanelSize.compact.panelSize.width,
+      "an ordinary MM:SS compact card is clearly narrower than the long duration")
+    let runningGap = compactTextGap()
+    try check(
+      runningGap >= 4 && runningGap <= 24,
+      "ordinary compact digits keep a visible, bounded gap before play (gap: \(runningGap))")
+    let runningCompactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact-running.png"))
+    try check(
+      abs(runningCompactOffset) <= 1.5,
+      "compact running text is vertically centered (offset: \(runningCompactOffset))")
+
+    // Ticking between equal-length values must not resize or move the card.
+    controller.update(
+      snapshot("24:57", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame == runningFrame,
+      "same digit count keeps the compact size and origin stable while ticking")
+
     let pausedCompact = snapshot(
-      "24:59", paused: true, size: .compact, appearance: defaultAppearancePayload)
+      "24:58", paused: true, size: .compact, appearance: defaultAppearancePayload)
     try check(
       pausedCompact.toggleSymbolName == "play.fill" && pausedCompact.toggleLabel == resumeLabel,
       "a paused compact card asks to resume with the play symbol")
@@ -387,13 +424,39 @@ struct MacOSPomodoroPanelSmoke {
     try check(
       compactToggle.accessibilityLabel() == resumeLabel,
       "the compact control follows the paused semantics from the payload")
+    try check(
+      compactPanel.frame == runningFrame,
+      "pausing does not resize or move the compact card")
+    let pausedCompactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact-paused.png"))
+    try check(
+      abs(pausedCompactOffset) <= 1.5,
+      "compact paused text is vertically centered (offset: \(pausedCompactOffset))")
+
+    // Localized captions wider than the digits must not overflow the card.
+    for (label, paused) in [("Focus", false), ("Paused", true)] {
+      controller.update(
+        snapshot(
+          "24:58", running: !paused, paused: paused, size: .compact,
+          stateLabel: label, appearance: defaultAppearancePayload))
+      compactContent.layoutSubtreeIfNeeded()
+      let captionFrame = compactStatus.convert(compactStatus.bounds, to: compactContent)
+      try check(
+        captionFrame.maxX <= compactContent.bounds.width - 12
+          && compactTime.frame.width >= (compactTime.stringValue as NSString)
+            .size(withAttributes: [.font: compactTime.font!]).width,
+        "English caption \(label) stays inside the compact card")
+    }
 
     // Switching density behaves like a repaint: same window, same origin, and
     // the large card gets its localized title back.
+    controller.update(
+      snapshot("24:58", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
     let compactOrigin = compactPanel.frame.origin
     let panelCountBeforeSwitch = NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count
     controller.update(
-      snapshot("24:59", running: true, size: .large, appearance: defaultAppearancePayload))
+      snapshot("24:58", running: true, size: .large, appearance: defaultAppearancePayload))
     compactContent.layoutSubtreeIfNeeded()
     try check(
       compactPanel.frame.size == PomodoroFloatingPanelSize.large.panelSize
@@ -401,14 +464,27 @@ struct MacOSPomodoroPanelSmoke {
         && compactToggle.title == pauseLabel,
       "switching to large restores the titled control without moving the card")
     controller.update(
-      snapshot("24:59", running: true, size: .compact, appearance: defaultAppearancePayload))
+      snapshot("24:58", running: true, size: .compact, appearance: defaultAppearancePayload))
     compactContent.layoutSubtreeIfNeeded()
     try check(
-      compactPanel.frame.size == NSSize(width: 236, height: 64)
+      compactPanel.frame.size == runningFrame.size
         && compactPanel.frame.origin == compactOrigin
         && compactToggle.title.isEmpty
         && NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count == panelCountBeforeSwitch,
       "switching back to compact reuses one panel in place")
+
+    // A long duration near the right edge may grow, but it must stay reachable.
+    let compactVisibleFrame = (compactPanel.screen ?? NSScreen.main)!.visibleFrame
+    compactPanel.setFrameOrigin(
+      NSPoint(x: compactVisibleFrame.maxX - normalCompactWidth + 40,
+              y: compactVisibleFrame.midY))
+    controller.update(
+      snapshot("1440:00", size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.width == longCompactWidth
+        && NSScreen.screens.contains(where: { $0.visibleFrame.contains(compactPanel.frame) }),
+      "a long compact duration near the screen edge is clamped fully on screen")
     try check(checked.count >= 34, "all expected checks were executed")
 
     let result: [String: Any] = [
@@ -420,7 +496,12 @@ struct MacOSPomodoroPanelSmoke {
       "renderedFontFamily": time.font?.familyName ?? "",
       "textCenterOffsets": ["ready": readyOffset, "running": runningOffset,
                             "paused": pausedOffset, "longDuration": longOffset,
-                            "alternate": alternateOffset],
+                            "alternate": alternateOffset,
+                            "compactLong": compactOffset,
+                            "compactRunning": runningCompactOffset,
+                            "compactPaused": pausedCompactOffset],
+      "compactPanelWidths": ["longDuration": longCompactWidth,
+                             "ordinary": normalCompactWidth],
     ]
     let data = try JSONSerialization.data(
       withJSONObject: result, options: [.prettyPrinted, .sortedKeys])

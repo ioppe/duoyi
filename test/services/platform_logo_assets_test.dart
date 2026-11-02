@@ -94,12 +94,14 @@ void main() {
   test('every client renders the same canonical artwork', () async {
     final canonical = File(_canonicalPath).readAsBytesSync();
     expect(File(_iosMarketingPath).readAsBytesSync(), canonical);
-    expect(File(_macMarketingPath).readAsBytesSync(), canonical);
+    // macOS drops the opaque #F6F7F9 artboard for a transparent RGBA tile, so
+    // it must no longer be a byte copy of the canonical PNG; the macOS test
+    // below pins its palette, geometry and transparent corners instead.
+    expect(File(_macMarketingPath).readAsBytesSync(), isNot(canonical));
 
     for (final path in <String>[
       'web/icons/Icon-512.png',
       'linux/duoyi.png',
-      'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png',
       '$_androidRes/mipmap-xxxhdpi/ic_launcher.png',
     ]) {
       final artwork = await _Artwork.load(path);
@@ -316,6 +318,128 @@ void main() {
     },
   );
 
+  // The Dock painted a light square behind the logo because every macOS icon
+  // was the opaque #F6F7F9 artboard render. Each declared macOS size must now
+  // be the RGBA transparent tile the favicon already used, with the approved
+  // red/white palette and the tile geometry unchanged.
+  test(
+    'macOS icons are transparent rounded tiles on every declared size',
+    () async {
+      const macDir = 'macos/Runner/Assets.xcassets/AppIcon.appiconset';
+      const mac = <String, int>{
+        'app_icon_16.png': 16,
+        'app_icon_32.png': 32,
+        'app_icon_64.png': 64,
+        'app_icon_128.png': 128,
+        'app_icon_256.png': 256,
+        'app_icon_512.png': 512,
+        'app_icon_1024.png': 1024,
+      };
+      // The 16 px tile still gets sub-pixel corner coverage from the rounded
+      // antialias (alpha 2 of 255), everything else is fully transparent.
+      const transparentCornerMaxAlpha = 8;
+
+      for (final entry in mac.entries) {
+        final path = '$macDir/${entry.key}';
+        final tile = await _Artwork.load(path);
+        expect(tile.width, entry.value, reason: path);
+        expect(tile.height, entry.value, reason: path);
+
+        for (final corner in const <(double, double)>[
+          (0, 0),
+          (88, 0),
+          (0, 88),
+          (88, 88),
+        ]) {
+          expect(
+            tile.alphaAt(corner.$1, corner.$2),
+            lessThanOrEqualTo(transparentCornerMaxAlpha),
+            reason:
+                '$path corner (${corner.$1}, ${corner.$2}) must be '
+                'transparent, not the light #F6F7F9 artboard',
+          );
+        }
+
+        (int, int, int, int)? lightMatte;
+        (int, int, int, int)? offPaletteEdge;
+        var redPixels = 0;
+        var whitePixels = 0;
+        for (final pixel in tile.pixels) {
+          if ((pixel.$1, pixel.$2, pixel.$3) == _background) {
+            lightMatte ??= pixel;
+          }
+          final opaque = (pixel.$1, pixel.$2, pixel.$3);
+          if (pixel.$4 == 255) {
+            if (_isNear(opaque, _brandRed)) redPixels++;
+            if (_isNear(opaque, _glyphWhite)) whitePixels++;
+          } else if (pixel.$4 > 0) {
+            // A baked light matte leaks blue > green into the antialiased tile
+            // edge; a red/white blend keeps those two channels equal.
+            final offBlend =
+                (pixel.$2 - pixel.$3).abs() > 1 || pixel.$1 + 1 < pixel.$2;
+            if (offBlend) offPaletteEdge ??= pixel;
+          }
+        }
+        expect(
+          lightMatte,
+          isNull,
+          reason: '$path bakes the #F6F7F9 artboard back in: $lightMatte',
+        );
+        expect(
+          offPaletteEdge,
+          isNull,
+          reason:
+              '$path antialiased edge pixel $offPaletteEdge is not a '
+              'brand-red/white blend',
+        );
+        expect(redPixels, greaterThan(0), reason: '$path keeps the red tile');
+        expect(
+          whitePixels,
+          greaterThan(0),
+          reason: '$path keeps the white glyph',
+        );
+      }
+
+      // From 128 px up these samples land on flat pixels, so the approved
+      // palette and geometry are pinned exactly as for the canonical artwork.
+      final highResolution = mac.entries.where((entry) => entry.value >= 128);
+      for (final entry in highResolution) {
+        final path = '$macDir/${entry.key}';
+        final tile = await _Artwork.load(path);
+        _expectColor(tile, 44, 1, _brandRed, reason: '$path red tile top edge');
+        _expectColor(
+          tile,
+          1,
+          44,
+          _brandRed,
+          reason: '$path red tile left edge',
+        );
+        _expectColor(tile, 34, 44, _glyphWhite, reason: '$path left white bar');
+        _expectColor(
+          tile,
+          54,
+          32,
+          _glyphWhite,
+          reason: '$path top right white block',
+        );
+        _expectColor(
+          tile,
+          54,
+          52,
+          _glyphWhite,
+          reason: '$path bottom right white block',
+        );
+        _expectColor(
+          tile,
+          54,
+          42,
+          _brandRed,
+          reason: '$path red gap between the right blocks',
+        );
+      }
+    },
+  );
+
   test(
     'web favicon is a transparent rounded tile with a PNG fallback',
     () async {
@@ -438,6 +562,18 @@ class _Artwork {
   );
 
   int alphaAt(double artX, double artY) => _channelAt(artX, artY, 3);
+
+  /// Every pixel as `(r, g, b, a)`, in row-major order.
+  Iterable<(int, int, int, int)> get pixels sync* {
+    for (var offset = 0; offset < _pixels.lengthInBytes; offset += 4) {
+      yield (
+        _pixels.getUint8(offset),
+        _pixels.getUint8(offset + 1),
+        _pixels.getUint8(offset + 2),
+        _pixels.getUint8(offset + 3),
+      );
+    }
+  }
 }
 
 Future<ui.Image> _decode(String path) {
@@ -469,6 +605,12 @@ void _expectColor(
         'expected $expected, found $actual',
   );
 }
+
+/// Same two-step tolerance as [_expectColor], for whole-pixel comparisons.
+bool _isNear((int, int, int) actual, (int, int, int) expected) =>
+    (actual.$1 - expected.$1).abs() <= 2 &&
+    (actual.$2 - expected.$2).abs() <= 2 &&
+    (actual.$3 - expected.$3).abs() <= 2;
 
 (int, int) _pngSize(String path) {
   final bytes = File(path).readAsBytesSync();

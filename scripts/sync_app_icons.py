@@ -4,7 +4,9 @@
 Single source of truth: ``assets/logo/duoyi_app_logo.svg`` — a pure red rounded
 tile (``#C85656``) carrying the white ``space_dashboard_rounded`` glyph made of
 three geometric blocks, on a ``#F6F7F9`` artboard. Every platform icon PNG is
-rendered from that file, so the geometry and palette cannot drift per client.
+rendered from that file, so the geometry and palette cannot drift per client:
+only the opaque artboard rect is dropped where the host paints its own backdrop
+(the macOS Dock and the browser tab), never the tile or the glyph.
 
 Usage::
 
@@ -12,13 +14,15 @@ Usage::
     python3 scripts/sync_app_icons.py --check    # verify only, exit 1 on drift
 
 ``--check`` never writes: it re-renders in memory, compares pixels with the
-files on disk, requires the two 1024 marketing icons to be byte-identical to
+files on disk, requires the iOS 1024 marketing icon to be byte-identical to
 ``duoyi_app_logo_1024.png``, verifies the audited reference screenshot and the
 pubspec / Android adaptive-background declarations.
-The browser favicon is derived from the same master instead of the artboard
-render: ``web/favicon.svg`` drops the opaque ``#F6F7F9`` background rect so the
-rounded corners stay transparent (the browser paints its own tab colour behind
-them), and ``web/favicon.png`` is the matching 32 px RGBA fallback.
+The browser favicon and every macOS application icon are derived from the same
+master instead of the artboard render: ``web/favicon.svg`` drops the opaque
+``#F6F7F9`` background rect, ``web/favicon.png`` is the matching 32 px RGBA
+fallback, and ``macos/.../app_icon_*.png`` are RGBA tiles that keep the rounded
+corners transparent so the Dock paints its own colour behind the logo instead
+of a baked light square (the pale halo seen around the Dock icon).
 
 Dependencies: ``Pillow`` (raster) and ``fontTools`` (SVG path parsing +
 cubic sampling). No cairosvg, no native librsvg/Inkscape, no machine-specific
@@ -66,6 +70,12 @@ TILE_RADIUS = 32.0
 GLYPH_BBOX = (26.0, 26.0, 62.0, 62.0)
 GLYPH_BBOX_TOLERANCE = 0.05
 
+# Transparent-tile corners must read as "no canvas behind the logo". The 16 px
+# macOS icon still gets sub-pixel corner coverage from the rounded tile antialias
+# (alpha 2 of 255), so anything below 3% alpha counts as transparent while the
+# opaque ``#F6F7F9`` matte (alpha 255) fails loudly.
+TRANSPARENT_CORNER_MAX_ALPHA = 8
+
 CANONICAL_SIZE = 1024
 CANONICAL_RELATIVE = "assets/logo/duoyi_app_logo_1024.png"
 FOREGROUND_RELATIVE = "assets/logo/duoyi_app_logo_foreground_1024.png"
@@ -86,6 +96,10 @@ class Target:
     # Android drawables are plain RGB PNG without colour-management chunks,
     # matching the rest of ``android/app/src/main/res``.
     srgb_profile: bool = True
+    # macOS Dock tiles drop the opaque ``#F6F7F9`` artboard: the same red tile
+    # and white glyph are rendered as RGBA so the rounded corners stay
+    # transparent instead of showing a pale square around the icon.
+    transparent_tile: bool = False
 
 
 IOS_ICONS = (
@@ -129,8 +143,10 @@ MACOS_1024_RELATIVE = (
     "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png"
 )
 
-# Files that must be byte-identical to the canonical 1024 PNG.
-DUPLICATE_OF_CANONICAL = (IOS_1024_RELATIVE, MACOS_1024_RELATIVE)
+# Files that must be byte-identical to the canonical 1024 PNG. Only iOS keeps
+# the opaque artboard render here: every macOS size, including the 1024 slot,
+# is a transparent RGBA tile verified as rendered, not copied.
+DUPLICATE_OF_CANONICAL = (IOS_1024_RELATIVE,)
 
 WEB_ICONS = (
     ("web/icons/Icon-192.png", 192),
@@ -177,7 +193,11 @@ def _artwork_targets() -> list[Target]:
         )
     for name, size in MACOS_ICONS:
         targets.append(
-            Target(f"macos/Runner/Assets.xcassets/AppIcon.appiconset/{name}", size)
+            Target(
+                f"macos/Runner/Assets.xcassets/AppIcon.appiconset/{name}",
+                size,
+                transparent_tile=True,
+            )
         )
     for relative, size in WEB_ICONS:
         targets.append(Target(relative, size))
@@ -556,13 +576,16 @@ def render_foreground(master: Master, size: int) -> Image.Image:
     return image
 
 
-def render_favicon(master: Master, size: int = FAVICON_SIZE) -> Image.Image:
-    """Tab favicon: red rounded tile + white glyph on a transparent canvas.
+def render_transparent_tile(master: Master, size: int) -> Image.Image:
+    """Red rounded tile + white glyph as RGBA on a transparent canvas.
 
     Same geometry and palette as the artwork, but the ``#F6F7F9`` artboard is
-    replaced by transparency so the rounded corners expose the browser's own tab
-    colour instead of a light square. Transparent pixels keep the brand red as
-    their RGB, so downsampling cannot bleed a pale halo along the tile edge.
+    replaced by transparency so the rounded corners expose the host's own
+    backdrop (browser tab, macOS Dock) instead of a light square. The only
+    colour outside the tile is the brand red, and Pillow downsamples RGBA
+    premultiplied, so the antialiased tile edge stays a red/white blend and no
+    pale ``#F6F7F9`` halo can be baked into the corners. Shared by the favicon
+    and every macOS icon.
     """
 
     supersample = _supersample(size)
@@ -581,6 +604,12 @@ def render_favicon(master: Master, size: int = FAVICON_SIZE) -> Image.Image:
     )
     image = Image.composite(glyph_layer, image, _glyph_mask(master, pixels, scale))
     return image.resize((size, size), Image.Resampling.LANCZOS)
+
+
+def render_favicon(master: Master, size: int = FAVICON_SIZE) -> Image.Image:
+    """Browser tab favicon: the shared transparent tile render."""
+
+    return render_transparent_tile(master, size)
 
 
 def _srgb_profile_bytes() -> bytes:
@@ -622,9 +651,15 @@ def _save_rgba(image: Image.Image, path: Path, *, srgb_profile: bool) -> None:
 
 def _render_cache(master: Master) -> dict[tuple[str, int], Image.Image]:
     cache: dict[tuple[str, int], Image.Image] = {}
-    sizes = {CANONICAL_SIZE} | {target.size for target in ARTWORK_TARGETS}
-    for size in sorted(sizes):
+    opaque_sizes = {CANONICAL_SIZE} | {
+        target.size for target in ARTWORK_TARGETS if not target.transparent_tile
+    }
+    for size in sorted(opaque_sizes):
         cache[("artwork", size)] = render_artwork(master, size)
+    for size in sorted(
+        {target.size for target in ARTWORK_TARGETS if target.transparent_tile}
+    ):
+        cache[("transparent_tile", size)] = render_transparent_tile(master, size)
     for size in sorted({target.size for target in FOREGROUND_TARGETS} | {CANONICAL_SIZE}):
         cache[("foreground", size)] = render_foreground(master, size)
     cache[("favicon", FAVICON_SIZE)] = render_favicon(master, FAVICON_SIZE)
@@ -650,6 +685,13 @@ def write_all(master: Master, cache: dict[tuple[str, int], Image.Image]) -> None
         if target.relative in DUPLICATE_OF_CANONICAL:
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(canonical_bytes)
+            continue
+        if target.transparent_tile:
+            _save_rgba(
+                cache[("transparent_tile", target.size)],
+                destination,
+                srgb_profile=target.srgb_profile,
+            )
             continue
         _save_rgb(
             cache[("artwork", target.size)],
@@ -701,6 +743,31 @@ def _png_stream_problem(path: Path) -> str | None:
     return "PNG stream has no IEND chunk"
 
 
+def _difference_bbox(difference: Image.Image) -> tuple[int, int, int, int] | None:
+    """Union bbox across every band, alpha included.
+
+    ``RGBAImage.getbbox()`` defaults to ``alpha_only=True``, so a pure RGB drift
+    under unchanged alpha (the baked ``#F6F7F9`` matte of an opaque macOS tile)
+    would count as "no difference". Compare band by band instead.
+    """
+
+    box: tuple[int, int, int, int] | None = None
+    for band in difference.split():
+        found = band.getbbox()
+        if found is None:
+            continue
+        if box is None:
+            box = found
+        else:
+            box = (
+                min(box[0], found[0]),
+                min(box[1], found[1]),
+                max(box[2], found[2]),
+                max(box[3], found[3]),
+            )
+    return box
+
+
 def _compare_pixels(path: Path, expected: Image.Image) -> str | None:
     if not path.is_file():
         return "missing"
@@ -715,7 +782,7 @@ def _compare_pixels(path: Path, expected: Image.Image) -> str | None:
     if actual.mode != expected.mode:
         return f"mode {actual.mode} != {expected.mode}"
     difference = ImageChops.difference(actual, expected)
-    box = difference.getbbox()
+    box = _difference_bbox(difference)
     if box is None:
         return None
     peak = max(channel[1] for channel in difference.getextrema())
@@ -820,6 +887,82 @@ def _favicon_svg_problems(expected_text: str | None) -> list[str]:
     return problems
 
 
+def _transparent_tile_problems(relative: str) -> list[str]:
+    """Structural checks on a rendered macOS tile.
+
+    Pixel comparison already pins geometry and palette against a fresh render;
+    these checks fail on their own if the renderer regresses as a whole (for
+    example by baking the opaque ``#F6F7F9`` canvas back in) and assert what the
+    Dock needs: an RGBA tile with transparent corners, no artboard-coloured
+    pixel, and antialiased edges made of brand-red/white blends rather than a
+    light matte.
+    """
+
+    path = REPO_ROOT / relative
+    problems: list[str] = []
+    with Image.open(path) as handle:
+        handle.load()
+        image = handle.copy()
+    if image.mode != "RGBA":
+        return [
+            f"{relative}: mode {image.mode} != RGBA, the macOS tile must be "
+            "transparent instead of an opaque artboard square"
+        ]
+
+    width, height = image.size
+    for label, (x, y) in (
+        ("top-left", (0, 0)),
+        ("top-right", (width - 1, 0)),
+        ("bottom-left", (0, height - 1)),
+        ("bottom-right", (width - 1, height - 1)),
+    ):
+        alpha = image.getpixel((x, y))[3]
+        if alpha > TRANSPARENT_CORNER_MAX_ALPHA:
+            problems.append(
+                f"{relative}: {label} corner alpha is {alpha} "
+                f"(> {TRANSPARENT_CORNER_MAX_ALPHA}), an opaque #F6F7F9 canvas "
+                "would show through here"
+            )
+
+    artboard_pixels = 0
+    edge_problem: str | None = None
+    opaque_colors: set[tuple[int, int, int]] = set()
+    for red, green, blue, alpha in image.getdata():
+        if (red, green, blue) == BACKGROUND_RGB:
+            artboard_pixels += 1
+        if alpha == 255:
+            opaque_colors.add((red, green, blue))
+        elif (
+            alpha
+            and edge_problem is None
+            and (abs(green - blue) > 1 or red + 1 < green)
+        ):
+            edge_problem = f"({red}, {green}, {blue}, alpha {alpha})"
+    if artboard_pixels:
+        problems.append(
+            f"{relative}: {artboard_pixels} pixel(s) carry the #F6F7F9 artboard "
+            "colour, the light matte must stay off the tile"
+        )
+    if edge_problem is not None:
+        problems.append(
+            f"{relative}: antialiased edge pixel {edge_problem} is not a "
+            "brand-red/white blend (a light matte bleeds along the tile edge)"
+        )
+    for label, expected in (
+        ("brand red", BRAND_RED_RGB),
+        ("white glyph", GLYPH_RGB),
+    ):
+        if not any(
+            all(abs(found - wanted) <= 2 for found, wanted in zip(pixel, expected))
+            for pixel in opaque_colors
+        ):
+            problems.append(
+                f"{relative}: no opaque {label} {expected} pixel, the approved "
+                "palette is missing"
+            )
+    return problems
+
+
 def verify(
     master: Master, cache: dict[tuple[str, int], Image.Image]
 ) -> list[str]:
@@ -850,14 +993,28 @@ def verify(
         elif path.read_bytes() != canonical_bytes:
             problems.append(f"{relative}: must be byte-identical to {CANONICAL_RELATIVE}")
 
+    # The macOS 1024 slot used to be a byte copy of the canonical PNG. Every
+    # declared macOS size, that one included, must stay a transparent tile.
+    transparent_relatives = {
+        target.relative for target in ARTWORK_TARGETS if target.transparent_tile
+    }
+    if MACOS_1024_RELATIVE not in transparent_relatives:
+        problems.append(
+            f"{MACOS_1024_RELATIVE}: must be rendered as a transparent macOS tile"
+        )
+
     for target in ARTWORK_TARGETS:
         if target.relative in DUPLICATE_OF_CANONICAL:
             continue
+        render = "transparent_tile" if target.transparent_tile else "artwork"
         problem = _compare_pixels(
-            REPO_ROOT / target.relative, cache[("artwork", target.size)]
+            REPO_ROOT / target.relative, cache[(render, target.size)]
         )
         if problem:
             problems.append(f"{target.relative}: {problem}")
+            continue
+        if target.transparent_tile:
+            problems.extend(_transparent_tile_problems(target.relative))
 
     for target in FOREGROUND_TARGETS:
         problem = _compare_pixels(

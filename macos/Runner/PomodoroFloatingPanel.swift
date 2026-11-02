@@ -169,11 +169,13 @@ enum PomodoroFloatingPanelSize: String {
     self.init(rawValue: raw)
   }
 
-  /// Borderless panel content size. The compact card must stay visibly smaller.
+  /// Borderless panel content size. The compact card starts at the narrowest
+  /// width that still keeps a visible gap between the digits and the controls;
+  /// the controller then widens it only when the current duration needs it.
   var panelSize: NSSize {
     switch self {
     case .large: return NSSize(width: 320, height: 88)
-    case .compact: return NSSize(width: 236, height: 64)
+    case .compact: return NSSize(width: 176, height: 64)
     }
   }
 
@@ -249,8 +251,8 @@ enum PomodoroFloatingPanelSize: String {
     }
   }
 
-  /// Keeps the compact digits legible while leaving room for "1440:00" between
-  /// the paddings and the two controls.
+  /// Keeps the compact digits legible; the card width is measured from the
+  /// rendered value instead of reserving a fixed four-digit minute budget.
   func timeFontSize(_ appearanceSize: CGFloat) -> CGFloat {
     switch self {
     case .large: return appearanceSize
@@ -578,6 +580,55 @@ final class PomodoroFloatingPanelContentView: NSView {
     closeHeight?.constant = size.closeButtonSize.height
   }
 
+  /// Fitting size for the card currently applied. The large card keeps its
+  /// fixed metrics; the compact card starts at `panelSize` and only grows
+  /// enough to keep the live digits and caption unclipped, so ordinary MM:SS
+  /// stays narrow while "1440:00" still gets its full width.
+  func preferredPanelSize(for size: PomodoroFloatingPanelSize) -> NSSize {
+    switch size {
+    case .large:
+      return size.panelSize
+    case .compact:
+      let textWidth = max(stableTimeWidth(), stableCaptionWidth())
+      let controlsWidth =
+        size.horizontalPadding * 2
+        + size.timeToToggleSpacing
+        + size.toggleButtonSize.width
+        + size.toggleToCloseSpacing
+        + size.closeButtonSize.width
+      return NSSize(
+        width: max(size.panelSize.width, ceil(textWidth + controlsWidth)),
+        height: size.panelSize.height
+      )
+    }
+  }
+
+  /// Measures a canonical string with the same glyph count as the live value.
+  /// Tabular figures give every digit one width, so ticking 24:58 -> 24:57
+  /// cannot change the card size; the label's own intrinsic inset is added back
+  /// so its drawing offset never clips the digits.
+  private func stableTimeWidth() -> CGFloat {
+    guard let font = timeLabel.font, !timeLabel.stringValue.isEmpty else {
+      return 0
+    }
+    let value = timeLabel.stringValue
+    let canonical = String(value.map { $0.isNumber ? Character("8") : $0 })
+    let canonicalWidth = (canonical as NSString)
+      .size(withAttributes: [.font: font]).width
+    let liveWidth = (value as NSString)
+      .size(withAttributes: [.font: font]).width
+    let labelInset = max(0, timeLabel.intrinsicContentSize.width - liveWidth)
+    return ceil(canonicalWidth + labelInset)
+  }
+
+  /// The caption is localized, so its own width can exceed the digits.
+  private func stableCaptionWidth() -> CGFloat {
+    guard !statusLabel.isHidden, !statusLabel.stringValue.isEmpty else {
+      return 0
+    }
+    return ceil(statusLabel.intrinsicContentSize.width)
+  }
+
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
   // Dragging the card (including the blank area around the digits) moves the
@@ -824,7 +875,8 @@ final class PomodoroFloatingPanelController {
   static let shared = PomodoroFloatingPanelController()
 
   /// Initial content size. Every show/update then sizes the card from the
-  /// snapshot's `windowSize`, keeping the remembered origin.
+  /// snapshot's `windowSize` and its measured labels, keeping the remembered
+  /// origin.
   static let panelSize = PomodoroFloatingPanelSize.large.panelSize
   static let frameAutosaveName = "DuoyiPomodoroFloatingPanel"
 
@@ -965,16 +1017,15 @@ final class PomodoroFloatingPanelController {
     guard let contentView = panel.contentView as? PomodoroFloatingPanelContentView else {
       return
     }
-    // Apply the target layout before resizing: AppKit keeps the window at least
-    // as wide as the currently active required constraints, so resizing first
-    // would leave the compact card wider than its own metrics.
-    let targetSize = state.windowSize.panelSize
-    let sizeChanged = panel.frame.size != targetSize
+    // Apply the content first: the compact card measures its own labels after
+    // the strings and fonts are in place, then the window takes that size.
     contentView.apply(state: state, fonts: fonts(for: state))
+    let targetSize = contentView.preferredPanelSize(for: state.windowSize)
+    let sizeChanged = panel.frame.size != targetSize
     resize(panel, to: targetSize)
-    // A compact card can be flush with the right edge. Growing it to large
-    // must keep the close control reachable, while ordinary updates and theme
-    // changes must continue to preserve the user's exact position.
+    // A compact card can be flush with the right edge. Growing it (a longer
+    // duration or a density switch) must keep the close control reachable,
+    // while ordinary updates and theme changes preserve the exact position.
     if sizeChanged {
       clampIntoVisibleFrame(panel)
     }

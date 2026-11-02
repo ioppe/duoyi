@@ -15,7 +15,7 @@
 ## 唯一来源
 
 - **可编辑矢量母版**：`assets/logo/duoyi_app_logo.svg`。
-- **统一打包源图**：`assets/logo/duoyi_app_logo_1024.png`，由母版生成，1024×1024，不透明 RGB；iOS/macOS 的 1024 图标与其字节一致。
+- **统一打包源图**：`assets/logo/duoyi_app_logo_1024.png`，由母版生成，1024×1024，不透明 RGB；iOS 的 1024 图标与其字节一致。macOS 从同一母版另行生成透明圆角外缘，不复用这张不透明画布。
 - **Android 自适应前景**：`assets/logo/duoyi_app_logo_foreground_1024.png`，由同一母版派生，角落透明；背景为 `#C85656`。
 - **原始校对参考**：`assets/logo/duoyi_logo_reference.png`，不参与修改和重新渲染。
 
@@ -29,13 +29,19 @@
 | Android 自适应图标 | `drawable-*/ic_launcher_foreground.png`、`mipmap-anydpi-v26/ic_launcher.xml`、`values/colors.xml` | 同一前景轮廓，透明角落，红色背景；保留系统要求的裁剪/安全区 |
 | 图标生成配置 | `pubspec.yaml` 的 `image_path` / `adaptive_icon_foreground` | 只指向新的统一源图与自适应前景 |
 | iOS | `ios/Runner/Assets.xcassets/AppIcon.appiconset/` | 全部声明尺寸来自统一源图；iOS 当前为脚手架目标，资源一致不代表已完成签名发布 |
-| macOS | `macos/Runner/Assets.xcassets/AppIcon.appiconset/` | 全部声明尺寸来自统一源图 |
+| macOS | `macos/Runner/Assets.xcassets/AppIcon.appiconset/` | 全部声明尺寸从同一母版生成 RGBA；红色圆角外保持透明，不烘焙浅色画布或白色描边 |
 | Linux | `linux/duoyi.png` | 512×512，保持既有应用身份和桌面资源引用 |
 | Web 标签页 | `web/favicon.svg`（优先）、`web/favicon.png`（32×32 兼容回退） | 同一母版派生，圆角外必须透明，不能烘焙浅色方底；SVG 保持矢量轮廓 |
 | Web/PWA 安装图标 | `web/icons/Icon-*.png`、`web/icons/Icon-maskable-*.png` | 按平台需求保留既有不透明画布与安全区，与标签页 favicon 分开生成 |
 | 应用内登录/注册标志 | `lib/widgets/auth_page_frame.dart` | 显示统一图片，保留既有尺寸、圆角和布局，不随主题换图或重新着色 |
 
 各平台可以按系统规范缩放、裁剪和留安全区，但不能改成日历、沙漏、渐变插画或另一套几何图案。通知状态栏等系统功能图标与应用身份图标分别遵守其平台规则。以后新增平台时也必须从本母版生成，不另选默认模板图标。
+
+### macOS Dock 与 Finder
+
+macOS 的 16 / 32 / 64 / 128 / 256 / 512 / 1024 像素 AppIcon 都从母版的红色圆角块和白色路径渲染到透明画布，不能直接复制 iOS 的不透明 1024 图片。抗锯齿应对透明背景计算，不能先铺浅色底再扣色，以免深色 Dock 上出现浅色边缘；白色几何标志保持不透明。
+
+生成器和测试分别核对各尺寸 RGBA、四角透明、品牌色及轮廓；iOS、Android、Linux、Web/PWA 和应用内源图继续遵守各自既有画布规则。用新应用包覆盖更新并重新打开后检查 Dock / Finder，资源检查不能代替已安装应用的实际显示结果。
 
 ### 浏览器明暗主题与 favicon
 
