@@ -4257,4 +4257,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backupOverwriteWillDeleteMissing =>
       'Local data that is missing from the backup will be deleted.';
+
+  @override
+  String get reminderWebActionRequest => 'Enable notifications';
+
+  @override
+  String get reminderWebStatusRequesting =>
+      'Waiting for the browser to return the notification permission result…';
+
+  @override
+  String get reminderWebStatusPrompt =>
+      'Browser notifications are off. Allow them so scheduled reminders can appear as system notifications.';
+
+  @override
+  String get reminderWebStatusGranted =>
+      'Browser notifications are allowed. Keep this page open: background throttling can delay reminders, and closing the page cannot guarantee scheduled reminders.';
+
+  @override
+  String get reminderWebStatusDenied =>
+      'Notifications are blocked. Allow them in the site settings next to the address bar, then return to this page.';
+
+  @override
+  String get reminderWebStatusUnsupported =>
+      'This browser does not support web notifications, so reminders can only appear inside this page.';
+
+  @override
+  String get reminderWebStatusInsecure =>
+      'This page is not a secure context (HTTPS or localhost required), so the browser will not show notifications.';
+
+  @override
+  String get reminderWebStatusFailed =>
+      'The notification permission request failed. Try again later.';
+
+  @override
+  String get reminderWebStatusDismissed =>
+      'No notification permission was chosen yet. You can tap \"Enable notifications\" again.';
 }

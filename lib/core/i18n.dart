@@ -1166,6 +1166,16 @@ const Map<String, String> _zh = <String, String>{
   'reminder.kind.off': '关闭',
   // 一次性/相对截止待办提醒的系统通知标题前缀（ReminderScheduler._todoTitle）
   'reminder.todo_title_prefix': '提醒：',
+  // Web 通知授权入口与健康说明（ReminderHealthHint Web 分支）
+  'reminder.web.action.request': '通知授权',
+  'reminder.web.status.requesting': '正在等待浏览器返回通知授权结果…',
+  'reminder.web.status.prompt': '浏览器通知尚未开启，授权后定时提醒才能进入系统通知',
+  'reminder.web.status.granted': '浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒',
+  'reminder.web.status.denied': '浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页',
+  'reminder.web.status.unsupported': '当前浏览器不支持网页通知，提醒只能在页面内提示',
+  'reminder.web.status.insecure': '当前页面不是安全上下文（需要 HTTPS 或 localhost），浏览器不会显示通知',
+  'reminder.web.status.failed': '通知授权请求失败，请稍后重试',
+  'reminder.web.status.dismissed': '未选择通知权限，可以再次点击“通知授权”',
   // 桌面小组件 payload 文案（main.dart _pushHomeWidget / HomeWidgetService）
   'widget.no_schedule_today': '今日没有日程',
   'widget.today_prefix': '今日：',
@@ -2668,6 +2678,24 @@ const Map<String, String> _en = <String, String>{
   'reminder.kind.off': 'Off',
   // One-shot / relative-to-due todo reminder notification title prefix
   'reminder.todo_title_prefix': 'Reminder: ',
+  // Web 通知授权入口与健康说明（ReminderHealthHint Web 分支）
+  'reminder.web.action.request': 'Enable notifications',
+  'reminder.web.status.requesting':
+      'Waiting for the browser to return the notification permission result…',
+  'reminder.web.status.prompt':
+      'Browser notifications are off. Allow them so scheduled reminders can appear as system notifications.',
+  'reminder.web.status.granted':
+      'Browser notifications are allowed. Keep this page open: background throttling can delay reminders, and closing the page cannot guarantee scheduled reminders.',
+  'reminder.web.status.denied':
+      'Notifications are blocked. Allow them in the site settings next to the address bar, then return to this page.',
+  'reminder.web.status.unsupported':
+      'This browser does not support web notifications, so reminders can only appear inside this page.',
+  'reminder.web.status.insecure':
+      'This page is not a secure context (HTTPS or localhost required), so the browser will not show notifications.',
+  'reminder.web.status.failed':
+      'The notification permission request failed. Try again later.',
+  'reminder.web.status.dismissed':
+      'No notification permission was chosen yet. You can tap "Enable notifications" again.',
   // Home-screen widget payload copy (main.dart _pushHomeWidget / HomeWidgetService)
   'widget.no_schedule_today': 'No events today',
   'widget.today_prefix': 'Today: ',

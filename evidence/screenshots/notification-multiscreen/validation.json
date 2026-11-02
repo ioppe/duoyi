@@ -1,0 +1,133 @@
+{
+  "task": "Web notification permission and macOS floating-panel cross-display fixes",
+  "validation_scope": "Pre-commit local checks; CI installers and production are verified after push",
+  "original_task_base": "8ac46df27841c2eb3ff5e05be66a581e3bc53088",
+  "integrated_head_at_validation": "22bf3550524b347a425ae65e7d3be73503c49adb",
+  "task_changes_uncommitted_at_validation": true,
+  "version": "1.1.47",
+  "build_number": 140013,
+  "toolchain": {
+    "flutter": "3.44.1",
+    "dart": "3.12.1",
+    "timezone": "UTC",
+    "flutter_command_wrapper": "scripts/flutter_with_config.py"
+  },
+  "automated": {
+    "targeted": {
+      "revision_scope": "r4, after the final conditional Web bridge patch",
+      "suite_files": 11,
+      "passed": 132,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "loading_and_hook_events_excluded": 13,
+      "exit": 0
+    },
+    "full_flutter": {
+      "suite_files": 348,
+      "passed": 2438,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "loading_and_hook_events_excluded": 382,
+      "exit": 0,
+      "counting": "Final test events by suite path; loading, hooks and duplicate events excluded. Results from different runs are not added.",
+      "revision_scope": "r3, after the UI and test-parameter corrections; the subsequent conditional Web bridge-only patch is covered by r4 analysis/targeted tests and r5 Release compilation/browser follow-up"
+    },
+    "analysis": {"command": "dart analyze --fatal-infos", "issues": 0, "exit": 0},
+    "format": {"changed_or_new_dart_files": 15, "further_changes": 0, "exit": 0},
+    "generated_localizations": {"command": "gen-l10n via configured wrapper", "in_sync": true, "exit": 0},
+    "diff_whitespace_check": {"exit": 0},
+    "backend_tests_run": false,
+    "backend_test_boundary": "No backend changes; previous backend results are not counted as new validation.",
+    "final_bridge_patch": {
+      "path": "lib/services/web_notifications/web_notification_browser_api_web.dart",
+      "unchanged_other_changed_or_new_dart_files": 14,
+      "behavior": "Original Service Worker delivery promise keeps its completion handler after the bounded wait times out. A late delivery is tracked for later cancellation, or closed if its account/tag generation is already invalid.",
+      "full_vm_suite_repeated_after_bridge_only_patch": false
+    }
+  },
+  "web_release": {
+    "command": "python3 scripts/flutter_with_config.py build web --release --base-href=/ --dart-define=DUOYI_WEB_TARGET=desktop",
+    "exit": 0,
+    "source_input_count": 409,
+    "source_inputs_stable_before_after": true,
+    "source_input_set_sha256": "d507261a5475eb7fa08e6a56e5d955d52fa87a3e7c1c39eed28284312b744724",
+    "source_input_set_digest_encoding": "SHA-256 of sorted path-to-SHA256 JSON with compact separators",
+    "runtime_files": 120,
+    "runtime_bytes": 107540060,
+    "runtime_file_set_sha256": "b435ec9569c9c93a110f1bc3a20246ec96d0083c37a2547b4ba22dcd02b1c95a",
+    "main_dart_js_bytes": 9715827,
+    "main_dart_js_sha256": "a136ba1be7ec872a86c0c2a7bca0ea036f603a2f5e903bf63d3b331685f9fe2f",
+    "protected_assets_unchanged": true,
+    "startup_font_registration_verified": true
+  },
+  "native": {
+    "validation_file": "native-validation.json",
+    "smoke_file": "native/native-smoke.json",
+    "checks_passed": 76,
+    "screenshots": 8,
+    "constrain_frame_rect_candidates": 18,
+    "baseline_candidates_modified_by_appkit": 6,
+    "fixed_candidates_modified_by_appkit": 0,
+    "production_source_sha256": "844e677ae66b18b2f69a3218ea6a97f6d5b5b50574c0d6181a5f7219775349ea",
+    "smoke_source_sha256": "fe6148fc54951fc8eb331d3b21ac7395248bbf80cdbbced86071d0b0ce10e295",
+    "native_sources_unchanged_during_parallel_integration": true,
+    "real_mouse_drag_verified": false,
+    "mixed_display_scale_verified": false,
+    "full_application_build_verified_locally": false,
+    "signed_or_notarized_application_verified": false
+  },
+  "browser_validation_file": "browser-validation.json",
+  "browser": {
+    "distinct_scenarios": 9,
+    "passed": 9,
+    "failed": 0,
+    "screenshots": 22,
+    "screenshots_by_build": {"r3": 16, "r5_final": 6},
+    "final_bundle_retested_scenarios": [2, 7, 9],
+    "deduplication": "Final grant and fallback reruns replace the earlier result for the same scenario; the late-delivery cleanup is the single additional scenario. Unchanged earlier cases retain their actual r3 bundle hash.",
+    "late_delivery_after_logout_closed": true,
+    "remaining_notifications_for_late_tag": 0,
+    "notification_related_unhandled_errors_observed": false,
+    "existing_console_logs_retained": true,
+    "known_observation": "The unchanged generic test-notification UI can show a sent snackbar after the provider has caught a delivery error. This presentation issue is recorded separately in browser-validation.json; permission feedback and late-delivery cleanup passed.",
+    "real_os_permission_dialog_or_banner_verified": false,
+    "primary_visual_inspection_completed": true
+  },
+  "review": {
+    "code_review_passes": 1,
+    "confirmed_findings_resolved": [
+      "Fallback uses an existing active ServiceWorkerRegistration after constructor failure",
+      "Synchronous permission exceptions return failed; single-flight cleanup handles derived Future errors",
+      "Account cleanup and cancelAll share request-generation and scheduler invalidation"
+    ],
+    "additional_sdk_confirmed_boundary": "Long web timers wait in bounded segments and recheck the absolute due time",
+    "spec_sync_completed": true,
+    "documented_limits_corrected": true
+  },
+  "protected_scope": {
+    "files_unchanged": [
+      "lib/services/local_notifications_io.dart",
+      "lib/services/local_notifications_stub.dart",
+      "lib/services/permission_health_service.dart",
+      "lib/providers/notification_service.dart",
+      "lib/main.dart",
+      "pubspec.yaml",
+      "pubspec.lock"
+    ],
+    "trees_unchanged": ["backend", "config", "assets", "web", ".github"],
+    "original_worktree_read_only": true,
+    "original_files_unchanged": 12,
+    "original_files_checked": 12,
+    "original_files_are_separate_file_objects": true,
+    "no_tag_or_formal_release": true
+  },
+  "boundaries": [
+    "Controlled browser API outcomes do not establish that native permission dialogs or OS notification banners were operated or visible",
+    "Web timers require the page to remain alive; background throttling and closing the page prevent a reliable reminder guarantee",
+    "Native direct method probes, synthetic screen geometry and rendered panels do not establish real mouse dragging across displays",
+    "The observed unequal displays are both 2x; mixed scale and full local application installation are unverified",
+    "CI macOS deliverables are universal unsigned and unnotarized; their availability is checked after push"
+  ]
+}

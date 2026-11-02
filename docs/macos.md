@@ -42,8 +42,8 @@ macOS 的共享新建、日期与选择弹层居中呈现，默认最大宽度�
 1. 打开「专注」计时页，点击标题栏的悬浮窗按钮。
 2. 在个人化设置的「默认行为」区选择悬浮窗尺寸。大尺寸保留现有约 320×88 卡片和带文字的主按钮；紧凑尺寸高度为 64，宽度按当前时间和状态文字计算，普通倒计时从约 176 起，不再为长时长预留中间的大块空白。`1440:00` 等较长时间按需加宽，不缩小字号或按钮。主按钮与关闭按钮只显示 Apple SF Symbols，不显示可视中文，完整操作语义仍通过悬停提示和辅助功能标签提供。
 3. 面板使用当前 App 的卡片底色、文字色、主按钮色、圆角和 Noto Sans SC 字体，显示状态与计时数值；切换主题时面板同步更新。运行时状态显示「暂停」，暂停后显示「已暂停」及「继续」；暂停保持剩余时间，继续接着本次计时。未开始时显示「待开始」和「开始」。正计时、短休与长休沿用主界面状态。
-4. 按住时间、状态文字或面板空白处，用鼠标拖动。开始、暂停、继续与隐藏按钮保留各自的点击操作。
-5. 面板始终置顶，可在不同桌面与全屏工作空间显示；位置会保存，再次打开时恢复。尺寸切换后仍保持可见，显示器变化后面板位置会限制在可用屏幕范围内。
+4. 按住时间、状态文字或面板空白处，用鼠标原生拖动。跨屏位置计算采用全局逻辑点，支持不同尺寸及上下错位的显示器，不按缩放比例换算像素。拖动期间不把面板钳回原屏；开始、暂停、继续与隐藏按钮保留各自的点击操作。
+5. 面板始终置顶，可在不同桌面与全屏工作空间显示；位置会保存，再次打开时恢复。松手后仅在需要时恢复到目标屏可用范围，目标优先跟随鼠标所在屏，其次选择与窗口交集最大的屏幕，最后选择最近的剩余屏幕；尺寸切换和显示器断开后仍保持可见，普通计时更新不改变位置。
 6. 点击面板的 × 或再次点击页面悬浮窗按钮，仅隐藏面板，正在进行的计时继续。重新打开时显示最新状态。
 7. 主窗口红色关闭按钮隐藏主窗口并保留应用进程；点击 Dock 图标恢复主窗口。使用菜单「退出」或 `Command+Q` 才会退出应用。
 
@@ -86,6 +86,7 @@ macOS 作业在分析与回归通过后运行，使用完整 Xcode 的 `macos-15
 - `macos/Runner/MainFlutterWindow.swift` 通过 `com.duoyi/pomodoro_floating_window` 通道连接主 Flutter engine。
 - `macos/Runner/PomodoroFloatingPanel.swift` 负责原生面板展示、拖动、位置恢复、large/compact 布局和 App Nap 活动，不自行计时。
 - Dart 发送 `show`、`update`、`hide`、`dispose`；原生发送 `toggle`、`closed`。快照的 `windowSize` 缺失或未知时回落 large；尺寸变化只发送 `update`，原生原地 resize，并在必要时 clamp 到可见屏幕。`update` 不打开窗口，`closed` 不暂停计时。
+- 跨屏坐标统一使用 AppKit 全局逻辑点，不按 Retina 像素比例换算。原生拖动不受旧屏上沿约束；拖动中的真实尺寸变化即时应用并保持实际 origin，位置回收与屏幕拓扑恢复延后至拖动结束。松手、重新显示或显示器变化后的可见性恢复使用实际屏幕几何，不依赖可能滞后的 `panel.screen`。负坐标、左侧/上方副屏、错位与热拔插由几何回归覆盖；本轮观察到的两块不同尺寸屏幕均为 2×，混合缩放与真实鼠标跨屏尚未实测。
 
 不新增后端接口、账号数据或云同步字段。
 
@@ -102,9 +103,9 @@ swiftc -swift-version 5 -parse-as-library \
 build/macos/native-smoke/panel-smoke evidence/screenshots/macos-pomodoro
 ```
 
-检查会显示并关闭自己的面板，验证控制回调、鼠标命中区域、显隐、长时长显示、主题应用、暂停/继续展示、large/compact 尺寸、紧凑符号按钮、位置恢复和尺寸切换后的可见边界，同时生成 `panel-compact.png` 等渲染图与 `native-smoke.json`。可用 `DUOYI_FLOATING_THEME_EXPORT=<JSON路径> flutter test test/widgets/pomodoro_floating_window_host_test.dart` 导出真实主题快照，并把该 JSON 作为 smoke 程序的第二个参数，以真实 App 主题渲染。它不注入真实鼠标拖动，也不加载完整 Flutter 客户端。
+检查会显示并关闭自己的面板，验证控制回调、鼠标命中区域、显隐、长时长显示、主题应用、暂停/继续展示、large/compact 尺寸、紧凑符号按钮、位置恢复与尺寸切换后的可见边界，还覆盖合成显示器矩形下的负坐标、上方副屏、错位接缝与拔屏、`constrainFrameRect` 原样放行、拖动生命周期，以及拖动中真实尺寸变化保持实际 origin，同时生成 `panel-compact.png` 等渲染图与 `native-smoke.json`。可用 `DUOYI_FLOATING_THEME_EXPORT=<JSON路径> flutter test test/widgets/pomodoro_floating_window_host_test.dart` 导出真实主题快照，并把该 JSON 作为 smoke 程序的第二个参数，以真实 App 主题渲染。它不注入真实鼠标拖动（`realMultiDisplayDrag: false`），也不加载完整 Flutter 客户端。
 
-人工步骤同步维护在 `docs/manual-regression-checklist.md` 的「macOS 番茄悬浮窗」节。截图和实际操作记录放入 `evidence/screenshots/macos-pomodoro/`。面板单独编译检查、Dart 测试与完整 `.app` 构建是不同验证项，应分别记录结果；没有完整 Xcode 时不得把面板验证记为完整应用验证。
+人工步骤同步维护在 `docs/manual-regression-checklist.md` 的「macOS 番茄悬浮窗」节。截图和实际操作记录放入 `evidence/screenshots/` 下对应任务目录。面板单独编译检查、Dart 测试与完整 `.app` 构建是不同验证项，应分别记录结果；没有完整 Xcode 时不得把面板验证记为完整应用验证。本轮跨屏修复的 76 项原生检查、18 个方法探针位置与 8 张渲染图见 [原生跨屏验证记录](../evidence/screenshots/notification-multiscreen/native-validation.json)。
 
 本次紧凑布局与 Dock 图标修复的原生渲染、尺寸对比和验证记录见 [macOS 修复证据](../evidence/screenshots/macos-compact-icon/README.md)。
 

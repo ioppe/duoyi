@@ -362,6 +362,173 @@ struct PomodoroFloatingPanelFonts {
   let button: NSFont
 }
 
+// MARK: - Placement geometry
+
+/// Pure geometry for keeping the floating card reachable across displays.
+///
+/// AppKit window frames and `NSEvent.mouseLocation` are both global *logical*
+/// points, so nothing here scales, rounds or converts between points and
+/// backing pixels, and negative origins (a display left of or below the main
+/// one) stay valid.
+///
+/// The panel's own `constrainFrameRect` is open, so a native
+/// `performDrag(with:)` may carry the card over a display seam; the controller
+/// restores visibility only at safe moments (show, real size change, display
+/// topology change, drag end).
+struct PomodoroFloatingPanelGeometry {
+  /// Area of `frame` covered by the union of `screens`, so overlapping,
+  /// mirrored or duplicated display rectangles are never counted twice.
+  static func coveredArea(_ frame: NSRect, by screens: [NSRect]) -> CGFloat {
+    guard frame.width > 0, frame.height > 0 else {
+      return 0
+    }
+    let pieces = screens.compactMap { screen -> NSRect? in
+      let clipped = screen.intersection(frame)
+      guard !clipped.isNull, clipped.width > 0, clipped.height > 0 else {
+        return nil
+      }
+      return clipped
+    }
+    guard !pieces.isEmpty else {
+      return 0
+    }
+
+    var stops = Set<CGFloat>()
+    for piece in pieces {
+      stops.insert(piece.minX)
+      stops.insert(piece.maxX)
+    }
+    let columns = stops.sorted()
+    var area: CGFloat = 0
+    for index in 0..<(columns.count - 1) {
+      let left = columns[index]
+      let right = columns[index + 1]
+      guard right > left else {
+        continue
+      }
+      // Merge the vertical spans of every display covering this column; the
+      // union can be several disjoint strips (stacked displays with a seam).
+      let spans = pieces
+        .filter { $0.minX <= left && $0.maxX >= right }
+        .map { (min: $0.minY, max: $0.maxY) }
+        .sorted { $0.min < $1.min }
+      var covered: CGFloat = 0
+      var stripStart: CGFloat?
+      var stripEnd: CGFloat = 0
+      for span in spans {
+        if let start = stripStart {
+          if span.min > stripEnd {
+            covered += stripEnd - start
+            stripStart = span.min
+            stripEnd = span.max
+          } else {
+            stripEnd = max(stripEnd, span.max)
+          }
+        } else {
+          stripStart = span.min
+          stripEnd = span.max
+        }
+      }
+      if let start = stripStart {
+        covered += stripEnd - start
+      }
+      area += (right - left) * covered
+    }
+    return area
+  }
+
+  /// Display that should own the card: the one under the pointer right after a
+  /// drop, otherwise the largest overlap, otherwise the nearest one.
+  static func targetVisibleFrame(
+    frame: NSRect,
+    screens: [NSRect],
+    pointer: NSPoint?
+  ) -> NSRect? {
+    guard !screens.isEmpty else {
+      return nil
+    }
+    if let pointer = pointer, let hovered = screens.first(where: { $0.contains(pointer) }) {
+      return hovered
+    }
+    var best: NSRect?
+    var bestArea: CGFloat = 0
+    for screen in screens {
+      let overlap = screen.intersection(frame)
+      guard !overlap.isNull else {
+        continue
+      }
+      let area = overlap.width * overlap.height
+      if area > bestArea {
+        bestArea = area
+        best = screen
+      }
+    }
+    if let best = best {
+      return best
+    }
+    let centre = NSPoint(x: frame.midX, y: frame.midY)
+    return screens.min {
+      squaredDistance(from: centre, to: $0) < squaredDistance(from: centre, to: $1)
+    }
+  }
+
+  /// Placement for show, a real size change or a display topology change: a
+  /// card that already sits on a display keeps its exact origin, and a card
+  /// that hangs over an edge is pulled back inside the margin.
+  static func fittedOrigin(
+    frame: NSRect,
+    screens: [NSRect],
+    margin: CGFloat,
+    pointer: NSPoint? = nil
+  ) -> NSPoint? {
+    guard let target = targetVisibleFrame(frame: frame, screens: screens, pointer: pointer)
+    else {
+      return nil
+    }
+    guard !target.contains(frame) else {
+      return nil
+    }
+    return clampedOrigin(frame: frame, into: target, margin: margin)
+  }
+
+  /// A card fully covered by the display union stays where it was dropped,
+  /// including across a flush seam. Restore any uncovered edge so the controls
+  /// remain reachable after a size change or a drop past the desktop boundary.
+  static func droppedOrigin(
+    frame: NSRect,
+    screens: [NSRect],
+    margin: CGFloat,
+    pointer: NSPoint? = nil
+  ) -> NSPoint? {
+    let area = frame.width * frame.height
+    if area > 0, coveredArea(frame, by: screens) >= area {
+      return nil
+    }
+    return fittedOrigin(frame: frame, screens: screens, margin: margin, pointer: pointer)
+  }
+
+  private static func clampedOrigin(
+    frame: NSRect,
+    into visibleFrame: NSRect,
+    margin: CGFloat
+  ) -> NSPoint {
+    let minX = visibleFrame.minX + margin
+    let maxX = max(minX, visibleFrame.maxX - frame.width - margin)
+    let minY = visibleFrame.minY + margin
+    let maxY = max(minY, visibleFrame.maxY - frame.height - margin)
+    return NSPoint(
+      x: min(max(frame.origin.x, minX), maxX),
+      y: min(max(frame.origin.y, minY), maxY)
+    )
+  }
+
+  private static func squaredDistance(from point: NSPoint, to rect: NSRect) -> CGFloat {
+    let dx = max(max(rect.minX - point.x, 0), point.x - rect.maxX)
+    let dy = max(max(rect.minY - point.y, 0), point.y - rect.maxY)
+    return dx * dx + dy * dy
+  }
+}
+
 // MARK: - Delegate
 
 /// Callbacks into the Flutter bridge. Implemented in `MainFlutterWindow.swift`.
@@ -379,9 +546,47 @@ final class PomodoroFloatingPanel: NSPanel {
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { false }
 
+  /// Called once after a native drag loop returned and the card was released.
+  var onDragFinished: (() -> Void)?
+
+  /// True from the mouse-down until the native drag loop returns. The owner
+  /// must not reposition the card while this is set.
+  private(set) var isDraggingAcrossScreens = false
+
   override func cancelOperation(_ sender: Any?) {
     // Escape must not close the panel; closing is a user action on the close
     // button only.
+  }
+
+  /// AppKit's default implementation pulls a dragged window back towards the
+  /// display the drag started on, which makes a borderless card stick at seams
+  /// between displays with different heights, offsets or a gap. The card is a
+  /// floating HUD that restores its own visibility at safe moments, so movement
+  /// stays free here. Frames are global logical points: nothing is scaled.
+  override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+    frameRect
+  }
+
+  /// Native AppKit window drag (no synthetic mouse loop, no pixel math),
+  /// wrapped so the owner knows the position must not be clamped mid-drag.
+  func performAcrossScreenDrag(with event: NSEvent) {
+    beginAcrossScreenDrag()
+    performDrag(with: event)
+    endAcrossScreenDrag()
+  }
+
+  /// Drag lifecycle primitives. `performDrag` blocks in its own tracking loop,
+  /// so the owner only learns about the end through `onDragFinished`.
+  func beginAcrossScreenDrag() {
+    isDraggingAcrossScreens = true
+  }
+
+  func endAcrossScreenDrag() {
+    guard isDraggingAcrossScreens else {
+      return
+    }
+    isDraggingAcrossScreens = false
+    onDragFinished?()
   }
 }
 
@@ -632,9 +837,14 @@ final class PomodoroFloatingPanelContentView: NSView {
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
   // Dragging the card (including the blank area around the digits) moves the
-  // panel; buttons are subviews and keep receiving their own clicks.
+  // panel; buttons are subviews and keep receiving their own clicks. The drag
+  // itself stays native AppKit tracking, wrapped only to learn when it ends.
   override func mouseDown(with event: NSEvent) {
-    window?.performDrag(with: event)
+    guard let panel = window as? PomodoroFloatingPanel else {
+      window?.performDrag(with: event)
+      return
+    }
+    panel.performAcrossScreenDrag(with: event)
   }
 
   func apply(state: PomodoroFloatingPanelState, fonts: PomodoroFloatingPanelFonts) {
@@ -889,6 +1099,11 @@ final class PomodoroFloatingPanelController {
   private var didRegisterBundledFont = false
   private var cachedFonts: [FontKey: NSFont] = [:]
 
+  /// Global pointer position used when a drag ends. AppKit reports the same
+  /// logical points as window frames, so nothing is scaled here. Overridable so
+  /// the native smoke test can drop the card at a deterministic point.
+  var pointerLocationProvider: () -> NSPoint? = { NSEvent.mouseLocation }
+
   private struct FontKey: Hashable {
     let size: CGFloat
     let weight: CGFloat
@@ -913,7 +1128,7 @@ final class PomodoroFloatingPanelController {
     self.state = state
     updateActivity(isRunning: state.isRunning)
     applyStateToPanel()
-    clampIntoVisibleFrame(panel)
+    restorePlacement(panel, pointer: nil)
     panel.orderFrontRegardless()
     return true
   }
@@ -994,6 +1209,13 @@ final class PomodoroFloatingPanelController {
     }
     panel.contentView = contentView
 
+    panel.onDragFinished = { [weak self, weak panel] in
+      guard let self = self, let panel = panel else {
+        return
+      }
+      self.handleDragFinished(panel)
+    }
+
     let restoredFrame = panel.setFrameUsingName(Self.frameAutosaveName)
     panel.setFrameAutosaveName(Self.frameAutosaveName)
     if restoredFrame {
@@ -1026,8 +1248,10 @@ final class PomodoroFloatingPanelController {
     // A compact card can be flush with the right edge. Growing it (a longer
     // duration or a density switch) must keep the close control reachable,
     // while ordinary updates and theme changes preserve the exact position.
+    // During a native drag the user owns the position, so this check waits for
+    // the drop instead of pulling the card back.
     if sizeChanged {
-      clampIntoVisibleFrame(panel)
+      restorePlacement(panel, pointer: nil)
     }
   }
 
@@ -1053,28 +1277,50 @@ final class PomodoroFloatingPanelController {
     )
   }
 
-  /// Keeps the card inside the usable area of a screen. Called on every show
-  /// and whenever the display configuration changes; `update` never moves it.
-  private func clampIntoVisibleFrame(_ panel: NSPanel) {
-    let frame = panel.frame
-    let isOnKnownScreen = NSScreen.screens.contains { $0.visibleFrame.intersects(frame) }
-    guard isOnKnownScreen,
-          let visibleFrame = (panel.screen ?? NSScreen.main)?.visibleFrame else {
-      panel.setFrameOrigin(defaultOrigin(for: panel))
+  /// Keeps the card reachable on a display that still exists. Called on show,
+  /// after a real size change, when the display topology changes and once after
+  /// a native drag; ordinary ticks never reach this path.
+  ///
+  /// `panel.screen` is deliberately not used: it lags the real frame while the
+  /// card crosses a seam. The largest frame overlap decides, the display under
+  /// the pointer wins at drop time and the nearest display is the last resort
+  /// after a display was unplugged.
+  private func restorePlacement(
+    _ panel: PomodoroFloatingPanel,
+    pointer: NSPoint?,
+    afterDrop: Bool = false
+  ) {
+    // AppKit owns the position while the user drags; clamping here would pull
+    // the card back towards the display the drag started on. The same check
+    // runs once when the drag ends.
+    guard !panel.isDraggingAcrossScreens else {
       return
     }
-
-    let minX = visibleFrame.minX + Self.screenMargin
-    let maxX = max(minX, visibleFrame.maxX - frame.width - Self.screenMargin)
-    let minY = visibleFrame.minY + Self.screenMargin
-    let maxY = max(minY, visibleFrame.maxY - frame.height - Self.screenMargin)
-    let clampedOrigin = NSPoint(
-      x: min(max(frame.origin.x, minX), maxX),
-      y: min(max(frame.origin.y, minY), maxY)
-    )
-    if clampedOrigin != frame.origin {
-      panel.setFrameOrigin(clampedOrigin)
+    let screens = NSScreen.screens.map { $0.visibleFrame }
+    let origin: NSPoint?
+    if afterDrop {
+      origin = PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: panel.frame,
+        screens: screens,
+        margin: Self.screenMargin,
+        pointer: pointer
+      )
+    } else {
+      origin = PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: panel.frame,
+        screens: screens,
+        margin: Self.screenMargin,
+        pointer: pointer
+      )
     }
+    if let origin = origin, origin != panel.frame.origin {
+      panel.setFrameOrigin(origin)
+    }
+  }
+
+  /// The native drag loop returned and the user let the card go.
+  private func handleDragFinished(_ panel: PomodoroFloatingPanel) {
+    restorePlacement(panel, pointer: pointerLocationProvider(), afterDrop: true)
   }
 
   private func observeScreenParametersIfNeeded() {
@@ -1089,7 +1335,7 @@ final class PomodoroFloatingPanelController {
       guard let self = self, let panel = self.panel else {
         return
       }
-      self.clampIntoVisibleFrame(panel)
+      self.restorePlacement(panel, pointer: nil)
     }
   }
 

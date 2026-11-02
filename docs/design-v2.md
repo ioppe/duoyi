@@ -80,6 +80,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 
 - macOS runner 复用现有 Flutter 主引擎、主导航和全部业务 Provider，最低支持 macOS 11；专注页标题栏提供仅 macOS 可见的悬浮窗入口。
 - 独立 AppKit `NSPanel` 支持两种设备本地尺寸：large 约 320×88，保留带文字的开始/暂停/继续主按钮；compact 高度 64，普通倒计时宽度从约 176 起，按时间与状态文字所需宽度加上短间距和原有按钮尺寸计算，长时长按需扩展，不预留大块中间空白。同位数每秒更新保持尺寸和位置稳定。compact 主按钮与关闭按钮只显示 Apple SF Symbols，完整操作语义通过悬停提示和辅助功能标签提供。两种布局的左侧状态与时间按实际可见字形整体垂直居中，底色、文字、主按钮、边框、圆角和 Noto Sans SC 字阶沿用当前 App 的 `ThemeData`、`AppSurfaceStyle`、`DesignTokens`，切换主题实时同步。文字与空白处可鼠标拖动，位置保存并在显示器变化或尺寸切换后限制到可见区域；面板置顶、跨桌面与全屏工作空间显示。
+- 跨屏继续使用 AppKit 原生 `performDrag` 与全局逻辑点。面板不采用旧屏上沿的默认拖动约束；拖动期间的可见性恢复延迟至松手，普通 tick 不写窗口位置。恢复时优先鼠标所在屏，其次窗口最大交集与最近可用区域，覆盖负坐标、不同尺寸及上下错位布局；不按显示器像素或缩放比例换算拖动坐标。
 - `com.duoyi/pomodoro_floating_window` 通道连接单个 `PomodoroProvider`，同时监听普通状态和 `timerTicks`；Swift 只渲染包含主题 `appearance`、暂停状态和 `windowSize` 的快照，缺少或无法识别 `windowSize` 时回落 large，不维护第二计时器。运行显示暂停，暂停后显示已暂停/继续，继续保留本次剩余或累计时长。`show/update/hide/dispose` 与 `toggle/closed` 分别负责展示同步和用户操作；尺寸变化只 update，不重新打开面板。
 - 关闭面板只隐藏；关闭主窗口保留计时进程，Dock 可重新打开主窗口，Command+Q 才退出。运行时抑制 App Nap，但不阻止系统睡眠。
 - 全局 Host 在应用锁或强制更新时隐藏面板并拒绝控制，账号/服务器变化也隐藏；解锁后不自动重开。文案走中英文 I18n/ARB，标题沿用品牌专注文案。macOS 通知权限读取系统真实授权状态。

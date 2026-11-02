@@ -1331,5 +1331,14 @@
   "mineAiSummaryFocusSuffix": " min, longest habit streak ",
   "mineAiSummaryStreakSuffix": " days.",
   "appLockPinHintEnter": "Enter PIN to unlock",
-  "backupOverwriteWillDeleteMissing": "Local data that is missing from the backup will be deleted."
+  "backupOverwriteWillDeleteMissing": "Local data that is missing from the backup will be deleted.",
+  "reminderWebActionRequest": "Enable notifications",
+  "reminderWebStatusRequesting": "Waiting for the browser to return the notification permission result…",
+  "reminderWebStatusPrompt": "Browser notifications are off. Allow them so scheduled reminders can appear as system notifications.",
+  "reminderWebStatusGranted": "Browser notifications are allowed. Keep this page open: background throttling can delay reminders, and closing the page cannot guarantee scheduled reminders.",
+  "reminderWebStatusDenied": "Notifications are blocked. Allow them in the site settings next to the address bar, then return to this page.",
+  "reminderWebStatusUnsupported": "This browser does not support web notifications, so reminders can only appear inside this page.",
+  "reminderWebStatusInsecure": "This page is not a secure context (HTTPS or localhost required), so the browser will not show notifications.",
+  "reminderWebStatusFailed": "The notification permission request failed. Try again later.",
+  "reminderWebStatusDismissed": "No notification permission was chosen yet. You can tap \"Enable notifications\" again."
 }

@@ -8089,6 +8089,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'备份中不存在的本机数据将被删除。'**
   String get backupOverwriteWillDeleteMissing;
+
+  /// No description provided for @reminderWebActionRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知授权'**
+  String get reminderWebActionRequest;
+
+  /// No description provided for @reminderWebStatusRequesting.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在等待浏览器返回通知授权结果…'**
+  String get reminderWebStatusRequesting;
+
+  /// No description provided for @reminderWebStatusPrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器通知尚未开启，授权后定时提醒才能进入系统通知'**
+  String get reminderWebStatusPrompt;
+
+  /// No description provided for @reminderWebStatusGranted.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒'**
+  String get reminderWebStatusGranted;
+
+  /// No description provided for @reminderWebStatusDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页'**
+  String get reminderWebStatusDenied;
+
+  /// No description provided for @reminderWebStatusUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前浏览器不支持网页通知，提醒只能在页面内提示'**
+  String get reminderWebStatusUnsupported;
+
+  /// No description provided for @reminderWebStatusInsecure.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前页面不是安全上下文（需要 HTTPS 或 localhost），浏览器不会显示通知'**
+  String get reminderWebStatusInsecure;
+
+  /// No description provided for @reminderWebStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知授权请求失败，请稍后重试'**
+  String get reminderWebStatusFailed;
+
+  /// No description provided for @reminderWebStatusDismissed.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择通知权限，可以再次点击“通知授权”'**
+  String get reminderWebStatusDismissed;
 }
 
 class _AppLocalizationsDelegate

@@ -1,0 +1,637 @@
+{
+  "task": "web notification permission real-browser acceptance (8 required scenarios)",
+  "generated_at": "2026-11-02T09:01:03.343444+00:00",
+  "candidate": {
+    "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-macos-dmg-build",
+    "branch": "build/macos-dmg",
+    "head": "22bf3550524b347a425ae65e7d3be73503c49adb",
+    "origin_main_ancestor": true,
+    "worktree": "dirty (this round's fixes: lib/widgets/reminder_health_hint.dart, lib/services/web_notifications/*, lib/services/local_notifications_web.dart, i18n/arb, docs) - not modified by this run"
+  },
+  "environment": {
+    "origin": "http://127.0.0.1:18819",
+    "fixture_pid": 3406,
+    "fixture_background_task": "c7d4ba17-66d8-4978-ad0d-44036aea8b5d",
+    "server_restarted": false,
+    "account": "desktop-preview (fixture-only-password), ai_enabled=false, disposable",
+    "browser_tool": "agent-browser 0.20.7 (headless Chrome, CDP), single session notification-permission-e2e",
+    "device_pixel_ratio": 1,
+    "viewports_used": [
+      "1280x1000",
+      "390x844"
+    ],
+    "served_js": {
+      "bytes": 9715125,
+      "sha256": "3e6e5623c6a1c61d02fc3d37aad3f83307cbe9e712c2720aa51dd9b146fd5af3",
+      "matches_frozen_release": true,
+      "build": "r3"
+    },
+    "app_locale": {
+      "effective": "zh",
+      "how": "written into the app's own persisted preference key SharedPreferences(flutter.duoyi_locale_v1)='zh' then page reload; the in-app Display language dropdown was not reachable through the accessibility refs after 3 attempts (its semantics nodes expose no aria-label). This only affects UI language, no notification state was touched.",
+      "note": "all notification interactions below are real App clicks; only the locale setting used the storage key"
+    },
+    "fixture_deviation": {
+      "issue": "the fixture seed task was overwritten before the first scenario: the App's first POST /api/sync pushed its empty local snapshot and the fixture stores client-pushed snapshot keys (STATE['snapshot'][key]=value).",
+      "evidence": [
+        "before login GET /__fixture/status -> todos=1 (seed ok, fixture health json)",
+        "after login POST /api/sync -> GET /__fixture/status todos=0, version=2",
+        "localStorage flutter.todos === '[]' right after login"
+      ],
+      "mitigation": "one task '通知授权验收' was created through the App's own 新建待办 sheet (title typed via CDP insert, submitted in the App); no source/test change. Only that single task exists.",
+      "server_cleanup": "left to the main session (server not restarted/stopped by this run)"
+    },
+    "tool_limitations": [
+      "Flutter web canvas does not scroll on synthetic WheelEvent on flutter-view nor on CDP mouseWheel; scrolling was done with keyboard Tab traversal (Flutter scrolls the focused semantics node into view). Counted, not a product defect.",
+      "agent-browser mouse move/down/up at coordinates did not reliably activate Flutter widgets; click <ref> (CDP element click) did, and still produced navigator.userActivation.isActive === true."
+    ],
+    "fixture_background_task_note": "corrected: the first round's JSON said c7d4ba17-66d8-4978-ad0d-4046aea8b5d, which was a typo (4046 -> 44036)",
+    "builds": {
+      "r3": {
+        "main_dart_js_bytes": 9715125,
+        "main_dart_js_sha256": "3e6e5623c6a1c61d02fc3d37aad3f83307cbe9e712c2720aa51dd9b146fd5af3",
+        "used_by": "scenarios 1-8 (first round); those screenshots are web-*.png without the final- prefix"
+      },
+      "r5_final": {
+        "main_dart_js_bytes": 9715827,
+        "main_dart_js_sha256": "a136ba1be7ec872a86c0c2a7bca0ea036f603a2f5e903bf63d3b331685f9fe2f",
+        "manifest": {
+          "source_input_count": 409,
+          "runtime_files": 120,
+          "runtime_bytes": 107540060
+        },
+        "change": "only lib/services/web_notifications/web_notification_browser_api_web.dart: the original showNotification promise keeps a then() beyond the 2s timeout; a late success on a stale epoch/tag closes that notification, a current one registers the registration for later cancelAll",
+        "used_by": "scenarios 2/7 re-runs and new scenario 9; screenshots web-final-*.png"
+      }
+    },
+    "r5_session_setup": {
+      "browser_profile": "new headless browser profile (no cookies/localStorage), so the App started logged out and the previous local task was gone",
+      "login": "desktop-preview / fixture-only-password typed into the real login form (first attempt dropped the leading 'd' of the username, corrected with fill before submitting)",
+      "app_locale": "again set to zh through the app's persisted preference key SharedPreferences(flutter.duoyi_locale_v1)='zh' + reload (same disclosure as the first round; the language dropdown is still not reachable through accessibility refs). Notification behaviour untouched.",
+      "task": "no task existed in the fresh profile, so one task '通知授权验收' was created through the App's 新建待办 sheet (same known flow as the first round); no source or test change",
+      "cached_bundle": "verified from inside the page: fetch('main.dart.js', {cache:'no-store'}) = 9715827 bytes / a136ba1b... , i.e. the r5 build was really served and executed (no stale cache)"
+    }
+  },
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "native (real Notifications API)",
+      "url": "?notificationScenario=native",
+      "result": "PASS",
+      "real_vs_controlled": "REAL globalThis.Notification kept; only requestPermission wrapped to record then call the original. No fake permission object.",
+      "actions": [
+        "loaded page, enabled Flutter accessibility (flt-semantics-placeholder click)",
+        "probe at startup: mode=native, requests=0, Notification.permission='default', isSecureContext=true, flutter-view present",
+        "opened 待办 -> 重要不紧急 board card -> task row -> task detail, Tab-scrolled to the hint",
+        "real click on the in-app button '通知授权' (ref click)"
+      ],
+      "requests": 1,
+      "activation": [
+        true
+      ],
+      "results": [
+        "denied"
+      ],
+      "permission_before": "default",
+      "permission_after": "denied",
+      "assertions": [
+        "no permission request on startup (requests stayed 0 while navigating)",
+        "the click ran the real Notification.requestPermission() inside user activation (activation[0]=true)",
+        "the real API returned 'denied' (headless Chrome default-deny policy), permission became 'denied'",
+        "UI switched to the blocked state with the address-bar/site-settings guidance and removed the request button, so no repeated request was possible"
+      ],
+      "boundary": "No browser/OS permission bubble was ever displayed or clicked: headless Chrome auto-resolved requestPermission() to 'denied'. The real native prompt interaction is NOT covered by this run.",
+      "screenshots": [
+        "web-native-prompt-1280x1000.png",
+        "web-native-denied-after-1280x1000.png"
+      ],
+      "texts": [
+        "通知健康 / 浏览器通知尚未开启，授权后定时提醒才能进入系统通知 (before)",
+        "通知健康 / 浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页 (after, also shown once as the feedback line)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "default-grant",
+      "url": "?notificationScenario=default-grant",
+      "result": "PASS",
+      "real_vs_controlled": "CONTROLLED: fixture replaces global Notification; initial permission 'default', requestPermission resolves 'granted'.",
+      "actions": [
+        "fresh load, accessibility on, probe mode=default-grant requests=0",
+        "navigated 待办 -> card -> row -> detail, Tab-scrolled to hint",
+        "real click on '通知授权'",
+        "left the detail (返回) and re-opened the same task to check the state is re-read"
+      ],
+      "requests": 1,
+      "activation": [
+        true
+      ],
+      "results": [
+        "granted"
+      ],
+      "permission_after": "granted",
+      "assertions": [
+        "requests=1 and activation=true for the single click",
+        "UI shows 通知健康 + '浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒' (page-alive + background-throttling limits fully readable)",
+        "after leaving and returning, the hint still reads granted and no new request was issued (requests stayed 1)"
+      ],
+      "screenshots": [
+        "web-default-grant-prompt-1280x1000.png",
+        "web-default-grant-granted-1280x1000.png",
+        "web-default-grant-return-1280x1000.png"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "denied + external re-grant",
+      "url": "?notificationScenario=denied",
+      "result": "PASS",
+      "real_vs_controlled": "CONTROLLED permission state (fixture permission='denied'); no request is expected or made.",
+      "actions": [
+        "fresh load, probe permission denied, requests=0",
+        "navigated to the hint at 1280x1000: guidance shown, no '通知授权' button in the semantics tree",
+        "__notificationProbe.setPermission('granted') (external, outside the App)",
+        "switched to another browser tab and back to trigger AppLifecycleState.resumed -> _refresh() -> WebNotificationService.refreshPermission()"
+      ],
+      "requests": 0,
+      "activation": [],
+      "assertions": [
+        "initial and steady state both show '浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页'",
+        "requests stayed 0 - no repeated requestPermission while denied (button is not exposed, only an info icon)",
+        "after the external change + lifecycle resume the hint re-read the browser state and rendered the granted copy, still with requests=0 (refresh never requests)"
+      ],
+      "screenshots": [
+        "web-denied-initial-1280x1000.png",
+        "web-denied-recovered-1280x1000.png",
+        "web-denied-390x844.png"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "dismiss + error",
+      "url": "?notificationScenario=dismiss then ?notificationScenario=error",
+      "result": "PASS",
+      "real_vs_controlled": "CONTROLLED API results (fixture requestPermission resolves 'default' / rejects).",
+      "actions": [
+        "dismiss: Navigate to hint, real click '通知授权' -> result 'default'; clicked '通知授权' a second time",
+        "error: fresh load, navigate to hint, real click '通知授权' -> promise rejection"
+      ],
+      "dismiss": {
+        "requests": 2,
+        "activation": [
+          true,
+          true
+        ],
+        "results": [
+          "default",
+          "default"
+        ],
+        "permission": "default",
+        "ui": "subtitle stays the prompt copy plus feedback '未选择通知权限，可以再次点击“通知授权”', button still present and clickable (second click produced request #2)",
+        "no_false_grant": true
+      },
+      "error": {
+        "requests": 1,
+        "activation": [
+          true
+        ],
+        "results": [],
+        "permission": "default",
+        "ui": "subtitle stays prompt plus feedback '通知授权请求失败，请稍后重试', button still present (retryable)",
+        "unhandled": "pageErrors=[] after the rejection"
+      },
+      "assertions": [
+        "dismiss is not reported as denied or granted; the copy says no choice was made and the button can be used again",
+        "error is reported as a failure with retry, not as granted",
+        "no unhandled promise / page error surfaced (agent-browser errors -> [])"
+      ],
+      "screenshots": [
+        "web-dismiss-feedback-1280x1000.png",
+        "web-error-feedback-1280x1000.png"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "unsupported + insecure",
+      "url": "?notificationScenario=unsupported then ?notificationScenario=insecure",
+      "result": "PASS",
+      "real_vs_controlled": "unsupported: global Notification deleted by the fixture. insecure: isSecureContext overridden to false.",
+      "unsupported": {
+        "requests": 0,
+        "ui": "通知健康 / '当前浏览器不支持网页通知，提醒只能在页面内提示'",
+        "request_button_present": false,
+        "crash": false
+      },
+      "insecure": {
+        "requests": 0,
+        "insecure_override_error": null,
+        "observed_isSecureContext": false,
+        "ui": "通知健康 / '当前页面不是安全上下文（需要 HTTPS 或 localhost），浏览器不会显示通知'",
+        "request_button_present": false,
+        "crash": false
+      },
+      "assertions": [
+        "both pages stay usable (task detail renders, navigation works)",
+        "both show an explicit explanation and expose no request button, so no requestPermission is attempted (requests=0)",
+        "the isSecureContext override succeeded (probe.insecureOverrideError = null), so the insecure case is genuinely exercised in the browser, not inferred from VM tests"
+      ],
+      "note": "probe.nativeSecureContext still reads true because it was captured before the override; the live globalThis.isSecureContext was false.",
+      "screenshots": [
+        "web-unsupported-1280x1000.png",
+        "web-insecure-1280x1000.png"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "pending (busy + de-dup + resolve)",
+      "url": "?notificationScenario=pending",
+      "result": "PASS",
+      "real_vs_controlled": "CONTROLLED: requestPermission never settles until the probe is told to resolve.",
+      "actions": [
+        "navigate to hint, real click '通知授权'",
+        "read the hint while pending, tried to click again (stale ref e15 and a coordinate click at the former button position)",
+        "__notificationProbe.resolve('granted')"
+      ],
+      "requests": 1,
+      "activation": [
+        true
+      ],
+      "results": [
+        "granted"
+      ],
+      "permission_after": "granted",
+      "assertions": [
+        "busy state: subtitle becomes '正在等待浏览器返回通知授权结果…', the button is replaced by a CircularProgressIndicator (no '通知授权' node in the semantics tree)",
+        "repeat attempts did not increase requests (1 before and after)",
+        "after resolve the hint switches to the granted copy and requests stays 1 (no duplicate request)"
+      ],
+      "incident": "the coordinate click used to probe re-tap landed on 位置提醒「添加」 (the layout shifted once the button was replaced by the spinner) and opened the '添加位置提醒' dialog; it was closed with 取消 and nothing was saved. The de-dup evidence is the absent button plus requests==1, not that click.",
+      "screenshots": [
+        "web-pending-busy-1280x1000.png",
+        "web-pending-resolved-1280x1000.png"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "service-worker fallback delivery",
+      "url": "?notificationScenario=service-worker",
+      "result": "PASS (delivery on r3 and r5) / close verified separately in scenario 9",
+      "real_vs_controlled": "CONTROLLED API surface: fixture Notification constructor throws 'fixture Illegal constructor'; registration is a fixture object installed after app load.",
+      "actions": [
+        "fresh load; probe permission granted, requests=0",
+        "verified the fixture constructor throws (new Notification('x') -> ctor-throws:fixture Illegal constructor)",
+        "after the app finished loading called __notificationProbe.installWorkerFallback() (overrides navigator.serviceWorker.getRegistration only)",
+        "navigated 我的 -> 设置 -> 通知设置 and clicked the existing '立即发送测试通知' tile (real App path, no direct FakeNotification call)"
+      ],
+      "delivered": [
+        {
+          "title": "多仪 · 通知测试",
+          "body": "这是一条普通提醒测试。如果没有声音，请检查“通知提醒”渠道声音设置。",
+          "tag": "duoyi-919003",
+          "via": "service-worker"
+        }
+      ],
+      "closed": [],
+      "assertions": [
+        "the App's own test-notification flow delivered through registration.showNotification after the constructor threw (delivered[0].via === 'service-worker', tag duoyi-919003)",
+        "no delivery was recorded through the constructor (it throws in this mode)",
+        "requests=0: the send path never requested permission again, it only used the already granted state"
+      ],
+      "boundary": "This is a controlled API delivery. Nothing here claims a real OS banner was visible.",
+      "not_run": null,
+      "screenshots": [
+        "web-service-worker-test-1280x1000.png"
+      ],
+      "close_verification": "moved to scenario 9 (account-logout cleanup); this round actually executed it on the r5 build",
+      "r5_rerun": {
+        "build": "r5",
+        "actions": [
+          "fresh load of ?notificationScenario=service-worker, accessibility on, probe permission=granted",
+          "verified the fixture constructor throws (ctor-throws:fixture Illegal constructor)",
+          "installed __notificationProbe.installWorkerFallback() after app load",
+          "我的 -> 设置 -> 通知设置 -> 立即发送测试通知 (real App path)"
+        ],
+        "delivered": [
+          {
+            "title": "多仪 · 通知测试",
+            "tag": "duoyi-919003",
+            "via": "service-worker"
+          }
+        ],
+        "requests": 0,
+        "result": "PASS",
+        "screenshots": [
+          "web-final-service-worker-1280x1000.png"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "name": "mobile 390x844 layout",
+      "url": "?notificationScenario=denied and ?notificationScenario=granted",
+      "result": "PASS",
+      "actions": [
+        "set viewport 390x844 (dpr 1), reload each scenario, navigate to the hint, Tab-scroll until the whole hint sits inside the viewport, screenshot"
+      ],
+      "assertions": [
+        "blocked copy wraps to 2 lines and is fully readable, nothing truncated, request button correctly absent",
+        "granted copy wraps to 2 lines ('浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒') and is fully readable",
+        "no horizontal overflow: document.documentElement.scrollWidth === 390 === innerWidth in both cases (the wrapped subtitle is the fixed Text, no maxLines=1 clipping)",
+        "desktop check at 1280x1000 covered by scenarios 1-7 screenshots"
+      ],
+      "screenshots": [
+        "web-denied-390x844.png",
+        "web-granted-390x844.png"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "late delivery after cancelAll (r5 regression: timeout keeps the original then)",
+      "build": "r5",
+      "url": "?notificationScenario=service-worker&notificationDelayDelivery=1",
+      "result": "PASS",
+      "real_vs_controlled": "CONTROLLED API surface: registration.showNotification returns a dangling promise that only __notificationProbe.resolveWorker() settles; everything else (permission state, delivery trigger, logout, cleanup) went through the real App.",
+      "actions": [
+        "fresh load, accessibility on; probe: mode=service-worker, notificationDelayDelivery=1, permission=granted, workerRequests=0",
+        "installed __notificationProbe.installWorkerFallback() after the app finished loading",
+        "我的 -> 设置 -> 通知设置 -> 立即发送测试通知 (real App tile, not a direct fake call)",
+        "t+1s: asserted workerRequests=1 and delivered=[] (promise still dangling)",
+        "t+4s (>2s timeout): delivered still [], UI feedback captured",
+        "我的 (popped settings) -> top-right 退出登录 -> confirm 退出登录 (real logout, account cleanup runs notificationService.cancelAll -> epoch invalidated)",
+        "after logout the probe is still alive: workerRequests=1, delivered=[], closed=[]",
+        "called __notificationProbe.resolveWorker() and waited"
+      ],
+      "assertions": {
+        "worker_requests": 1,
+        "delivered_before_resolve": 0,
+        "feedback_after_timeout": "snackbar '测试通知已发送' (optimistic; see observations), delivered stayed empty",
+        "logout": "login form reappeared (input aria-label 用户名或邮箱 present), i.e. the real account cleanup ran",
+        "delivered_after_resolve": [
+          {
+            "title": "多仪 · 通知测试",
+            "tag": "duoyi-919003",
+            "via": "service-worker"
+          }
+        ],
+        "closed_after_resolve": [
+          "duoyi-919003"
+        ],
+        "remaining_notifications_for_tag": 0,
+        "pageerrors_after": "[] (no unhandled promise / page error)",
+        "console": "one console error entry 'Null check operator used on a null value' whose stack sits in the auth/account-cleanup path next to '[auth] account cleanup local files retry failed: MissingPluginException ... path_provider'; no notification-related console error"
+      },
+      "conclusion": "the r5 patch works: the late showNotification on a stale epoch/tag is closed (closed contains the delivered tag, getNotifications({tag}) returns 0) instead of leaving a visible notification after logout",
+      "screenshots": [
+        "web-final-delay-timeout-feedback-1280x1000.png",
+        "web-final-logout-entry-1280x1000.png",
+        "web-final-late-cleanup-login-1280x1000.png"
+      ]
+    }
+  ],
+  "console_and_errors": {
+    "page_errors": "agent-browser errors -> [] (captured right after the error scenario and re-checked at the end)",
+    "console": "mostly pre-existing web-plugin noise unrelated to this feature: MissingPluginException for duoyi/deep_links, plugins.flutter.io/path_provider, duoyi/location_geofence; AlarmService LateInitializationError during account cleanup; one 'Null check operator used on a null value' during auth account cleanup (main.dart.js:184712) - all in startup/login/cleanup paths, none produced by the notification permission flows",
+    "notification_related_errors": "none observed",
+    "r5_run": {
+      "page_errors": "[] after the full late-delivery + logout + resolve sequence",
+      "console": "373 entries; exactly one level=error entry ('Null check operator used on a null value') in the auth/account-cleanup path, plus the pre-existing MissingPluginException noise for duoyi/deep_links, plugins.flutter.io/path_provider, duoyi/location_geofence and the AlarmService cleanup warnings that also appeared in the first round",
+      "notification_related_errors": "none observed"
+    }
+  },
+  "not_covered": [
+    "real browser permission bubble / OS permission dialog (headless Chrome auto-denies; no bubble was shown or clicked)",
+    "real OS notification banner visibility (service-worker and fake deliveries are API-level only)",
+    "native mouse drag and mobile soft keyboard interaction (not exercised)",
+    "Web Push / backend scheduling (out of scope of this round)"
+  ],
+  "screenshots": [
+    {
+      "file": "web-default-grant-granted-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 61264,
+      "sha256": "e044640b82fbd641fde71fc60ea649644aa383989372614a8f7e54f3c565cce0",
+      "build": "r3"
+    },
+    {
+      "file": "web-default-grant-prompt-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 60306,
+      "sha256": "9d2b58ba403bcbe819ef67155583886328fa44ee245a12a8916a32497a6658d0",
+      "build": "r3"
+    },
+    {
+      "file": "web-default-grant-return-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 62038,
+      "sha256": "6b9ffcc65c5c4da2ec5b43a96948208c12283c1223e36bd85f525ed54dea25a5",
+      "build": "r3"
+    },
+    {
+      "file": "web-denied-390x844.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 48227,
+      "sha256": "efde3dcd5517be15b7dc9f0e08de2332c13de7c2c931434b1a328aaee64b5232",
+      "build": "r3"
+    },
+    {
+      "file": "web-denied-initial-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 60192,
+      "sha256": "1402eb5f81a2b56eb3fcd731b5aa3b145fd4414136ec653979e17dd69645ec44",
+      "build": "r3"
+    },
+    {
+      "file": "web-denied-recovered-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 61013,
+      "sha256": "264c6d6328430fe53ae105c58c6bdd3af67ca32d851e41cea231ec5d0df2ce08",
+      "build": "r3"
+    },
+    {
+      "file": "web-dismiss-feedback-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 61484,
+      "sha256": "a65a859cd990c8893d67c1444d06a8c2f42f92e44fff00d1081caa4eaf537097",
+      "build": "r3"
+    },
+    {
+      "file": "web-error-feedback-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 60921,
+      "sha256": "b2c85b7275840230f1884de00da1f8b3b73579e7d7850f51deac0cab7718b4ba",
+      "build": "r3"
+    },
+    {
+      "file": "web-final-delay-timeout-feedback-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 141470,
+      "sha256": "032b8adc18cd88bcdf046e162d34284f18fe9f86ac815b34c3fd4e27fc3435ee",
+      "build": "r5"
+    },
+    {
+      "file": "web-final-grant-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 61264,
+      "sha256": "e044640b82fbd641fde71fc60ea649644aa383989372614a8f7e54f3c565cce0",
+      "build": "r5"
+    },
+    {
+      "file": "web-final-grant-390x844.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 53717,
+      "sha256": "0a9a3135f37b6e03312bb393b664997adb5019bcc7b3c4bf5cdd0c4d6cf2e470",
+      "build": "r5"
+    },
+    {
+      "file": "web-final-late-cleanup-login-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 73914,
+      "sha256": "a54d2258a61431626da4b3ddc959713a858a1c1ed62da9f31291f5f9d845c93b",
+      "build": "r5"
+    },
+    {
+      "file": "web-final-logout-entry-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 69289,
+      "sha256": "e4f65908275aef1a1400a51f0a7984a35f2bd5fab71cc819db2d934f2afe659e",
+      "build": "r5"
+    },
+    {
+      "file": "web-final-service-worker-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 148188,
+      "sha256": "c17b9a6855fd1f91db41d895df504c1704ecd566423386d9b794f911309554c5",
+      "build": "r5"
+    },
+    {
+      "file": "web-granted-390x844.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 49566,
+      "sha256": "f2dad1b2151fd72b6700b4a1854006ec4bbad5c8ee9c7caf34591c9a513789ae",
+      "build": "r3"
+    },
+    {
+      "file": "web-insecure-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 60472,
+      "sha256": "1d2e6bbbcc7c5ae15005608a462f3e2ff8590716bac001e675c16b2c49934eb8",
+      "build": "r3"
+    },
+    {
+      "file": "web-native-denied-after-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 65399,
+      "sha256": "b75241622db5f1f9f127db62e12270f79e8a5a1547ad26bd3516583688b92783",
+      "build": "r3"
+    },
+    {
+      "file": "web-native-prompt-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 60323,
+      "sha256": "5249d409b751f1f766c0c12b868eeeed3747b84927068af59b11dab361343998",
+      "build": "r3"
+    },
+    {
+      "file": "web-pending-busy-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 56673,
+      "sha256": "b261842c3e7d7378ecb87b6ca203fdfdb5f6ee84c07c04baeb89361f925d00d2",
+      "build": "r3"
+    },
+    {
+      "file": "web-pending-resolved-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 61264,
+      "sha256": "e044640b82fbd641fde71fc60ea649644aa383989372614a8f7e54f3c565cce0",
+      "build": "r3"
+    },
+    {
+      "file": "web-service-worker-test-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 148188,
+      "sha256": "c17b9a6855fd1f91db41d895df504c1704ecd566423386d9b794f911309554c5",
+      "build": "r3"
+    },
+    {
+      "file": "web-unsupported-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 58712,
+      "sha256": "4687ebef9417e312b25189ca0ea1c74c1ff086f82e63fc6241be99d964030ce1",
+      "build": "r3"
+    }
+  ],
+  "screenshot_count": 22,
+  "corrections": [
+    {
+      "claim_first_round": "service-worker close verification: NOT RUN because 'the Release web UI exposes no sign-out entry that would call invalidateAccount/closeAll'",
+      "status": "CORRECTED - the absolute part was wrong",
+      "fact": "lib/screens/mine_screen.dart:312-332 renders an IconButton.filledTonal (key mine_top_logout_button, Tooltip I18n.tr('auth.logout') = 退出登录) whenever auth.isLoggedIn; lib/main.dart:366-367 runs notificationService.cancelAll first inside the existing account-cleanup chain",
+      "web_reachability": "verified in this r5 run: on the 我的 tab the semantics tree contains exactly one node labelled 退出登录, the icon is visible top-right (web-final-logout-entry-1280x1000.png), a trusted ref click opens the confirm dialog (取消 / 退出登录) and confirming performs a real logout (login screen reappears) and the account cleanup",
+      "honest_restatement": "the first round simply did not reach the entry (it never opened the 我的 tab top-right icon); it was not absent"
+    }
+  ],
+  "r5_rerun_default_grant": {
+    "build": "r5",
+    "url": "?notificationScenario=default-grant",
+    "result": "PASS",
+    "requests": 1,
+    "activation": [
+      true
+    ],
+    "results": [
+      "granted"
+    ],
+    "permission_after": "granted",
+    "assertions": [
+      "real click on 通知授权 -> requests=1, userActivation=true, granted",
+      "UI shows '浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒'",
+      "390x844: same copy wraps to 2 lines, fully readable, document.documentElement.scrollWidth=390=innerWidth (no horizontal overflow)"
+    ],
+    "dedupe": "this is the same scenario 2 assertion re-run on the new bundle, not an additional scenario; counted once",
+    "screenshots": [
+      "web-final-grant-1280x1000.png",
+      "web-final-grant-390x844.png"
+    ]
+  },
+  "observations": [
+    {
+      "title": "timeout still reports success in the UI",
+      "detail": "while the delayed showNotification was still dangling (after the 2s TimeoutException window) the notification-settings tile showed the snackbar '测试通知已发送'. lib/providers/notification_service.dart:1388-1420 sendTest() catches every delivery error and records it as a schedule issue, so it returns normally; lib/screens/notification_history_screen.dart:771-783 then shows the success snackbar unconditionally after sendTest() returns. On web this means a failed service-worker delivery is presented as sent.",
+      "severity": "not judged here (out of this round's scope, no source change made); recorded as observed behaviour",
+      "repro": "scenario 9 steps 1-5: open ?notificationScenario=service-worker&notificationDelayDelivery=1, install fallback, tap 立即发送测试通知, wait >2s -> snackbar 测试通知已发送 while probe.delivered stays empty",
+      "screenshot": "web-final-delay-timeout-feedback-1280x1000.png"
+    },
+    {
+      "title": "identical screenshot hashes are expected",
+      "detail": "web-final-service-worker-1280x1000.png has the same SHA-256 as the r3 web-service-worker-test-1280x1000.png, and web-final-grant-1280x1000.png the same as web-default-grant-granted-1280x1000.png, because the rendered screens are pixel-identical; they were captured independently on the two bundles, not copied."
+    }
+  ],
+  "screenshot_count_by_build": {
+    "r3": 16,
+    "r5": 6
+  },
+  "distinct_scenarios": "9 (8 from the first round + the new late-delivery cleanup); the r5 default-grant and service-worker re-runs reuse scenario ids 2 and 7 and are not counted twice",
+  "updated_at_r5": "2026-11-02T09:19:08.122526+00:00"
+}
