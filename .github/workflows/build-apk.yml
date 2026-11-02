@@ -378,6 +378,47 @@ jobs:
           path: build/web-pages
 
   # ─────────────────────────────────────────────
+  # 3b. Self-hosted Web deployment (same-run desktop artifact)
+  # ─────────────────────────────────────────────
+  deploy-self-hosted-web:
+    needs: [web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/build/macos-dmg'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: duoyi-production-web
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download same-run Web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: duoyi-web
+          path: ${{ runner.temp }}/duoyi-web
+
+      - name: Require deployment key
+        env:
+          DUOYI_WEB_DEPLOY_SSH_KEY: ${{ secrets.DUOYI_WEB_DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DUOYI_WEB_DEPLOY_SSH_KEY" ]; then
+            echo "::error::Missing repository secret DUOYI_WEB_DEPLOY_SSH_KEY; self-hosted Web deployment cannot run."
+            exit 1
+          fi
+
+      - name: Deploy Web to self-hosted server
+        env:
+          DUOYI_WEB_DEPLOY_SSH_KEY: ${{ secrets.DUOYI_WEB_DEPLOY_SSH_KEY }}
+        run: python3 scripts/deploy_web_ci.py --artifact-dir "${{ runner.temp }}/duoyi-web"
+
+  # ─────────────────────────────────────────────
   # 4. macOS DMG (universal, unsigned)
   # ─────────────────────────────────────────────
   macos:

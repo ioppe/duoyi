@@ -3,6 +3,43 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
+  test('Self-hosted Web deployment stays scoped to the same-run artifact', () {
+    final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
+    final jobStart = workflow.indexOf('\n  deploy-self-hosted-web:\n');
+    final jobEnd = workflow.indexOf('\n  macos:\n', jobStart);
+    expect(jobStart, greaterThanOrEqualTo(0));
+    expect(jobEnd, greaterThan(jobStart));
+
+    final job = workflow.substring(jobStart, jobEnd);
+    expect(job, contains('needs: [web]'));
+    expect(job, contains("github.event_name == 'push'"));
+    expect(job, contains("github.ref == 'refs/heads/build/macos-dmg'"));
+    expect(job, contains('name: duoyi-web'));
+    expect(job, contains('group: duoyi-production-web'));
+    expect(job, contains('cancel-in-progress: false'));
+    expect(job, contains('contents: read'));
+    expect(job, contains('scripts/deploy_web_ci.py --artifact-dir'));
+    expect(job, contains('secrets.DUOYI_WEB_DEPLOY_SSH_KEY'));
+    expect(job, isNot(contains('environment:')));
+    expect(job, isNot(contains('DUOYI_WEB_DEPLOY_ENABLED')));
+
+    // Existing Pages (main-only) and Release (tag-only) boundaries stay intact.
+    expect(
+      workflow,
+      contains(
+        "deploy-pages:\n    needs: web\n"
+        "    if: github.ref == 'refs/heads/main'",
+      ),
+    );
+    expect(
+      workflow,
+      contains(
+        "release:\n    needs: [android, web, macos]\n"
+        "    if: startsWith(github.ref, 'refs/tags/v')",
+      ),
+    );
+  });
+
   test('Web release and Pages each use their configured deployment path', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
     final deployScript = File('scripts/deploy_web_prod.sh').readAsStringSync();
