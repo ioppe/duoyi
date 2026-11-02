@@ -29,6 +29,10 @@ python3 scripts/flutter_with_config.py build macos --release
 
 Flutter 不在 PATH 时设置 `FLUTTER_BIN`。构建产物位于 `build/macos/Build/Products/Release/` 下的 `.app`。服务器初始地址从 `config/deployment.json` 注入，安装后仍可在登录页修改；支持本地模式、访问令牌与账号密码连接，不在构建参数中放置凭据。
 
+## 待办页布局
+
+macOS 原生待办页与 Web 共用顶部筛选布局：从上到下为今日概要、自定义视图筛选、四象限 / 列表 / 看板页签和任务内容。宽屏也不显示右侧筛选栏，窗口缩窄时继续按上下顺序排列。选中、取消和清空筛选保持筛选区及页签位置稳定，三种任务视图共享同一筛选状态。
+
 ## 创建弹窗
 
 macOS 的共享新建、日期与选择弹层居中呈现，默认最大宽度为 720px，调用处的特定宽度上限继续生效；长内容在卡片内滚动。弹窗使用轻淡入和小幅缩放，支持关闭按钮、Escape、遮罩关闭与焦点循环，减少动态效果时直接显示最终状态。原生手机的底部面板与番茄悬浮窗分别保持各自交互。
@@ -103,3 +107,5 @@ build/macos/native-smoke/panel-smoke evidence/screenshots/macos-pomodoro
 人工步骤同步维护在 `docs/manual-regression-checklist.md` 的「macOS 番茄悬浮窗」节。截图和实际操作记录放入 `evidence/screenshots/macos-pomodoro/`。面板单独编译检查、Dart 测试与完整 `.app` 构建是不同验证项，应分别记录结果；没有完整 Xcode 时不得把面板验证记为完整应用验证。
 
 本次紧凑布局与 Dock 图标修复的原生渲染、尺寸对比和验证记录见 [macOS 修复证据](../evidence/screenshots/macos-compact-icon/README.md)。
+
+macOS 待办顶部筛选的原生平台回归与渲染图见 [待办筛选置顶验证](../evidence/screenshots/macos-todo-top-filters/README.md)。
