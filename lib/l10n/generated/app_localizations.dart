@@ -5384,6 +5384,18 @@ abstract class AppLocalizations {
   /// **'完成率'**
   String get todayProductivityCompletionRate;
 
+  /// No description provided for @todayProductivityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时光足迹'**
+  String get todayProductivityTitle;
+
+  /// No description provided for @todayProductivityComparison.
+  ///
+  /// In zh, this message translates to:
+  /// **'较上周同段'**
+  String get todayProductivityComparison;
+
   /// No description provided for @diaryTitle.
   ///
   /// In zh, this message translates to:

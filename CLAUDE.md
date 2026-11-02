@@ -177,7 +177,7 @@ Workflow `.github/workflows/build-apk.yml` validates a shared profile first and 
 | Push to `main` / `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or PR targeting `main` / `self-hosted-skydrow` | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
 | Same triggers, after checks pass | `android` | Signed universal APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
 | Same triggers, after checks pass | `macos` → reusable `build-macos.yml` | Universal unsigned macOS DMG + ZIP + SHA-256 checksums from the same commit/profile as Android |
-| Push to `main`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for nginx deployment |
+| Push to `main`, push `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only and Pages stays `main`-only |
 | Tag `v*` push, after Android/Web/macOS succeed | `release` | Auto-creates GitHub Release with APKs, AAB, web tarballs and macOS packages |
 
 Each push to the three build branches must enter the main `build` workflow so Android and macOS cannot drift onto different commits. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release; newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.

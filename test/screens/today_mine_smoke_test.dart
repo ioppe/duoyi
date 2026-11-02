@@ -945,6 +945,7 @@ void main() {
     final efficiency = find.byKey(const ValueKey('mine_weekly_productivity'));
     final stats = find.byKey(const ValueKey('mine_stats_stable_grid'));
     expect(find.text(I18n.tr('today.productivity.weekly')), findsOneWidget);
+    expect(find.text(I18n.tr('today.productivity.title')), findsOneWidget);
     expect(
       tester.getBottomLeft(header).dy,
       lessThanOrEqualTo(tester.getTopLeft(efficiency).dy),
@@ -1410,7 +1411,6 @@ void main() {
     final beforeTitleTop = tester.getTopLeft(title).dy;
     final beforeHeaderTop = tester.getTopLeft(header).dy;
     final beforeStatsTop = tester.getTopLeft(stats).dy;
-    final beforeMenuTop = tester.getTopLeft(menuEntry).dy;
 
     scrollable.position.jumpTo(targetOffset);
     await tester.pump();
@@ -1425,9 +1425,21 @@ void main() {
       _topOrScrolledAway(tester, stats),
       anyOf(isNull, lessThan(beforeStatsTop)),
     );
+    await tester.scrollUntilVisible(
+      menuEntry,
+      120,
+      scrollable: scrollableFinder,
+    );
+    await tester.pumpAndSettle();
+    final beforeMenuTop = tester.getTopLeft(menuEntry).dy;
+    final menuOffset = scrollable.position.pixels;
+    expect(menuOffset, greaterThan(0));
+    scrollable.position.jumpTo(menuOffset > 80 ? menuOffset - 80 : 0);
+    await tester.pump();
+    expect(tester.getTopLeft(title).dy, closeTo(beforeTitleTop, 0.1));
     expect(
       _topOrScrolledAway(tester, menuEntry),
-      anyOf(isNull, lessThan(beforeMenuTop)),
+      anyOf(isNull, greaterThan(beforeMenuTop)),
     );
   });
 
@@ -1978,7 +1990,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('mine_settings_entry')));
+      final settingsEntry = find.byKey(const ValueKey('mine_settings_entry'));
+      await tester.ensureVisible(settingsEntry);
+      await tester.pumpAndSettle();
+      await tester.tap(settingsEntry);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('通知支持'),

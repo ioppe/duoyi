@@ -1,0 +1,24 @@
+{
+  "existing_modified_files_checked": 86,
+  "unrelated_existing_files_changed": [],
+  "new_modified_files_outside_scope": [],
+  "scoring_section_byte_identical": true,
+  "all_existing_arb_values_preserved": {
+    "zh": true,
+    "en": true
+  },
+  "existing_failing_date_test_unchanged": true,
+  "final_source_sha256": {
+    "docs/design-v2.md": "4df496876e52b05c5abd94392c363653df78b88efbabe426f31c02ebe54449da",
+    "docs/manual-regression-checklist.md": "5b10d456bd0c44cc07a1e61ea58ebcd1a31838e1012da3331eef6f9521d9f068",
+    "lib/core/i18n.dart": "23f649640afb58a9c23971cf32c59d5cf2499d50eb69b7ab719e0d8f5ec81e75",
+    "lib/l10n/app_en.arb": "260099cd5b1e668362024754dc93af5b10355ed45528b527b92d696e93b4c31c",
+    "lib/l10n/app_zh.arb": "d5d641613c36302d80e70783c0010749a1a0148087070d31d7e8e51cab56e603",
+    "lib/l10n/generated/app_localizations.dart": "f5175f28babdac53eaa6c524dd4a12aefbb225d666ebc526592bbb8050a9ce5f",
+    "lib/l10n/generated/app_localizations_en.dart": "2182ff1911a32f7550172f5786af586c7dadf7d58bb387d951a741f1e59b3e27",
+    "lib/l10n/generated/app_localizations_zh.dart": "de28d4e66b0a53db7711eed2ea6e460806fba83a329a0811e7a4e68c03d30345",
+    "lib/widgets/weekly_productivity_card.dart": "0d1ee4fda94e2fb5bdfe3dc46993029b2dc98bc1bc97a3756e352ac1907dc6df",
+    "test/screens/today_mine_smoke_test.dart": "0722e3f100f6fb71de9dc1a9144550c4109ea227f528b8eae4a24e6cbc6a7082",
+    "test/widgets/weekly_productivity_card_test.dart": "ec010dfd3f01d87edb7d0e6aa73d7353f32c0573e462cea97e5851ba48a54bb7"
+  }
+}

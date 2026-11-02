@@ -1,0 +1,56 @@
+[
+  {
+    "screenshot": "mobile-390-light.png",
+    "urlQuery": "?v=final",
+    "buttonCount": 1,
+    "cardRect": {
+      "height": 186,
+      "width": 366,
+      "x": 12,
+      "y": 68
+    },
+    "documentWidth": 390,
+    "label": "时光足迹 · 本周效率 · 效率分 0 · 较上周同段 持平 · 完成率 0% · 专注 0分 · 习惯 0次",
+    "viewport": {
+      "devicePixelRatio": 1,
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "screenshot": "mobile-320-dark-en-2x.png",
+    "urlQuery": "?v=final&dark=1&lang=en&scale=2&sample=1",
+    "buttonCount": 1,
+    "cardRect": {
+      "height": 595.09375,
+      "width": 296,
+      "x": 12,
+      "y": 68
+    },
+    "documentWidth": 320,
+    "label": "Time footprints · This week · Score 25 · Same days last week +25 pts · Completion 0% · Focus 240min · Habits 0times",
+    "viewport": {
+      "devicePixelRatio": 1,
+      "height": 844,
+      "width": 320
+    }
+  },
+  {
+    "screenshot": "desktop-1280-light.png",
+    "urlQuery": "?v=final&sample=1",
+    "buttonCount": 1,
+    "cardRect": {
+      "height": 186,
+      "width": 936,
+      "x": 172,
+      "y": 68
+    },
+    "documentWidth": 1280,
+    "label": "时光足迹 · 本周效率 · 效率分 25 · 较上周同段 +25 分 · 完成率 0% · 专注 240分 · 习惯 0次",
+    "viewport": {
+      "devicePixelRatio": 1,
+      "height": 900,
+      "width": 1280
+    }
+  }
+]

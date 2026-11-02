@@ -47,7 +47,7 @@ macOS 提醒使用系统通知授权。初始化通知服务时系统可弹出�
 
 ## GitHub Actions 构建
 
-`.github/workflows/build-apk.yml` 的主 `build` 是多端安装包的统一自动入口：推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` 或 `v*` 标签都会触发，面向 `main` / `self-hosted-skydrow` 的 PR 保留原有触发规则。配置校验、分析与测试通过后，同一提交的 Android 和 macOS 安装包并行构建，macOS 通过可复用的 `.github/workflows/build-macos.yml` 运行，并与 Android 使用同一份已验证的公开部署配置。手动运行主流程时，`build_macos` 默认开启，也可明确关闭；单独手动运行 `build-macos.yml` 仍可选择公开配置路径和初始服务器地址。
+`.github/workflows/build-apk.yml` 的主 `build` 是多端安装包的统一自动入口：推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` 或 `v*` 标签都会触发，面向 `main` / `self-hosted-skydrow` 的 PR 保留原有触发规则。配置校验、分析与测试通过后，同一提交的 Android、macOS 安装包与 Web 桌面/手机包（`duoyi-web`，仅上传 artifact、不自动部署，GitHub Pages 仍只部署 `main`）并行构建，macOS 通过可复用的 `.github/workflows/build-macos.yml` 运行，并与 Android 使用同一份已验证的公开部署配置。手动运行主流程时，`build_macos` 默认开启，也可明确关闭；单独手动运行 `build-macos.yml` 仍可选择公开配置路径和初始服务器地址。
 
 独立手动入口首次需要工作流文件进入仓库默认分支后才会显示；自动主流程在目标分支推送包含工作流与macOS源码的提交后生效。
 

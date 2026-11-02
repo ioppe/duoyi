@@ -134,32 +134,42 @@ void main() {
     expect(_block(child, 'concurrency'), contains('macos-'));
   });
 
-  test('两个平台都复用共享 analyze/configuration，macOS 复用子流程并传递共享 profile', () {
-    final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
-    final jobs = _block(workflow, 'jobs');
-    final android = _block(jobs, 'android', indent: 2);
-    final macos = _block(jobs, 'macos', indent: 2);
+  test(
+    'android/macOS/Web 都复用共享 analyze/configuration，macOS 复用子流程并传递共享 profile',
+    () {
+      final workflow = File(
+        '.github/workflows/build-apk.yml',
+      ).readAsStringSync();
+      final jobs = _block(workflow, 'jobs');
+      final android = _block(jobs, 'android', indent: 2);
+      final macos = _block(jobs, 'macos', indent: 2);
+      final web = _block(jobs, 'web', indent: 2);
 
-    final platformJobs = <String, String>{'android': android, 'macos': macos};
-    for (final entry in platformJobs.entries) {
+      final platformJobs = <String, String>{
+        'android': android,
+        'macos': macos,
+        'web': web,
+      };
+      for (final entry in platformJobs.entries) {
+        expect(
+          _inlineList(entry.value, 'needs'),
+          containsAll(<String>['analyze', 'configuration']),
+          reason: '${entry.key} 作业必须等待共享的配置校验与测试门禁.',
+        );
+      }
+
       expect(
-        _inlineList(entry.value, 'needs'),
-        containsAll(<String>['analyze', 'configuration']),
-        reason: '${entry.key} 作业必须等待共享的配置校验与测试门禁.',
+        _scalar(macos, 'uses'),
+        './.github/workflows/build-macos.yml',
+        reason: 'macOS 打包逻辑应保留在可复用子流程中.',
       );
-    }
-
-    expect(
-      _scalar(macos, 'uses'),
-      './.github/workflows/build-macos.yml',
-      reason: 'macOS 打包逻辑应保留在可复用子流程中.',
-    );
-    expect(
-      _scalar(_block(macos, 'with', indent: 4), 'deployment_profile'),
-      r'${{ needs.configuration.outputs.profile }}',
-      reason: 'macOS 必须使用同一 SHA 下共享的部署配置 profile.',
-    );
-  });
+      expect(
+        _scalar(_block(macos, 'with', indent: 4), 'deployment_profile'),
+        r'${{ needs.configuration.outputs.profile }}',
+        reason: 'macOS 必须使用同一 SHA 下共享的部署配置 profile.',
+      );
+    },
+  );
 
   test('手动触发 macOS 默认构建，但分支推送不会被输入跳过', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
@@ -180,6 +190,43 @@ void main() {
       guard,
       contains('|| inputs.build_macos'),
       reason: 'build_macos 只能跳过手动运行，push 必须始终构建 macOS 安装包.',
+    );
+  });
+
+  test('Web 作业在 main、自动分支推送、手动构建与标签时都产出 duoyi-web 安装包', () {
+    final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
+    final jobs = _block(workflow, 'jobs');
+    final web = _block(jobs, 'web', indent: 2);
+
+    // 折叠 if 只取 Web 作业自己的六空格续行，避免命中注释或其它作业的同名文本。
+    final lines = web.split('\n');
+    final start = lines.indexWhere((line) => line.trim() == 'if: >');
+    expect(start, isNonNegative, reason: 'Web 作业的条件必须保持折叠写法.');
+    final guardLines = <String>[];
+    for (var i = start + 1; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.trim().isEmpty || line.length - line.trimLeft().length != 6) {
+        break;
+      }
+      guardLines.add(line.trim());
+    }
+    final guard = guardLines.join(' ');
+
+    expect(guard, contains("github.ref == 'refs/heads/main'"));
+    expect(guard, contains("github.event.inputs.build_web == 'true'"));
+    expect(guard, contains("startsWith(github.ref, 'refs/tags/v')"));
+    expect(
+      guard,
+      contains(
+        "github.event_name == 'push' && (github.ref == 'refs/heads/self-hosted-skydrow' || github.ref == 'refs/heads/build/macos-dmg')",
+      ),
+      reason: '推送 self-hosted-skydrow / build/macos-dmg 时也要构建 Web 桌面/手机包.',
+    );
+    expect(web, contains('name: duoyi-web'));
+    expect(
+      _scalar(_block(jobs, 'deploy-pages', indent: 2), 'if') ?? '',
+      contains("github.ref == 'refs/heads/main'"),
+      reason: 'Pages 部署仍只允许 main.',
     );
   });
 

@@ -2696,6 +2696,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todayProductivityCompletionRate => '完成率';
 
   @override
+  String get todayProductivityTitle => '时光足迹';
+
+  @override
+  String get todayProductivityComparison => '较上周同段';
+
+  @override
   String get diaryTitle => '日记';
 
   @override

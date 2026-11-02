@@ -2842,6 +2842,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayProductivityCompletionRate => 'Completion';
 
   @override
+  String get todayProductivityTitle => 'Time footprints';
+
+  @override
+  String get todayProductivityComparison => 'Same days last week';
+
+  @override
   String get diaryTitle => 'Diary';
 
   @override

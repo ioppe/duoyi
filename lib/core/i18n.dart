@@ -886,6 +886,8 @@ const Map<String, String> _zh = <String, String>{
   'today.view': '查看',
   'today.productivity.score': '效率分',
   'today.productivity.weekly': '本周效率',
+  'today.productivity.title': '时光足迹',
+  'today.productivity.comparison': '较上周同段',
   'today.productivity.flat': '持平',
   'today.productivity.subtitle': '较上周同段 · 点击查看统计报表',
   'today.productivity.completion_rate': '完成率',
@@ -2350,6 +2352,8 @@ const Map<String, String> _en = <String, String>{
   'today.view': 'View',
   'today.productivity.score': 'Score',
   'today.productivity.weekly': 'This week',
+  'today.productivity.title': 'Time footprints',
+  'today.productivity.comparison': 'Same days last week',
   'today.productivity.flat': 'Flat',
   'today.productivity.subtitle':
       'Compared with the same days last week · open statistics',

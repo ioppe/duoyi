@@ -881,6 +881,8 @@
   "todayProductivityFlat": "Flat",
   "todayProductivitySubtitle": "Compared with the same days last week · open statistics",
   "todayProductivityCompletionRate": "Completion",
+  "todayProductivityTitle": "Time footprints",
+  "todayProductivityComparison": "Same days last week",
   "diaryTitle": "Diary",
   "diaryWrite": "Write diary",
   "diaryEmptyMessage": "Start recording your mood each day",

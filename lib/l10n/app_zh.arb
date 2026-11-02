@@ -889,6 +889,8 @@
   "todayProductivityFlat": "持平",
   "todayProductivitySubtitle": "较上周同段 · 点击查看统计报表",
   "todayProductivityCompletionRate": "完成率",
+  "todayProductivityTitle": "时光足迹",
+  "todayProductivityComparison": "较上周同段",
   "diaryTitle": "日记",
   "diaryWrite": "写日记",
   "diaryEmptyMessage": "开始记录每天的心情吧",
