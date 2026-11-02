@@ -1,0 +1,82 @@
+{
+  "phase": "pre-publication validation",
+  "source_base_commit": "c4f5a2e79f043846fc723a46c9bff5a65805a179",
+  "implementation_commit": "0193f2377224509aeb5e50b7c0da7d3ea6970803",
+  "tested_source_inputs_match_implementation_commit": true,
+  "version": "1.1.47+140013",
+  "toolchain": {
+    "flutter": "3.44.1",
+    "dart": "3.12.1",
+    "flutter_revision": "924134a44c189315be2148659913dda1671cbe99",
+    "test_timezone": "UTC"
+  },
+  "flutter_tests": {
+    "command": "TZ=UTC FLUTTER_BIN=<pinned-sdk>/bin/flutter python3 scripts/flutter_with_config.py test --no-pub --reporter=json",
+    "exit_code": 0,
+    "suites": 345,
+    "passed": 2392,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "elapsed_seconds": 143.9,
+    "counting": "Final events by suite path and test name; loading, hooks, duplicate events and earlier attempts excluded",
+    "log_sha256": "6f0d7a54d614137fd3749c4655a9b09a6ce3004e022a4390c09642e3b190cedb"
+  },
+  "backend_tests": {
+    "working_directory": "backend",
+    "command": "python -m unittest discover -s . -v",
+    "exit_code": 0,
+    "passed": 308,
+    "elapsed_seconds": 9.327,
+    "note": "Completed for the integrated candidate; backend source was not modified afterward",
+    "log_sha256": "1005e39e94c4150cd0d0937f21196965bf1b0cb1b44928ba5dc06d4e64397b61"
+  },
+  "analysis": {
+    "command": "<pinned-sdk>/bin/dart analyze --fatal-infos",
+    "exit_code": 0,
+    "issues": 0,
+    "log_sha256": "67d2037f0bef525212642ebbf32ae606370164d6de6c26a509dada17130be3b6"
+  },
+  "format": {
+    "command": "dart format --output=none --set-exit-if-changed <changed-and-new-dart-files>",
+    "exit_code": 0,
+    "files_checked": 29,
+    "files_changed": 0,
+    "log_sha256": "6bfec8a3cd998a4423d3811006e809978bbfb228bb408930b68644938fac3036"
+  },
+  "diff_check": {"command": "git diff --check", "exit_code": 0},
+  "release_web": {
+    "command": "FLUTTER_BIN=<pinned-sdk>/bin/flutter TZ=UTC python3 scripts/flutter_with_config.py build web --release --base-href=/ --dart-define=DUOYI_WEB_TARGET=desktop",
+    "exit_code": 0,
+    "source_input_count": 403,
+    "source_inputs_stable_before_after": true,
+    "runtime_files": 120,
+    "runtime_bytes": 107520656,
+    "excluded_marker": ".last_build_id",
+    "main_dart_js_bytes": 9696423,
+    "main_dart_js_sha256": "f4fa7a0d51c45531636852f1488b76dd174a620cc16ac56d17b7df036152a021",
+    "protected_logo_and_favicons_unchanged": true,
+    "startup_font_registration_verified": true,
+    "log_sha256": "b340392c7926c7d81e84b644cb19cf979c496f1f569e8f6226f030f1de42f3e6"
+  },
+  "protected_original_worktree": {
+    "read_only_comparison_at": "2026-11-02T04:34:04.884965+00:00",
+    "paths_checked": 27,
+    "content_unchanged": 27,
+    "all_different_file_objects": true,
+    "writes_to_original_worktree": false
+  },
+  "scope": [
+    "Shared display-name resolution for Today and Mine with live authentication updates",
+    "Centered shared modal presentation on Web at all widths and native macOS, with fade/scale and reduced motion",
+    "Remove legacy Todo only from primary navigation and migrate its saved navigation preferences",
+    "Independent optional task due date/time, natural-language and AI fill, manual ownership, date-only and DST handling"
+  ],
+  "verification_boundaries": [
+    "Browser results are recorded separately in browser-validation.json",
+    "Local macOS installation, signing, notarization and Gatekeeper were not verified",
+    "A real Android/iOS software keyboard was not tested",
+    "Browser zoom does not establish Flutter textScaler coverage",
+    "CI artifacts and production deployment require separate receipts for the final pushed commit"
+  ]
+}
