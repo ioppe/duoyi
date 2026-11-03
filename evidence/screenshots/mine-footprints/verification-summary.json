@@ -1,0 +1,68 @@
+{
+  "candidate_base_commit": "873106e54d9ac36cf6e0fdf530df57cdb70fd438",
+  "target_branch": "build/macos-dmg",
+  "app_version": "1.1.47+140013",
+  "flutter_version": "3.44.1",
+  "dart_version": "3.12.1",
+  "widget_sha256": "0d1ee4fda94e2fb5bdfe3dc46993029b2dc98bc1bc97a3756e352ac1907dc6df",
+  "widget_matches_previously_verified_implementation": true,
+  "existing_chinese_and_english_arb_values_preserved": true,
+  "candidate_checks": {
+    "actionlint": {
+      "version": "1.7.12",
+      "official_archive_checksum_verified": true,
+      "exit_code": 0,
+      "shellcheck_run": false
+    },
+    "static_regression_files": {
+      "files": 97,
+      "failed": 0
+    },
+    "initial_combined_check": {
+      "files": 102,
+      "passed": 419,
+      "failed": 1,
+      "failure": "Notification screen test tapped the settings entry before scrolling it into the viewport.",
+      "corrected": true
+    },
+    "final_focused_tests": {
+      "files": 6,
+      "passed": 84,
+      "failed": 0,
+      "timezone": "UTC",
+      "includes_corrected_notification_case": true,
+      "exit_code": 0
+    },
+    "full_project_analyze": {
+      "issues": 0,
+      "exit_code": 0
+    },
+    "format": {
+      "exit_code": 0
+    },
+    "diff_check": {
+      "exit_code": 0
+    }
+  },
+  "original_development_workspace_checks": {
+    "final_widget_tests_passed": 15,
+    "analyze_issues": 0,
+    "application_web_release_build": "success",
+    "preview_web_release_build": "success",
+    "extended_tests_passed": 408,
+    "extended_tests_failed": 1,
+    "baseline_failure_reproduced_with_original_widget": true,
+    "baseline_failure": "A local date-only assertion crossed a daylight-saving boundary. This historical result belongs to the original development workspace, not the push candidate."
+  },
+  "logs": "Original command logs remain in the session scratch directory; GitHub Actions records the subsequent remote full checks and packages for the final commit.",
+  "automatic_artifacts": [
+    "duoyi-android",
+    "duoyi-macos-universal-unsigned",
+    "duoyi-web (desktop and mobile tarballs)"
+  ],
+  "publication_rules": {
+    "pages": "main branch only",
+    "formal_release": "version tags only",
+    "ordinary_build_branch_push": "Actions artifacts only"
+  }
+}

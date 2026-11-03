@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/i18n.dart';
 import '../core/server_connection.dart';
 import '../core/web_target.dart';
+import '../models/server_config_status.dart';
 import '../services/account_local_data_cleaner.dart';
 import '../services/api_client.dart';
 
@@ -119,11 +121,21 @@ class AuthProvider extends ChangeNotifier {
   String? _lastRefreshMeToken;
   int _lastRefreshMeMutationSerial = -1;
   static const _serverConfigRefreshTtl = Duration(seconds: 30);
+
+  /// 仅 `/api/config` 使用的有限超时；AI 请求和同步请求的既有超时不动。
+  static const _serverConfigRequestTimeout = Duration(seconds: 8);
   Future<void>? _serverConfigRefreshInFlight;
   DateTime? _lastServerConfigRefreshAt;
+  ServerConfigStatus _serverConfigStatus = ServerConfigStatus.unknown;
+
+  /// 配置请求的代际号：切服务器/登录/退出后自增，旧请求的迟到结果全部丢弃。
+  int _serverConfigRequestSerial = 0;
 
   /// 拉取到 /api/config 之后会触发，供 AiService / CloudSyncProvider 订阅。
   void Function(Map<String, dynamic> cfg)? onServerConfigChanged;
+
+  /// 配置请求状态变化（loading / ready / failed / unknown），供 AiService 与统计页订阅。
+  void Function(ServerConfigStatus status)? onServerConfigStatusChanged;
   Future<void> Function(AuthState state)? onAccountProfileChanged;
   Future<void> Function(Map<String, dynamic> payload)? onAccountPayloadChanged;
   Future<void> Function(AuthState previous, AuthState next)?
@@ -133,6 +145,10 @@ class AuthProvider extends ChangeNotifier {
   AuthState get state => _state;
   String get baseUrl => _baseUrl;
   Map<String, dynamic> get serverConfig => _serverConfig;
+
+  /// `/api/config` 的真实拉取状态；非 [ServerConfigStatus.ready] 时不得把
+  /// 缺失的开关当成「管理员关闭」。
+  ServerConfigStatus get serverConfigStatus => _serverConfigStatus;
   bool get inviteCodeRequired =>
       _serverConfig['invite_code_required'] == true ||
       _serverConfig['registration_invite_required'] == true;
@@ -206,38 +222,81 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// 拉取 `/api/config`（公开接口，guest 也允许）。
+  ///
+  /// - 在途请求复用同一个 Future（singleflight）：force 绕过 30s TTL，
+  ///   **不绕过**在途请求；
+  /// - TTL 只在 [ServerConfigStatus.ready] 时生效，失败后可立刻重试；
+  /// - 失败不抛异常（保留同连接最后一次成功的配置），调用方用
+  ///   [serverConfigStatus] 判断是否 `failed`；
+  /// - 状态回调在请求开始前就登记 in-flight，避免同步 notify 造成重入双请求。
   Future<void> refreshServerConfigFromServer({bool force = false}) {
     final inFlight = _serverConfigRefreshInFlight;
     if (inFlight != null) return inFlight;
     final lastRefreshAt = _lastServerConfigRefreshAt;
     if (!force &&
-        _serverConfig.isNotEmpty &&
+        _serverConfigStatus == ServerConfigStatus.ready &&
         lastRefreshAt != null &&
         DateTime.now().difference(lastRefreshAt) < _serverConfigRefreshTtl) {
       return Future.value();
     }
-    final future = _refreshServerConfigFromServerNow();
-    _serverConfigRefreshInFlight = future;
-    return future.whenComplete(() {
-      if (_serverConfigRefreshInFlight == future) {
+    final completer = Completer<void>();
+    _serverConfigRefreshInFlight = completer.future;
+    unawaited(_runServerConfigRefresh(completer));
+    return completer.future;
+  }
+
+  Future<void> _runServerConfigRefresh(Completer<void> completer) async {
+    try {
+      await _refreshServerConfigFromServerNow();
+    } catch (e, st) {
+      debugPrint('[auth] server config refresh failed: $e\n$st');
+    } finally {
+      if (identical(_serverConfigRefreshInFlight, completer.future)) {
         _serverConfigRefreshInFlight = null;
       }
-    });
+      if (!completer.isCompleted) completer.complete();
+    }
   }
 
   Future<void> _refreshServerConfigFromServerNow() async {
     final requestClient = _client;
+    final serial = ++_serverConfigRequestSerial;
+    _setServerConfigStatus(ServerConfigStatus.loading);
     try {
-      final cfg = await requestClient.get('/api/config');
-      if (!identical(requestClient, _client)) return;
+      final cfg = await requestClient
+          .get('/api/config')
+          .timeout(_serverConfigRequestTimeout);
+      // 换服务器/登录/退出后，旧连接的迟到结果一律丢弃。
+      if (!identical(requestClient, _client) ||
+          serial != _serverConfigRequestSerial) {
+        return;
+      }
       _lastServerConfigRefreshAt = DateTime.now();
-      if (jsonEncode(_serverConfig) == jsonEncode(cfg)) return;
-      _serverConfig = cfg;
-      onServerConfigChanged?.call(cfg);
-      notifyListeners();
+      final changed = jsonEncode(_serverConfig) != jsonEncode(cfg);
+      if (changed) {
+        _serverConfig = cfg;
+        // 先让订阅方拿到新 map，再广播 ready，保证 AI 的 enabled 与地图一致。
+        onServerConfigChanged?.call(cfg);
+        notifyListeners();
+      }
+      _setServerConfigStatus(ServerConfigStatus.ready);
     } catch (_) {
-      // offline or server down — 保留旧配置
+      if (!identical(requestClient, _client) ||
+          serial != _serverConfigRequestSerial) {
+        return;
+      }
+      // offline / server down：保留同一连接最后一次成功的配置，但状态必须失败。
+      _lastServerConfigRefreshAt = null;
+      _setServerConfigStatus(ServerConfigStatus.failed);
     }
+  }
+
+  void _setServerConfigStatus(ServerConfigStatus status) {
+    final changed = status != _serverConfigStatus;
+    _serverConfigStatus = status;
+    onServerConfigStatusChanged?.call(status);
+    if (changed) notifyListeners();
   }
 
   Future<void> _persistState() async {
@@ -273,10 +332,13 @@ class AuthProvider extends ChangeNotifier {
     _serverConfig = const {};
     _lastServerConfigRefreshAt = null;
     _serverConfigRefreshInFlight = null;
+    // 旧连接的迟到成功/失败都不得改写新连接的状态。
+    _serverConfigRequestSerial++;
     _refreshMeInFlight = null;
     _lastRefreshMeAt = null;
     _refreshMeRequestSerial++;
     onServerConfigChanged?.call(_serverConfig);
+    _setServerConfigStatus(ServerConfigStatus.unknown);
   }
 
   String _validatedServerUrl(String value) {
@@ -1695,8 +1757,9 @@ bool _isRecoverableUploadFieldError(ApiException error) {
 
 bool _isAuthExpired(ApiException error) {
   final message = error.message.trim().toLowerCase();
+  // 只有 401 或服务端明确表示账号失效才算会话过期。
+  // 通用 403（权限不足）不应触发本地账号数据与设备偏好清理。
   return message.startsWith('401:') ||
-      message.startsWith('403:') ||
       message.contains('token expired') ||
       message.contains('invalid token') ||
       message.contains('account disabled') ||

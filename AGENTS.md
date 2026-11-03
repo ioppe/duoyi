@@ -11,10 +11,10 @@ dart format .
 flutter test                        # ~240 test files under test/
 flutter test test/screens/todo_screen_test.dart   # single file
 
-# Backend (backend/test_workspaces.py is the ENTIRE backend suite despite its name)
+# Backend (test_workspaces covers API routes; discover also includes auth/config/Web build policy)
 cd backend && pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-python -m unittest test_workspaces -v
+python -m unittest discover -s . -v
 
 # Release gate: Flutter tests + backend tests + analyze + debug APK build + device regression
 scripts/alignment_regression_gate.sh
@@ -27,13 +27,18 @@ scripts/alignment_regression_gate.sh
 ~96 files named `test/**/*_static_test.dart` regex-scan `lib/` and **fail the whole suite when banned patterns appear anywhere** — e.g. locally hardcoded font weights, raw values instead of design tokens (`lib/core/design_tokens.dart`), screens not using the i18n wrapper. When one trips: read the test's `reason` message (Chinese) and fix the code — never weaken the guard. Any UI change should be checked against them.
 
 - **Typography**: all application UI uses the bundled `NotoSansSC` variable font (Noto Sans SC, offline) through `DesignTokens.fontFamily`. Body/secondary copy, input hints, menus and snackbars use `DesignTokens.fontWeightRegular` (400); buttons, navigation labels, chips and floating labels use `DesignTokens.fontWeightMedium` (500); titles, AppBar titles and emphasis use `DesignTokens.fontWeightStrong` (600). Sizes come from the `DesignTokens.fontSize*` scale (body 16 / secondary 14 / caption 12 / page title 20); shared buttons keep `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Use theme text styles; do not hardcode `FontWeight` values or raw `fontFamily` strings, restore system serif/monospace families or add page-specific bottom-navigation typography. Font attribution and SIL OFL are in `assets/fonts/`; PDF export typography remains separate.
+- **Web font loading**: `scripts/flutter_with_config.py build web` replaces only the generated Web FontManifest with a checked-in variable subset; the complete Noto font loads once after the first frame and idle delay. Native full-font registrations stay unchanged. Preserve this boundary; see `docs/web-font-loading.md`.
 - **Subpage navigation**: use `AppPageTabs` / `AppPageSwitcher` (`lib/widgets/app_page_tabs.dart`) for content views within a screen. All themes share medium-weight labels, start alignment, horizontally scrollable labels and the short `PageTabIndicator`; avoid local pill/filled tab decorations. Date-range filters and form choices remain selection controls.
 
-- **Version bump touches two files**: `pubspec.yaml` (`version: 1.1.41+140007`) AND `lib/core/app_version.dart` (`name`/`build`) — change together or update checks disagree.
+- **Version bump touches two files**: `pubspec.yaml` (`version: <name>+<build>`) AND `lib/core/app_version.dart` (`name`/`build`) — change together or update checks disagree. Read the actual values from those files rather than copying a historical example.
 - **Backend routes are contract-pinned**: `backend/test_workspaces.py` asserts client-facing routes do not 404. Adding/renaming a route the client calls → add/update the matching contract test; keep `API_CONTRACT_VERSION` / `API_CONTRACT_FEATURES` in `backend/main.py` current.
 - **Deployment config**: public defaults live in `config/deployment.json`; inject with `python3 scripts/flutter_with_config.py ...`. Installed login supports a persisted runtime URL + access token; `DUOYI_SERVER_URL` supplies only its initial URL. Web defaults to same-origin. Use `AuthProvider.client`/`baseUrl`; credentials and local data are bound to server + account. Private backend values come from environment or ignored `backend/.env`; see `docs/configuration.md`.
+- **Configuration survives app updates**: device preferences live in platform user storage (`SharedPreferences` / `UserDefaults` / browser storage), separate from APK/`.app`/Web release files. Normal in-place updates must preserve saved preferences; keep application IDs, signing identity, sandbox/data-directory conventions and Web origin stable. Account cleanup still removes private account records and integration credentials, while retaining agreed device preferences. Saved values take precedence over new defaults; any migration must state its conditions and preserve user choices. See `docs/configuration-persistence.md`.
+- **Approved application logo**: every client and the authentication header uses the user-approved **red rounded square (`#C85656`) with three white geometric blocks**. The master is `assets/logo/duoyi_app_logo.svg`, packaged source `assets/logo/duoyi_app_logo_1024.png`; keep the original `duoyi_logo_reference.png` as the approval record. Generate/check platform assets with `python3 scripts/sync_app_icons.py [--check]`. The old `duoyi_logo_redesign_1024.png` calendar and hourglass assets are historical, not the approved logo. Theme/version changes must not replace or recolor it. See `docs/branding.md`.
+- **Browser favicon**: prefer the generated `web/favicon.svg` (`image/svg+xml`, `sizes="any"`) with transparent corners; keep a transparent PNG fallback. Do not reuse an opaque native-icon canvas for a browser tab or recolor the fixed red/white mark for dark mode. Transparency exposes the browser's own tab background; browser chrome/PWA theme colors are separate.
 - **i18n**: Chinese ARB template (`lib/l10n/app_zh.arb`, zh primary / en); use `I18n.tr()` from `lib/core/i18n.dart`.
 - **Time & locale**: user-visible dates/"today"/day stats/habit periods/reminders use the *application* wall clock — `AppClock` (`lib/core/app_clock.dart`) and `LocalTimezoneResolver` (`lib/core/local_timezone_resolver.dart`), default = system zone, user-overridable IANA zone. Keep sync timestamps, `updatedAt`, IDs, elapsed timers on real instants (`DateTime.now()`/UTC) and never shift floating date-only values. Language defaults to the system locale with a persisted explicit override (`LocaleProvider`, `language_settings_tile.dart`). See `docs/configuration.md`.
+- **AI report archives**: completed statistical interpretations belong to account-private `ai_review_history`, grouped by natural week/month/year bounds plus captured IANA zone; store each input cutoff date separately. Use the application-level `AiService` for job state and durable history, never page-only result/busy state. Re-entry and period switching must restore the matching archive without resubmitting or showing another period's result. Guard late responses/writes across account cleanup. Waiting UI inherits the current Apple-style surfaces/tokens and uses truthful indeterminate/elapsed state, never a fabricated percent. See `docs/ai-report-history.md`.
 
 ## Layout
 
@@ -43,8 +48,8 @@ lib/models/ lib/providers/ lib/services/ lib/screens/ lib/widgets/
 backend/main.py  FastAPI monolith: /api/auth, /api/sync, /api/admin, /api/ai/chat, /ws/*
 android/app/src/main/kotlin/…  Kotlin home-screen widgets (todo/habit/pomodoro), `duoyi://` deep links;
                                widget resource contracts guarded by test/services/android_widget_resources_test.dart
-macos/Runner/  Flutter desktop entry + draggable native pomodoro NSPanel; see docs/macos.md.
-docs/            canonical requirement/design/contract docs (requirement-v2.md, design-v2.md, cloud-sync-v2-contract.md)
+macos/Runner/     Flutter desktop entry + draggable native pomodoro NSPanel; see docs/macos.md.
+docs/            canonical requirements/design/contracts, branding.md and configuration-persistence.md
 ```
 
 Cloud sync (`lib/providers/cloud_sync_provider.dart` + `/api/sync/*`): timestamp-based 3-way merge, last-write-wins on `updatedAt`; contract in `docs/cloud-sync-v2-contract.md`.
@@ -54,6 +59,8 @@ Cloud sync (`lib/providers/cloud_sync_provider.dart` + `/api/sync/*`): timestamp
 - Root-level `*_REPORT.md` / `*_SUMMARY.md` / `*_ANALYSIS.md` files are historical working-session notes — not current guidance, and don't add new ones to the root.
 - Backend service/container name and runner are configured in the deployment profile. For Docker code/image or Compose env_file changes, build the image and recreate the container; restart alone preserves the old image/environment. `scripts/deploy_backend_prod.sh` restarts and verifies the configured runner; `--check-config` only inspects values. Client releases ship through the configured Fork; bump both version files before a release tag.
 - Sign-off repo secrets (`DUOYI_KEYSTORE_*`) are required for release builds — no debug-signing fallback.
+- **Multi-platform installers on push**: every push to `main`, `self-hosted-skydrow` or `build/macos-dmg` must enter `.github/workflows/build-apk.yml`, pass shared configuration/analysis/tests, then build signed Android APKs, universal unsigned macOS DMG/ZIP and the Web desktop/mobile tarballs (`duoyi-web`) from the same commit and profile. Web tarballs stay upload-only on branch pushes except the `main` desktop tarball, which auto-deploys once the server entry and single Secret are configured; GitHub Pages remains `main`-only. Keep `build-macos.yml` reusable/manual-only to avoid a second automatic Mac run. Branch pushes upload artifacts; formal Releases remain tag-only. New pushes cancel unfinished runs on the same branch. Preserve signing gates and the trigger/dependency regression in `test/services/multi_platform_build_workflow_static_test.dart`.
+- **Self-hosted Web auto-deploy**: only pushes to `main` publish; the same-run `duoyi-web` desktop tarball goes through `deploy-self-hosted-web` → `scripts/deploy_web_ci.py` → the restricted root entry `duoyi-web-deploy` (profile `config/web-deploy.json`, key in the single repository Secret `DUOYI_WEB_DEPLOY_SSH_KEY`). Keep the release-directory + atomic `current` symlink layout, manifest verification and rollback; never delete old releases, execute payload files or touch backend/DB/Nginx. See `docs/web-auto-deploy.md`.
 
 ## Screenshots & evidence
 
@@ -61,3 +68,5 @@ Cloud sync (`lib/providers/cloud_sync_provider.dart` + `/api/sync/*`): timestamp
 - Store larger screenshot batches in a named directory under `evidence/`.
 - Do not leave generated agent screenshots in the repository root.
 - Keep real app image assets in their existing asset directories, such as `assets/`, `android/app/src/main/res/`, `ios/Runner/Assets.xcassets/`, `linux/`, and `web/`.
+
+- **Mainline integration**: before a client release, verify the candidate includes the intended local/origin branch heads, approved Logo reference/generator checks and the main-only self-hosted deployment job. A higher version number or green installer build alone does not prove these features survived branch integration. Never substitute historical calendar/hourglass artwork or deploy a tag artifact as a main push.

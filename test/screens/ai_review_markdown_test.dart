@@ -104,7 +104,7 @@ void main() {
       final ai = _service();
       await tester.pumpWidget(_app(ai, const StatisticsScreen()));
       await tester.pumpAndSettle();
-      final reviewButton = find.text('AI 解读');
+      final reviewButton = find.text(I18n.tr('statistics.ai.generate'));
       await tester.ensureVisible(reviewButton);
       await tester.tap(reviewButton);
       await tester.pumpAndSettle();
@@ -118,10 +118,13 @@ void main() {
         _review.trim(),
         reason: 'AiService 会 trim 新回复，历史记录保存的是去除首尾空白后的正文。',
       );
-      expect(find.text('云端个性化解读'), findsOneWidget);
+      expect(find.text(I18n.tr('statistics.ai.result_title')), findsOneWidget);
       _expectMarkdownRendered(find.byType(StatisticsScreen));
-      await tester.ensureVisible(find.text('AI 历史'));
-      await tester.tap(find.text('AI 历史'));
+      final historyButton = find.textContaining(
+        I18n.tr('statistics.ai.history'),
+      );
+      await tester.ensureVisible(historyButton);
+      await tester.tap(historyButton);
       await tester.pumpAndSettle();
       expect(find.byType(AiHistoryScreen), findsOneWidget);
       final toggle = find.byKey(

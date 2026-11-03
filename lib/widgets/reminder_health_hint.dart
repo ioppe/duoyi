@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../core/design_tokens.dart';
+import '../core/i18n.dart';
 import '../models/goal.dart' show ReminderKind;
 import '../services/permission_health_service.dart';
+import '../services/web_notifications/web_notification_core.dart';
+import '../services/web_notifications/web_notification_service.dart';
 import 'surface_components.dart';
 
 class ReminderHealthHint extends StatefulWidget {
@@ -11,6 +15,12 @@ class ReminderHealthHint extends StatefulWidget {
   final Future<void> Function() onRequestExactAlarmPermission;
   final Future<void> Function() onRequestFullScreenIntentPermission;
 
+  /// Web 分支读取的浏览器通知状态；默认 [WebNotificationService.instance]。
+  final WebNotificationService? webNotifications;
+
+  /// 测试钩子：强制使用 Web 分支（VM 上 `kIsWeb` 恒为 false）。
+  final bool? forceWebBranch;
+
   const ReminderHealthHint({
     super.key,
     required this.reminderKind,
@@ -18,6 +28,8 @@ class ReminderHealthHint extends StatefulWidget {
     required this.onRequestNotificationPermission,
     required this.onRequestExactAlarmPermission,
     required this.onRequestFullScreenIntentPermission,
+    this.webNotifications,
+    this.forceWebBranch,
   });
 
   @override
@@ -27,6 +39,13 @@ class ReminderHealthHint extends StatefulWidget {
 class _ReminderHealthHintState extends State<ReminderHealthHint>
     with WidgetsBindingObserver {
   late Future<NotificationHealthReport> _future;
+  bool _webBusy = false;
+  String? _webFeedback;
+
+  WebNotificationService get _web =>
+      widget.webNotifications ?? WebNotificationService.instance;
+
+  bool get _useWebBranch => widget.forceWebBranch ?? _web.isWeb;
 
   @override
   void initState() {
@@ -50,6 +69,11 @@ class _ReminderHealthHintState extends State<ReminderHealthHint>
 
   Future<void> _refresh() async {
     if (!mounted) return;
+    if (_useWebBranch) {
+      // 用户在地址栏站点设置里外部改动后，重新读取真实浏览器状态。
+      await _web.refreshPermission();
+      if (!mounted) return;
+    }
     setState(() {
       _future = PermissionHealthService.instance.check();
     });
@@ -70,8 +94,184 @@ class _ReminderHealthHintState extends State<ReminderHealthHint>
     await _refresh();
   }
 
+  /// Web 分支的授权入口：点击链路里同步发起浏览器原生请求，然后展示结果。
+  Future<void> _handleWebNotificationPermission() async {
+    if (_webBusy) return;
+    setState(() {
+      _webBusy = true;
+      _webFeedback = null;
+    });
+    WebNotificationRequestResult? result;
+    Object? error;
+    try {
+      // 不要在这个 await 之前做任何其它异步操作：否则浏览器会判定本次
+      // requestPermission 不在用户手势里，直接静默拒绝弹框。
+      await widget.onRequestNotificationPermission();
+      result = _web.lastRequest;
+      if (result == null) {
+        // 回调没有经过浏览器核心（例如注入的其它实现）时回读真实状态。
+        await _web.refreshPermission();
+      }
+    } catch (e) {
+      error = e;
+    }
+    if (!mounted) return;
+    final feedback = _webFeedbackText(result: result, error: error);
+    setState(() {
+      _webBusy = false;
+      // 已授权时状态行本身已经说明情况，不重复堆一段反馈。
+      _webFeedback = result?.isGranted == true ? null : feedback;
+    });
+  }
+
+  String _webFeedbackText({
+    WebNotificationRequestResult? result,
+    Object? error,
+  }) {
+    if (error != null) return I18n.tr('reminder.web.status.failed');
+    switch (result?.outcome) {
+      case WebNotificationRequestOutcome.granted:
+        return I18n.tr('reminder.web.status.granted');
+      case WebNotificationRequestOutcome.denied:
+        return I18n.tr('reminder.web.status.denied');
+      case WebNotificationRequestOutcome.dismissed:
+        return I18n.tr('reminder.web.status.dismissed');
+      case WebNotificationRequestOutcome.unsupported:
+        return I18n.tr('reminder.web.status.unsupported');
+      case WebNotificationRequestOutcome.insecureContext:
+        return I18n.tr('reminder.web.status.insecure');
+      case WebNotificationRequestOutcome.failed:
+        return I18n.tr('reminder.web.status.failed');
+      case null:
+        if (_web.permissionGranted) {
+          return I18n.tr('reminder.web.status.granted');
+        }
+        if (_web.permission == WebNotificationPermission.denied) {
+          return I18n.tr('reminder.web.status.denied');
+        }
+        return I18n.tr('reminder.web.status.dismissed');
+    }
+  }
+
+  Widget _buildWebBranch(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final support = _web.support;
+    final permission = _web.permission;
+
+    PermissionHealthStatus status = PermissionHealthStatus.blocked;
+    String subtitle = I18n.tr('reminder.web.status.prompt');
+    IconData icon = Icons.notifications_outlined;
+    var canRequest = false;
+
+    if (support == WebNotificationSupport.insecureContext) {
+      status = PermissionHealthStatus.warning;
+      subtitle = I18n.tr('reminder.web.status.insecure');
+      icon = Icons.lock_outline;
+    } else if (support == WebNotificationSupport.unsupported) {
+      status = PermissionHealthStatus.warning;
+      subtitle = I18n.tr('reminder.web.status.unsupported');
+      icon = Icons.notifications_off_outlined;
+    } else if (permission == WebNotificationPermission.granted) {
+      status = PermissionHealthStatus.ok;
+      subtitle = I18n.tr('reminder.web.status.granted');
+      icon = Icons.notifications_active_outlined;
+    } else if (permission == WebNotificationPermission.denied) {
+      // 浏览器已拒绝时不会再弹框，重复请求无效，只提示去站点设置。
+      status = PermissionHealthStatus.blocked;
+      subtitle = I18n.tr('reminder.web.status.denied');
+      icon = Icons.notifications_off_outlined;
+    } else {
+      status = PermissionHealthStatus.blocked;
+      subtitle = I18n.tr('reminder.web.status.prompt');
+      icon = Icons.notifications_off_outlined;
+      canRequest = true;
+    }
+
+    if (_webBusy) {
+      subtitle = I18n.tr('reminder.web.status.requesting');
+    }
+
+    final color = switch (status) {
+      PermissionHealthStatus.ok => Colors.green,
+      PermissionHealthStatus.warning => Colors.orange,
+      PermissionHealthStatus.blocked => Colors.red,
+      PermissionHealthStatus.unknown => Colors.blueGrey,
+    };
+
+    final Widget trailing;
+    if (_webBusy) {
+      trailing = const SizedBox(
+        width: DesignTokens.controlIconSize,
+        height: DesignTokens.controlIconSize,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (canRequest) {
+      trailing = TextButton(
+        onPressed: _handleWebNotificationPermission,
+        child: Text(I18n.tr('reminder.web.action.request')),
+      );
+    } else {
+      trailing = Icon(
+        status == PermissionHealthStatus.ok
+            ? Icons.check_circle
+            : Icons.info_outline,
+        color: color,
+      );
+    }
+
+    // 用户在站点设置里重新允许后，旧的拒绝反馈不应继续显示。
+    final feedback = _web.permissionGranted ? null : _webFeedback;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppActionTile(
+          icon: icon,
+          label: I18n.tr('reminder.health'),
+          color: color,
+          // Web 没有「应用通知设置」入口，避免跳到无意义的系统页面。
+          onTap: null,
+          trailing: trailing,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.spaceLg,
+            0,
+            DesignTokens.spaceLg,
+            DesignTokens.spaceSm,
+          ),
+          child: Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: DesignTokens.fontWeightRegular,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+        if (feedback != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.spaceLg,
+              0,
+              DesignTokens.spaceLg,
+              DesignTokens.spaceSm,
+            ),
+            child: Text(
+              feedback,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: DesignTokens.fontSizeCaption,
+                fontWeight: DesignTokens.fontWeightRegular,
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_useWebBranch) return _buildWebBranch(context);
     return FutureBuilder<NotificationHealthReport>(
       future: _future,
       builder: (context, snap) {

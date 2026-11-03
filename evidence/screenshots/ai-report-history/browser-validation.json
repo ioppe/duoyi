@@ -1,0 +1,112 @@
+{
+  "suite": "ai-report-archive-browser-e2e",
+  "transport": "real Flutter Web build served by loopback fixture (127.0.0.1:18795)",
+  "model": "fixture-report-model (deterministic canned response; no network egress, no real model)",
+  "build": {
+    "mainDartJsSha256": "b4a11bad04d1d1d7aba762355746a5b12298e9d63ad2f1478f0e5bd36034a574",
+    "mainDartJsBytes": 9675519,
+    "buildExitCode": 0
+  },
+  "candidate": {
+    "head": "b874679171d08a1fccd25035a83b21bd69c57e25",
+    "branch": "build/macos-dmg",
+    "originMain": "a52b5e07f7aee360aca87b8ec2c7118d3b521b05",
+    "originMainIsAncestor": true
+  },
+  "browser": {
+    "cli": "agent-browser 0.20.7",
+    "session": "ai-report-archive-e2e",
+    "isolated": true,
+    "viewportDefault": [1280, 1000],
+    "viewportNarrow": [390, 844],
+    "devicePixelRatio": 1,
+    "locale": "zh"
+  },
+  "scenarios": [
+    { "id": 1, "name": "week pending state, leave and re-enter while held", "result": "PASS",
+      "observations": {
+        "pendingStateText": ["AI 正在生成解读", "已用 N 秒", "可以离开本页"],
+        "generateButtonWhilePending": "解读中… (disabled)",
+        "elapsedObservedSeconds": [3, 24],
+        "weekRequestsAfterReenter": 1
+      } },
+    { "id": 2, "name": "week pending then switch to month, release week, then month + year", "result": "PASS",
+      "observations": {
+        "monthPanelWhileWeekPending": "no week body, action enabled",
+        "weekResponseAfterReleaseLeakedIntoMonth": false,
+        "fixedResponses": ["周报解读 1", "月报解读 1", "年报解读 1"]
+      } },
+    { "id": 3, "name": "restore week result, regenerate while held, release to version 2", "result": "PASS",
+      "observations": {
+        "previousResultRetainedWhilePending": true,
+        "newVersion": 2,
+        "archiveEntryAddedPerRegenerate": 1
+      } },
+    { "id": 4, "name": "history screen default period, filters, markdown expand/collapse, copy", "result": "PASS",
+      "observations": {
+        "defaultPeriod": "本周 · 2026年10月26日 – 2026年11月1日",
+        "entriesCurrentWeek": 2,
+        "entriesMonth": 1,
+        "entriesYear": 1,
+        "entriesAll": 4,
+        "markdownExpandCollapse": true,
+        "copyActionToast": "已复制",
+        "clipboardReadBack": "BLOCKED_BY_PLATFORM_PERMISSION"
+      } },
+    { "id": 5, "name": "real page reload restores archives without new model calls", "result": "PASS",
+      "observations": {
+        "weekResultRestoredAfterReload": true,
+        "historyEntriesAfterReload": 4,
+        "historyDefaultPeriodAfterReload": "current week (2 entries)"
+      } },
+    { "id": 6, "name": "light default theme screenshots at 1280 and 390", "result": "PASS",
+      "observations": { "theme": "default light", "screenshots": 9 } }
+  ],
+  "requestCounts": {
+    "week": 2, "month": 1, "year": 1,
+    "total": 4,
+    "sequence": [
+      { "id": 1, "kind": "week", "version": 1, "status": "completed" },
+      { "id": 2, "kind": "month", "version": 1, "status": "completed" },
+      { "id": 3, "kind": "year", "version": 1, "status": "completed" },
+      { "id": 4, "kind": "week", "version": 2, "status": "completed" }
+    ],
+    "countsUnchangedAfterReload": true,
+    "waitingRequestsAtEnd": 0
+  },
+  "archiveMetadata": {
+    "storageKey": "flutter.ai_review_history",
+    "entries": 4,
+    "perPeriod": { "week": 2, "month": 1, "year": 1 },
+    "fields": ["id", "createdAt", "content", "summary", "model", "kind", "reportContext", "dataThrough"],
+    "reportContext": { "period": "week|month|year", "start": "date", "end": "date", "timeZone": "IANA" },
+    "contentPrefixes": ["周报解读 1", "月报解读 1", "年报解读 1", "周报解读 2"]
+  },
+  "browserScreenshots": [
+    {"file":"browser-history-all-1280.png","pixels":[1280,1000],"sha256":"b42c9c91e3cdecbcc2c54f683c8b91f712480bb421a1b4def92c76e9eb02df3e"},
+    {"file":"browser-history-all-390.png","pixels":[390,844],"sha256":"ede3e4a5df81eac5ecb37404cf8ea786729548d5a7c30aeeedb2b80ac58fd3a8"},
+    {"file":"browser-history-all-after-reload-1280.png","pixels":[1280,1000],"sha256":"f243c55039a392c2732de7f8ad9687b091ffdbb6fee49706497154653e688a19"},
+    {"file":"browser-history-week-1280.png","pixels":[1280,1000],"sha256":"834ee022204f7e3d42ae1a44d2292c0d5b332bedded40dae4f289af87c966b31"},
+    {"file":"browser-pending-1280.png","pixels":[1280,1000],"sha256":"cba29bc57c72bfad33e38eb494901de3ce72da9b0bb96260c44364cc2ef49b11"},
+    {"file":"browser-regenerate-pending-1280.png","pixels":[1280,1000],"sha256":"4fec7a5488ccad51cb7972794927f3cbc54af4ecaeee8aa5b9a3b09ffb5280e6"},
+    {"file":"browser-statistics-390.png","pixels":[390,844],"sha256":"8968e9e0447f36f22fe0aaf7070ebbf81a18dece8dec3cdc6c4498aca33b6684"},
+    {"file":"browser-week-restored-1280.png","pixels":[1280,1000],"sha256":"57198cd8958d046f90a407b8e3256237d7abc1e5628a4426381fac4ed43d3571"},
+    {"file":"browser-year-completed-1280.png","pixels":[1280,1000],"sha256":"21139f7fb79830de5639159fd14b93c8fda4cdae2f4feb7c401bb93b39b288f9"}
+  ],
+  "consoleFindings": {
+    "fixtureContractWarnings": [
+      "[ShareProvider] /api/workspaces expected list, fixture returns object",
+      "[AppUpdate] update endpoint missing required_routes_hash / api_contract_version"
+    ],
+    "pluginAbsentWarnings": ["duoyi/deep_links", "duoyi/location_geofence", "plugins.flutter.io/path_provider (alarm cleanup)"],
+    "productErrorObserved": {
+      "message": "Null check operator used on a null value",
+      "phase": "app startup / profile refresh, after login",
+      "relatedToAiArchiveFlow": false,
+      "note": "single occurrence per load; observed before any AI interaction"
+    },
+    "pageErrors": ["chrome://resources mojo binding error (browser-internal, not page code)"]
+  },
+  "accessibilityLimitation": "markdown body paragraphs are not exposed to the a11y/DOM tree (only list markers); body content verified via archive payload prefixes and screenshots",
+  "credentials": "isolated fixture account only; token is fixture value; no production host or real model contacted"
+}

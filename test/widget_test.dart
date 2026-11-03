@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:duoyi/main.dart';
@@ -31,7 +32,7 @@ import 'package:duoyi/services/app_update_service.dart';
 import 'package:duoyi/services/calendar_sync_service.dart';
 
 void main() {
-  testWidgets('App renders default bottom tabs: 今日/待办/习惯/专注/我的', (
+  testWidgets('App renders default bottom tabs: 今日/习惯/专注/我的', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -74,6 +75,14 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<NavigationBar>(find.byType(NavigationBar))
+          .destinations
+          .map((item) => (item as NavigationDestination).label),
+      ['今日', '习惯', '专注', '我的'],
+    );
+    // 待办不再是一级导航入口，但页面仍保留：今日指标卡/深链/更多应用可进入。
     expect(find.text('待办'), findsWidgets);
     expect(find.text('习惯'), findsWidgets);
     expect(find.text('今日'), findsWidgets);

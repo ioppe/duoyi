@@ -15,6 +15,7 @@
     the `--base-href` argument provided to `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
+  <!-- Web startup uses a small variable-font subset; the complete font loads after first frame. -->
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -28,7 +29,8 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=transparent-v1">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="favicon.svg">
 
   <title>多仪</title>
   <link rel="manifest" href="manifest.json">

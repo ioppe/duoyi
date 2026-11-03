@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main, self-hosted-skydrow]
+    branches: [main, self-hosted-skydrow, build/macos-dmg]
     tags: ['v*']
   pull_request:
     branches: [main, self-hosted-skydrow]
@@ -114,6 +114,11 @@ jobs:
 
       - name: Get packages
         run: flutter pub get
+
+      - name: Verify approved application icons
+        run: |
+          python -m pip install -r scripts/requirements-icons.txt
+          python scripts/sync_app_icons.py --check
 
       - name: Analyze
         run: flutter analyze
@@ -289,6 +294,7 @@ jobs:
     needs: [analyze, configuration]
     if: >
       github.ref == 'refs/heads/main'
+      || (github.event_name == 'push' && (github.ref == 'refs/heads/self-hosted-skydrow' || github.ref == 'refs/heads/build/macos-dmg'))
       || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_web == 'true')
       || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -375,6 +381,47 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/web-pages
+
+  # ─────────────────────────────────────────────
+  # 3b. Self-hosted Web deployment (same-run desktop artifact)
+  # ─────────────────────────────────────────────
+  deploy-self-hosted-web:
+    needs: [web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: duoyi-production-web
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download same-run Web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: duoyi-web
+          path: ${{ runner.temp }}/duoyi-web
+
+      - name: Require deployment key
+        env:
+          DUOYI_WEB_DEPLOY_SSH_KEY: ${{ secrets.DUOYI_WEB_DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DUOYI_WEB_DEPLOY_SSH_KEY" ]; then
+            echo "::error::Missing repository secret DUOYI_WEB_DEPLOY_SSH_KEY; self-hosted Web deployment cannot run."
+            exit 1
+          fi
+
+      - name: Deploy Web to self-hosted server
+        env:
+          DUOYI_WEB_DEPLOY_SSH_KEY: ${{ secrets.DUOYI_WEB_DEPLOY_SSH_KEY }}
+        run: python3 scripts/deploy_web_ci.py --artifact-dir "${{ runner.temp }}/duoyi-web"
 
   # ─────────────────────────────────────────────
   # 4. macOS DMG (universal, unsigned)

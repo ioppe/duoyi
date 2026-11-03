@@ -842,6 +842,54 @@ abstract class AppLocalizations {
   /// **'优先级标记'**
   String get todoCreatePriority;
 
+  /// No description provided for @todoCreateDueDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'截止日期'**
+  String get todoCreateDueDate;
+
+  /// No description provided for @todoCreateDueNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'无截止日期'**
+  String get todoCreateDueNone;
+
+  /// No description provided for @todoCreateDuePickDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择截止日期'**
+  String get todoCreateDuePickDate;
+
+  /// No description provided for @todoCreateDueTimeNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'可选时刻'**
+  String get todoCreateDueTimeNone;
+
+  /// No description provided for @todoCreateDuePickTime.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择截止时刻'**
+  String get todoCreateDuePickTime;
+
+  /// No description provided for @todoCreateDueTimeClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消具体时刻'**
+  String get todoCreateDueTimeClear;
+
+  /// No description provided for @todoCreateDueClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除截止日期'**
+  String get todoCreateDueClear;
+
+  /// No description provided for @todoCreateDueGapError.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前时区不存在这个时刻（夏令时跳变），请重新选择'**
+  String get todoCreateDueGapError;
+
   /// No description provided for @todoCreateReminder.
   ///
   /// In zh, this message translates to:
@@ -2257,6 +2305,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'默认番茄钟长度'**
   String get preferencesPomodoroLengthTitle;
+
+  /// No description provided for @preferencesFloatingWindowSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'番茄悬浮窗尺寸'**
+  String get preferencesFloatingWindowSize;
+
+  /// No description provided for @preferencesFloatingWindowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅 macOS 生效，尺寸保存在本机'**
+  String get preferencesFloatingWindowSubtitle;
+
+  /// No description provided for @preferencesFloatingWindowLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get preferencesFloatingWindowLarge;
+
+  /// No description provided for @preferencesFloatingWindowCompact.
+  ///
+  /// In zh, this message translates to:
+  /// **'紧凑'**
+  String get preferencesFloatingWindowCompact;
 
   /// No description provided for @preferencesSectionBottomNav.
   ///
@@ -5075,7 +5147,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'AI 周回顾历史'**
+  /// **'AI 解读历史'**
   String get aiHistoryTitle;
 
   /// No description provided for @aiHistoryClearTooltip.
@@ -5087,13 +5159,13 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryClearTitle.
   ///
   /// In zh, this message translates to:
-  /// **'清空全部回顾?'**
+  /// **'清空全部解读?'**
   String get aiHistoryClearTitle;
 
   /// No description provided for @aiHistoryClearContent.
   ///
   /// In zh, this message translates to:
-  /// **'本地保留的 AI 回顾将被删除，无法恢复'**
+  /// **'全部 AI 解读（含其他周期）将被删除，无法恢复'**
   String get aiHistoryClearContent;
 
   /// No description provided for @aiHistoryClearAction.
@@ -5105,7 +5177,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiHistoryEmpty.
   ///
   /// In zh, this message translates to:
-  /// **'还没有 AI 回顾\n在\"我的\"页生成一份吧'**
+  /// **'还没有 AI 解读\n在统计页生成一份吧'**
   String get aiHistoryEmpty;
 
   /// No description provided for @aiHistoryCopy.
@@ -5125,6 +5197,222 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'删除'**
   String get aiHistoryDelete;
+
+  /// No description provided for @aiHistoryFilterAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部历史'**
+  String get aiHistoryFilterAll;
+
+  /// No description provided for @aiHistoryPeriodRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range}'**
+  String aiHistoryPeriodRange(Object period, Object range);
+
+  /// No description provided for @aiHistoryPeriodLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range} · {zone}'**
+  String aiHistoryPeriodLine(Object period, Object range, Object zone);
+
+  /// No description provided for @aiHistoryPeriodEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个周期还没有 AI 解读'**
+  String get aiHistoryPeriodEmpty;
+
+  /// No description provided for @aiHistoryPeriodUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'旧版本记录，未包含周期信息'**
+  String get aiHistoryPeriodUnknown;
+
+  /// No description provided for @aiHistoryExpand.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开解读'**
+  String get aiHistoryExpand;
+
+  /// No description provided for @aiHistoryCollapse.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起解读'**
+  String get aiHistoryCollapse;
+
+  /// No description provided for @statisticsAiGenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 解读'**
+  String get statisticsAiGenerate;
+
+  /// No description provided for @statisticsAiRegenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新生成解读'**
+  String get statisticsAiRegenerate;
+
+  /// No description provided for @statisticsAiGenerating.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读中…'**
+  String get statisticsAiGenerating;
+
+  /// No description provided for @statisticsAiHistory.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 历史'**
+  String get statisticsAiHistory;
+
+  /// No description provided for @statisticsAiHistoryCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 历史（{count}）'**
+  String statisticsAiHistoryCount(Object count);
+
+  /// No description provided for @statisticsAiResultTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'云端个性化解读'**
+  String get statisticsAiResultTitle;
+
+  /// No description provided for @statisticsAiStageGenerating.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 正在生成解读'**
+  String get statisticsAiStageGenerating;
+
+  /// No description provided for @statisticsAiStageSaving.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，正在存档'**
+  String get statisticsAiStageSaving;
+
+  /// No description provided for @statisticsAiElapsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已用 {seconds} 秒'**
+  String statisticsAiElapsed(Object seconds);
+
+  /// No description provided for @statisticsAiLeaveHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'可以离开本页：应用保持运行时结果会自动存档，退出应用则不会继续。'**
+  String get statisticsAiLeaveHint;
+
+  /// No description provided for @statisticsAiDataThrough.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据截至 {date}'**
+  String statisticsAiDataThrough(Object date);
+
+  /// No description provided for @statisticsAiGeneratedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成于 {time}'**
+  String statisticsAiGeneratedAt(Object time);
+
+  /// No description provided for @statisticsAiPeriodLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range} · {zone}'**
+  String statisticsAiPeriodLine(Object period, Object range, Object zone);
+
+  /// No description provided for @statisticsAiPeriodRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{period} · {range}'**
+  String statisticsAiPeriodRange(Object period, Object range);
+
+  /// No description provided for @statisticsAiCopyInsight.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制解读'**
+  String get statisticsAiCopyInsight;
+
+  /// No description provided for @statisticsAiRetryGenerate.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试生成'**
+  String get statisticsAiRetryGenerate;
+
+  /// No description provided for @statisticsAiRetrySave.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试保存'**
+  String get statisticsAiRetrySave;
+
+  /// No description provided for @statisticsAiUnsavedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，但暂未存档'**
+  String get statisticsAiUnsavedTitle;
+
+  /// No description provided for @statisticsAiDisabledHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理员启用 AI 后可生成云端个性化解读'**
+  String get statisticsAiDisabledHint;
+
+  /// No description provided for @statisticsAiConfigLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在获取 AI 配置…'**
+  String get statisticsAiConfigLoading;
+
+  /// No description provided for @statisticsAiConfigFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法获取 AI 配置，请检查连接后重试。'**
+  String get statisticsAiConfigFailed;
+
+  /// No description provided for @statisticsAiConfigRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新获取'**
+  String get statisticsAiConfigRetry;
+
+  /// No description provided for @syncActionSyncNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即同步'**
+  String get syncActionSyncNow;
+
+  /// No description provided for @syncConfigFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法获取服务器配置，请检查连接后重试'**
+  String get syncConfigFailed;
+
+  /// No description provided for @statisticsAiErrorSessionChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号状态已变化，本次解读未保存。'**
+  String get statisticsAiErrorSessionChanged;
+
+  /// No description provided for @statisticsAiErrorArchiveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'解读已生成，但暂未存档。请重试保存，或先复制保留。'**
+  String get statisticsAiErrorArchiveFailed;
+
+  /// No description provided for @statisticsAiErrorStorageFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法保存历史变更，请重试。'**
+  String get statisticsAiErrorStorageFailed;
+
+  /// No description provided for @statisticsAiErrorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型未返回解读正文，请重试。'**
+  String get statisticsAiErrorEmpty;
+
+  /// No description provided for @statisticsAiErrorRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'生成失败，请稍后重试。'**
+  String get statisticsAiErrorRequestFailed;
 
   /// No description provided for @syncConflictTitle.
   ///
@@ -6506,18 +6794,6 @@ abstract class AppLocalizations {
   /// **'暂停'**
   String get focusPause;
 
-  /// No description provided for @focusResume.
-  ///
-  /// In zh, this message translates to:
-  /// **'继续'**
-  String get focusResume;
-
-  /// No description provided for @focusReset.
-  ///
-  /// In zh, this message translates to:
-  /// **'重置'**
-  String get focusReset;
-
   /// No description provided for @focusFloatingOpen.
   ///
   /// In zh, this message translates to:
@@ -6565,6 +6841,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'待开始'**
   String get focusFloatingReady;
+
+  /// No description provided for @focusResume.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get focusResume;
+
+  /// No description provided for @focusReset.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置'**
+  String get focusReset;
 
   /// No description provided for @reminderHealth.
   ///
@@ -8059,6 +8347,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'备份中不存在的本机数据将被删除。'**
   String get backupOverwriteWillDeleteMissing;
+
+  /// No description provided for @reminderWebActionRequest.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知授权'**
+  String get reminderWebActionRequest;
+
+  /// No description provided for @reminderWebStatusRequesting.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在等待浏览器返回通知授权结果…'**
+  String get reminderWebStatusRequesting;
+
+  /// No description provided for @reminderWebStatusPrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器通知尚未开启，授权后定时提醒才能进入系统通知'**
+  String get reminderWebStatusPrompt;
+
+  /// No description provided for @reminderWebStatusGranted.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒'**
+  String get reminderWebStatusGranted;
+
+  /// No description provided for @reminderWebStatusDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页'**
+  String get reminderWebStatusDenied;
+
+  /// No description provided for @reminderWebStatusUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前浏览器不支持网页通知，提醒只能在页面内提示'**
+  String get reminderWebStatusUnsupported;
+
+  /// No description provided for @reminderWebStatusInsecure.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前页面不是安全上下文（需要 HTTPS 或 localhost），浏览器不会显示通知'**
+  String get reminderWebStatusInsecure;
+
+  /// No description provided for @reminderWebStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知授权请求失败，请稍后重试'**
+  String get reminderWebStatusFailed;
+
+  /// No description provided for @reminderWebStatusDismissed.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择通知权限，可以再次点击“通知授权”'**
+  String get reminderWebStatusDismissed;
 }
 
 class _AppLocalizationsDelegate

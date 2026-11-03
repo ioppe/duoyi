@@ -1,0 +1,14 @@
+{
+  "main_dart_js_sha256": "379c9b81b52e6c986850d611e94f307c6b37948dc757f580669b71c9ed5c2009",
+  "screenshots": [
+    {"file":"browser-ai-admin-disabled-1280.png","width":1280,"height":1000,"sha256":"d7e1ce5cf644262a715b112e5f683d855f885a3beca11e8c71a135f1c792ffb3"},
+    {"file":"browser-ai-config-failed-1280.png","width":1280,"height":1000,"sha256":"12c165bf1c704eae2883ee26809cdaaf5f7dfebbfe84f7eda630982044b25dbc"},
+    {"file":"browser-config-hold-1280.png","width":1280,"height":1000,"sha256":"cc81404d7cc8f88fe0c4f9f519e0e4f643519e9f889555e10cc62b776865172f"},
+    {"file":"browser-settings-1280.png","width":1280,"height":1000,"sha256":"89b6935a5687411f19402dc23209bd5bfe0ca8f2aabc1d3326269299a0a0e191"},
+    {"file":"browser-settings-390.png","width":390,"height":844,"sha256":"f958af96204f3520d41759991cde34e33ceea065b2aed9f637c39fd6b2211c59"},
+    {"file":"browser-statistics-390.png","width":390,"height":844,"sha256":"a560a52c83f64731bb7ef5964b0c1b6e4d11818defd92677507fb3b928ab3468"},
+    {"file":"browser-sync-failed-1280.png","width":1280,"height":1000,"sha256":"93a141352c37970b31cd93b5ef2ca4c06d8703bdf2547893e7e51631a834e46d"},
+    {"file":"browser-sync-held-1280.png","width":1280,"height":1000,"sha256":"25f964f7036530718fd1cac6e39f2d0f0a5eb8956c443f16d8f78dc548496f58"},
+    {"file":"browser-sync-syncing-1280.png","width":1280,"height":1000,"sha256":"324773b7f2d0cab0cf965a2b4279b3c606d4e75e730442ecf95cee48968d593b"}
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "scope": "Flutter statistics AI report archives and nonblocking generation status",
+  "base_commit": "b874679171d08a1fccd25035a83b21bd69c57e25",
+  "local_checks": {
+    "combined_targeted_suites": {
+      "files": 17,
+      "cases": 157,
+      "passed": 157,
+      "failed": 0,
+      "exit_code": 0,
+      "coverage": ["natural period and IANA context identity", "durable history and legacy entries", "concurrent append/delete/load", "single-flight archive retry", "account cleanup and stale responses", "per-period UI restoration", "localization and typography"]
+    },
+    "final_ui_fixture_check": {
+      "file": "test/screens/statistics_ai_archive_test.dart",
+      "cases": 9,
+      "passed": 9,
+      "failed": 0,
+      "exit_code": 0,
+      "duration_seconds": 6.45,
+      "theme": "AppBrands.starRail.theme for real dark surfaces; defaultBrand for normal cases",
+      "text_scale": 2,
+      "widths": [320, 390],
+      "reduced_motion": true
+    },
+    "whole_project_dart_analyze": {"fatal_infos": true, "exit_code": 0, "duration_seconds": 3.18},
+    "dart_format": {"changed_or_new_non_generated_files": 16, "would_change": 0, "exit_code": 0},
+    "git_diff_check": {"exit_code": 0},
+    "source_input_hashes": {"files": 394, "matched": 394, "mismatches": 0},
+    "unrelated_original_worktree": {"protected_files": 7, "matched": 7, "manifest": "unrelated-worktree-hashes.json"},
+    "protected_paths_against_base": [".github", "backend", "android", "ios", "linux", "macos", "assets", "web", "scripts", "pubspec.yaml", "pubspec.lock", "lib/core/app_version.dart"]
+  },
+  "web_candidate": {
+    "command": "FLUTTER_BIN=<pinned-sdk>/bin/flutter python3 scripts/flutter_with_config.py build web --release --base-href=/",
+    "exit_code": 0,
+    "duration_seconds": 40.86,
+    "version": "1.1.47+140013",
+    "runtime_file_count": 120,
+    "runtime_bytes": 107499622,
+    "excluded_non_runtime_file": ".last_build_id",
+    "main_dart_js_bytes": 9675519,
+    "main_dart_js_sha256": "b4a11bad04d1d1d7aba762355746a5b12298e9d63ad2f1478f0e5bd36034a574",
+    "startup_noto_manifest_entries": 1,
+    "startup_noto_bytes": 2098692,
+    "deferred_complete_noto_bytes": 17772300,
+    "font_license_bytes": 4387,
+    "approved_logo_sha256": "2af3cdbb9d18199ced728b8525f0c8cad9fc6e1c6197c3ec5df64cd18142328b",
+    "favicon_svg_sha256": "acac7b607708c651b224c2acb89083fc10039cacd7eb91704b5decc387988a69",
+    "favicon_png_sha256": "3c31699acc9095c7d7a911627caafa6af46c08dbe4f0de9fd1d850dab9113a2c"
+  },
+  "screenshots": [
+    {"file": "statistics_ai_pending_320.0.png", "pixels": [640, 3600], "sha256": "e4c4f9a9eb69e08088ab25a3a14fd98b85db2ca31aac574e7c76f07e866865c6"},
+    {"file": "statistics_ai_done_320.0.png", "pixels": [640, 3600], "sha256": "5971fcb98b0a8116b0bdf311845fa0169509e607039681f74a27eb3c71e23eab"},
+    {"file": "statistics_ai_pending_390.0.png", "pixels": [780, 3600], "sha256": "76b999f4cb0d21f7789c1b92617bc729b9a17f13347a66a12da38cc23c0e7a84"},
+    {"file": "statistics_ai_done_390.0.png", "pixels": [780, 3600], "sha256": "413ba3e49556785715102639f1f7c5d1d540f8ed6acca7deefc966845b2061ea"}
+  ],
+  "verification_boundaries": {
+    "real_production_model_called": false,
+    "native_installation_tested_locally": false,
+    "background_request_survives_page_navigation": true,
+    "background_request_survives_app_close_or_web_reload": false,
+    "completed_history_scope": "local installation or browser, private to the active account",
+    "browser_e2e": "recorded separately in browser-validation.json when complete",
+    "production_deployment": "recorded separately after verified activation"
+  }
+}

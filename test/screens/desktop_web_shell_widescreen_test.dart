@@ -143,7 +143,7 @@ void main() {
           .widget<NavigationRail>(find.byType(NavigationRail))
           .destinations
           .map((item) => (item.label as Text).data),
-      ['今日', '待办', '习惯', '专注', '我的'],
+      ['今日', '习惯', '专注', '我的'],
     );
     expect(tester.takeException(), isNull);
 
@@ -152,7 +152,7 @@ void main() {
     expect(width, lessThanOrEqualTo(DesktopTokens.maxContentWidth));
   });
 
-  testWidgets('1280x800 液态玻璃主题：切到待办主 tab，无溢出且卡片限宽', (tester) async {
+  testWidgets('1280x800 液态玻璃主题：待办隐藏页可打开并保留返回条', (tester) async {
     await _pumpShellAt(
       tester,
       AppBrands.liquidGlass.theme,
@@ -160,10 +160,14 @@ void main() {
     );
 
     expect(find.byType(NavigationRail), findsOneWidget);
-    tester.state<MainShellState>(find.byType(MainShell)).navigateTo(1);
+    // 待办已不是一级入口：深链/今日指标卡走 allowHidden，页面仍是真实待办。
+    tester
+        .state<MainShellState>(find.byType(MainShell))
+        .navigateTo(1, allowHidden: true);
     await tester.pumpAndSettle();
 
     expect(find.byType(TodoScreen), findsOneWidget);
+    expect(find.text('返回我的'), findsOneWidget);
     expect(tester.takeException(), isNull);
     final width = tester.getSize(_maxWidthBox).width;
     expect(width, greaterThan(0));
@@ -240,7 +244,7 @@ void main() {
           .widget<NavigationBar>(find.byType(NavigationBar))
           .destinations
           .map((item) => (item as NavigationDestination).label),
-      ['今日', '待办', '习惯', '专注', '我的'],
+      ['今日', '习惯', '专注', '我的'],
     );
     expect(find.byType(NavigationRail), findsNothing);
     expect(_maxWidthBox, findsNothing);
@@ -253,7 +257,7 @@ void main() {
       (const Size(390, 844), 1.0),
       (const Size(320, 720), 1.5),
     ]) {
-      testWidgets('${brand.id} $size ×$scale 五个一级页面共用导航字体', (tester) async {
+      testWidgets('${brand.id} $size ×$scale 四个一级页面共用导航字体', (tester) async {
         await (FontLoader(
               DesignTokens.fontFamily,
             )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf')))
@@ -263,7 +267,7 @@ void main() {
         final navigation = find.byType(NavigationBar);
         final shared = brand.theme.navigationBarTheme;
         List<(IconData?, IconData?)>? icons;
-        for (final (navIndex, tab) in [0, 1, 2, 4, 6].indexed) {
+        for (final (navIndex, tab) in [0, 2, 4, 6].indexed) {
           tester.state<MainShellState>(find.byType(MainShell)).navigateTo(tab);
           await tester.pumpAndSettle();
           final bar = tester.widget<NavigationBar>(navigation);
@@ -320,7 +324,7 @@ void main() {
   }
 
   for (final size in [const Size(1280, 800), const Size(390, 844)]) {
-    testWidgets('$size 专注一级入口可点击，往返待办保留专注子页面', (tester) async {
+    testWidgets('$size 专注一级入口可点击，往返习惯保留专注子页面', (tester) async {
       await _pumpShellAt(tester, AppBrands.defaultBrand.theme, size);
       final wide = size.width >= 900;
       final navigation = wide
@@ -336,7 +340,7 @@ void main() {
         wide
             ? tester.widget<NavigationRail>(navigation).selectedIndex
             : tester.widget<NavigationBar>(navigation).selectedIndex,
-        3,
+        2,
       );
       expect(find.byTooltip('返回我的'), findsNothing);
       final focusPage = tester.element(find.byType(PomodoroScreen));
@@ -346,9 +350,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<TabBar>(find.byType(TabBar)).controller!.index, 1);
 
-      await tester.tap(destination('待办'));
+      await tester.tap(destination('习惯'));
       await tester.pumpAndSettle();
-      expect(find.byType(TodoScreen), findsOneWidget);
+      expect(find.byType(HabitScreen), findsOneWidget);
       await tester.tap(destination('专注'));
       await tester.pumpAndSettle();
       expect(tester.element(find.byType(PomodoroScreen)), same(focusPage));

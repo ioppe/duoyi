@@ -1,0 +1,38 @@
+{
+  "scope": "Post-acceptance login and startup console check after correcting loopback fixture contracts",
+  "main_dart_js_sha256": "b4a11bad04d1d1d7aba762355746a5b12298e9d63ad2f1478f0e5bd36034a574",
+  "same_build_as_six_passed_scenarios": true,
+  "origin": "http://127.0.0.1:18795/",
+  "isolated_browser_session": true,
+  "fixture_contract_checks": {
+    "workspaces_returns_list": true,
+    "update_returns_api_contract_version": "2026-06-01.7",
+    "update_returns_required_routes_hash": "48881df2412c4ae0",
+    "workspaces_shape_warning_after_correction": 0,
+    "update_compatibility_warning_after_correction": 0
+  },
+  "ai_requests": 0,
+  "page_errors": 0,
+  "remaining_observation": {
+    "message": "Null check operator used on a null value",
+    "occurrences_on_login": 1,
+    "occurrences_on_subsequent_real_reload": 0,
+    "phase": "post-login account-switch / focus refresh window, before AI interaction",
+    "compiled_stack": [
+      "K5.bV (183245:13)", "a62.gdD (197870:32)", "Object.d9E (51365:5)",
+      "Object.cEk (51329:5)", "bjX.a8Q (198328:11)", "bjX.aqX (198332:22)",
+      "abk.aE1 (213391:45)", "auc.agG (194934:7)"
+    ],
+    "compiled_stack_inspection": "Render-tree transform on a detached object, reached through focus geometry and traversal callbacks. No AiService archive frame appears in the captured stack.",
+    "attribution_to_this_change": "not established",
+    "resolved": false,
+    "impact_observed": "Login completed; the six AI archive scenarios and subsequent archive reload passed. This record does not claim an error-free login console."
+  },
+  "other_environment_limits": [
+    "Web environment lacks native deep-links, geofence and path_provider channels used by account cleanup.",
+    "Browser clipboard readback was denied; copy payload was verified in widget tests and copy feedback in the browser."
+  ],
+  "product_or_test_changes_made_for_this_recheck": false,
+  "real_model_called": false,
+  "production_account_used": false
+}

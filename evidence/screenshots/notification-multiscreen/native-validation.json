@@ -1,0 +1,45 @@
+{
+  "baseline_commit": "8ac46df27841c2eb3ff5e05be66a581e3bc53088",
+  "scope": "Production AppKit panel compiled independently of the Flutter engine",
+  "commands": {
+    "compile": "swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos11.0 test/native/macos_pomodoro_panel_smoke.swift macos/Runner/PomodoroFloatingPanel.swift -o <scratch>/notification-multiscreen-native-r4-smoke",
+    "compile_exit": 0,
+    "run_exit": 0,
+    "warnings": 0,
+    "after_probe_compile_exit": 0,
+    "after_probe_run_exit": 0
+  },
+  "native_checks_passed": 76,
+  "native_checks_failed": 0,
+  "screenshots": 8,
+  "theme_fixture": "macos-compact-icon/before-flutter-theme-snapshots.json (exported Flutter theme payloads)",
+  "rendered_font_family": "Noto Sans SC",
+  "compact_widths_points": {"ordinary": 176, "long_duration": 197},
+  "maximum_visible_text_center_offset_points": 0.25,
+  "constrain_frame_rect_comparison": {
+    "same_proposed_frames": 18,
+    "baseline_frames_modified": 6,
+    "final_frames_modified": 0,
+    "baseline_example": {"proposed_y": 1081, "returned_y": 1057},
+    "method": "Deterministic direct calls to the actual NSPanel subclass; no real input injection",
+    "baseline_log_sha256": "8494f28deedf4496762dc5deaa5da0ae699e8a114baf7a0dcf757dde2ca1fd08",
+    "final_log_sha256": "23eee14b2832d9962310d15e80c9880f8a0794ccf0541e0114ea44c2620622b1"
+  },
+  "observed_physical_displays": [
+    {"frame": [0, 0, 2048, 1152], "visible_frame": [0, 0, 2048, 1121], "scale": 2},
+    {"frame": [-1512, 170, 1512, 982], "visible_frame": [-1453, 170, 1453, 948], "scale": 2}
+  ],
+  "regressions_covered": [
+    "Native drag frame passes across display boundaries without the former upper-edge constraint",
+    "Global AppKit point coordinates, negative origins, unequal heights and offset screens",
+    "Fully visible card across a flush seam keeps its origin",
+    "A partially off-desktop card restores all controls on drop",
+    "Resize during drag preserves the actual AppKit-adopted origin; placement restores afterward",
+    "Ordinary ticks and pause preserve the panel frame",
+    "Existing theme, glyph-centering, long-duration and compact button checks"
+  ],
+  "failed_attempts": "Earlier failures are retained in session scratch. The partial-visibility drop policy was corrected; the outer-edge fixture now uses the entire desktop boundary and records the actual origin after AppKit rounding. No assertion threshold was relaxed.",
+  "real_mouse_drag_verified": false,
+  "full_application_build_verified_locally": false,
+  "signed_or_notarized_application_verified": false
+}

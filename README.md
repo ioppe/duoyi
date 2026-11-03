@@ -98,7 +98,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 | 推送到 `main` / `self-hosted-skydrow`，或向这两个分支提交 PR | `analyze` | `flutter analyze`、完整 Flutter 测试和后端测试 |
 | 同上，通过检查后 | `android` | 正式签名通用 APK + 分 ABI APK (armeabi-v7a / arm64-v8a / x86_64) |
 | 同上，或手动保持 `build_macos=true`（默认） | `macos` | Apple Silicon / Intel 通用 DMG + 应用 ZIP + SHA-256 校验文件 |
-| 推送 `main` / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
+| 推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
+| 推送 `main` 且同一次 `web` 成功 | `deploy-self-hosted-web` | 同 run 桌面 Web 包经受限 SSH 发布到自托管站点；需先安装服务端入口并配置唯一 Secret |
 | 推 `v*` tag | `release` | 汇总 APK + AAB + Web + macOS DMG/ZIP，全部成功后自动建 GitHub Release |
 
 日常推送无需打 tag：进入仓库 **Actions → build → 对应运行 → Artifacts**，下载 `duoyi-android`。手机通常安装其中以 `-arm64-v8a.apk` 结尾的包，通用包为 `duoyi-<日期>-<提交>.apk`；产物保留 30 天。手动构建时在 **Run workflow** 中选择对应分支。同一分支连续推送时，新推送会取消仍在运行的旧构建。

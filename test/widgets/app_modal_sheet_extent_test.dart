@@ -1,8 +1,20 @@
 import 'package:duoyi/core/app_brand.dart';
+import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/widgets/surface_components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// native 面板的展开/收起几何只在 Android / iOS 生效：显式声明宿主平台，
+/// 避免测试进程所在宿主（macOS）把断言带进桌面对话框分支。
+void useNativeAndroidHost() {
+  expect(defaultTargetPlatform, TargetPlatform.android);
+  WebTarget.debugWebBuild = false;
+  addTearDown(() {
+    WebTarget.debugWebBuild = null;
+  });
+}
 
 Finder get _card => find
     .descendant(of: find.byType(AppModalSheet), matching: find.byType(Material))
@@ -41,6 +53,7 @@ Future<void> _open(
   ThemeData? theme,
   double textScale = 1,
 }) async {
+  useNativeAndroidHost();
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);

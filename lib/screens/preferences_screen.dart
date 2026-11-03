@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
+import '../core/platform_info.dart';
+import '../core/pomodoro_floating_window_size.dart';
 import '../core/app_clock.dart';
 import '../core/app_motion.dart';
 import '../core/i18n_date_format.dart';
@@ -386,15 +388,14 @@ class _PersonalizationSettingsScreenState
                     trailing: _compactDropdown<int>(
                       value: p.defaultTab,
                       items: [
-                        for (var tab = 0; tab <= 6; tab++)
-                          if (PreferencesProvider.isBottomNavTabSupported(tab))
-                            DropdownMenuItem(
-                              value: tab,
-                              child: Text(
-                                _tabLabel(tab),
-                                style: appSecondaryControlTextStyle(context),
-                              ),
+                        for (final tab in primaryNavigationTabChoices())
+                          DropdownMenuItem(
+                            value: tab,
+                            child: Text(
+                              _tabLabel(tab),
+                              style: appSecondaryControlTextStyle(context),
                             ),
+                          ),
                       ],
                       onChanged: (v) => v == null
                           ? null
@@ -438,6 +439,32 @@ class _PersonalizationSettingsScreenState
                         .read<PreferencesProvider>()
                         .setDefaultPomodoroMinutes(v.toInt()),
                   ),
+                  // 悬浮窗只存在于 macOS；其他平台不显示这个设备本地偏好。
+                  if (PlatformInfo.isMacOS)
+                    AppSettingsTile(
+                      icon: Icons.picture_in_picture_alt_outlined,
+                      color: Colors.deepPurple,
+                      title: I18n.tr('preferences.floating_window.size'),
+                      subtitle: I18n.tr('preferences.floating_window.subtitle'),
+                      trailing: _compactDropdown<PomodoroFloatingWindowSize>(
+                        value: p.pomodoroFloatingWindowSize,
+                        items: [
+                          for (final size in PomodoroFloatingWindowSize.values)
+                            DropdownMenuItem(
+                              value: size,
+                              child: Text(
+                                _floatingWindowSizeLabel(size),
+                                style: appSecondaryControlTextStyle(context),
+                              ),
+                            ),
+                        ],
+                        onChanged: (v) => v == null
+                            ? null
+                            : context
+                                  .read<PreferencesProvider>()
+                                  .setPomodoroFloatingWindowSize(v),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -515,6 +542,17 @@ class _PersonalizationSettingsScreenState
       width: width,
     );
   }
+
+  String _floatingWindowSizeLabel(PomodoroFloatingWindowSize size) {
+    return switch (size) {
+      PomodoroFloatingWindowSize.large => I18n.tr(
+        'preferences.floating_window.large',
+      ),
+      PomodoroFloatingWindowSize.compact => I18n.tr(
+        'preferences.floating_window.compact',
+      ),
+    };
+  }
 }
 
 class BottomNavSettingsScreen extends StatelessWidget {
@@ -560,8 +598,10 @@ class _BottomNavSettingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<PreferencesProvider>();
+    // 待办只保留内部页面与深链，不再出现在导航设置里（primary helper 同时
+    // 处理 Web 隐藏小组件这类平台能力差异）。
     final tabs = p.bottomNavOrder
-        .where(PreferencesProvider.isBottomNavTabSupported)
+        .where(PreferencesProvider.isPrimaryNavigationTabSupported)
         .toList(growable: false);
     return AppSettingsSection(
       title: I18n.tr('preferences.section.bottom_nav'),
@@ -578,6 +618,13 @@ class _BottomNavSettingsSection extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+/// 默认页可选的一级导航入口：待办只保留内部页面与深链，不在候选里。
+Iterable<int> primaryNavigationTabChoices() sync* {
+  for (var tab = 0; tab <= 6; tab++) {
+    if (PreferencesProvider.isPrimaryNavigationTabSupported(tab)) yield tab;
   }
 }
 
@@ -747,6 +794,9 @@ class _NavConfigActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final atMinimum =
+        visible &&
+        context.watch<PreferencesProvider>().bottomNavVisible.length <= 2;
     Widget compactIconButton({
       required String tooltip,
       required VoidCallback? onPressed,
@@ -798,7 +848,7 @@ class _NavConfigActions extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Switch(
                 value: visible,
-                onChanged: lockedVisible || reachedLimit
+                onChanged: lockedVisible || reachedLimit || atMinimum
                     ? null
                     : (v) => context
                           .read<PreferencesProvider>()

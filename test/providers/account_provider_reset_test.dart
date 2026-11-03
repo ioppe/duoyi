@@ -172,7 +172,8 @@ void main() {
       expect(auth.client.token, isNull);
       expect(prefs.getString('auth_state'), isNull);
       expect(prefs.getString('habits'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      // 主题视图是设备选择，清理账号数据后仍保留。
+      expect(prefs.getString('active_brand'), 'admin-theme');
       expect(prefs.getString('duoyi_virtual_rewards'), isNull);
     },
   );

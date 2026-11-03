@@ -1,4 +1,5 @@
 import '../widgets/app_create_fab.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
 import 'package:provider/provider.dart';
@@ -384,10 +385,11 @@ class _TodoScreenState extends State<TodoScreen> {
     final allVisibleSelected =
         editableVisibleIds.isNotEmpty &&
         editableVisibleIds.every(_selectedTodoIds.contains);
-    // Web 将概要与筛选放在视图上方；原生宽屏保留侧栏布局。
-    final isWeb = WebTarget.isWebBuild;
+    // Web 与 macOS 将概要与筛选放在视图上方；其他原生宽屏保留侧栏布局。
+    final useTopFilterLayout =
+        WebTarget.isWebBuild || defaultTargetPlatform == TargetPlatform.macOS;
     final isWidescreen =
-        !isWeb &&
+        !useTopFilterLayout &&
         MediaQuery.widthOf(context) >= DesktopTokens.breakpointTwoColumn;
     // 最宽桌面档（调研锚点 1400 = DesktopTokens.breakpointThreeColumn，即
     // docs/desktop-layout-optimization.md 的三栏布局档）：四象限单行 4 列
@@ -592,7 +594,7 @@ class _TodoScreenState extends State<TodoScreen> {
           ? widescreenBody
           : Column(
               children: [
-                if (!_batchMode && !isWeb)
+                if (!_batchMode && !useTopFilterLayout)
                   _TodoViewSwitcher(
                     selected: _viewMode,
                     onChanged: (mode) => setState(() => _viewMode = mode),
@@ -613,7 +615,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   onChanged: _setFilter,
                   onClear: _clearFilter,
                 ),
-                if (!_batchMode && isWeb)
+                if (!_batchMode && useTopFilterLayout)
                   _TodoViewSwitcher(
                     selected: _viewMode,
                     onChanged: (mode) => setState(() => _viewMode = mode),

@@ -41,7 +41,10 @@ void main() {
       mainSource,
       contains('await cloudSyncProvider.resetForAccountChange();'),
     );
-    expect(mainSource, contains('cloudSyncProvider.resumeForActiveAccount();'));
+    expect(
+      File('lib/services/backend_sync_coordinator.dart').readAsStringSync(),
+      contains('_cloud.resumeForActiveAccount();'),
+    );
   });
 
   test('resetForAccountChange 后旧账号 sync 响应不会写回本地', () async {
@@ -273,8 +276,11 @@ void main() {
     expect(mainSource, contains('ReminderRingtoneSettings.onChanged = (keys)'));
     expect(
       mainSource,
-      contains('cloudSyncProvider.markPreferencesChanged(keys);'),
+      contains(
+        'final persisted = cloudSyncProvider.markPreferencesChanged(keys);',
+      ),
     );
+    expect(mainSource, contains('return persisted;'));
     expect(
       mainSource,
       isNot(
@@ -317,6 +323,9 @@ void main() {
       'lib/providers/cloud_sync_provider.dart',
     ).readAsStringSync();
     final mainSource = File('lib/main.dart').readAsStringSync();
+    final coordinatorSource = File(
+      'lib/services/backend_sync_coordinator.dart',
+    ).readAsStringSync();
 
     expect(providerSource, contains('static const _remotePollDelay'));
     expect(providerSource, contains('Timer? _remotePollTimer'));
@@ -342,9 +351,12 @@ void main() {
     expect(providerSource, contains('_hasPendingChanges || _isSyncing'));
     expect(providerSource, contains('_scheduleRemotePoll();'));
     expect(mainSource, contains('Future<void> startCloudSyncAfterAuth'));
-    expect(mainSource, contains("'server config before cloud sync'"));
-    expect(mainSource, contains(r"'cloud sync $reason'"));
-    expect(mainSource, contains('cloudSyncProvider.startRemotePolling();'));
+    expect(mainSource, contains('await backendSyncCoordinator.refresh();'));
+    expect(
+      coordinatorSource,
+      contains('await _auth.refreshServerConfigFromServer(force: force);'),
+    );
+    expect(coordinatorSource, contains('_cloud.startRemotePolling();'));
     expect(mainSource, contains('cloudSyncProvider.stopRemotePolling();'));
   });
 
@@ -834,7 +846,7 @@ void main() {
     expect(backendSource, contains('_timestamp_gt(client_ts, server_ts)'));
   });
 
-  test('屏幕和组件层不暴露手动云同步入口', () {
+  test('UI 层只经 SyncStatusController 请求同步，不直接引用 CloudSyncProvider', () {
     final uiFiles = <File>[
       ...Directory('lib/screens')
           .listSync(recursive: true)
@@ -859,8 +871,33 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: '云同步应由 main.dart/provider 后台排队触发，UI 层不能重新出现立即同步按钮。',
+      reason:
+          'UI 层的手动同步必须经 SyncStatusController.requestSync()；'
+          '应用级刷新（先公共后端配置 / 账号 AI 配置，再业务数据同步）由 main.dart '
+          '注入回调完成，UI 不能直接引用 CloudSyncProvider 或调用 syncNow()。',
     );
+
+    // 卡片只是把手势转发给 controller，入口契约留在 controller 上。
+    final cardSource = File(
+      'lib/widgets/sync_status_card.dart',
+    ).readAsStringSync();
+    expect(cardSource, contains('controller.requestSync()'));
+    expect(cardSource, contains('controller.canSync'));
+    expect(cardSource, contains('onTap:'));
+    expect(cardSource, isNot(contains('CloudSyncProvider')));
+
+    final presenterSource = File(
+      'lib/providers/sync_status_presenter.dart',
+    ).readAsStringSync();
+    expect(presenterSource, contains('Future<void> requestSync()'));
+    expect(
+      presenterSource,
+      contains('Future<void> Function()? onSyncRequested'),
+    );
+    expect(presenterSource, contains('bool get canSync'));
+    expect(presenterSource, contains('bool get syncRequestFailed'));
+    // 展示层控制器只通过应用层回调触发同步，不自行调用 provider 同步方法。
+    expect(presenterSource, isNot(contains('.syncNow(')));
   });
 
   test('共享空间合并保留可解释的冲突决策记录', () {
@@ -1029,7 +1066,8 @@ void main() {
       'locationReminderProvider.addListener(syncLocationGeofences);',
       'preferencesProvider.onChangedKeys = cloudSyncProvider.markPreferencesChanged;',
       'ReminderRingtoneSettings.onChanged = (keys)',
-      'cloudSyncProvider.markPreferencesChanged(keys);',
+      'final persisted = cloudSyncProvider.markPreferencesChanged(keys);',
+      'return persisted;',
       'await ReminderRingtoneSettings.applyPersistedSettingsToNative();',
     ]) {
       expect(mainSource, contains(field), reason: field);
@@ -1047,9 +1085,7 @@ void main() {
     for (final field in const [
       'static const _preferencesChangedKeysStorageKey',
       'Future<void> markPreferencesChanged([Iterable<String>? keys])',
-      'if (keys != null && normalizedKeys.isEmpty) return Future<void>.value();',
-      'Future<void> _persistPreferenceSyncMetadata()',
-      'if (generation != _accountGeneration) return;',
+      'if (keys != null && normalizedKeys.isEmpty) return;',
       'final changedKeys = _readPendingPreferenceChangedKeys(prefs);',
       "if (changedKeys.isNotEmpty) 'changedKeys': changedKeys",
       'await prefs.remove(_preferencesChangedKeysStorageKey);',
@@ -1077,8 +1113,8 @@ void main() {
     }
     for (final field in const [
       'static FutureOr<void> Function(Iterable<String> keys)? onChanged;',
-      'onChanged?.call(const [volumePreferenceKey]);',
-      'onChanged?.call(const [soundPreferenceKey]);',
+      'await onChanged?.call(const [volumePreferenceKey]);',
+      'await onChanged?.call(const [soundPreferenceKey]);',
     ]) {
       expect(ringtoneSettings, contains(field), reason: field);
     }
@@ -1267,6 +1303,97 @@ void main() {
       'await _persist();',
       'notifyListeners();',
     );
+  });
+
+  test('无待同步标记时较旧的云端偏好不会回滚本地设备设置', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_show_lunar': false,
+      'pref_date_format': 'dd/MM/yyyy',
+      'sync_preferences_updated_at': '2026-06-10T00:00:00.000Z',
+      'todos': '[]',
+    });
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/sync') {
+          return http.Response(
+            json.encode({
+              'server_updated_at': '2026-06-11T00:00:00.000Z',
+              'server_version': 2,
+              'todos': [
+                {
+                  'id': 'remote-todo',
+                  'title': '远端待办',
+                  'updatedAt': '2026-06-11T00:00:00.000Z',
+                },
+              ],
+              'preferences': {
+                'updatedAt': '2026-06-05T00:00:00.000Z',
+                'values': {'pref_show_lunar': true},
+              },
+            }),
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 200);
+      }),
+    );
+    final provider = CloudSyncProvider();
+    provider.apiClientGetter = () => client;
+    provider.serverConfigGetter = () => {'backup_enabled': true};
+
+    await provider.syncNow();
+
+    final prefs = await SharedPreferences.getInstance();
+    // 旧云端偏好被拒绝，业务条目仍应用。
+    expect(prefs.getBool('pref_show_lunar'), isFalse);
+    expect(prefs.getString('pref_date_format'), 'dd/MM/yyyy');
+    // 业务条目仍照常消费远端新值。
+    expect(prefs.getString('todos'), contains('remote-todo'));
+
+    provider.dispose();
+  });
+
+  test('较新的云端偏好仍会应用到本地', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_show_lunar': false,
+      'sync_preferences_updated_at': '2026-06-01T00:00:00.000Z',
+      'todos': '[]',
+    });
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/sync') {
+          return http.Response(
+            json.encode({
+              'server_updated_at': '2026-06-21T00:00:00.000Z',
+              'server_version': 3,
+              'preferences': {
+                'updatedAt': '2026-06-20T00:00:00.000Z',
+                'values': {'pref_show_lunar': true},
+              },
+            }),
+            200,
+            headers: const {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('{}', 200);
+      }),
+    );
+    final provider = CloudSyncProvider();
+    provider.apiClientGetter = () => client;
+    provider.serverConfigGetter = () => {'backup_enabled': true};
+
+    await provider.syncNow();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('pref_show_lunar'), isTrue);
+    expect(prefs.getString('sync_preferences_updated_at'), isNotNull);
+
+    provider.dispose();
   });
 }
 

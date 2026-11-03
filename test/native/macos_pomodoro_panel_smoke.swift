@@ -12,6 +12,9 @@ import CoreText
 /// font sizes are the real ones exported from the Flutter host test. Without
 /// that file the panel falls back to dynamic AppKit semantic colors.
 ///
+/// Snapshots may omit `windowSize` (older payloads, native-only runs); the
+/// panel then keeps the large card.
+///
 /// These checks do not replace a full app build or a real mouse drag.
 @main
 @MainActor
@@ -80,6 +83,7 @@ struct MacOSPomodoroPanelSmoke {
       paused: Bool = false,
       allowed: Bool = true,
       isBreak: Bool = false,
+      size: PomodoroFloatingPanelSize? = nil,
       stateLabel: String? = nil,
       appearance: [String: Any]?
     ) -> PomodoroFloatingPanelState {
@@ -96,6 +100,9 @@ struct MacOSPomodoroPanelSmoke {
         "closeLabel": closeLabel,
         "windowTitle": windowTitle,
       ]
+      if let size = size {
+        arguments["windowSize"] = size.rawValue
+      }
       if let appearance = appearance {
         arguments["appearance"] = appearance
       }
@@ -104,6 +111,11 @@ struct MacOSPomodoroPanelSmoke {
 
     controller.update(snapshot("25:00", appearance: defaultAppearancePayload))
     try check(!controller.isPanelVisible, "update does not open the panel")
+    let legacyState = snapshot("25:00", appearance: defaultAppearancePayload)
+    try check(
+      legacyState.windowSize == .large
+        && legacyState.windowSize.panelSize == NSSize(width: 320, height: 88),
+      "legacy payload without windowSize keeps the large 320 x 88 card")
 
     controller.show(snapshot("25:00", appearance: defaultAppearancePayload))
     guard let panel = NSApp.windows.first(where: { $0 is PomodoroFloatingPanel }),
@@ -303,17 +315,341 @@ struct MacOSPomodoroPanelSmoke {
       try check(time.font?.familyName?.contains("Noto") == true,
                 "renders with the same bundled Noto family as the app")
     }
-    try check(checked.count >= 24, "all expected checks were executed")
+
+    // MARK: Compact layout
+    //
+    // The panel is recreated after `dispose()` so these checks cannot disturb
+    // the large-card history above. The payload carries the usual fields plus
+    // `windowSize: "compact"`.
+    let compactIdle = snapshot(
+      "1440:00", size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      compactIdle.windowSize == .compact && compactIdle.toggleSymbolName == "play.fill",
+      "idle compact card offers the play symbol")
+    controller.show(compactIdle)
+    guard let compactPanel = NSApp.windows.first(
+      where: { $0 is PomodoroFloatingPanel && $0.isVisible }),
+          let compactContent = compactPanel.contentView,
+          let compactTime = view(PomodoroFloatingPanelContentView.timeIdentifier, in: compactContent)
+            as? NSTextField,
+          let compactStatus = view(PomodoroFloatingPanelContentView.statusIdentifier, in: compactContent)
+            as? NSTextField,
+          let compactToggle = view(PomodoroFloatingPanelContentView.toggleIdentifier, in: compactContent)
+            as? NSButton,
+          let compactClose = view(PomodoroFloatingPanelContentView.closeIdentifier, in: compactContent)
+            as? NSButton else {
+      throw NSError(
+        domain: "MacOSPomodoroPanelSmoke", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "compact panel content is missing"])
+    }
+    compactContent.layoutSubtreeIfNeeded()
+    func compactTextGap() -> CGFloat {
+      let timeFrame = compactTime.convert(compactTime.bounds, to: compactContent)
+      let toggleFrame = compactToggle.convert(compactToggle.bounds, to: compactContent)
+      return toggleFrame.minX - timeFrame.maxX
+    }
+    let longCompactWidth = compactPanel.frame.width
+    try check(
+      compactPanel.frame.height == PomodoroFloatingPanelSize.compact.panelSize.height
+        && longCompactWidth >= PomodoroFloatingPanelSize.compact.panelSize.width
+        && longCompactWidth <= 210
+        && longCompactWidth < PomodoroFloatingPanelSize.large.panelSize.width,
+      "compact card is visibly smaller than large and grows only for long durations")
+    try check(
+      compactToggle.title.isEmpty && compactClose.title.isEmpty,
+      "compact controls draw symbols without visible titles")
+    try check(
+      compactToggle.accessibilityLabel() == playLabel && compactToggle.toolTip == playLabel
+        && compactClose.accessibilityLabel() == closeLabel && compactClose.toolTip == closeLabel,
+      "compact controls keep full accessibility labels and tooltips")
+    try check(
+      compactToggle.image != nil && compactClose.image != nil,
+      "compact controls render SF Symbols")
+    let compactTextWidth = (compactTime.stringValue as NSString)
+      .size(withAttributes: [.font: compactTime.font!]).width
+    try check(
+      compactTime.stringValue == "1440:00" && compactTextWidth <= compactTime.frame.width,
+      "compact card fits the longest configured duration without truncation")
+    try check(
+      compactTextGap() >= 2,
+      "long duration keeps a visible gap before the play button (gap: \(compactTextGap()))")
+    let compactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact.png"))
+    try check(
+      abs(compactOffset) <= 1.5,
+      "compact visible text is vertically centered (offset: \(compactOffset))")
+
+    let runningCompact = snapshot(
+      "24:58", running: true, size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      runningCompact.toggleSymbolName == "pause.fill",
+      "running compact card uses the pause symbol")
+    controller.update(runningCompact)
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactToggle.accessibilityLabel() == pauseLabel && compactToggle.toolTip == pauseLabel,
+      "a running compact card exposes the pause action")
+    let normalCompactWidth = compactPanel.frame.width
+    let runningFrame = compactPanel.frame
+    try check(
+      normalCompactWidth < longCompactWidth
+        && normalCompactWidth <= 190
+        && normalCompactWidth >= PomodoroFloatingPanelSize.compact.panelSize.width,
+      "an ordinary MM:SS compact card is clearly narrower than the long duration")
+    let runningGap = compactTextGap()
+    try check(
+      runningGap >= 4 && runningGap <= 24,
+      "ordinary compact digits keep a visible, bounded gap before play (gap: \(runningGap))")
+    let runningCompactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact-running.png"))
+    try check(
+      abs(runningCompactOffset) <= 1.5,
+      "compact running text is vertically centered (offset: \(runningCompactOffset))")
+
+    // Ticking between equal-length values must not resize or move the card.
+    controller.update(
+      snapshot("24:57", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame == runningFrame,
+      "same digit count keeps the compact size and origin stable while ticking")
+
+    let pausedCompact = snapshot(
+      "24:58", paused: true, size: .compact, appearance: defaultAppearancePayload)
+    try check(
+      pausedCompact.toggleSymbolName == "play.fill" && pausedCompact.toggleLabel == resumeLabel,
+      "a paused compact card asks to resume with the play symbol")
+    controller.update(pausedCompact)
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactToggle.accessibilityLabel() == resumeLabel,
+      "the compact control follows the paused semantics from the payload")
+    try check(
+      compactPanel.frame == runningFrame,
+      "pausing does not resize or move the compact card")
+    let pausedCompactOffset = try capture(
+      compactContent, to: output.appendingPathComponent("panel-compact-paused.png"))
+    try check(
+      abs(pausedCompactOffset) <= 1.5,
+      "compact paused text is vertically centered (offset: \(pausedCompactOffset))")
+
+    // Localized captions wider than the digits must not overflow the card.
+    for (label, paused) in [("Focus", false), ("Paused", true)] {
+      controller.update(
+        snapshot(
+          "24:58", running: !paused, paused: paused, size: .compact,
+          stateLabel: label, appearance: defaultAppearancePayload))
+      compactContent.layoutSubtreeIfNeeded()
+      let captionFrame = compactStatus.convert(compactStatus.bounds, to: compactContent)
+      try check(
+        captionFrame.maxX <= compactContent.bounds.width - 12
+          && compactTime.frame.width >= (compactTime.stringValue as NSString)
+            .size(withAttributes: [.font: compactTime.font!]).width,
+        "English caption \(label) stays inside the compact card")
+    }
+
+    // Switching density behaves like a repaint: same window, same origin, and
+    // the large card gets its localized title back.
+    controller.update(
+      snapshot("24:58", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    let compactOrigin = compactPanel.frame.origin
+    let panelCountBeforeSwitch = NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count
+    controller.update(
+      snapshot("24:58", running: true, size: .large, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == PomodoroFloatingPanelSize.large.panelSize
+        && compactPanel.frame.origin == compactOrigin
+        && compactToggle.title == pauseLabel,
+      "switching to large restores the titled control without moving the card")
+    controller.update(
+      snapshot("24:58", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == runningFrame.size
+        && compactPanel.frame.origin == compactOrigin
+        && compactToggle.title.isEmpty
+        && NSApp.windows.filter { $0 is PomodoroFloatingPanel }.count == panelCountBeforeSwitch,
+      "switching back to compact reuses one panel in place")
+
+    // A long duration near the right edge may grow, but it must stay reachable.
+    let compactVisibleFrame = (compactPanel.screen ?? NSScreen.main)!.visibleFrame
+    compactPanel.setFrameOrigin(
+      NSPoint(x: compactVisibleFrame.maxX - normalCompactWidth + 40,
+              y: compactVisibleFrame.midY))
+    controller.update(
+      snapshot("1440:00", size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.width == longCompactWidth
+        && NSScreen.screens.contains(where: { $0.visibleFrame.contains(compactPanel.frame) }),
+      "a long compact duration near the screen edge is clamped fully on screen")
+
+    // MARK: Cross-display placement
+    //
+    // These rectangles are synthetic and exercise the pure geometry used by
+    // the production drop/fit paths. Available physical displays are checked
+    // separately below; neither check synthesizes AppKit mouse drag tracking.
+    // Real multi-display mouse dragging remains unverified.
+    let seamLeft = NSRect(x: -1920, y: 0, width: 1920, height: 1080)
+    let seamMain = NSRect(x: 0, y: 0, width: 2560, height: 1440)
+    let seamAbove = NSRect(x: 300, y: 1440, width: 1920, height: 1200)
+    let seamLowerRight = NSRect(x: 2560, y: -400, width: 1280, height: 800)
+    let seamDisplays = [seamLeft, seamMain, seamAbove, seamLowerRight]
+    let geometryMargin: CGFloat = 20
+    let probeArea: CGFloat = 180 * 60
+    func probe(_ x: CGFloat, _ y: CGFloat, width: CGFloat = 180, height: CGFloat = 60) -> NSRect {
+      NSRect(x: x, y: y, width: width, height: height)
+    }
+    try check(
+      PomodoroFloatingPanelGeometry.coveredArea(probe(100, 100), by: [seamMain, seamMain])
+        == probeArea,
+      "overlapping or mirrored displays are not counted twice")
+    try check(
+      PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: probe(-90, 400), screens: seamDisplays, margin: geometryMargin) == nil,
+      "a card dropped across a flush side-by-side seam keeps its position")
+    try check(
+      PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: probe(2500, 900), screens: seamDisplays, margin: geometryMargin)
+        == NSPoint(x: seamMain.maxX - 180 - geometryMargin, y: 900),
+      "a card dropped past a vertically offset display is pulled inside the margin")
+    try check(
+      PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: probe(seamMain.maxX - 120, 600), screens: [seamMain],
+        margin: geometryMargin)
+        == NSPoint(x: seamMain.maxX - 180 - geometryMargin, y: 600),
+      "a mostly visible drop still restores all controls inside the display")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(seamMain.maxX - 180, 500), screens: [seamMain], margin: geometryMargin)
+        == nil,
+      "a reachable card flush with an edge keeps its exact origin")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(-1950, 100), screens: [seamLeft], margin: geometryMargin)
+        == NSPoint(x: seamLeft.minX + geometryMargin, y: 100),
+      "a display left of the main one keeps negative X origins and clamps at its own edge")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(400, 2000), screens: [seamMain, seamAbove], margin: geometryMargin) == nil,
+      "a misaligned display above the main one owns its own card")
+    try check(
+      PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: probe(2600, 1200), screens: seamDisplays, margin: geometryMargin)
+        == NSPoint(x: seamMain.maxX - 180 - geometryMargin, y: 1200),
+      "a card dropped in the dead space beside a shorter display returns to the nearest one")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(2700, 0), screens: [seamLeft, seamMain, seamAbove], margin: geometryMargin)
+        == NSPoint(x: seamMain.maxX - 180 - geometryMargin,
+                   y: seamMain.minY + geometryMargin),
+      "unplugging the display under the card restores it onto a remaining display")
+    try check(
+      PomodoroFloatingPanelGeometry.droppedOrigin(
+        frame: probe(0, -5000), screens: seamDisplays, margin: geometryMargin,
+        pointer: NSPoint(x: seamLeft.midX, y: seamLeft.midY))
+        == NSPoint(x: seamLeft.maxX - 180 - geometryMargin,
+                   y: seamLeft.minY + geometryMargin),
+      "the display under the pointer wins over the overlap at drop time")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(2500, 0, width: 3000), screens: [seamMain], margin: geometryMargin)
+        == NSPoint(x: seamMain.minX + geometryMargin, y: seamMain.minY + geometryMargin),
+      "a card wider than the display clamps to the leading margin instead of inverting")
+    try check(
+      PomodoroFloatingPanelGeometry.fittedOrigin(
+        frame: probe(0, 0), screens: [], margin: geometryMargin) == nil
+        && PomodoroFloatingPanelGeometry.droppedOrigin(
+          frame: probe(0, 0), screens: [], margin: geometryMargin) == nil,
+      "no display left means no restore target instead of a guessed origin")
+
+    // The real panel must hand AppKit's drag suggestion back unchanged, or a
+    // native drag could never cross a seam at all.
+    guard let dragPanel = compactPanel as? PomodoroFloatingPanel else {
+      throw NSError(
+        domain: "MacOSPomodoroPanelSmoke", code: 8,
+        userInfo: [NSLocalizedDescriptionKey: "visible panel is not the production panel type"])
+    }
+    if let hostScreen = NSScreen.main {
+      let crossSeam = NSRect(
+        x: hostScreen.frame.minX - 600, y: hostScreen.frame.minY - 400,
+        width: 320, height: 88)
+      try check(
+        dragPanel.constrainFrameRect(crossSeam, to: hostScreen) == crossSeam,
+        "the panel returns AppKit's cross-display drag frame unchanged")
+      let seamFrame = NSRect(
+        x: hostScreen.frame.maxX - 40, y: hostScreen.frame.midY, width: 320, height: 88)
+      try check(
+        dragPanel.constrainFrameRect(seamFrame, to: hostScreen) == seamFrame,
+        "the panel is not locked back onto the display a drag started on")
+    }
+
+    // Drag lifecycle on a throwaway panel so the live one keeps its callback.
+    let lifecyclePanel = PomodoroFloatingPanel(
+      contentRect: NSRect(origin: .zero, size: NSSize(width: 320, height: 88)),
+      styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+    lifecyclePanel.isReleasedWhenClosed = false
+    var dragFinishCount = 0
+    lifecyclePanel.onDragFinished = { dragFinishCount += 1 }
+    lifecyclePanel.beginAcrossScreenDrag()
+    let dragFlagDuringDrag = lifecyclePanel.isDraggingAcrossScreens
+    lifecyclePanel.endAcrossScreenDrag()
+    lifecyclePanel.endAcrossScreenDrag()
+    try check(
+      dragFlagDuringDrag && !lifecyclePanel.isDraggingAcrossScreens && dragFinishCount == 1,
+      "the drag lifecycle reports one start and exactly one finish")
+    lifecyclePanel.orderOut(nil)
+
+    // A real size change while the card is dragged must wait for the drop:
+    // clamping now would yank the card back to the display it came from.
+    controller.update(
+      snapshot("24:58", running: true, size: .compact, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    // The outer desktop edge, rather than a seam fully covered by a neighbour.
+    let rightmostVisibleFrame = NSScreen.screens.map({ $0.visibleFrame })
+      .max(by: { $0.maxX < $1.maxX }) ?? compactVisibleFrame
+    let requestedFlushOrigin = NSPoint(
+      x: rightmostVisibleFrame.maxX - compactPanel.frame.width + 40,
+      y: rightmostVisibleFrame.midY)
+    compactPanel.setFrameOrigin(requestedFlushOrigin)
+    // AppKit may round the requested half-point origin; preserve its real frame.
+    let flushOrigin = compactPanel.frame.origin
+    dragPanel.beginAcrossScreenDrag()
+    controller.update(
+      snapshot("24:58", running: true, size: .large, appearance: defaultAppearancePayload))
+    compactContent.layoutSubtreeIfNeeded()
+    try check(
+      compactPanel.frame.size == PomodoroFloatingPanelSize.large.panelSize
+        && compactPanel.frame.origin == flushOrigin,
+      "a real size change during a native drag keeps the user's origin")
+    dragPanel.endAcrossScreenDrag()
+    try check(
+      !dragPanel.isDraggingAcrossScreens
+        && NSScreen.screens.contains(where: { $0.visibleFrame.contains(compactPanel.frame) }),
+      "the drop restores a reachable card once the drag ends")
+    try check(checked.count >= 70, "all expected checks were executed")
 
     let result: [String: Any] = [
       "checksPassed": checked.count, "checks": checked,
       "scope": "production AppKit panel without Flutter engine",
       "themeFixture": fixtures.isEmpty ? "semantic-fallback" : "flutter-snapshot",
       "realMouseDragVerified": false, "fullApplicationBuildVerified": false,
+      "crossDisplayPlacement": [
+        "geometry": "synthetic display rectangles", "nativeConstrainFrameRect": true,
+        "dragLifecycle": true, "realMultiDisplayDrag": false,
+      ],
+      "windowSizeLayouts": ["large", "compact"],
       "renderedFontFamily": time.font?.familyName ?? "",
       "textCenterOffsets": ["ready": readyOffset, "running": runningOffset,
                             "paused": pausedOffset, "longDuration": longOffset,
-                            "alternate": alternateOffset],
+                            "alternate": alternateOffset,
+                            "compactLong": compactOffset,
+                            "compactRunning": runningCompactOffset,
+                            "compactPaused": pausedCompactOffset],
+      "compactPanelWidths": ["longDuration": longCompactWidth,
+                             "ordinary": normalCompactWidth],
     ]
     let data = try JSONSerialization.data(
       withJSONObject: result, options: [.prettyPrinted, .sortedKeys])

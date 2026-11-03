@@ -101,6 +101,14 @@ class TodoProvider extends ChangeNotifier {
   }
 
   List<TodoItem> get todos => _todos;
+
+  /// 当前代际的本地存储是否已完成水合（合法的空列表同样算已完成）。
+  ///
+  /// 云同步在 `changedCollections` 为空时据此判断是否还需要补一次惰性读取：
+  /// 已水合且无变化时不再重读，避免多余的解码与通知。
+  /// [resetLocalState] 会把它改回 `false`，旧代际的在途读取不会复活它。
+  bool get isHydrated => _storageLoaded;
+
   String? get lastReminderSyncIssue => _lastReminderSyncIssue;
   String? get lastReminderScheduleIssue => _lastReminderScheduleIssue;
   DateTime? get lastReminderScheduleIssueAt => _lastReminderScheduleIssueAt;
@@ -226,18 +234,41 @@ class TodoProvider extends ChangeNotifier {
 
   // --- Persistence ---
 
+  /// 云同步直接写 prefs，不经过本 Provider 的写入队列；单次读取若发现存储
+  /// 在解析/修写期间被整体替换，必须改用最新快照重来，最多重试这么多次。
+  static const int _storageLoadMaxAttempts = 3;
+
+  bool _isCurrentStorageLoad(int generation, int accountGeneration) =>
+      generation == _storageGeneration &&
+      AccountLocalDataCleaner.isCurrentAccountDataGeneration(accountGeneration);
+
+  /// 把一次读取串到既有写入队列尾部，避免它与本地写入或同步后的强制重读
+  /// 交错：大列表解码会让出事件循环，旧读取不能在新快照之后才 publish。
+  /// 队列任务自身不调用本方法，不会自链死锁。
+  Future<void> _enqueueStorageLoad(int generation) {
+    final load = _storageWriteQueue.then((_) => _loadFromStorage(generation));
+    _storageWriteQueue = load.catchError((Object e, StackTrace st) {
+      debugPrint('[TodoProvider] storage load failed: $e\n$st');
+    });
+    return load;
+  }
+
   Future<void> loadFromStorage({bool force = false}) async {
     if (!force) {
       if (_storageLoaded) return;
       final running = _storageLoadFuture;
       if (running != null) return running;
       final generation = _storageGeneration;
-      final future = _loadFromStorage(generation);
+      final future = _enqueueStorageLoad(generation);
       _storageLoadFuture = future;
       try {
         await future;
       } finally {
-        _storageLoadFuture = null;
+        // resetLocalState 会清空合流句柄；只有仍指向本次读取时才清理，
+        // 避免旧代际的收尾清掉新账号正在进行的读取。
+        if (identical(_storageLoadFuture, future)) {
+          _storageLoadFuture = null;
+        }
       }
       return;
     }
@@ -245,13 +276,10 @@ class TodoProvider extends ChangeNotifier {
     // 下一次本地写入会把同步结果整表覆盖，重启后服务端数据又“回来”。
     // 强制重读与写入共用同一条串行队列——先落盘未写入的内存改动再重读，
     // 重读之后的写入看到的是包含同步结果的最新列表。
-    final reload = _storageWriteQueue.then(
-      (_) => _loadFromStorage(_storageGeneration),
-    );
-    _storageWriteQueue = reload.catchError((Object e, StackTrace st) {
-      debugPrint('[TodoProvider] forced reload from storage failed: $e\n$st');
-    });
-    await reload;
+    // generation 在排程时捕获：执行时若账号已切换，本次读取作废，不能改用
+    // 新账号的代际去读新账号数据。
+    final generation = _storageGeneration;
+    await _enqueueStorageLoad(generation);
   }
 
   void resetLocalState() {
@@ -271,16 +299,19 @@ class TodoProvider extends ChangeNotifier {
   Future<void> _loadFromStorage(int generation) async {
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     final prefs = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration ||
-        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
-          accountGeneration,
-        )) {
-      return;
-    }
-    final data = prefs.getString('todos');
-    if (data != null && data.isNotEmpty) {
+    if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
+
+    for (var attempt = 0; attempt < _storageLoadMaxAttempts; attempt++) {
+      final data = prefs.getString('todos');
+      if (data == null || data.isEmpty) {
+        if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
+        _storageLoaded = true;
+        _notify();
+        return;
+      }
       List<TodoItem> parsed = <TodoItem>[];
       var shouldRewrite = false;
+      List<TodoItem> normalized = <TodoItem>[];
       try {
         if (data.length >= _isolateDecodeMinChars) {
           // 大列表的 JSON 解码 + 逐条 fromJson 会阻塞主 isolate 数十毫秒，
@@ -326,13 +357,12 @@ class TodoProvider extends ChangeNotifier {
             );
           }
         }
-        _todos = _dedupeTodosById(
+        final deduped = _dedupeTodosById(
           parsed,
           onDuplicate: () => shouldRewrite = true,
         );
         // 历史数据可能“父已完成但子任务未全完成”，加载时按新规则纠正。
-        final normalized = <TodoItem>[];
-        for (final todo in _todos) {
+        for (final todo in deduped) {
           final fixed = _deriveParentCompletion(todo);
           if (fixed == null) {
             normalized.add(todo);
@@ -341,27 +371,38 @@ class TodoProvider extends ChangeNotifier {
             shouldRewrite = true;
           }
         }
-        _todos = normalized;
       } catch (e, st) {
         shouldRewrite = true;
+        normalized = <TodoItem>[];
         debugPrint('[TodoProvider] todos storage decode failed: $e\n$st');
       }
+      // 解析大列表会 await compute，云同步此时可能已把 prefs 整体替换。
+      // 存储已不是本次读到的快照时重读最新数据，绝不 publish 或修复旧快照。
+      if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
+      if (prefs.getString('todos') != data) continue;
+      _todos = normalized;
       if (shouldRewrite) {
-        if (generation != _storageGeneration) return;
+        if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
         await prefs.setString(
           'todos_corrupt_backup_${DateTime.now().millisecondsSinceEpoch}',
           data,
         );
-        if (generation != _storageGeneration) return;
+        if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
         // 内联写入重写结果，不经 _writeToStorage 的队列串联——
-        // 强制重读自身占用 _storageWriteQueue 尾部，再入队会循环等待死锁。
-        await _writeTodosSnapshot();
-        if (generation != _storageGeneration) return;
+        // 加载自身占用 _storageWriteQueue 尾部，再入队会循环等待死锁。
+        // expectedStoredValue 保证备份写入的 await 期间云端若已替换存储，
+        // 这里不会把解析出的旧快照反写回 prefs。
+        final wrote = await _writeTodosSnapshot(expectedStoredValue: data);
+        if (!_isCurrentStorageLoad(generation, accountGeneration)) return;
+        if (!wrote) continue;
       }
+      _storageLoaded = true;
+      _notify();
+      return;
     }
-    if (generation != _storageGeneration) return;
-    _storageLoaded = true;
-    _notify();
+    // 不能把未完成的水合当作成功返回，否则等待它的编辑操作会写回旧列表。
+    // 由启动守卫记录失败，后续读取可重新尝试；本次写操作必须随读取一起失败。
+    throw StateError('Todo storage kept changing during hydration');
   }
 
   /// 同一 id 出现多条属于存储异常（例如同步应用与本地写入交叠留下的重复），
@@ -424,7 +465,13 @@ class TodoProvider extends ChangeNotifier {
   ///
   /// 本地写入失败（`setString` 返回 false 或抛异常）必须抛给调用方：
   /// 任务详情页据此保留草稿并提示重试，不能把没落盘的修改当成已保存。
-  Future<void> _writeTodosSnapshot() async {
+  ///
+  /// [expectedStoredValue] 非空时表示“只有存储仍是这个快照才写”：编码与
+  /// `getInstance` 都要 await，而云同步写 prefs 不经过本队列，期间可能已写入
+  /// 新数据；比较与 `setString` 之间没有 await，因此不会覆盖云端新快照。
+  /// 返回是否真正写入（未写入表示存储已被替换，由调用方重读最新快照）；
+  /// 真正写入失败时抛异常，由上游保留草稿并重试。
+  Future<bool> _writeTodosSnapshot({String? expectedStoredValue}) async {
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
     // 大列表的 JSON 编码会阻塞主 isolate 数十毫秒（2000 条 ≈ 20ms），
@@ -438,7 +485,11 @@ class TodoProvider extends ChangeNotifier {
         !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
           accountGeneration,
         )) {
-      return;
+      return false;
+    }
+    if (expectedStoredValue != null &&
+        prefs.getString('todos') != expectedStoredValue) {
+      return false;
     }
     final bool written;
     try {
@@ -451,6 +502,7 @@ class TodoProvider extends ChangeNotifier {
       await _discardSpeculativePreferenceCache(prefs);
       throw StateError('local todo storage write was not persisted');
     }
+    return true;
   }
 
   /// 写入失败后清除 shared_preferences 的推测缓存。
@@ -472,7 +524,10 @@ class TodoProvider extends ChangeNotifier {
 
   Future<void> _writeToStorage() async {
     final write = _storageWriteQueue.then((_) => _writeTodosSnapshot());
-    _storageWriteQueue = write.catchError((Object e, StackTrace st) {
+    _storageWriteQueue = write.then<void>((_) {}).catchError((
+      Object e,
+      StackTrace st,
+    ) {
       debugPrint('[TodoProvider] queued local todo write failed: $e\n$st');
     });
     await write;

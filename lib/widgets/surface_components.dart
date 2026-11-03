@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../core/design_tokens.dart';
 import '../core/app_motion.dart';
+import '../core/design_tokens.dart';
+import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
+import 'app_modal_presentation.dart';
 
 /// 当前主题的表面观感档位。
 ///
@@ -1399,6 +1401,18 @@ Future<T?> showAppModalSheet<T>({
   bool shiftForKeyboard = true,
 }) {
   _beginDropdownKeyboardDismiss(context);
+  // Web（含窄屏 Web）与 native macOS 统一渲染成居中对话框；native
+  // Android / iOS 继续走下面的底部半屏面板（展开/收起/拖动/安全区/键盘
+  // 避让逻辑一行不改）。判定与切面见 app_modal_presentation.dart。
+  if (useAppModalCenteredPresentation()) {
+    return showAppModalCenteredDialog<T>(
+      context: context,
+      builder: builder,
+      isDismissible: isDismissible,
+      useRootNavigator: useRootNavigator,
+      shiftForKeyboard: shiftForKeyboard,
+    );
+  }
   return showModalBottomSheet<T>(
     context: context,
     sheetAnimationStyle: AppMotion.overlayStyle(context),
@@ -1710,6 +1724,12 @@ class _AppModalSheetState extends State<AppModalSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // 桌面 / Web 由 AppModalCenteredLayout 提供居中视口与焦点闭环，卡片仍由
+    // 本组件渲染唯一一层 Material：这里只切换布局，不叠第二层 surface/handle。
+    final presentation = AppModalPresentationScope.of(context);
+    if (presentation.centered) {
+      return _buildCenteredCard(context, presentation);
+    }
     final title = widget.title;
     final subtitle = widget.subtitle;
     final child = widget.child;
@@ -1892,6 +1912,148 @@ class _AppModalSheetState extends State<AppModalSheet> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 居中对话框布局（Web / native macOS）。
+  ///
+  /// 父 route（AppModalCenteredLayout）已经负责位置、可用视口与键盘余高：
+  /// 这里不再做键盘避让，也不再叠加底部安全区。高度是「上限」而不是最小
+  /// 高度——短内容自适应，长内容在卡片内部滚动；桌面上不画手机拖动手柄，
+  /// 也不响应拖动 / 滚轮展开，但卡片内部的滚动照常工作。
+  Widget _buildCenteredCard(
+    BuildContext context,
+    AppModalPresentation presentation,
+  ) {
+    final title = widget.title;
+    final subtitle = widget.subtitle;
+    final leadingActions = widget.leadingActions;
+    final actions = widget.actions;
+    final scrollController = widget.scrollController;
+    final scrollable = widget.scrollable;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final scrollBehavior = ScrollConfiguration.of(context);
+    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
+    final hasHeader =
+        title != null || subtitle != null || presentation.dismissible;
+    final header = !hasHeader
+        ? null
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: title != null || subtitle != null
+                    ? AppSectionHeader(
+                        title: title ?? '',
+                        subtitle: subtitle,
+                        padding: EdgeInsets.zero,
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              if (presentation.dismissible)
+                Padding(
+                  padding: const EdgeInsets.only(left: DesignTokens.spaceSm),
+                  child: IconButton(
+                    tooltip: I18n.tr('action.close'),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    iconSize: DesignTokens.controlIconSize,
+                    color: cs.onSurface.withValues(alpha: 0.58),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(DesignTokens.spaceSm),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+            ],
+          );
+
+    final Widget content;
+    if (scrollController != null) {
+      content = ListView(
+        controller: scrollController,
+        shrinkWrap: true,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        children: [AppSecondaryControlTheme(child: widget.child)],
+      );
+    } else if (scrollable) {
+      // 默认外层滚动：表单过长时卡片内部滚动，actions 仍固定在卡片内可见。
+      content = SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        child: AppSecondaryControlTheme(child: widget.child),
+      );
+    } else {
+      // 自带 ListView 的内容在桌面上也能拿到有界高度（Flexible），
+      // 因此内部列表照常滚动，底部 actions 不会被挤出卡片。
+      content = ScrollConfiguration(
+        behavior: scrollBehavior.copyWith(
+          physics: AlwaysScrollableScrollPhysics(
+            parent: scrollBehavior.getScrollPhysics(context),
+          ),
+        ),
+        child: AppSecondaryControlTheme(child: widget.child),
+      );
+    }
+
+    final Widget body = Padding(
+      padding: resolvedPadding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (header != null) ...[
+            header,
+            const SizedBox(height: DesignTokens.spaceMd),
+          ],
+          Flexible(child: content),
+          if (leadingActions.isNotEmpty || actions.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.spaceMd),
+            AppSecondaryControlTheme(
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: DesignTokens.spaceSm,
+                runSpacing: DesignTokens.spaceSm,
+                children: [...leadingActions, ...actions],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // 宽度 = min(调用点 maxWidth, 视口可用宽度)：父 route 已经扣掉两侧
+    // 边距，这里只负责不越过 720 / 860 / 520 这类面板自身的宽度上限。
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardMaxWidth =
+            availableWidth.isFinite && availableWidth < widget.maxWidth
+            ? availableWidth
+            : widget.maxWidth;
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: cardMaxWidth),
+          child: Material(
+            color: cs.surface,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                DesignTokens.appModalCenteredRadius,
+              ),
+              side: BorderSide(
+                color: cs.outlineVariant.withValues(
+                  alpha: isDark ? 0.40 : 0.55,
+                ),
+                width: DesignTokens.appModalCenteredBorderWidth,
+              ),
+            ),
+            child: body,
+          ),
+        );
+      },
     );
   }
 }

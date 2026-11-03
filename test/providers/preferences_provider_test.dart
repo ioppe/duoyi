@@ -57,7 +57,7 @@ void main() {
     await provider.loadFromStorage();
 
     expect(provider.defaultTab, 6);
-    expect(provider.bottomNavOrder, <int>[0, 1, 2, 3, 4, 5, 6]);
+    expect(provider.bottomNavOrder, <int>[0, 2, 3, 4, 5, 6]);
     expect(provider.bottomNavVisible.contains(6), isTrue);
     expect(provider.bottomNavVisible.length, lessThanOrEqualTo(5));
     expect(provider.visibleBottomNavTabs.length, lessThanOrEqualTo(5));
@@ -75,7 +75,7 @@ void main() {
 
     expect(provider.bottomNavVisible.contains(6), isTrue);
     expect(provider.bottomNavVisible.length, lessThanOrEqualTo(5));
-    expect(provider.visibleBottomNavTabs, <int>[0, 1, 2, 3, 6]);
+    expect(provider.visibleBottomNavTabs, <int>[0, 2, 3, 4, 6]);
 
     await provider.setBottomNavVisible(5, false);
     await provider.setBottomNavVisible(6, false);
@@ -87,22 +87,22 @@ void main() {
   test('底部导航最多显示 5 个入口，新增入口超过上限时不生效', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'pref_bottom_nav_order': <String>['0', '1', '2', '3', '4', '5', '6'],
-      'pref_bottom_nav_visible': <String>['0', '1', '2', '3', '6'],
+      'pref_bottom_nav_visible': <String>['0', '2', '3', '4', '6'],
     });
 
     final provider = PreferencesProvider();
     await provider.loadFromStorage();
 
-    expect(provider.bottomNavVisible, <int>{0, 1, 2, 3, 6});
-    expect(provider.visibleBottomNavTabs, <int>[0, 1, 2, 3, 6]);
+    expect(provider.bottomNavVisible, <int>{0, 2, 3, 4, 6});
+    expect(provider.visibleBottomNavTabs, <int>[0, 2, 3, 4, 6]);
     await provider.setBottomNavVisible(5, true);
-    expect(provider.bottomNavVisible, <int>{0, 1, 2, 3, 6});
-    expect(provider.visibleBottomNavTabs, <int>[0, 1, 2, 3, 6]);
+    expect(provider.bottomNavVisible, <int>{0, 2, 3, 4, 6});
+    expect(provider.visibleBottomNavTabs, <int>[0, 2, 3, 4, 6]);
 
     await provider.setBottomNavVisible(2, false);
     await provider.setBottomNavVisible(5, true);
-    expect(provider.bottomNavVisible, <int>{0, 1, 3, 5, 6});
-    expect(provider.visibleBottomNavTabs, <int>[0, 1, 3, 5, 6]);
+    expect(provider.bottomNavVisible, <int>{0, 3, 4, 5, 6});
+    expect(provider.visibleBottomNavTabs, <int>[0, 3, 4, 5, 6]);
   });
 
   test('底部导航设置将我的标记为固定显示并提示上限', () {
@@ -152,7 +152,7 @@ void main() {
 
     expect(
       source,
-      contains('static const _fallbackVisibleTabs = <int>[0, 1, 2, 4, 6]'),
+      contains('static const _fallbackVisibleTabs = <int>[0, 2, 4, 6]'),
     );
     expect(source, contains('List<int> _visibleBottomNavTabs'));
     expect(source, contains('prefs.visibleBottomNavTabs'));

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:duoyi/core/pomodoro_floating_window_size.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
 import 'package:duoyi/services/pomodoro_floating_window_service.dart';
 import 'package:fake_async/fake_async.dart';
@@ -401,5 +402,23 @@ void main() {
       provider.toggleTimer();
       async.flushMicrotasks();
     });
+  });
+
+  test('默认 large，configure 传入 compact 后快照携带尺寸且不新增 show', () async {
+    expect(args(named('update').last)['windowSize'], 'large');
+
+    service.configure(
+      available: true,
+      sessionIdentity: 'local|',
+      windowTitle: '专注',
+      playLabel: '开始专注',
+      pauseLabel: '暂停',
+      closeLabel: '关闭悬浮窗',
+      windowSize: PomodoroFloatingWindowSize.compact,
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(args(named('update').last)['windowSize'], 'compact');
+    expect(named('show'), isEmpty, reason: '尺寸变化只发 update，不自动打开面板');
   });
 }

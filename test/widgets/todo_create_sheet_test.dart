@@ -342,6 +342,112 @@ Future<void> _pickReminderDate(
   expect(find.text(I18n.tr('todo.create.pick_date')), findsNothing);
 }
 
+/// 截止日期行与提醒行共用同一套标签读取方式。
+String _dueLabel(WidgetTester tester, String key) =>
+    _reminderLabel(tester, key);
+
+String _dueTimeLabel(WidgetTester tester) =>
+    _dueLabel(tester, 'todo_create_due_time');
+
+/// 日历面板默认只显示当月，先翻到目标年月再点选公历日期格。
+Future<void> _revealSolarMonth(WidgetTester tester, DateTime day) async {
+  final header = find.text('${day.year}年${day.month}月');
+  for (var i = 0; i < 24 && header.evaluate().isEmpty; i++) {
+    final next = find.byTooltip('下个月');
+    expect(next, findsOneWidget);
+    await tester.ensureVisible(next);
+    await tester.pump();
+    await tester.tap(next);
+    await tester.pumpAndSettle();
+  }
+  expect(header, findsOneWidget);
+}
+
+/// 通过现有 [AppDatePicker] 公历日期格确认或取消截止日期。
+Future<void> _pickDueDate(
+  WidgetTester tester,
+  DateTime day, {
+  bool confirm = true,
+}) async {
+  final button = find.byKey(const ValueKey('todo_create_due_date'));
+  await tester.ensureVisible(button);
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+  expect(find.text(I18n.tr('todo.create.due_pick_date')), findsOneWidget);
+  await _revealSolarMonth(tester, day);
+  final cell = find.byKey(
+    ValueKey(
+      'solar-day-${day.year}-${day.month.toString().padLeft(2, '0')}-'
+      '${day.day.toString().padLeft(2, '0')}',
+    ),
+  );
+  expect(cell, findsOneWidget);
+  await tester.ensureVisible(cell);
+  await tester.pumpAndSettle();
+  await tester.tap(cell);
+  await tester.pumpAndSettle();
+  final action = confirm
+      ? find.widgetWithText(FilledButton, '确定')
+      : find.widgetWithText(TextButton, '取消').last;
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
+  if (action.hitTestable().evaluate().isEmpty) {
+    await tester.drag(find.byType(AppModalSheet).last, const Offset(0, -180));
+    await tester.pumpAndSettle();
+  }
+  expect(action.hitTestable(), findsOneWidget);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+  expect(find.text(I18n.tr('todo.create.due_pick_date')), findsNothing);
+}
+
+/// 打开 Material 时间选择器，切到键盘输入模式后确认或取消具体时刻。
+Future<void> _pickDueTime(
+  WidgetTester tester,
+  int hour,
+  int minute, {
+  bool confirm = true,
+}) async {
+  final button = find.byKey(const ValueKey('todo_create_due_time'));
+  await tester.ensureVisible(button);
+  await tester.tap(button);
+  await tester.pumpAndSettle();
+  final dialog = find.byType(TimePickerDialog);
+  expect(dialog, findsOneWidget);
+  final toggle = find.byIcon(Icons.keyboard_outlined);
+  if (toggle.evaluate().isNotEmpty) {
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+  }
+  final fields = find.descendant(of: dialog, matching: find.byType(TextField));
+  expect(fields, findsNWidgets(2));
+  await tester.enterText(fields.at(0), hour.toString().padLeft(2, '0'));
+  await tester.enterText(fields.at(1), minute.toString().padLeft(2, '0'));
+  await tester.pumpAndSettle();
+  final action = confirm
+      ? find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(TextButton, '确定'),
+        )
+      : find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(TextButton, '取消'),
+        );
+  expect(action, findsOneWidget);
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+  expect(find.byType(TimePickerDialog), findsNothing);
+}
+
+/// 等待中的 AI 结果不能 `pumpAndSettle`（进度指示器持续动画）。
+Future<void> _tapAiPending(WidgetTester tester) async {
+  final chip = find.widgetWithText(ActionChip, I18n.tr('todo.create.ai'));
+  await tester.ensureVisible(chip);
+  await tester.pumpAndSettle();
+  await tester.tap(chip);
+  await tester.pump();
+}
+
 Future<void> _expandListGroup(WidgetTester tester) async {
   final selector = find.byKey(const ValueKey('todo_list_group_selector'));
   await tester.ensureVisible(selector);
@@ -366,6 +472,7 @@ Future<void> _revealListGroupTarget(WidgetTester tester, Finder target) async {
 
 Future<void> _selectListGroup(WidgetTester tester, String name) async {
   await _expandListGroup(tester);
+
   final target = find.byKey(ValueKey('todo_list_group_$name'));
   await _revealListGroupTarget(tester, target);
   await tester.tap(target);
@@ -418,9 +525,9 @@ Future<void> _createListGroup(WidgetTester tester) async {
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(
-      DesignTokens.fontFamily,
-    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
+    final fonts = FontLoader(DesignTokens.fontFamily);
+    fonts.addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'));
+    await fonts.load();
   });
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -946,12 +1053,7 @@ void main() {
     );
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     expect(find.text('确认会议地点'), findsOneWidget);
-    expect(find.textContaining('Asia/Shanghai'), findsNothing);
-    expect(find.textContaining(I18n.tr('todo.create.timezone')), findsNothing);
-    expect(
-      find.textContaining(I18n.tr('quick.todo.parsed_prefix')),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Asia/Shanghai'), findsOneWidget);
     await _scrollToSubmit(tester);
     await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
     await tester.pumpAndSettle();
@@ -1138,15 +1240,7 @@ void main() {
         '后天下午3点开会',
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining(zone), findsNothing);
-      expect(
-        find.textContaining(I18n.tr('todo.create.timezone')),
-        findsNothing,
-      );
-      expect(
-        find.textContaining(I18n.tr('quick.todo.parsed_prefix')),
-        findsOneWidget,
-      );
+      expect(find.textContaining(zone), findsOneWidget);
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       await _scrollToSubmit(tester);
       await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
@@ -1573,6 +1667,366 @@ void main() {
     expect(saved.reminderPlan.enabled, isFalse);
     expect(saved.toJson()['reminderAt'], isNull);
     expect(saved.date, AppClock.date(2026, 10, 20, 15));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('默认没有截止日期，识别到日期后自动显示并保存浮动截止日期', (tester) async {
+    final todos = _CapturingTodos();
+    await _open(tester, todos: todos);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18n.tr('todo.create.due_none'),
+    );
+    expect(find.byKey(const ValueKey('todo_create_due_time')), findsNothing);
+    expect(find.byKey(const ValueKey('todo_create_due_clear')), findsNothing);
+
+    await _enterCreateTitle(tester, '后天整理资料');
+    final day = DateTime(2026, 10, 23);
+    expect(_dueLabel(tester, 'todo_create_due_date'), I18nDateFormat.date(day));
+    expect(_dueTimeLabel(tester), I18n.tr('todo.create.due_time_none'));
+    // 只有日期时不得凭空补默认时刻，也不自动开启提醒。
+    expect(_reminderEnabled(tester), isFalse);
+
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.dueDate, day);
+    expect(saved.dueDate!.hour, 0);
+    expect(saved.dueDate!.minute, 0);
+    expect(saved.toJson()['dueDate'], day.toIso8601String());
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('手动截止日期只改 dueDate，任务日期与提醒锚点保持独立', (tester) async {
+    final (:todos, :notifications) = await _openReminderSheet(tester);
+    await _enterCreateTitle(tester, '明天下午3点会议');
+    expect(_reminderEnabled(tester), isTrue);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 22)),
+    );
+    expect(_dueTimeLabel(tester), '15:00');
+
+    await _pickDueDate(tester, DateTime(2026, 11, 5));
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 11, 5)),
+    );
+    expect(_dueTimeLabel(tester), I18n.tr('todo.create.due_time_none'));
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 22),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.date, AppClock.date(2026, 10, 22, 15));
+    expect(saved.dueDate, DateTime(2026, 11, 5));
+    _expectReminderPlan(saved, DateTime.utc(2026, 10, 22, 15));
+    expect(
+      notifications.scheduledTime!.toUtc(),
+      DateTime.utc(2026, 10, 22, 15),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('取消截止日期选择保留自动截止日期且不获得手动所有权', (tester) async {
+    await _open(tester);
+    await _enterCreateTitle(tester, '明天下午3点会议');
+    await _pickDueDate(tester, DateTime(2026, 11, 5), confirm: false);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 22)),
+    );
+    expect(_dueTimeLabel(tester), '15:00');
+
+    // 取消后自动截止日期仍然跟随新输入更新。
+    await _enterCreateTitle(tester, '后天下午4点会议');
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 23)),
+    );
+    expect(_dueTimeLabel(tester), '16:00');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AI 日期与具体时刻回填截止日期行并按原语义保存', (tester) async {
+    for (final timed in [true, false]) {
+      final at = AppClock.date(2026, 10, 28, 16, 30);
+      final (:todos, :notifications) = await _openReminderSheet(
+        tester,
+        ai: _ReadyAi(
+          AiTodoBreakdown(
+            subtasks: const [],
+            dateTime: at,
+            hasTimeOfDay: timed,
+          ),
+        ),
+      );
+      await _enterCreateTitle(tester, '评审前整理资料');
+      expect(
+        _dueLabel(tester, 'todo_create_due_date'),
+        I18n.tr('todo.create.due_none'),
+      );
+      await _tapAi(tester);
+      expect(
+        _dueLabel(tester, 'todo_create_due_date'),
+        I18nDateFormat.date(at),
+      );
+      expect(
+        _dueTimeLabel(tester),
+        timed ? '16:30' : I18n.tr('todo.create.due_time_none'),
+      );
+      expect(_reminderEnabled(tester), timed);
+
+      await _submitCreateSheet(tester);
+      final saved = todos.saved.single;
+      expect(saved.date, at);
+      expect(saved.dueDate, timed ? at : DateTime(2026, 10, 28));
+      expect(saved.reminderPlan.enabled, timed);
+      expect(notifications.scheduledTime, timed ? at : null);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('手动选择的截止日期在 AI 返回前后都不被覆盖', (tester) async {
+    final ai = _DelayedAi();
+    final todos = _CapturingTodos();
+    await _open(
+      tester,
+      ai: ai,
+      todos: todos,
+      notifications: _ReadyNotifications(),
+    );
+    await _enterCreateTitle(tester, '整理评审资料');
+    await _pickDueDate(tester, DateTime(2026, 11, 11));
+    await _tapAiPending(tester);
+    ai.pending.complete(
+      AiTodoBreakdown(
+        subtasks: const ['准备问题'],
+        listGroupName: '工作',
+        dateTime: AppClock.date(2026, 10, 28, 16, 30),
+        hasTimeOfDay: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('准备问题'), findsOneWidget);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 11, 11)),
+    );
+    expect(_dueTimeLabel(tester), I18n.tr('todo.create.due_time_none'));
+
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.dueDate, DateTime(2026, 11, 11));
+    expect(saved.date, AppClock.date(2026, 10, 28, 16, 30));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('手动清除截止日期后 AI 日期不再回填', (tester) async {
+    final ai = _DelayedAi();
+    final todos = _CapturingTodos();
+    await _open(
+      tester,
+      ai: ai,
+      todos: todos,
+      notifications: _ReadyNotifications(),
+    );
+    await _enterCreateTitle(tester, '明天下午3点会议');
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 22)),
+    );
+    await _tapAiPending(tester);
+    final clear = find.byKey(const ValueKey('todo_create_due_clear'));
+    await tester.ensureVisible(clear);
+    await tester.tap(clear);
+    await tester.pump();
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18n.tr('todo.create.due_none'),
+    );
+    ai.pending.complete(const AiTodoBreakdown(subtasks: ['准备资料']));
+    await tester.pumpAndSettle();
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18n.tr('todo.create.due_none'),
+    );
+
+    await _submitCreateSheet(tester);
+    expect(todos.saved.single.dueDate, isNull);
+    expect(todos.saved.single.date, AppClock.date(2026, 10, 22, 15));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('截止日期与提醒互相独立：关闭提醒保留截止期，改截止期不动手动提醒', (tester) async {
+    final (:todos, :notifications) = await _openReminderSheet(tester);
+    await _enterCreateTitle(tester, '后天下午3点会议');
+    expect(_reminderEnabled(tester), isTrue);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 23)),
+    );
+
+    final reminderSwitch = find.byKey(const ValueKey('todo_create_reminder'));
+    await tester.ensureVisible(reminderSwitch);
+    await tester.tap(reminderSwitch);
+    await tester.pumpAndSettle();
+    expect(_reminderEnabled(tester), isFalse);
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 23)),
+    );
+
+    await tester.tap(reminderSwitch);
+    await tester.pumpAndSettle();
+    await _pickReminderDate(tester, DateTime(2026, 10, 25));
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 25),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+    await _pickDueDate(tester, DateTime(2026, 11, 20));
+    _expectReminderLabels(
+      tester,
+      DateTime(2026, 10, 25),
+      const TimeOfDay(hour: 15, minute: 0),
+    );
+
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.dueDate, DateTime(2026, 11, 20));
+    _expectReminderPlan(saved, DateTime.utc(2026, 10, 25, 15));
+    expect(
+      notifications.scheduledTime!.toUtc(),
+      DateTime.utc(2026, 10, 25, 15),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('手动具体时刻保存为瞬时截止，清除后回退为浮动日期', (tester) async {
+    final todos = _CapturingTodos();
+    await _open(tester, todos: todos);
+    await _enterCreateTitle(tester, '整理评审资料');
+    await _pickDueDate(tester, DateTime(2026, 10, 27));
+    expect(_dueTimeLabel(tester), I18n.tr('todo.create.due_time_none'));
+    await _pickDueTime(tester, 9, 15);
+    expect(_dueTimeLabel(tester), '09:15');
+
+    final clear = find.byKey(const ValueKey('todo_create_due_clear'));
+    await tester.ensureVisible(clear);
+    await tester.tap(clear);
+    await tester.pumpAndSettle();
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18n.tr('todo.create.due_none'),
+    );
+    expect(find.byKey(const ValueKey('todo_create_due_time')), findsNothing);
+
+    await _pickDueDate(tester, DateTime(2026, 10, 27));
+    await _pickDueTime(tester, 11, 45);
+    expect(_dueTimeLabel(tester), '11:45');
+    await _submitCreateSheet(tester);
+    final saved = todos.saved.single;
+    expect(saved.dueDate, AppClock.date(2026, 10, 27, 11, 45));
+    expect(
+      saved.toJson()['dueDate'],
+      DateTime.utc(2026, 10, 27, 11, 45).toIso8601String(),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('手动截止时刻落在夏令时缺口时提示且不保存归一化时间', (tester) async {
+    await LocalTimezoneResolver.setApplicationTimeZone('America/New_York');
+    AppClock.debugNow = () => DateTime.utc(2026, 3, 1, 12);
+    final todos = _CapturingTodos();
+    await _open(tester, todos: todos);
+    await _enterCreateTitle(tester, '整理评审资料');
+    await _pickDueDate(tester, DateTime(2026, 3, 8));
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 3, 8)),
+    );
+    await _pickDueTime(tester, 2, 30);
+    final error = find.byKey(const ValueKey('todo_create_due_error'));
+    expect(error, findsOneWidget);
+    expect(
+      tester.widget<Text>(error).data,
+      I18n.tr('todo.create.due_gap_error'),
+    );
+    await _submitCreateSheet(tester);
+    expect(todos.saved, isEmpty);
+    expect(find.byType(AppModalSheet), findsOneWidget);
+
+    final clearTime = find.byKey(const ValueKey('todo_create_due_clear_time'));
+    await tester.ensureVisible(clearTime);
+    await tester.tap(clearTime);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('todo_create_due_error')), findsNothing);
+    await _submitCreateSheet(tester);
+    expect(todos.saved.single.dueDate, DateTime(2026, 3, 8));
+    expect(
+      todos.saved.single.toJson()['dueDate'],
+      DateTime(2026, 3, 8).toIso8601String(),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('窄屏长表单中截止日期行可滚动到并完成真实日期确认', (tester) async {
+    final todos = _CapturingTodos();
+    await _open(
+      tester,
+      todos: todos,
+      size: const Size(320, 720),
+      textScale: 1.5,
+    );
+    await _enterCreateTitle(tester, '评审前整理资料');
+    final button = find.byKey(const ValueKey('todo_create_due_date'));
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    expect(button.hitTestable(), findsOneWidget);
+    await _pickDueDate(tester, DateTime(2026, 12, 3));
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 12, 3)),
+    );
+    await _submitCreateSheet(tester);
+    expect(todos.saved.single.dueDate, DateTime(2026, 12, 3));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('输入变化后旧 AI 截止日期不再回填', (tester) async {
+    final ai = _DelayedAi();
+    final todos = _CapturingTodos();
+    await _open(
+      tester,
+      ai: ai,
+      todos: todos,
+      notifications: _ReadyNotifications(),
+    );
+    final title = find.byKey(const ValueKey('todo_create_title'));
+    await tester.enterText(title, '整理旧资料');
+    await _tapAiPending(tester);
+    await tester.enterText(title, '明天上午10点开会');
+    await tester.pump();
+    ai.pending.complete(
+      AiTodoBreakdown(
+        subtasks: const ['过期子任务'],
+        dateTime: AppClock.date(2026, 12, 1, 8),
+        hasTimeOfDay: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      _dueLabel(tester, 'todo_create_due_date'),
+      I18nDateFormat.date(DateTime(2026, 10, 22)),
+    );
+    expect(_dueTimeLabel(tester), '10:00');
+    await _submitCreateSheet(tester);
+    expect(todos.saved.single.dueDate, AppClock.date(2026, 10, 22, 10));
     expect(tester.takeException(), isNull);
   });
 }

@@ -43,13 +43,13 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 # Run all backend tests (unittest-style; pytest also works)
-python -m unittest test_workspaces -v
+python -m unittest discover -s . -v
 
 # Run a single backend test
 python -m unittest test_workspaces.WorkspaceApiTest.test_admin_current_management_routes_do_not_404
 ```
 
-Despite its name, `backend/test_workspaces.py` (~150 tests in `WorkspaceApiTest`) is the **entire backend test suite**: route contracts, auth, admin, sync, feedback, coins — not just workspaces.
+`backend/test_workspaces.py` covers route contracts, auth, admin, sync, feedback and coins. Run unittest discovery to also include the separate access-token, configuration and Web-font-build policy tests.
 
 **Backend configuration**: process environment > ignored `backend/.env` (`DUOYI_ENV_FILE`) > public `config/deployment.json` (`DUOYI_CONFIG_FILE`) > schema defaults. Only a genuinely fresh database receives the bootstrap admin (default `admin`); an empty/unset `ADMIN_BOOTSTRAP_PASSWORD` generates a random password once and saves local credentials to `<DUOYI_DB_PATH>.bootstrap-admin.json` with mode `0600` (default `backend/duoyi.db.bootstrap-admin.json`). Explicit bootstrap passwords remain supported. Existing installations never gain/reset/promote bootstrap accounts; restarts preserve password hashes, data and PASSWORD_HASH_SALT. Database runtime settings only receive missing initial values. See `docs/configuration.md` and `backend/.env.example`.
 
@@ -69,9 +69,35 @@ Roughly 95 of ~240 Flutter test files match `*_static_test.dart`. These regex-sc
 
 All brands, app controls, input text and secondary pages share `NotoSansSC` (bundled Noto Sans SC variable font, offline) through `DesignTokens.fontFamily`. Body copy, secondary copy, input hints, menus and snackbars are Regular (`DesignTokens.fontWeightRegular`, 400); buttons, navigation labels, chips and floating labels are Medium (`DesignTokens.fontWeightMedium`, 500); titles, AppBar titles and emphasis are Semibold (`DesignTokens.fontWeightStrong`, 600). Sizes come from the `DesignTokens.fontSize*` scale (body 16 / secondary 14 / caption 12 / page title 20), and shared buttons use `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Keep the existing color/spacing hierarchy and one shared navigation style across primary pages. The font is bundled for consistent offline display; its source, checksum and SIL Open Font License live in `assets/fonts/`. PDF/report font handling is independent.
 
+Web startup is the exception to complete offline font loading: the configured build wrapper registers one checked-in variable-font subset, then the app loads the complete Noto font after the first frame and idle delay. Native full-font registrations remain intact; rare Web glyphs may need the engine's on-demand fallback before the complete font is ready. See `docs/web-font-loading.md`.
+
+### User configuration survives normal updates
+
+User preferences belong in platform user storage, outside APK/`.app` bundles and Web static releases. Android, iOS, macOS, Linux and Web share the Flutter persistence/cleanup rules; their actual preference files are platform-specific. Normal in-place updates must retain saved settings and must not clear storage just because the version changed. Keep application IDs/Bundle IDs, signing identity, macOS sandbox/data-directory conventions, Linux application id/binary name and Web origin stable.
+
+Device date/navigation/timezone/reminder settings and the selected theme survive ordinary account cleanup. Account business caches, sync baselines, notification registries and private integration credentials still follow server/account isolation. The explicit device-key list documents ownership and is checked by tests; runtime cleanup uses the account deletion lists, so do not introduce a broad `pref_*` deletion. New defaults fill missing values; any explicit migration needs documented conditions and tests preserving existing choices.
+
+Uninstalling, clearing app/browser data, switching application identity or deliberately restoring a backup is different from an application update. Newer cloud preferences may also update local values under the sync contract. Backend deployment does not update already installed native clients. See `docs/configuration-persistence.md` for platform storage, upgrade conditions and verification limits.
+
+### Approved cross-platform application logo
+
+The user-approved logo is the red rounded square (`#C85656`) with three white geometric blocks shown in `docs/branding.md`. It is fixed across all platforms and themes. Use `assets/logo/duoyi_app_logo.svg` as the editable master and `assets/logo/duoyi_app_logo_1024.png` as the packaged source. Preserve `assets/logo/duoyi_logo_reference.png` as the original approval reference; do not substitute the old calendar `duoyi_logo_redesign_1024.png`, hourglass assets or a template icon.
+
+Regenerate all platform icon resources together and verify them from the project root:
+
+```bash
+python3 scripts/sync_app_icons.py
+python3 scripts/sync_app_icons.py --check
+flutter test --no-pub test/services/platform_logo_assets_test.dart --reporter expanded
+```
+
+The Android adaptive foreground uses the matching transparent derivative and red background. Authentication headers use the fixed logo image instead of theme-colored icon-font recreation. Keep platform-required scaling/masking, application identity, text/layout and user data intact. Resource generation alone does not establish actual installed-app, Dock/launcher or browser-cache behavior; record those checks separately.
+
+Browser tabs use the generated transparent `web/favicon.svg` first and a transparent 32px PNG compatibility fallback. Derive both from the master without its opaque canvas, preserve the red/white mark, and verify light/dark backgrounds. SVG does not imply transparency: do not reintroduce a fixed page-colored background rectangle or use native icon bitmaps as favicons. The browser owns tab-strip colors; `theme-color` and PWA launch backgrounds are separate concerns.
+
 ### Version bump touches two files
 
-The app version lives in **both** `pubspec.yaml` (`version: 1.1.37+140003`) and `lib/core/app_version.dart` (`name` / `build`). Bump them together or version checks will disagree.
+The app version lives in **both** `pubspec.yaml` (`version: <name>+<build>`) and `lib/core/app_version.dart` (`name` / `build`). Read the current values from those files and bump them together; historical version examples are not a release baseline.
 
 ### Backend routes are contract-pinned
 
@@ -85,7 +111,7 @@ The app version lives in **both** `pubspec.yaml` (`version: 1.1.37+140003`) and 
 
 ### Documentation layout
 
-Canonical requirement/design/task docs live in `docs/` (`requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, etc.). The many `*_REPORT.md` / `*_SUMMARY.md` files in the repo root are historical working-session notes — don't treat them as current guidance and don't add new ones there.
+Canonical requirement/design/task docs live in `docs/` (`requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, `branding.md`, `configuration-persistence.md`, etc.). The many `*_REPORT.md` / `*_SUMMARY.md` files in the repo root are historical working-session notes — don't treat them as current guidance and don't add new ones there.
 
 ## Architecture
 
@@ -148,10 +174,13 @@ Workflow `.github/workflows/build-apk.yml` validates a shared profile first and 
 
 | Trigger | Job | Output |
 |---------|-----|--------|
-| Push to or PR targeting `main` / `self-hosted-skydrow` | `analyze` | `flutter analyze`, complete Flutter tests and backend tests |
+| Push to `main` / `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or PR targeting `main` / `self-hosted-skydrow` | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
 | Same triggers, after checks pass | `android` | Signed universal APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
-| Push to `main`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for nginx deployment |
-| Tag `v*` push | `release` | Auto-creates GitHub Release with APKs, AAB, and web tarball |
+| Same triggers, after checks pass | `macos` → reusable `build-macos.yml` | Universal unsigned macOS DMG + ZIP + SHA-256 checksums from the same commit/profile as Android |
+| Push to `main`, push `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only, except the `main` desktop tarball which auto-deploys once the server entry and single Secret are configured; Pages stays `main`-only |
+| Tag `v*` push, after Android/Web/macOS succeed | `release` | Auto-creates GitHub Release with APKs, AAB, web tarballs and macOS packages |
+
+Each push to the three build branches must enter the main `build` workflow so Android and macOS cannot drift onto different commits. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release (the `main` desktop Web tarball also auto-deploys once the server entry and single Secret are configured); newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.
 
 ### Required Repository Secrets
 
@@ -172,7 +201,7 @@ git tag v1.1.38
 git push origin v1.1.38
 ```
 
-GitHub Actions attaches the universal APK, per-ABI APKs, AAB, and web tarball to the Release. The app checks for updates via "我的 → 检查更新" by querying the GitHub Releases API.
+GitHub Actions attaches the universal APK, per-ABI APKs, AAB, web tarballs, macOS DMG/ZIP and `SHA256SUMS-macos.txt` to the Release. The app checks for updates via "我的 → 检查更新" by querying the GitHub Releases API.
 
 Download pages in `deploy/duoyi.html` and `deploy/duoyi-test-cases.html` are updated and published alongside releases (see `docs: publish ... download pages` commits).
 
@@ -205,7 +234,7 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 - Flutter tests live under `test/{core,models,providers,screens,services,widgets}/` (~240 files); shared helpers in `test/test_support/`
 - `*_static_test.dart` files are source-scanning convention guards (see Critical Conventions above)
 - Integration smoke test: `integration_test/app_alignment_smoke_test.dart`
-- Backend API tests: `backend/test_workspaces.py` (the full backend suite, unittest-style)
+- Backend API tests: `backend/test_workspaces.py`; discover `backend/test_*.py` to include access-token, config and Web build-policy tests (unittest-style).
 - CI runs Flutter and Python tests on every push/PR; `scripts/alignment_regression_gate.sh` is the heavier pre-release gate
 
 ## Deployment Notes

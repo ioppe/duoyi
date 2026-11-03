@@ -97,23 +97,43 @@ void main() {
       'lib/screens/statistics_screen.dart',
     ).readAsStringSync();
     final aiService = File('lib/services/ai_service.dart').readAsStringSync();
+    final panel = File(
+      'lib/widgets/report_ai_review_panel.dart',
+    ).readAsStringSync();
 
     expect(source, contains("import '../services/ai_service.dart';"));
     expect(source, contains("import 'ai_history_screen.dart';"));
+    expect(
+      source,
+      contains("import '../widgets/report_ai_review_panel.dart';"),
+    );
     expect(source, contains('context.watch<AiService>()'));
     expect(source, contains('_runDigestAiReview'));
     expect(source, contains('personalizedReportReview('));
     expect(source, contains('reportMarkdown: _digestMarkdown(digest)'));
-    expect(source, contains("label: const Text('AI 解读')"));
-    expect(source, contains("label: const Text('AI 历史')"));
-    expect(source, contains('云端个性化解读'));
-    expect(source, contains('管理员启用 AI 后可生成云端个性化解读'));
+    // 存档身份按自然周期分组：完整周期窗口 + 生成时区，任务状态交给 service。
+    expect(source, contains('AiReportContext.fromWindow('));
+    expect(source, contains('timeZone: LocalTimezoneResolver.currentIana'));
+    expect(source, contains('reportJobFor(reportContext)'));
+    expect(source, contains('reportHistoryFor(reportContext)'));
+    expect(source, contains('dataThrough: digest.report.end'));
+    expect(source, contains('retryReportArchive('));
+    expect(source, contains('ReportAiReviewPanel('));
     expect(
       source,
-      contains('MaterialPageRoute(builder: (_) => const AiHistoryScreen())'),
+      contains('AiHistoryScreen(initialReportContext: reportContext)'),
     );
-    expect(source, contains('_aiReportReview = null'));
-    expect(source, contains('_aiReportError = null'));
+    // 页面不再自己保存 busy/review/error，也不会在切周期时清掉已有解读。
+    expect(source, isNot(contains('_aiReportBusy')));
+    expect(source, isNot(contains('_aiReportReview')));
+    expect(source, isNot(contains('_aiReportError')));
+
+    expect(panel, contains("I18n.tr('statistics.ai.result_title')"));
+    expect(panel, contains("I18n.tr('statistics.ai.disabled_hint')"));
+    expect(panel, contains("I18n.tr('statistics.ai.stage.saving')"));
+    expect(panel, contains('LinearProgressIndicator('));
+    expect(panel, contains('onRetrySave'));
+    expect(panel, contains('AiReviewMarkdown('));
 
     expect(aiService, contains('Future<String> personalizedReportReview('));
     expect(aiService, contains("'/api/ai/chat'"));

@@ -171,19 +171,14 @@ class MineScreen extends StatelessWidget {
         ? Colors.transparent
         : routeBackground.withValues(alpha: 0.96);
 
-    final localDisplayName = _firstNonEmpty([
-      profile.displayName,
-      profile.username,
-      I18n.tr('profile.default_user'),
-    ]);
-    final displayName = auth.isLoggedIn
-        ? _firstNonEmpty([
-            auth.displayName,
-            auth.username,
-            profile.displayName,
-            localDisplayName,
-          ])
-        : localDisplayName;
+    final displayName = context
+        .read<UserProvider>()
+        .profile
+        .effectiveDisplayName(
+          I18n.tr('profile.default_user'),
+          preferredDisplayName: auth.isLoggedIn ? auth.displayName : null,
+          preferredUsername: auth.isLoggedIn ? auth.username : null,
+        );
     final avatarValue = auth.isLoggedIn
         ? _firstNonEmpty([
             auth.avatar,

@@ -14,6 +14,11 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    ReminderRingtoneSettings.onChanged = null;
+  });
+
+  tearDown(() {
+    ReminderRingtoneSettings.onChanged = null;
   });
 
   test('loads defaults when ringtone settings are absent', () async {
@@ -67,6 +72,40 @@ void main() {
     expect(returned, isTrue);
     expect(await ReminderRingtoneSettings.loadSound(), 'forest');
   });
+
+  for (final operation in ['volume', 'sound']) {
+    test('$operation 保存等待同步标记回调完成', () async {
+      final entered = Completer<void>();
+      final gate = Completer<void>();
+      ReminderRingtoneSettings.onChanged = (_) {
+        entered.complete();
+        return gate.future;
+      };
+      var finished = false;
+      final saved =
+          (operation == 'volume'
+                  ? ReminderRingtoneSettings.setVolumePercent(
+                      80,
+                      preview: false,
+                    )
+                  : ReminderRingtoneSettings.setSound('bell', preview: false))
+              .then((_) => finished = true);
+      await entered.future;
+      expect(finished, isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      if (operation == 'volume') {
+        expect(prefs.getInt(ReminderRingtoneSettings.volumePreferenceKey), 80);
+      } else {
+        expect(
+          prefs.getString(ReminderRingtoneSettings.soundPreferenceKey),
+          'bell',
+        );
+      }
+      gate.complete();
+      await saved;
+      expect(finished, isTrue);
+    });
+  }
 
   test(
     'migrates legacy alarm default to soft once without blocking opt-in',

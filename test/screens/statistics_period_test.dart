@@ -89,7 +89,11 @@ Future<void> _open(WidgetTester tester, {bool populated = false}) async {
         ChangeNotifierProvider(create: (_) => HabitProvider()),
         ChangeNotifierProvider<PomodoroProvider>.value(value: pomo),
         ChangeNotifierProvider<TimeAuditProvider>.value(value: audit),
-        ChangeNotifierProvider(create: (_) => AiService()),
+        // 周期汇总测试使用已获取的配置；加载与失败状态由专门用例覆盖。
+        ChangeNotifierProvider(
+          create: (_) =>
+              AiService()..updateFromServerConfig({'ai_enabled': false}),
+        ),
       ],
       child: MaterialApp(
         theme: AppBrands.defaultBrand.theme,

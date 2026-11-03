@@ -208,10 +208,12 @@ class AccessTokenApiTest(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(self._list()[0]["revoked_at"])
         self._assert_revoked([token], check_session=False)
+        # Clearing the cache is not a revocation: the persisted login session survives.
         api.TOKENS.clear()
         api.TOKEN_LAST_ACTIVE.clear()
         api.init_db()
-        self._assert_revoked([token])
+        self._assert_revoked([token], check_session=False)
+        self._assert_valid(self.owner["token"])
 
     def test_authentication_required_for_all_token_routes(self):
         for headers in ({}, {"Authorization": "Basic invalid"}, {"Authorization": "Bearer invalid"}):
@@ -635,6 +637,9 @@ class AccessTokenApiTest(unittest.TestCase):
         )
         api.TOKENS.clear()
         api.TOKEN_LAST_ACTIVE.clear()
+        # Clearing the cache is no longer a revocation: drop the persisted session too.
+        api._drop_session(self.owner["user_id"])
+        self.assertNotIn(self.owner["user_id"], api.TOKENS)
         self.assertNotIn(self.owner["user_id"], api._online_user_ids())
         response = self.client.post(
             "/api/focus-rooms/token-test-room/heartbeat", headers=self._headers(active["token"]),

@@ -385,6 +385,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoCreatePriority => '优先级标记';
 
   @override
+  String get todoCreateDueDate => '截止日期';
+
+  @override
+  String get todoCreateDueNone => '无截止日期';
+
+  @override
+  String get todoCreateDuePickDate => '选择截止日期';
+
+  @override
+  String get todoCreateDueTimeNone => '可选时刻';
+
+  @override
+  String get todoCreateDuePickTime => '选择截止时刻';
+
+  @override
+  String get todoCreateDueTimeClear => '取消具体时刻';
+
+  @override
+  String get todoCreateDueClear => '清除截止日期';
+
+  @override
+  String get todoCreateDueGapError => '当前时区不存在这个时刻（夏令时跳变），请重新选择';
+
+  @override
   String get todoCreateReminder => '提醒';
 
   @override
@@ -1102,6 +1126,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get preferencesPomodoroLengthTitle => '默认番茄钟长度';
+
+  @override
+  String get preferencesFloatingWindowSize => '番茄悬浮窗尺寸';
+
+  @override
+  String get preferencesFloatingWindowSubtitle => '仅 macOS 生效，尺寸保存在本机';
+
+  @override
+  String get preferencesFloatingWindowLarge => '标准';
+
+  @override
+  String get preferencesFloatingWindowCompact => '紧凑';
 
   @override
   String get preferencesSectionBottomNav => '底部导航栏';
@@ -2522,22 +2558,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appLockDisabledMessage => '应用锁已关闭';
 
   @override
-  String get aiHistoryTitle => 'AI 周回顾历史';
+  String get aiHistoryTitle => 'AI 解读历史';
 
   @override
   String get aiHistoryClearTooltip => '清空历史';
 
   @override
-  String get aiHistoryClearTitle => '清空全部回顾?';
+  String get aiHistoryClearTitle => '清空全部解读?';
 
   @override
-  String get aiHistoryClearContent => '本地保留的 AI 回顾将被删除，无法恢复';
+  String get aiHistoryClearContent => '全部 AI 解读（含其他周期）将被删除，无法恢复';
 
   @override
   String get aiHistoryClearAction => '清空';
 
   @override
-  String get aiHistoryEmpty => '还没有 AI 回顾\n在\"我的\"页生成一份吧';
+  String get aiHistoryEmpty => '还没有 AI 解读\n在统计页生成一份吧';
 
   @override
   String get aiHistoryCopy => '复制';
@@ -2547,6 +2583,130 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiHistoryDelete => '删除';
+
+  @override
+  String get aiHistoryFilterAll => '全部历史';
+
+  @override
+  String aiHistoryPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String aiHistoryPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String get aiHistoryPeriodEmpty => '这个周期还没有 AI 解读';
+
+  @override
+  String get aiHistoryPeriodUnknown => '旧版本记录，未包含周期信息';
+
+  @override
+  String get aiHistoryExpand => '展开解读';
+
+  @override
+  String get aiHistoryCollapse => '收起解读';
+
+  @override
+  String get statisticsAiGenerate => 'AI 解读';
+
+  @override
+  String get statisticsAiRegenerate => '重新生成解读';
+
+  @override
+  String get statisticsAiGenerating => '解读中…';
+
+  @override
+  String get statisticsAiHistory => 'AI 历史';
+
+  @override
+  String statisticsAiHistoryCount(Object count) {
+    return 'AI 历史（$count）';
+  }
+
+  @override
+  String get statisticsAiResultTitle => '云端个性化解读';
+
+  @override
+  String get statisticsAiStageGenerating => 'AI 正在生成解读';
+
+  @override
+  String get statisticsAiStageSaving => '解读已生成，正在存档';
+
+  @override
+  String statisticsAiElapsed(Object seconds) {
+    return '已用 $seconds 秒';
+  }
+
+  @override
+  String get statisticsAiLeaveHint => '可以离开本页：应用保持运行时结果会自动存档，退出应用则不会继续。';
+
+  @override
+  String statisticsAiDataThrough(Object date) {
+    return '数据截至 $date';
+  }
+
+  @override
+  String statisticsAiGeneratedAt(Object time) {
+    return '生成于 $time';
+  }
+
+  @override
+  String statisticsAiPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String statisticsAiPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String get statisticsAiCopyInsight => '复制解读';
+
+  @override
+  String get statisticsAiRetryGenerate => '重试生成';
+
+  @override
+  String get statisticsAiRetrySave => '重试保存';
+
+  @override
+  String get statisticsAiUnsavedTitle => '解读已生成，但暂未存档';
+
+  @override
+  String get statisticsAiDisabledHint => '管理员启用 AI 后可生成云端个性化解读';
+
+  @override
+  String get statisticsAiConfigLoading => '正在获取 AI 配置…';
+
+  @override
+  String get statisticsAiConfigFailed => '暂时无法获取 AI 配置，请检查连接后重试。';
+
+  @override
+  String get statisticsAiConfigRetry => '重新获取';
+
+  @override
+  String get syncActionSyncNow => '立即同步';
+
+  @override
+  String get syncConfigFailed => '无法获取服务器配置，请检查连接后重试';
+
+  @override
+  String get statisticsAiErrorSessionChanged => '账号状态已变化，本次解读未保存。';
+
+  @override
+  String get statisticsAiErrorArchiveFailed => '解读已生成，但暂未存档。请重试保存，或先复制保留。';
+
+  @override
+  String get statisticsAiErrorStorageFailed => '暂时无法保存历史变更，请重试。';
+
+  @override
+  String get statisticsAiErrorEmpty => '模型未返回解读正文，请重试。';
+
+  @override
+  String get statisticsAiErrorRequestFailed => '生成失败，请稍后重试。';
 
   @override
   String get syncConflictTitle => '同步冲突记录';
@@ -3247,12 +3407,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get focusPause => '暂停';
 
   @override
-  String get focusResume => '继续';
-
-  @override
-  String get focusReset => '重置';
-
-  @override
   String get focusFloatingOpen => '打开番茄悬浮窗';
 
   @override
@@ -3275,6 +3429,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get focusFloatingReady => '待开始';
+
+  @override
+  String get focusResume => '继续';
+
+  @override
+  String get focusReset => '重置';
 
   @override
   String get reminderHealth => '通知健康';
@@ -4026,4 +4186,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupOverwriteWillDeleteMissing => '备份中不存在的本机数据将被删除。';
+
+  @override
+  String get reminderWebActionRequest => '通知授权';
+
+  @override
+  String get reminderWebStatusRequesting => '正在等待浏览器返回通知授权结果…';
+
+  @override
+  String get reminderWebStatusPrompt => '浏览器通知尚未开启，授权后定时提醒才能进入系统通知';
+
+  @override
+  String get reminderWebStatusGranted =>
+      '浏览器通知已授权；需保持网页打开，后台节流可能延迟提醒，关闭网页后不能保证定时提醒';
+
+  @override
+  String get reminderWebStatusDenied => '浏览器已拒绝通知；请在地址栏左侧的站点设置里允许通知，再回到本页';
+
+  @override
+  String get reminderWebStatusUnsupported => '当前浏览器不支持网页通知，提醒只能在页面内提示';
+
+  @override
+  String get reminderWebStatusInsecure =>
+      '当前页面不是安全上下文（需要 HTTPS 或 localhost），浏览器不会显示通知';
+
+  @override
+  String get reminderWebStatusFailed => '通知授权请求失败，请稍后重试';
+
+  @override
+  String get reminderWebStatusDismissed => '未选择通知权限，可以再次点击“通知授权”';
 }

@@ -1,8 +1,52 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
 
 void main() {
+  test('Self-hosted Web deployment stays scoped to the same-run artifact', () {
+    final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
+    final jobStart = workflow.indexOf('\n  deploy-self-hosted-web:\n');
+    final jobEnd = workflow.indexOf('\n  macos:\n', jobStart);
+    expect(jobStart, greaterThanOrEqualTo(0));
+    expect(jobEnd, greaterThan(jobStart));
+
+    final job = workflow.substring(jobStart, jobEnd);
+    expect(job, contains('needs: [web]'));
+    expect(job, contains("github.event_name == 'push'"));
+    expect(job, contains("github.ref == 'refs/heads/main'"));
+    expect(job, isNot(contains("refs/heads/build/macos-dmg")));
+    expect(job, isNot(contains("refs/heads/self-hosted-skydrow")));
+    final profile = jsonDecode(
+      File('config/web-deploy.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    expect(profile['branch'], 'main');
+    expect(job, contains('name: duoyi-web'));
+    expect(job, contains('group: duoyi-production-web'));
+    expect(job, contains('cancel-in-progress: false'));
+    expect(job, contains('contents: read'));
+    expect(job, contains('scripts/deploy_web_ci.py --artifact-dir'));
+    expect(job, contains('secrets.DUOYI_WEB_DEPLOY_SSH_KEY'));
+    expect(job, isNot(contains('environment:')));
+    expect(job, isNot(contains('DUOYI_WEB_DEPLOY_ENABLED')));
+
+    // Existing Pages (main-only) and Release (tag-only) boundaries stay intact.
+    expect(
+      workflow,
+      contains(
+        "deploy-pages:\n    needs: web\n"
+        "    if: github.ref == 'refs/heads/main'",
+      ),
+    );
+    expect(
+      workflow,
+      contains(
+        "release:\n    needs: [android, web, macos]\n"
+        "    if: startsWith(github.ref, 'refs/tags/v')",
+      ),
+    );
+  });
+
   test('Web release and Pages each use their configured deployment path', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
     final deployScript = File('scripts/deploy_web_prod.sh').readAsStringSync();
@@ -92,15 +136,20 @@ void main() {
     expect(preferencesProvider, contains('webDefaultBottomNavTabs'));
     expect(
       preferencesProvider,
-      contains('webDefaultBottomNavTabs = <int>{0, 1, 2, 4, 6}'),
+      contains('webDefaultBottomNavTabs = <int>{0, 2, 4, 6}'),
     );
     expect(preferencesProvider, contains('isBottomNavTabSupported'));
+    expect(preferencesProvider, contains('isPrimaryNavigationTabSupported'));
+    expect(preferencesProvider, contains('legacyTodoNavTab = 1'));
     expect(preferencesProvider, contains('normalizeDefaultTab'));
     expect(preferencesProvider, contains('tab == 5'));
 
     final main = File('lib/main.dart').readAsStringSync();
     expect(preferencesProvider, contains('WebTarget.isWebBuild'));
-    expect(main, contains('PreferencesProvider.isBottomNavTabSupported(tab)'));
+    expect(
+      main,
+      contains('PreferencesProvider.isPrimaryNavigationTabSupported(tab)'),
+    );
     expect(main, isNot(contains('_desktopWebVisibleBottomNavTabs')));
 
     final moreApps = File(
@@ -115,10 +164,13 @@ void main() {
       'lib/screens/preferences_screen.dart',
     ).readAsStringSync();
     expect(preferencesScreen, isNot(contains('WebTarget.isDesktopWebBuild')));
-    expect(preferencesScreen, contains('isBottomNavTabSupported(tab)'));
     expect(
       preferencesScreen,
-      contains('where(PreferencesProvider.isBottomNavTabSupported)'),
+      contains('PreferencesProvider.isPrimaryNavigationTabSupported(tab)'),
+    );
+    expect(
+      preferencesScreen,
+      contains('where(PreferencesProvider.isPrimaryNavigationTabSupported)'),
     );
 
     final widgetScreen = File(

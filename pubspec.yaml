@@ -72,10 +72,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/logo/duoyi_logo_redesign_1024.png"
+  image_path: "assets/logo/duoyi_app_logo_1024.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFC79A"
-  adaptive_icon_foreground: "assets/logo/duoyi_logo_redesign_1024.png"
+  adaptive_icon_background: "#C85656"
+  adaptive_icon_foreground: "assets/logo/duoyi_app_logo_foreground_1024.png"
   remove_alpha_ios: false
 
 # For information on the generic Dart part of this file, see the
@@ -89,13 +89,13 @@ flutter:
     - assets/backgrounds/
     - assets/logo/
     - assets/icons/
-    - assets/fonts/
+    - assets/fonts/DroidSansFallbackFull.ttf
+    - assets/fonts/NotoSansSC-OFL.txt
     - assets/sounds/white_noise/
     - assets/sounds/reminders/
 
   fonts:
-    # 全局 UI 字体：Noto Sans SC 变量字库（wght 100–900）。同一个变量文件按
-    # 400/500/600/700 注册，引擎按请求字重选择并应用 wght 变体。
+    # Shared app typography, also used by the native macOS floating panel.
     - family: NotoSansSC
       fonts:
         - asset: assets/fonts/NotoSansSC-Variable.ttf
@@ -105,11 +105,6 @@ flutter:
         - asset: assets/fonts/NotoSansSC-Variable.ttf
           weight: 600
         - asset: assets/fonts/NotoSansSC-Variable.ttf
-          weight: 700
-    # 旧圆体字库保留打包：UI 已不再引用，仅避免移除历史资产带来干扰。
-    - family: ResourceHanRounded
-      fonts:
-        - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf
           weight: 700
 
   # To add assets to your application, add an assets section, like this:

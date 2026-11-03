@@ -157,16 +157,17 @@ void main() {
   testWidgets('CalendarScreen exposes three-day view and navigation', (
     tester,
   ) async {
-    final today = DateTime.now();
-    final rangeEnd = today.add(const Duration(days: 2));
-    final nextRangeStart = today.add(const Duration(days: 3));
-    final nextRangeEnd = today.add(const Duration(days: 5));
+    // Crossing the New York DST fallback must still advance three calendar days.
+    final today = DateTime(2026, 10, 30);
+    final rangeEnd = DateTime(today.year, today.month, today.day + 2);
+    final nextRangeStart = DateTime(today.year, today.month, today.day + 3);
+    final nextRangeEnd = DateTime(today.year, today.month, today.day + 5);
     final todayRange =
         '${today.year}年${today.month}/${today.day} - ${rangeEnd.month}/${rangeEnd.day}';
     final nextRange =
         '${nextRangeStart.year}年${nextRangeStart.month}/${nextRangeStart.day} - ${nextRangeEnd.month}/${nextRangeEnd.day}';
 
-    await tester.pumpWidget(_wrapCalendar());
+    await tester.pumpWidget(_wrapCalendar(initialDate: today));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(Tab, '三日'));
@@ -183,10 +184,16 @@ void main() {
     await tester.tap(find.byTooltip('后三天'));
     await tester.pumpAndSettle();
     expect(find.text(nextRange), findsOneWidget);
+    await tester.tap(find.byTooltip('前三天'));
+    await tester.pumpAndSettle();
+    expect(find.text(todayRange), findsOneWidget);
   });
 }
 
-Widget _wrapCalendar({CountdownProvider? countdownProvider}) {
+Widget _wrapCalendar({
+  CountdownProvider? countdownProvider,
+  DateTime? initialDate,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => TodoProvider()),
@@ -222,6 +229,6 @@ Widget _wrapCalendar({CountdownProvider? countdownProvider}) {
         ),
       ),
     ],
-    child: const MaterialApp(home: CalendarScreen()),
+    child: MaterialApp(home: CalendarScreen(initialDate: initialDate)),
   );
 }

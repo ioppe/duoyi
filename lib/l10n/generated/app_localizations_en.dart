@@ -419,6 +419,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todoCreatePriority => 'Priority flag';
 
   @override
+  String get todoCreateDueDate => 'Due date';
+
+  @override
+  String get todoCreateDueNone => 'No due date';
+
+  @override
+  String get todoCreateDuePickDate => 'Choose due date';
+
+  @override
+  String get todoCreateDueTimeNone => 'Add a time';
+
+  @override
+  String get todoCreateDuePickTime => 'Choose due time';
+
+  @override
+  String get todoCreateDueTimeClear => 'Remove time';
+
+  @override
+  String get todoCreateDueClear => 'Clear due date';
+
+  @override
+  String get todoCreateDueGapError =>
+      'That time does not exist in the current time zone (daylight saving jump). Choose another time.';
+
+  @override
   String get todoCreateReminder => 'Reminder';
 
   @override
@@ -1175,6 +1200,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preferencesPomodoroLengthTitle => 'Default Pomodoro length';
+
+  @override
+  String get preferencesFloatingWindowSize => 'Floating window size';
+
+  @override
+  String get preferencesFloatingWindowSubtitle =>
+      'macOS only; stored on this device';
+
+  @override
+  String get preferencesFloatingWindowLarge => 'Standard';
+
+  @override
+  String get preferencesFloatingWindowCompact => 'Compact';
 
   @override
   String get preferencesSectionBottomNav => 'Bottom navigation';
@@ -2667,24 +2705,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLockDisabledMessage => 'App lock disabled';
 
   @override
-  String get aiHistoryTitle => 'AI weekly review history';
+  String get aiHistoryTitle => 'AI insight history';
 
   @override
   String get aiHistoryClearTooltip => 'Clear history';
 
   @override
-  String get aiHistoryClearTitle => 'Clear all reviews?';
+  String get aiHistoryClearTitle => 'Clear all insights?';
 
   @override
   String get aiHistoryClearContent =>
-      'Locally saved AI reviews will be deleted and cannot be recovered';
+      'All AI insights, including other periods, will be deleted and cannot be recovered';
 
   @override
   String get aiHistoryClearAction => 'Clear';
 
   @override
   String get aiHistoryEmpty =>
-      'No AI reviews yet\nGenerate one from the Me page';
+      'No AI insights yet\nGenerate one from the statistics page';
 
   @override
   String get aiHistoryCopy => 'Copy';
@@ -2694,6 +2732,139 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiHistoryDelete => 'Delete';
+
+  @override
+  String get aiHistoryFilterAll => 'All history';
+
+  @override
+  String aiHistoryPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String aiHistoryPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String get aiHistoryPeriodEmpty => 'No AI insight for this period yet';
+
+  @override
+  String get aiHistoryPeriodUnknown => 'Older record without period details';
+
+  @override
+  String get aiHistoryExpand => 'Expand insight';
+
+  @override
+  String get aiHistoryCollapse => 'Collapse insight';
+
+  @override
+  String get statisticsAiGenerate => 'AI insight';
+
+  @override
+  String get statisticsAiRegenerate => 'Regenerate insight';
+
+  @override
+  String get statisticsAiGenerating => 'Generating…';
+
+  @override
+  String get statisticsAiHistory => 'AI history';
+
+  @override
+  String statisticsAiHistoryCount(Object count) {
+    return 'AI history ($count)';
+  }
+
+  @override
+  String get statisticsAiResultTitle => 'Cloud personalized insight';
+
+  @override
+  String get statisticsAiStageGenerating => 'Generating your insight';
+
+  @override
+  String get statisticsAiStageSaving => 'Saving your insight';
+
+  @override
+  String statisticsAiElapsed(Object seconds) {
+    return '${seconds}s elapsed';
+  }
+
+  @override
+  String get statisticsAiLeaveHint =>
+      'You can leave this page: the result is archived while the app keeps running. Closing the app will not continue the request.';
+
+  @override
+  String statisticsAiDataThrough(Object date) {
+    return 'Data through $date';
+  }
+
+  @override
+  String statisticsAiGeneratedAt(Object time) {
+    return 'Generated $time';
+  }
+
+  @override
+  String statisticsAiPeriodLine(Object period, Object range, Object zone) {
+    return '$period · $range · $zone';
+  }
+
+  @override
+  String statisticsAiPeriodRange(Object period, Object range) {
+    return '$period · $range';
+  }
+
+  @override
+  String get statisticsAiCopyInsight => 'Copy insight';
+
+  @override
+  String get statisticsAiRetryGenerate => 'Retry';
+
+  @override
+  String get statisticsAiRetrySave => 'Retry save';
+
+  @override
+  String get statisticsAiUnsavedTitle => 'Insight generated but not saved yet';
+
+  @override
+  String get statisticsAiDisabledHint =>
+      'An administrator must enable AI before a cloud insight can be generated';
+
+  @override
+  String get statisticsAiConfigLoading => 'Loading AI configuration…';
+
+  @override
+  String get statisticsAiConfigFailed =>
+      'Could not load AI configuration. Check your connection and try again.';
+
+  @override
+  String get statisticsAiConfigRetry => 'Retry';
+
+  @override
+  String get syncActionSyncNow => 'Sync now';
+
+  @override
+  String get syncConfigFailed =>
+      'Could not load server settings. Check your connection and try again.';
+
+  @override
+  String get statisticsAiErrorSessionChanged =>
+      'Your account changed, so this insight was not saved.';
+
+  @override
+  String get statisticsAiErrorArchiveFailed =>
+      'The insight was generated but is not archived yet. Retry saving, or copy it to keep it.';
+
+  @override
+  String get statisticsAiErrorStorageFailed =>
+      'History changes cannot be saved right now. Please retry.';
+
+  @override
+  String get statisticsAiErrorEmpty =>
+      'The model returned no insight text. Retry.';
+
+  @override
+  String get statisticsAiErrorRequestFailed =>
+      'Generation failed. Please try again later.';
 
   @override
   String get syncConflictTitle => 'Sync conflict log';
@@ -3428,12 +3599,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get focusPause => 'Pause';
 
   @override
-  String get focusResume => 'Resume';
-
-  @override
-  String get focusReset => 'Reset';
-
-  @override
   String get focusFloatingOpen => 'Open focus floating window';
 
   @override
@@ -3456,6 +3621,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get focusFloatingReady => 'Ready';
+
+  @override
+  String get focusResume => 'Resume';
+
+  @override
+  String get focusReset => 'Reset';
 
   @override
   String get reminderHealth => 'Notifications';
@@ -4232,4 +4403,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get backupOverwriteWillDeleteMissing =>
       'Local data that is missing from the backup will be deleted.';
+
+  @override
+  String get reminderWebActionRequest => 'Enable notifications';
+
+  @override
+  String get reminderWebStatusRequesting =>
+      'Waiting for the browser to return the notification permission result…';
+
+  @override
+  String get reminderWebStatusPrompt =>
+      'Browser notifications are off. Allow them so scheduled reminders can appear as system notifications.';
+
+  @override
+  String get reminderWebStatusGranted =>
+      'Browser notifications are allowed. Keep this page open: background throttling can delay reminders, and closing the page cannot guarantee scheduled reminders.';
+
+  @override
+  String get reminderWebStatusDenied =>
+      'Notifications are blocked. Allow them in the site settings next to the address bar, then return to this page.';
+
+  @override
+  String get reminderWebStatusUnsupported =>
+      'This browser does not support web notifications, so reminders can only appear inside this page.';
+
+  @override
+  String get reminderWebStatusInsecure =>
+      'This page is not a secure context (HTTPS or localhost required), so the browser will not show notifications.';
+
+  @override
+  String get reminderWebStatusFailed =>
+      'The notification permission request failed. Try again later.';
+
+  @override
+  String get reminderWebStatusDismissed =>
+      'No notification permission was chosen yet. You can tap \"Enable notifications\" again.';
 }

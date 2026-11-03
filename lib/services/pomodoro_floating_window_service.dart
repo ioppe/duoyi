@@ -5,6 +5,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../core/platform_info.dart';
+import '../core/pomodoro_floating_window_size.dart';
 import '../models/pomodoro.dart';
 import '../providers/pomodoro_provider.dart';
 
@@ -49,6 +50,8 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
   String _shortBreakLabel = '';
   String _longBreakLabel = '';
   Map<String, Object?> _appearance = const {};
+  PomodoroFloatingWindowSize _windowSize =
+      PomodoroFloatingWindowSize.defaultSize;
 
   bool _visible = false;
   bool _desiredVisible = false;
@@ -110,6 +113,8 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
     String? shortBreakLabel,
     String? longBreakLabel,
     Map<String, Object?>? appearance,
+    PomodoroFloatingWindowSize windowSize =
+        PomodoroFloatingWindowSize.defaultSize,
   }) {
     final availabilityChanged = _available != available;
     final identityChanged =
@@ -129,6 +134,7 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
     if (appearance != null && !mapEquals(appearance, _appearance)) {
       _appearance = Map<String, Object?>.unmodifiable(appearance);
     }
+    _windowSize = windowSize;
 
     if ((availabilityChanged && !available) || identityChanged) {
       // 锁定/强更/切换账号或服务器：仅隐藏，恢复后由用户重新打开。
@@ -281,6 +287,7 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
       'pauseLabel': _pauseLabel,
       'closeLabel': _closeLabel,
       'windowTitle': _windowTitle,
+      'windowSize': _windowSize.storageValue,
     };
   }
 

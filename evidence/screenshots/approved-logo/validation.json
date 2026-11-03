@@ -1,0 +1,34 @@
+{
+  "scope": "approved logo resources and durable client update conventions",
+  "version": "1.1.47",
+  "build_number": 140013,
+  "approved_reference_sha256": "4c3121a2a4612a9753c5175ce1ddd32bcbc8f6cd90f1a1cb69a7972d6dd41c8b",
+  "canonical_png_sha256": "2af3cdbb9d18199ced728b8525f0c8cad9fc6e1c6197c3ec5df64cd18142328b",
+  "canonical_svg": "assets/logo/duoyi_app_logo.svg",
+  "canonical_png": "assets/logo/duoyi_app_logo_1024.png",
+  "brand_red_srgb": "#C85656",
+  "glyph_white_srgb": "#FFFFFF",
+  "canvas_srgb": "#F6F7F9",
+  "reference_mark_crop": [17, 12, 105, 100],
+  "reference_comparison_mean_absolute_rgb_error": [0.3756456611570248, 1.193956611570248, 1.1850464876033058],
+  "browser_visual_comparison_performed": true,
+  "icon_generation_check": {"exit_code": 0, "matched_files": 46},
+  "flutter_targeted_tests": {
+    "exit_code": 0,
+    "passed": 29,
+    "failed": 0,
+    "suites": {
+      "platform_logo_assets_test.dart": 6,
+      "auth_registration_layout_test.dart": 19,
+      "rounded_typography_static_test.dart": 4
+    }
+  },
+  "dart_analyze": {"exit_code": 0, "issues": 0},
+  "dart_format": {"exit_code": 0, "checked_files": 2, "changed_files": 0},
+  "git_diff_check_exit_code": 0,
+  "source_and_master_files_unchanged_during_checks": 7,
+  "identity_version_and_storage_files_unchanged": 14,
+  "original_reference_retained_exactly": true,
+  "actual_native_overwrite_upgrade_tests_performed": false,
+  "new_release_or_server_deployment_performed": false
+}

@@ -1,0 +1,37 @@
+{
+  "scope": "backend and Web configuration persistence fix",
+  "version": "1.1.47",
+  "build_number": 140013,
+  "api_contract_version": "2026-06-01.7",
+  "required_routes_hash": "48881df2412c4ae0",
+  "source_main_sha256": "769daa795cb02646a4b599fe50952cd98defe46dc5368f684cca0c1720607d56",
+  "backend_candidate_image": "duoyi-backend:persistence-candidate-769daa795cb0",
+  "backend_candidate_image_id_prefix": "8d22a55bf7ed",
+  "backend_candidate_source_files_matched": 8,
+  "backend_tests": {"passed": 277, "failed": 0, "skipped": 0},
+  "flutter_targeted_tests": {"passed": 143, "failed": 0, "skipped": 0},
+  "web_font_policy_tests": {"passed": 10, "failed": 0},
+  "dart_analyze": {"exit_code": 0, "issues": 0},
+  "web_release_build": {"exit_code": 0, "file_count": 116, "bytes": 108085882},
+  "git_diff_check_exit_code": 0,
+  "isolated_containers": {
+    "production_credentials_used": false,
+    "production_data_mounted": false,
+    "issue": {"exit_code": 0, "session_digest_saved": true, "plaintext_in_db": false},
+    "resume": {"exit_code": 0, "fresh_process": true, "me_status": 200, "sync_status": 200, "settings_unchanged": true, "preferences_unchanged": true, "logout_revoked": true},
+    "revoked": {"exit_code": 0, "fresh_process": true, "me_status": 401, "settings_unchanged": true, "preferences_unchanged": true}
+  },
+  "real_web_release": {
+    "scope": "isolated localhost origin",
+    "credentials_used": false,
+    "exit_code": 0,
+    "rounds": [
+      {"round": 1, "device_preference_count": 17, "device_preferences_retained": true, "private_account_caches_removed": true},
+      {"round": 2, "device_preference_count": 17, "device_preferences_retained": true, "private_account_caches_removed": true}
+    ],
+    "browser_and_preview_cleaned": true
+  },
+  "fonts": {"startup_manifest_entries": 1, "startup_bytes": 2098692, "complete_deferred_bytes": 17772300, "ofl_bundled": true},
+  "protected_original_files_unchanged": 7,
+  "production_predeploy_backup": {"sqlite_quick_check": "ok", "settings_count": 76, "directory_mode": "700", "database_and_env_mode": "600"}
+}

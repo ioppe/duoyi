@@ -110,7 +110,11 @@ Widget _wrap(
         ChangeNotifierProvider(create: (_) => AuthProvider())
       else
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-      ChangeNotifierProvider(create: (_) => AiService()),
+      // 页面布局与导航夹具提供已获取的配置，避免等待未发起的配置加载。
+      ChangeNotifierProvider(
+        create: (_) =>
+            AiService()..updateFromServerConfig({'ai_enabled': false}),
+      ),
       ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ChangeNotifierProvider(create: (_) => LocationReminderProvider()),
       ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),
@@ -653,9 +657,21 @@ void main() {
       find.byKey(const ValueKey('todo_create_title')),
       '验收任务',
     );
+    await tester.pumpAndSettle();
     final submit = find.byKey(const ValueKey('todo_create_submit'));
     await tester.ensureVisible(submit);
     await tester.pumpAndSettle();
+    final formScroll = find
+        .descendant(
+          of: find.byKey(const ValueKey('todo_create_sheet')),
+          matching: find.byType(SingleChildScrollView),
+        )
+        .first;
+    for (var i = 0; i < 8 && submit.hitTestable().evaluate().isEmpty; i++) {
+      await tester.drag(formScroll, const Offset(0, -180));
+      await tester.pumpAndSettle();
+    }
+    expect(submit.hitTestable(), findsOneWidget);
     await tester.tap(submit);
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsOneWidget);

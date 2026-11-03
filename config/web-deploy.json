@@ -1,0 +1,9 @@
+{
+  "host": "207.58.173.213",
+  "port": 22,
+  "user": "root",
+  "branch": "main",
+  "public_url": "https://todo.skydrow.site",
+  "web_root": "/var/www/duoyi/current",
+  "releases_root": "/var/www/duoyi/releases"
+}

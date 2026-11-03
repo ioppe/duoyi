@@ -1,0 +1,16 @@
+{
+  "purpose": "Protect unrelated user changes in the original checkout",
+  "relative_workspace_from_build_checkout": "../duoyi",
+  "baseline_source": "unrelated-workspace-persistence-baseline.json captured earlier in this session",
+  "protected_files": 7,
+  "observed_matches_baseline": true,
+  "sha256": {
+    "backend/main.py": "4e4c4b178a0d2cb63419b089275b7567421549a53ca89fbc2ed2c00b5385f4d8",
+    "lib/main.dart": "1d3d7e9081e2c379b5e28b02c5a7a9bd7f830f033e91c709c239cd8235330b77",
+    "lib/providers/auth_provider.dart": "1e2ed27093927713aebf53a98e018bf3bd5c28b88cec0067e8be5310f5e82d46",
+    "lib/providers/cloud_sync_provider.dart": "b69470cf044694da5ceb845c3526fdf950c7fb64c717295437b14faa797cfc75",
+    "lib/providers/preferences_provider.dart": "9029694b017ddcb162487f8c13c0ad064c7f30760306607e167d104738ccd62d",
+    "lib/providers/theme_provider.dart": "e733ad620a041f61c095545fbc0899273cadd049c6b625077d9cb226158d8914",
+    "lib/services/account_local_data_cleaner.dart": "4de7d29b58aa0030ceaa9a91db6a2b15270b3320fccb4c420cb8e60f73c09b2b"
+  }
+}

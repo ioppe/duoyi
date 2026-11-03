@@ -410,42 +410,66 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   void _previousWeek() {
     setState(() {
-      _selectedDay = _selectedDay.subtract(const Duration(days: 7));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day - 7,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _nextWeek() {
     setState(() {
-      _selectedDay = _selectedDay.add(const Duration(days: 7));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day + 7,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _previousDay() {
     setState(() {
-      _selectedDay = _selectedDay.subtract(const Duration(days: 1));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day - 1,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _nextDay() {
     setState(() {
-      _selectedDay = _selectedDay.add(const Duration(days: 1));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day + 1,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _previousThreeDays() {
     setState(() {
-      _selectedDay = _selectedDay.subtract(const Duration(days: 3));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day - 3,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }
 
   void _nextThreeDays() {
     setState(() {
-      _selectedDay = _selectedDay.add(const Duration(days: 3));
+      _selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day + 3,
+      );
       _focusedMonth = DateTime(_selectedDay.year, _selectedDay.month);
     });
   }

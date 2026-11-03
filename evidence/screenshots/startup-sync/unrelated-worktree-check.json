@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-11-01T17:04:49.618966+00:00",
+  "baseline_files": 239,
+  "matched_at_observation": 230,
+  "paths_with_concurrent_differences": [
+    "docs/design-v2.md",
+    "docs/manual-regression-checklist.md",
+    "lib/core/i18n.dart",
+    "lib/l10n/app_en.arb",
+    "lib/l10n/app_zh.arb",
+    "lib/l10n/generated/app_localizations.dart",
+    "lib/l10n/generated/app_localizations_en.dart",
+    "lib/l10n/generated/app_localizations_zh.dart",
+    "test/screens/today_mine_smoke_test.dart"
+  ],
+  "different_files_from_isolated_worktree": true,
+  "original_workspace_written_by_this_task": false,
+  "preservation_action": "Read-only hash/stat comparison. Preserve the current original workspace, including concurrent edits; do not reset, restore, stash or copy over it.",
+  "verification_boundary": "The baseline is not reported as 239/239 unchanged. Nine files differed during this observation; all are distinct filesystem objects from the isolated worktree."
+}
