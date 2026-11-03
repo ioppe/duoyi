@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 void main() {
-  test('force update defaults use current 1.1.44 version floor', () {
+  test('force update defaults follow the current release version floor', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final appVersion = File('lib/core/app_version.dart').readAsStringSync();
     final backend = File('backend/main.py').readAsStringSync();
@@ -12,9 +12,15 @@ void main() {
       'lib/screens/admin_screen.dart',
     ).readAsStringSync();
 
-    expect(pubspec, contains('version: 1.1.44+140010'));
-    expect(appVersion, contains("static const name = '1.1.44';"));
-    expect(appVersion, contains('static const build = 140010;'));
+    final version = RegExp(
+      r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)$',
+      multiLine: true,
+    ).firstMatch(pubspec);
+    expect(version, isNotNull, reason: '发布版本必须包含合法的版本号和 build number');
+    final name = version!.group(1)!;
+    final build = version.group(2)!;
+    expect(appVersion, contains("static const name = '$name';"));
+    expect(appVersion, contains('static const build = $build;'));
     final backendConfig = File('backend/config.py').readAsStringSync();
     expect(backendConfig, contains('def _pubspec_app_version('));
     expect(backendConfig, contains('"pubspec.yaml"'));
