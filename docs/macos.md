@@ -52,6 +52,8 @@ macOS 提醒使用系统通知授权。初始化通知服务时系统可弹出�
 
 macOS 作业在分析与回归通过后运行，使用完整 Xcode 的 `macos-15` runner、固定 Flutter/Python 工具链和 CocoaPods，构建 Release 应用，并用 `lipo` 验证主程序同时包含 `arm64`、`x86_64`。常规运行上传 Actions artifacts；推送 `v*` 标签时，主流程等待 Android、Web、macOS 都成功，再把 DMG、ZIP 和校验文件一起加入 GitHub Release。独立 macOS 手动流程只上传 artifacts，不创建 Release、不发布标签。
 
+`lipo` 的输入文件必须放在 `-verify_arch` 之前，避免文件路径被其变长参数当作架构名。CI 在构建前运行 `test/services/macos_packaging_workflow_test.dart`：用 `clang` 生成真实的 universal 和仅 arm64 的 Mach-O 文件，直接执行工作流中的校验命令，确认双架构通过、缺少 Intel 架构时拒绝。可在 macOS 本机运行 `flutter test --no-pub test/services/macos_packaging_workflow_test.dart`。
+
 产物 `duoyi-macos-universal-unsigned` 包含：
 
 - `duoyi-<版本>-<提交>-macos-universal-unsigned.zip`：保留 `.app` 文件权限的应用包。

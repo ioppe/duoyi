@@ -100,7 +100,7 @@ jobs:
       - name: Analyze and verify timer integration
         run: |
           flutter analyze
-          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart
+          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart test/services/macos_packaging_workflow_test.dart
 
       - name: Build universal macOS application
         run: python3 scripts/flutter_with_config.py build macos --release --no-pub
@@ -119,8 +119,9 @@ jobs:
           )"
           APP_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
           APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
-          lipo -verify_arch arm64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
-          lipo -verify_arch x86_64 "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -archs
+          lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch arm64
+          lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch x86_64
           ARTIFACT_NAME="duoyi-${APP_VERSION}-${GITHUB_SHA:0:8}-macos-universal-unsigned"
           PACKAGE_DIR="$GITHUB_WORKSPACE/build/macos/packages"
           STAGING_DIR="$(mktemp -d "$RUNNER_TEMP/duoyi-dmg.XXXXXX")"
