@@ -13,7 +13,7 @@ import 'app_modal_presentation.dart';
 
 /// 当前主题的表面观感档位。
 ///
-/// 仅默认主题注册了 [AppSurfaceStyle.ios]；re0..botw 未注册，返回 null，
+/// 仅默认主题注册了 [AppSurfaceStyle.appleMinimal]；re0..botw 未注册，返回 null，
 /// 调用点沿用下方 `_standard*` 既有默认值，观感保持不变。
 AppSurfaceStyle? appSurfaceStyleOf(BuildContext context) =>
     Theme.of(context).extension<AppSurfaceStyle>();
@@ -38,7 +38,7 @@ class AppSurfaceCard extends StatelessWidget {
   final Color? color;
   final Gradient? gradient;
 
-  /// null 时取主题观感档位（默认主题 iOS 档 16，其余主题 radiusCard 12）。
+  /// null 时取主题观感档位（默认主题 Apple minimal 档 18，其余主题 12）。
   final BorderRadius? borderRadius;
   final Border? border;
   final double elevation;
@@ -106,7 +106,7 @@ class AppSurfaceCard extends StatelessWidget {
           : null,
       gradient: gradient ?? skinGradient,
       borderRadius: effectiveRadius,
-      // 默认主题 iOS 档：去描边，改由 cardShadow 提供极淡层次；
+      // 默认主题 Apple minimal 档：去描边，改由 cardShadow 提供极淡层次；
       // 液态玻璃主题：白色高光描边；其余主题沿用 defaultBorder 淡描边。
       border:
           border ??
@@ -1518,7 +1518,7 @@ class AppDialog extends StatelessWidget {
               style: (theme.textTheme.titleMedium ?? const TextStyle())
                   .copyWith(
                     color: cs.onSurface,
-                    fontSize: 16,
+                    fontSize: DesignTokens.fontSizeBody,
                     fontWeight: DesignTokens.fontWeightStrong,
                     height: 1.2,
                   ),

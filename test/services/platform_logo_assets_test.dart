@@ -530,6 +530,121 @@ void main() {
       expect(favicon.alphaAt(34, 44), 255, reason: 'glyph stays opaque');
     },
   );
+
+  // The legacy assets/logo aliases used to be a second brand source (#C95455
+  // with approximated geometry). They must now be derivatives of the canonical
+  // master only: byte copies of the canonical artwork, the shared transparent
+  // foreground, or the master's transparent tile SVG.
+  test('legacy logo aliases are derivatives of the canonical master', () async {
+    final canonical = File(_canonicalPath).readAsBytesSync();
+    for (final path in const <String>[
+      'assets/logo/duoyi_logo_1024.png',
+      'assets/logo/duoyi_logo_ios_1024.png',
+      'assets/logo/duoyi_logo_redesign_1024.png',
+    ]) {
+      expect(File(path).readAsBytesSync(), canonical, reason: path);
+    }
+    expect(
+      File('assets/logo/duoyi_web_logo_512.png').readAsBytesSync(),
+      File('web/icons/Icon-512.png').readAsBytesSync(),
+      reason: 'the 512 alias is the same artwork render as the web icon',
+    );
+
+    const artworkAliases = <String, int>{
+      'assets/logo/duoyi_logo_512.png': 512,
+      'assets/logo/duoyi_logo_192.png': 192,
+    };
+    for (final entry in artworkAliases.entries) {
+      final artwork = await _Artwork.load(entry.key);
+      expect(artwork.width, entry.value, reason: entry.key);
+      expect(artwork.height, entry.value, reason: entry.key);
+      _expectColor(artwork, 44, 1, _brandRed, reason: '${entry.key} red tile');
+      _expectColor(
+        artwork,
+        34,
+        44,
+        _glyphWhite,
+        reason: '${entry.key} left white bar',
+      );
+      _expectColor(
+        artwork,
+        54,
+        32,
+        _glyphWhite,
+        reason: '${entry.key} top right white block',
+      );
+      _expectColor(
+        artwork,
+        54,
+        52,
+        _glyphWhite,
+        reason: '${entry.key} bottom right white block',
+      );
+      _expectColor(
+        artwork,
+        54,
+        42,
+        _brandRed,
+        reason: '${entry.key} red gap between the right blocks',
+      );
+    }
+
+    final aliasForeground = await _Artwork.load(
+      'assets/logo/duoyi_launcher_foreground_512.png',
+    );
+    expect(aliasForeground.width, 512);
+    expect(aliasForeground.height, 512);
+    expect(aliasForeground.alphaAt(2, 2), 0, reason: 'alias corner');
+    expect(aliasForeground.alphaAt(34, 44), 255, reason: 'alias left bar');
+    expect(
+      aliasForeground.alphaAt(54, 42),
+      lessThanOrEqualTo(8),
+      reason: 'alias gap stays transparent',
+    );
+
+    // The SVG aliases keep the master's own glyph path and transform, with the
+    // opaque artboard dropped: never a second design, never a bitmap.
+    final master = File(_masterSvgPath).readAsStringSync();
+    final masterGlyph = RegExp(
+      r'<path fill="#FFFFFF"[^>]*d="([^"]+)"',
+    ).firstMatch(master)?.group(1);
+    expect(masterGlyph, isNotNull, reason: 'canonical master glyph path');
+    for (final path in const <String>[
+      'assets/logo/duoyi_logo.svg',
+      'assets/logo/duoyi_unified_logo.svg',
+      'assets/logo/duoyi_widget_mark.svg',
+    ]) {
+      final text = File(path).readAsStringSync();
+      expect(text, contains('viewBox="0 0 88 88"'), reason: path);
+      expect(text, contains(masterGlyph!), reason: path);
+      expect(
+        text,
+        contains('transform="translate(20 68) scale(0.09375 -0.09375)"'),
+        reason: path,
+      );
+      expect(text, contains('fill="#C85656"'), reason: path);
+      expect(text, isNot(contains('#C95455')), reason: path);
+      expect(text, isNot(contains('#F6F7F9')), reason: path);
+      expect(text, isNot(contains('<image')), reason: path);
+    }
+
+    // The native widget vector and the Flutter painter replay the same master.
+    final vector = File(
+      '$_androidRes/drawable/duoyi_widget_logo.xml',
+    ).readAsStringSync();
+    expect(vector, contains(masterGlyph!), reason: 'vector glyph path');
+    expect(vector, contains('android:fillColor="#C85656"'));
+    expect(vector, isNot(contains('#C95455')));
+    expect(vector, isNot(contains('<bitmap')));
+
+    final painter = File(
+      'lib/widgets/widget_brand_logo.dart',
+    ).readAsStringSync();
+    expect(painter, contains('Color(0xFFC85656)'));
+    expect(painter, contains('..moveTo(192, 64)'));
+    expect(painter, isNot(contains('0xFFC95455')));
+    expect(painter, isNot(contains('Image.asset')));
+  });
 }
 
 /// Decoded artwork addressed in artboard units (0..88) so one set of sample

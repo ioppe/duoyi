@@ -22,8 +22,11 @@ const double _trendInlineMinWidth = 300;
 /// 标签字号被放大超过该倍数时，趋势同样移到分数下方，避免与分数抢同一行。
 const double _trendInlineMaxLabelScale = 1.3;
 
-/// 三栏统计每栏所需的最小宽度，按标签字号的倍数推算，随文字缩放一起放大。
-const double _statColumnLabelScale = 5;
+/// 三栏统计每栏所需的最小宽度：设计基线 5 个标签字宽（14 × 5）。
+///
+/// 该基线固定在设计字号上，再按用户字号倍率放大；不直接乘当前标签令牌，
+/// 否则共享令牌变小（14 → 12）时阈值被一起缩小，320px + 2x 会被判成两列。
+const double _statColumnDesignMinWidth = 70;
 
 /// “我的”页的本周效率摘要，按应用时区比较本周与上周同段。
 ///
@@ -133,7 +136,9 @@ class WeeklyProductivityCard extends StatelessWidget {
                   labelSize <=
                       DesignTokens.fontSizeSecondary *
                           _trendInlineMaxLabelScale;
-              final statMinWidth = labelSize * _statColumnLabelScale;
+              final statMinWidth =
+                  _statColumnDesignMinWidth *
+                  (labelSize / DesignTokens.fontSizeSecondary);
               final columns =
                   (constraints.maxWidth - DesignTokens.spaceMd * 2) / 3 >=
                       statMinWidth

@@ -1065,6 +1065,14 @@ class AiService extends ChangeNotifier {
     try {
       out = await _requestReportMarkdown(periodLabel, reportMarkdown);
     } catch (error) {
+      // 会话已变化（切号 / resetLocalState / 连接失效）时，`_chat` 的
+      // `_checkRequest` 会先抛出“连接或账号已变化”的连接层文案。统计报告
+      // 契约要求统一报 session_changed，且旧任务不能被标成“生成失败”。
+      // 与下方成功分支的 stale 处理保持一致。
+      if (_isRequestStale(storageGeneration, accountGeneration)) {
+        _discardJob(key, startedAt);
+        throw AiException(I18n.tr('statistics.ai.error.session_changed'));
+      }
       // 生成失败没有可存档正文；本地化的 AI 错误留在任务上供内联展示，
       // 其它异常仍由调用方按原异常处理。
       if (error is AiException) {

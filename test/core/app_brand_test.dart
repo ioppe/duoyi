@@ -59,9 +59,13 @@ void main() {
         reason: '${brand.id} Material Card 描边宽须与玻璃档同源',
       );
 
-      // 阴影：三类卡面统一 shadowXs（SurfaceCard / MetricCard 读取
+      // 阴影：三类卡面统一走档位极淡阴影（SurfaceCard / MetricCard 读取
       // cardShadow；Material Card 经 cardTheme elevation 0 保持无立体）。
-      expect(style.cardShadow, DesignTokens.shadowXs);
+      // 默认主题是 Apple minimal 档，液态玻璃沿用 shadowXs。
+      final expectedShadow = brand.style == BrandStyle.defaultBrand
+          ? DesignTokens.shadowApple
+          : DesignTokens.shadowXs;
+      expect(style.cardShadow, expectedShadow);
     }
   });
 

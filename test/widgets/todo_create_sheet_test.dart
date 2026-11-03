@@ -1053,7 +1053,12 @@ void main() {
     );
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
     expect(find.text('确认会议地点'), findsOneWidget);
-    expect(find.textContaining('Asia/Shanghai'), findsOneWidget);
+    expect(find.textContaining('Asia/Shanghai'), findsNothing);
+    expect(find.textContaining(I18n.tr('todo.create.timezone')), findsNothing);
+    expect(
+      find.textContaining(I18n.tr('quick.todo.parsed_prefix')),
+      findsOneWidget,
+    );
     await _scrollToSubmit(tester);
     await tester.tap(find.byKey(const ValueKey('todo_create_submit')));
     await tester.pumpAndSettle();
@@ -1240,7 +1245,15 @@ void main() {
         '后天下午3点开会',
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining(zone), findsOneWidget);
+      expect(find.textContaining(zone), findsNothing);
+      expect(
+        find.textContaining(I18n.tr('todo.create.timezone')),
+        findsNothing,
+      );
+      expect(
+        find.textContaining(I18n.tr('quick.todo.parsed_prefix')),
+        findsOneWidget,
+      );
       expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
       await _scrollToSubmit(tester);
       await tester.tap(find.byKey(const ValueKey('todo_create_submit')));

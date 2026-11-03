@@ -4655,13 +4655,13 @@ abstract class AppLocalizations {
   /// No description provided for @themeStyleDefaultName.
   ///
   /// In zh, this message translates to:
-  /// **'多仪'**
+  /// **'苹果简约'**
   String get themeStyleDefaultName;
 
   /// No description provided for @themeStyleDefaultDescription.
   ///
   /// In zh, this message translates to:
-  /// **'简洁原版 · 暖橙基调'**
+  /// **'雾灰画布 · 珊瑚红点缀'**
   String get themeStyleDefaultDescription;
 
   /// No description provided for @themeStyleRe0Name.
@@ -7097,7 +7097,7 @@ abstract class AppLocalizations {
   /// No description provided for @widgetCalendarMonthSummary.
   ///
   /// In zh, this message translates to:
-  /// **'本月日期 · 今日已标记'**
+  /// **'右上角为当天事项数'**
   String get widgetCalendarMonthSummary;
 
   /// No description provided for @widgetHabitPending.
@@ -8401,6 +8401,426 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'未选择通知权限，可以再次点击“通知授权”'**
   String get reminderWebStatusDismissed;
+
+  /// No description provided for @widgetTodoPreviewDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'展示前三个今日任务，底栏切页，点击任务进入详情'**
+  String get widgetTodoPreviewDescription;
+
+  /// No description provided for @widgetFocusPreviewDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日专注次数和时长，点击进入专注'**
+  String get widgetFocusPreviewDescription;
+
+  /// No description provided for @todoSystemCalendarAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加到系统日历'**
+  String get todoSystemCalendarAdd;
+
+  /// No description provided for @todoSystemCalendarOpened.
+  ///
+  /// In zh, this message translates to:
+  /// **'已打开系统日历，请点击保存'**
+  String get todoSystemCalendarOpened;
+
+  /// No description provided for @todoSystemCalendarFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开系统日历'**
+  String get todoSystemCalendarFailed;
+
+  /// No description provided for @preferencesMenuTextScale.
+  ///
+  /// In zh, this message translates to:
+  /// **'字体大小'**
+  String get preferencesMenuTextScale;
+
+  /// No description provided for @preferencesTextScaleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用字体大小'**
+  String get preferencesTextScaleTitle;
+
+  /// No description provided for @preferencesTextScaleSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'只调整多仪内文字，不改变手机其他应用'**
+  String get preferencesTextScaleSubtitle;
+
+  /// No description provided for @preferencesTextScaleSmall.
+  ///
+  /// In zh, this message translates to:
+  /// **'小（85%）'**
+  String get preferencesTextScaleSmall;
+
+  /// No description provided for @preferencesTextScaleStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准（100%）'**
+  String get preferencesTextScaleStandard;
+
+  /// No description provided for @preferencesTextScaleLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'大（115%）'**
+  String get preferencesTextScaleLarge;
+
+  /// No description provided for @preferencesTextScalePreviewTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'预览字体大小'**
+  String get preferencesTextScalePreviewTitle;
+
+  /// No description provided for @preferencesTextScalePreviewHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动下面的滑块，选择合适的字体大小。'**
+  String get preferencesTextScalePreviewHint;
+
+  /// No description provided for @preferencesTextScalePreviewNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置后，待办、习惯、专注和设置页面的文字会一起调整。选好后点击“完成”保存。'**
+  String get preferencesTextScalePreviewNote;
+
+  /// No description provided for @preferencesTextScalePercent.
+  ///
+  /// In zh, this message translates to:
+  /// **'{percent}%'**
+  String preferencesTextScalePercent(int percent);
+
+  /// No description provided for @preferencesTextScaleStandardMarker.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get preferencesTextScaleStandardMarker;
+
+  /// No description provided for @preferencesTextScaleDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get preferencesTextScaleDone;
+
+  /// No description provided for @preferencesTextScaleSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'字号保存失败，请重试'**
+  String get preferencesTextScaleSaveFailed;
+
+  /// No description provided for @widgetCalendarWeekdayMon.
+  ///
+  /// In zh, this message translates to:
+  /// **'一'**
+  String get widgetCalendarWeekdayMon;
+
+  /// No description provided for @widgetCalendarWeekdayTue.
+  ///
+  /// In zh, this message translates to:
+  /// **'二'**
+  String get widgetCalendarWeekdayTue;
+
+  /// No description provided for @widgetCalendarWeekdayWed.
+  ///
+  /// In zh, this message translates to:
+  /// **'三'**
+  String get widgetCalendarWeekdayWed;
+
+  /// No description provided for @widgetCalendarWeekdayThu.
+  ///
+  /// In zh, this message translates to:
+  /// **'四'**
+  String get widgetCalendarWeekdayThu;
+
+  /// No description provided for @widgetCalendarWeekdayFri.
+  ///
+  /// In zh, this message translates to:
+  /// **'五'**
+  String get widgetCalendarWeekdayFri;
+
+  /// No description provided for @widgetCalendarWeekdaySat.
+  ///
+  /// In zh, this message translates to:
+  /// **'六'**
+  String get widgetCalendarWeekdaySat;
+
+  /// No description provided for @widgetCalendarWeekdaySun.
+  ///
+  /// In zh, this message translates to:
+  /// **'日'**
+  String get widgetCalendarWeekdaySun;
+
+  /// No description provided for @widgetCalendarDayCountLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{date}，{count}项'**
+  String widgetCalendarDayCountLabel(Object count, Object date);
+
+  /// No description provided for @widgetCalendarMonthTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年{month}月'**
+  String widgetCalendarMonthTitle(Object month, Object year);
+
+  /// No description provided for @widgetTodoEmptyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开{tab}，安排下一件事'**
+  String widgetTodoEmptyHint(Object tab);
+
+  /// No description provided for @widgetTodoCountUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'项'**
+  String get widgetTodoCountUnit;
+
+  /// No description provided for @widgetHabitTodayLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'今日完成率'**
+  String get widgetHabitTodayLabel;
+
+  /// No description provided for @widgetFocusCountLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'次数'**
+  String get widgetFocusCountLabel;
+
+  /// No description provided for @widgetFocusMinutesLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get widgetFocusMinutesLabel;
+
+  /// No description provided for @widgetFocusNextLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'下轮专注（分钟）'**
+  String get widgetFocusNextLabel;
+
+  /// No description provided for @widgetFocusRemainingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余时间'**
+  String get widgetFocusRemainingLabel;
+
+  /// No description provided for @widgetFocusOpenLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'前往专注'**
+  String get widgetFocusOpenLabel;
+
+  /// No description provided for @widgetFocusRunningLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看倒计时'**
+  String get widgetFocusRunningLabel;
+
+  /// No description provided for @widgetFocusStartLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get widgetFocusStartLabel;
+
+  /// No description provided for @widgetFocusResumeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get widgetFocusResumeLabel;
+
+  /// No description provided for @widgetFocusPauseLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停'**
+  String get widgetFocusPauseLabel;
+
+  /// No description provided for @widgetFocusStopLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止'**
+  String get widgetFocusStopLabel;
+
+  /// No description provided for @widgetFocusPausedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get widgetFocusPausedLabel;
+
+  /// No description provided for @widgetTodayLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get widgetTodayLabel;
+
+  /// No description provided for @widgetAndroidPickerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请从系统小组件列表选择待办、专注、习惯或月历，添加后在桌面拖动边缘调整大小。'**
+  String get widgetAndroidPickerHint;
+
+  /// No description provided for @widgetAndroidCatalogDensityHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这里选择的是新添加小组件的默认显示密度；系统小组件列表只有待办、专注、习惯、月历四个入口，添加后在桌面拖动边缘调整大小。'**
+  String get widgetAndroidCatalogDensityHint;
+
+  /// No description provided for @widgetMobilePickerHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请在手机的系统小组件列表中查找多仪：Android 添加后拖动边缘调整大小，iOS 可在小组件库选择尺寸。'**
+  String get widgetMobilePickerHint;
+
+  /// No description provided for @focusDistractionTileTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分心应用选择'**
+  String get focusDistractionTileTitle;
+
+  /// No description provided for @focusDistractionTileSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已选'**
+  String get focusDistractionTileSelected;
+
+  /// No description provided for @focusDistractionTileBlacklistEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单：未选择应用'**
+  String get focusDistractionTileBlacklistEmpty;
+
+  /// No description provided for @focusDistractionTileBlacklist.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单'**
+  String get focusDistractionTileBlacklist;
+
+  /// No description provided for @focusDistractionTileWhitelistScanFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单扫描失败，暂未拦截'**
+  String get focusDistractionTileWhitelistScanFailed;
+
+  /// No description provided for @focusDistractionTileWhitelist.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单（未选应用为分心）'**
+  String get focusDistractionTileWhitelist;
+
+  /// No description provided for @focusDistractionModeBlacklist.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑名单'**
+  String get focusDistractionModeBlacklist;
+
+  /// No description provided for @focusDistractionModeWhitelist.
+  ///
+  /// In zh, this message translates to:
+  /// **'白名单'**
+  String get focusDistractionModeWhitelist;
+
+  /// No description provided for @focusDistractionModeBlacklistHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择的应用会记录为分心应用。'**
+  String get focusDistractionModeBlacklistHint;
+
+  /// No description provided for @focusDistractionModeWhitelistHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择的应用视为无关应用，其余可启动应用会记录为分心应用。'**
+  String get focusDistractionModeWhitelistHint;
+
+  /// No description provided for @focusDistractionPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择分心应用'**
+  String get focusDistractionPickerTitle;
+
+  /// No description provided for @focusDistractionPickerSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描手机上可启动的应用；只在点击完成后保存。'**
+  String get focusDistractionPickerSubtitle;
+
+  /// No description provided for @focusDistractionPickerCancel.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get focusDistractionPickerCancel;
+
+  /// No description provided for @focusDistractionPickerDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get focusDistractionPickerDone;
+
+  /// No description provided for @focusDistractionPickerSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索应用名或包名'**
+  String get focusDistractionPickerSearch;
+
+  /// No description provided for @focusDistractionPickerLoading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在扫描已安装应用…'**
+  String get focusDistractionPickerLoading;
+
+  /// No description provided for @focusDistractionPickerLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法读取已安装应用，请重试。'**
+  String get focusDistractionPickerLoadFailed;
+
+  /// No description provided for @focusDistractionPickerRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新扫描'**
+  String get focusDistractionPickerRetry;
+
+  /// No description provided for @focusDistractionPickerEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有找到可启动应用。'**
+  String get focusDistractionPickerEmpty;
+
+  /// No description provided for @focusDistractionPickerNoMatches.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的应用。'**
+  String get focusDistractionPickerNoMatches;
+
+  /// No description provided for @focusDistractionPickerSystemApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统应用'**
+  String get focusDistractionPickerSystemApp;
+
+  /// No description provided for @focusDistractionPickerSummarySelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'已选'**
+  String get focusDistractionPickerSummarySelected;
+
+  /// No description provided for @focusDistractionPickerSummaryRemaining.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余作为分心'**
+  String get focusDistractionPickerSummaryRemaining;
+
+  /// No description provided for @focusDistractionPickerSummaryAvailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'可选应用'**
+  String get focusDistractionPickerSummaryAvailable;
+
+  /// No description provided for @focusDistractionPickerSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败，请重试'**
+  String get focusDistractionPickerSaveFailed;
 }
 
 class _AppLocalizationsDelegate

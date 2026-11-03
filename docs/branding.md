@@ -19,7 +19,7 @@
 - **Android 自适应前景**：`assets/logo/duoyi_app_logo_foreground_1024.png`，由同一母版派生，角落透明；背景为 `#C85656`。
 - **原始校对参考**：`assets/logo/duoyi_logo_reference.png`，不参与修改和重新渲染。
 
-`assets/logo/duoyi_logo_redesign_1024.png` 是旧日历插画，`duoyi_logo.svg`、`duoyi_logo_1024.png`、`duoyi_logo_512.png`、`duoyi_logo_192.png` 是旧沙漏资源。它们不代表当前批准的 Logo，不能因为文件名相似或历史配置引用就重新启用。历史截图与发布证据不追溯改图。
+`assets/logo` 下以 `duoyi_logo_*`、`duoyi_web_logo_*`、`duoyi_unified_logo.svg`、`duoyi_widget_mark.svg` 命名的文件都是本母版的兼容别名（透明派生或 canonical 字节副本），不代表第二套设计，细节见下文「Android 小组件矢量标记与兼容别名」。历史截图与发布证据不追溯改图。
 
 ## 各端资源映射
 
@@ -36,6 +36,14 @@
 | 应用内登录/注册标志 | `lib/widgets/auth_page_frame.dart` | 显示统一图片，保留既有尺寸、圆角和布局，不随主题换图或重新着色 |
 
 各平台可以按系统规范缩放、裁剪和留安全区，但不能改成日历、沙漏、渐变插画或另一套几何图案。通知状态栏等系统功能图标与应用身份图标分别遵守其平台规则。以后新增平台时也必须从本母版生成，不另选默认模板图标。
+
+### Android 小组件矢量标记与兼容别名
+
+Android 原生小组件的品牌标记 `android/app/src/main/res/drawable/duoyi_widget_logo.xml` 与 Flutter 的 `WidgetBrandLogo`（`lib/widgets/widget_brand_logo.dart`）都由母版生成，不手写几何：24dp 矢量用一个 `group` 把 88 单位母版画布缩放到 24 viewport，再用嵌套 `group` 复现母版图形的 `translate(20 68) scale(.09375 -.09375)`，因此白色三块图形就是母版自己的 path，而不是近似的圆角矩形；Flutter painter 逐条使用母版 M/L/C/Z 指令并套用同一组变换。两者只用固定品牌红 `#C85656` 与白色，不随主题主色改色、不加 tint、不引入位图，方块外部保持透明。
+
+`assets/logo` 下的兼容别名（`duoyi_logo.svg`、`duoyi_unified_logo.svg`、`duoyi_widget_mark.svg`、`duoyi_logo_1024/512/192.png`、`duoyi_web_logo_512.png`、`duoyi_logo_ios_1024.png`、`duoyi_logo_redesign_1024.png`、`duoyi_launcher_foreground_512.png`）不是独立设计：SVG 是母版去掉不透明衬底后的透明派生，PNG 是同源 artwork 或透明前景的渲染，或 canonical 1024 的字节副本。保留这些路径是为了不打断历史引用与 evidence 页面链接；指向它们的旧配置得到的仍然只有批准图样。历史截图与发布证据不追溯改图。
+
+`scripts/generate_brand_assets.py` 保留为薄兼容入口，只把 `--check` 与写入请求转交给 `scripts/sync_app_icons.py`；仓库里不存在第二套母版或 rsvg 渲染依赖。
 
 ### macOS Dock 与 Finder
 
@@ -66,7 +74,7 @@ python3 scripts/sync_app_icons.py --check
 flutter test --no-pub test/services/platform_logo_assets_test.dart --reporter expanded
 ```
 
-生成脚本负责母版到各平台产物的同步；`--check` 只校验，不修复或写入文件，发现不一致必须返回非零。不要单独编辑某个平台的 PNG。测试同时核对批准图样的颜色/几何身份、当前源图引用、1024 资源一致性及声明尺寸，避免再次把所有平台统一到错误的图片。
+生成脚本负责母版到各平台产物的同步；`--check` 只校验，不修复或写入文件，发现不一致必须返回非零。它同时覆盖原生小组件矢量、`WidgetBrandLogo` 生成源码与 `assets/logo` 兼容别名，所以这四类产物都不可能各自漂移。不要单独编辑某个平台的 PNG、`duoyi_widget_logo.xml` 或 `widget_brand_logo.dart`——它们都是生成物。测试同时核对批准图样的颜色/几何身份、当前源图引用、1024 资源一致性及声明尺寸，避免再次把所有平台统一到错误的图片。
 
 修改后检查 Android 普通/自适应入口、macOS Dock/Finder、Linux 桌面入口、Web favicon/PWA 及登录页展示；按实际可用设备记录检查结果。重新生成资源不等于已安装的客户端或浏览器图标缓存已经更新，旧安装包需要覆盖更新才能取得新资源。
 

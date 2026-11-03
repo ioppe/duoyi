@@ -83,9 +83,43 @@ Web 无需填写服务器地址，登录页可选密码、邮箱验证码或访�
 
 ## 本机偏好持久化
 
-显示与行为、日期格式、周起始日、应用时区、默认入口、底部导航、触感和提醒选项属于本机配置，通过 `PreferencesProvider` 写入 `SharedPreferences`。关闭应用、重新启动、会话失效及账号数据清理均保留这些 `pref_*` 值；账号私有业务数据、历史、凭据和同步基线仍在退出或切换账号时清理。外观购买、奖励与账号缓存继续遵循原有账号隔离规则。
+显示与行为、日期格式、周起始日、应用时区、默认入口、底部导航、触感和提醒选项属于本机配置，通过 `PreferencesProvider` 写入 `SharedPreferences`。关闭应用、重新启动、会话失效及普通账号数据清理均保留这些 `pref_*` 值；账号私有业务数据、历史、凭据和同步基线仍在退出或切换账号时清理。应用字体大小的换号边界见下文，外观购买、奖励与账号缓存继续遵循原有账号隔离规则。
 
-开启云同步时，白名单偏好（包括语言、日期、时区和导航）随账号同步；设置保存同时等待变更时间戳和待同步键落盘，较旧的远端偏好快照不能覆盖更新的本地配置。云同步范围见 [账号偏好契约](cloud-sync-v2-contract.md#账号偏好preferences--post-apisync)。首页日历开关继续只在本机保存。
+“我的 → 个性设置 → 显示与行为 → 应用字体大小”打开独立字号页，默认标准（100%）。原生 Android 提供 55%、70%、85%、100%、115%、130%、145% 七档，100% 位于正中间，可向下缩小三档、向上增大三档；Web（含安卓浏览器）、iOS 和桌面保持 85% 至 190% 原八档。拖动只修改预览，点击“完成”后写入 `pref_text_scale` 并应用到全局，返回取消未保存调整。原生 Android 的标准 100% 默认正文为 12（系统未额外放大时），由 `DesignTokens.androidFontSizeBody` 和根部 `AppTypography` 提供 12/14 平台基准，标题、辅助文字、说明、按钮和导航文字按同一比例保留原层级。Web、iOS 和桌面继续使用共享字阶：正文 14、辅助 12、说明 11、页标题 18。平台基准、应用档位和系统缩放分开组合，保留系统线性/非线性策略；预览保留一次 Android 基准，只替换用户档位，避免重复缩放。Android 七档正文依次为 6.6、8.4、10.2、12、13.8、15.6、17.4。有效已存档位原样保留；旧版 160%、175%、190% 在 Android 读取时就近归到 145%，普通加载不改写磁盘，用户保存或账号绑定沿用既有写入规则，不执行强制默认档迁移。
+
+当前平台有效的已保存字号在杀进程、重启、会话失效、退出后登录同一账号时保留。`pref_text_scale_owner_v1` 在本机记录规范化服务器身份与用户 ID；首次绑定账号接纳归一化后的既有字号，只有成功登录到另一个服务器/用户身份时才将字号恢复为标准（100%）。普通启动残留数据清理不能触发重置；字号和身份标记不加入云同步业务数据。日期、触感等其他本机偏好的换号行为保持原规则。
+严格专注的分心应用选择保存在番茄钟本机配置 `pomodoro_config` 中。默认是黑名单模式，勾选的应用才会记录为分心应用；切换到白名单模式后，勾选的应用视为无关应用，其余扫描到的可启动应用会作为分心应用。Android 通过 Launcher 查询扫描应用名和包名，不申请 `QUERY_ALL_PACKAGES`；扫描失败时白名单拦截会暂停并提示，不会把空结果误当成“全部放行”。
+
+开启云同步时，白名单偏好（包括语言、日期、时区和导航）随账号同步；设置保存同时等待变更时间戳和待同步键落盘，较旧的远端偏好快照不能覆盖更新的本地配置。云同步范围见 [账号偏好契约](cloud-sync-v2-contract.md#账号偏好preferences--post-apisync)。应用字体比例及其身份标记、首页日历开关继续只在本机保存。
+
+## Android 小组件同步与入口
+
+Android 系统选择器只暴露核心 4 个（待办、习惯、月历、专注）标准 3x2 可调整入口；其余 24 个元数据入口（历史综合 1、核心 compact/detailed 变体 8、今日日程/目标/课程表/随手记/纪念日 15）用 `android:widgetFeatures="hide_from_picker"` 隐藏（需 API 28+，旧启动器可能忽略该提示），Receiver、资源、类与启用状态全部保留。旧实例刷新与核心 4 类的 App 内添加继续可用；Android 设置页只列核心 4 类，Web/桌面/iOS 预览仍保留 9 类。核心四页及历史综合实例只有底部四标签在组件内部切页，选中页按桌面实例和实际 Provider 保存。核心 4 页底栏始终可见；历史综合实例首次简洁样式无底栏的兼容行为保持。上方 logo、标题、空白、统计、日期与普通专注摘要打开 App 对应分页；专注的开始/继续、暂停、停止按钮直接在组件内执行，具体任务与习惯提示进入对应详情；旧“打开 App”和“+ 添加”保持收起。
+
+待办集合使用今日可见未完成事项的完整列表，不再在快照层截断 Top3；展示顺序固定为重要且紧急、不重要但紧急、重要但不紧急、不重要且不紧急，同一象限再按优先级、手动顺序、创建时刻和 ID 稳定排序。Android 使用 `DuoyiWidgetCollectionService`（`exported=false` + `android.permission.BIND_REMOTEVIEWS`）和 API 11+ `RemoteViews` 集合服务提供待办原生上下滚动；月历已撤下错误的纵向月份列表。
+
+月历恢复原尺寸的固定单月布局：顶部月份标题、独立星期表头、等分剩余高度的完整 4–6 周日期网格，保留正数事项角标；“今天”在本实例内刷新应用当前月，不启动 Activity。用户要求的是保持该布局的左右手势切月，当前标准 Android RemoteViews 缺少水平手势分页容器，此项尚未实现；不能以纵向月份列表或改变网格大小替代。
+
+四核心专注页直接提供开始/继续、暂停、停止三个桌面动作。动作由具体物理组件宿主发出后台 PendingIntent，URI 携带账号 scope、session、revision 和期望状态；主引擎与冷后台均再次校验，旧或重复按钮只 no-op。暂停状态持久化并可继续同一会话，停止回到空闲且不伪造完成次数；未登录且无残留 owner 的匿名本地专注可使用，其他账号动作边界不放宽。控制快照字段为 `focus_control_scope`、`focus_timer_session_id`、`focus_timer_revision`、`focus_timer_state`、`focus_timer_count_up`。
+展示文案快照包括既有 `widget_todo_empty_hint`、`widget_todo_count_unit`、`widget_habit_today_label`、`widget_focus_count_label`、`widget_focus_minutes_label`、`widget_focus_next_label`、`widget_focus_remaining_label`、`widget_focus_open_label`、`widget_focus_running_label`、`widget_today_label`，以及 `widget_focus_start_label`、`widget_focus_resume_label`、`widget_focus_pause_label`、`widget_focus_stop_label`、`widget_focus_paused_label`。它们参与普通推送、签名、冷后台和账号默认重置；Dart 的 `widget.x` i18n key 映射到原生 `widget_x` 快照 key。
+
+实例尺寸由 `DuoyiWidgetLayout` 按当前方向配对：竖屏用 `OPTION_APPWIDGET_MIN_WIDTH` + `OPTION_APPWIDGET_MAX_HEIGHT`，横屏用 `OPTION_APPWIDGET_MAX_WIDTH` + `OPTION_APPWIDGET_MIN_HEIGHT`。主 key 缺失或非正时再尝试该轴的相反 key，仍缺失才用 API 31 `OPTION_APPWIDGET_SIZES` 补缺轴；该列表描述当前实例可能采用的布局尺寸（例如横竖屏），不代表所有可调整网格跨度。最后回落 180x110dp（标准入口的最小尺寸声明）。核心 4 个 provider 用官方 `RemoteViews(landscapeViews, portraitViews)` 各封装一套方向预算，桌面旋转时由系统自动选用对应布局；不改动偏好、导航与账号数据。行高用系统真实 `fontScale` 和 `StaticLayout` 实测，包含中文回退字体的完整行高，不强制 1.0 倍。核心 4 个标准入口声明 `minWidth/minHeight 180/110`、`minResize 110/110`、`maxResize 600/600`、`targetCell 3x2`。
+
+月历右上角数字表示对应日期的事项数量，0 不显示角标。统计从完整任务集合读取，包含已完成事项、排除归档事项，每个 `TodoItem` 只计一次，内嵌子任务不另计：有截止日期时归到 `localDueDate`，没有截止日期时按 `todoDateInAppZone(createdAt)` 的创建当天归日，不按进入日、修改日或起止区间逐日重复计数。纯日期保持浮动日期语义，带时刻的截止日期与创建时间按应用时区处理，旧无偏移墙钟采用现有任务日期转换规则。
+
+快照字段 `calendar_day_counts_json` 为按 `YYYY-MM-DD` 排序的日期计数 JSON 对象；`calendar_timezone` 为应用 IANA 时区；`calendar_weekdays_json` 为周一至周日标签数组；`calendar_day_count_label` 为日期与数量的本地化语义模板；`calendar_month_title` 为含 `{year}`、`{month}` 的月份标题模板。它们参与去重签名；登出/切号时清空日期计数与时区，并将本地化模板重置为当前语言。普通编辑、冷后台动作、跨日和应用时区变化通过既有串行快照链路更新。计数独立于完整今日集合，App 内小组件预览采用同一归日规则与月份标题模板。
+
+App 内 Provider 变化先进入串行推送队列，正常编辑防抖 2200ms；尚未完成本地数据加载的变更保留待推标记，等待加载完成后再读取完整快照。应用 inactive、hidden、paused 或 detached 时立即处理待推内容；失败保留待推状态，下次变化或恢复前台时重试。原生刷新返回 0 或失败时不缓存为成功，避免同一份数据被去重后无法补推。待办集合显示完整今日可见未完成列表，Top3 字段仅作为旧实例兼容摘要；历史综合页默认展示聚合统计，需切至底栏“待办”查看任务标题。
+
+原生更新在 `getAppWidgetInfo` 暂缺时，通过系统实例归属核验恢复真实宿主，保留每个实例的选中页和密度。所有活动品牌标记复用已批准的红底白色三块几何 Logo：固定品牌红 `#C85656`，唯一母版为 `assets/logo/duoyi_app_logo.svg`，原始参考和校验规则见 [应用 Logo 约定](branding.md)。原生小组件使用由同一母版生成的 `duoyi_widget_logo.xml`，Flutter 的 `WidgetBrandLogo` 使用同源资源；`python3 scripts/sync_app_icons.py --check` 检查平台派生资源。保留控件 ID、无障碍名称、现有点击和历史实例兼容行为。
+
+登录、注册、找回密码等认证页头标和桌面侧栏也复用 `WidgetBrandLogo`，保留原有尺寸和文字布局；图形使用固定品牌红白配色，不再随主题主色替换为另一种品牌图标。
+
+旧 `home_widget` 完成待办、打卡和开始专注请求仍兼容：先校验登录态与服务器/账号数据归属，主引擎存活时交给已有 Provider，冷后台先初始化应用时区再加载本地数据。动作后重算摘要并刷新 13 个可切页 Provider 宿主，保持重复操作及同步标记规则。升级后先打开应用一次完成注册；其他独立模块和 iOS 对象深链行为保持原契约。
+
+## 添加到系统日历
+
+Android 任务详情在设置截止日期后提供“添加到系统日历”，通过 `ACTION_INSERT` 打开设备日历的新建事项页面，预填任务名、备注、日期时间和应用时区。纯日期预填全天事项，具体时刻预填一小时事项；用户在系统日历点击保存后才完成创建，取消不会创建。多仪不申请日历读写权限、不保存事件 ID，也不负责事项后续修改、删除或同步；设备没有可处理该操作的日历应用时显示失败提示。
 
 ## 本地命令
 
@@ -119,6 +153,17 @@ python3 scripts/flutter_with_config.py build web --release \
 统一入口在成功的 Web 构建后还会校验并应用轻量首屏字体清单，完整字库不阻塞首屏、在首帧后空闲时后台加载；原生字体不变。直接使用 Flutter 构建时需另行运行字体后处理，详见 [Web 字体加载与验证](web-font-loading.md)。
 
 本机可执行文件位置使用 `FLUTTER_BIN`、`PYTHON_BIN`、`ADB_BIN`、`ANDROID_SDK_ROOT` / `ANDROID_HOME` 等环境变量；未指定时从 SDK 路径或 PATH 查找，不绑定某位开发者的用户目录。
+
+## 本地 Android 快速验证
+
+日常迭代可用官方 Android 模拟器或调试真机跑 `scripts/android_local_dev.py`。它复用上面的 `scripts/flutter_with_config.py` 注入公开参数，提供 `devices`、`doctor`、`run`、`reload`、`restart`、`stop`，会话 PID 写在被忽略的 `build/local-dev/flutter.pid`。
+
+```bash
+python3 scripts/android_local_dev.py doctor
+python3 scripts/android_local_dev.py run --device emulator-5554
+```
+
+本机路径写在被忽略的 `config/android-local.local.json`，六个键（`flutter_bin`、`sdk_root`、`java_home`、`device_id`、`gradle_user_home`、`flutter_storage_base_url`）**全部可选**，优先级为显式环境变量 > 该私有文件 > 约定默认位置（约定位置只在对应路径存在时采用）；`--config` 显式指定但文件不存在会直接报错。目标选择为 `--device` > 私有文件里的 `device_id` > 仅当两者都未提供时自动取唯一的 `device` 状态目标，显式或配置的 ID 不可用时直接失败。脚本只为子进程设置环境变量（`GRADLE_USER_HOME`、`FLUTTER_STORAGE_BASE_URL` 仅在配置时传入），不改全局 Flutter 或 shell 配置；仓库内的 Gradle 配置、CI 与公开默认值不变。该循环不替代发布门禁、设备证据链路和正式签名，详见 [docs/android-local-testing.md](android-local-testing.md)。
 
 ## 后端配置与兼容性
 

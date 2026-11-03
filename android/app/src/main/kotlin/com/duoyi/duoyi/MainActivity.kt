@@ -10,6 +10,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ApplicationInfo
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
@@ -17,6 +18,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.provider.CalendarContract
 import android.provider.Settings
 import android.provider.OpenableColumns
 import android.util.Log
@@ -43,6 +45,7 @@ class MainActivity : FlutterActivity() {
     private val locationGeofenceChannel = "duoyi/location_geofence"
     private val noteAttachmentPickerChannel = "duoyi/note_attachment_picker"
     private val deepLinksChannel = "duoyi/deep_links"
+    private val systemCalendarChannel = "duoyi/system_calendar"
     private val pickNoteAttachmentRequest = 7301
     private var pendingNoteAttachmentPick: MethodChannel.Result? = null
     private var deepLinksMethodChannel: MethodChannel? = null
@@ -196,6 +199,15 @@ class MainActivity : FlutterActivity() {
                         } catch (e: Exception) {
                             result.error("install_failed", "打开安装器失败: ${e.message}", null)
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, systemCalendarChannel)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "createEvent" -> {
+                        result.success(openSystemCalendarCreate(call.arguments as? Map<*, *>))
                     }
                     else -> result.notImplemented()
                 }
@@ -412,6 +424,7 @@ class MainActivity : FlutterActivity() {
                     "getForegroundApp" -> result.success(foregroundPackageName())
                     "openUsageAccessSettings" -> result.success(openUsageAccessSettings())
                     "openAccessibilitySettings" -> result.success(openAccessibilitySettings())
+                    "getInstalledApps" -> result.success(installedLaunchableApps())
                     "setFocusBlocker" -> {
                         val enabled = call.argument<Boolean>("enabled") ?: false
                         val packages = call.argument<List<String>>("packages")
@@ -772,6 +785,35 @@ class MainActivity : FlutterActivity() {
         return uri.lastPathSegment ?: "附件"
     }
 
+    private fun openSystemCalendarCreate(arguments: Map<*, *>?): Boolean {
+        val title = arguments?.get("title")?.toString()?.trim().orEmpty()
+        val description = arguments?.get("description")?.toString().orEmpty()
+        val begin = (arguments?.get("startAtMillis") as? Number)?.toLong()
+        val end = (arguments?.get("endAtMillis") as? Number)?.toLong()
+        val allDay = arguments?.get("allDay") as? Boolean ?: false
+        val timeZone = arguments?.get("timeZone")?.toString()?.trim().orEmpty()
+        if (title.isEmpty() || begin == null || end == null || end <= begin) {
+            return false
+        }
+        val intent = Intent(Intent.ACTION_INSERT).apply {
+            data = CalendarContract.Events.CONTENT_URI
+            putExtra(CalendarContract.Events.TITLE, title)
+            putExtra(CalendarContract.Events.DESCRIPTION, description)
+            putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
+            putExtra(CalendarContract.EXTRA_EVENT_END_TIME, end)
+            putExtra(CalendarContract.Events.ALL_DAY, allDay)
+            if (timeZone.isNotEmpty()) {
+                putExtra(CalendarContract.Events.EVENT_TIMEZONE, timeZone)
+            }
+        }
+        return try {
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.w("SystemCalendar", "calendar create intent unavailable", e)
+            false
+        }
+    }
     private fun openAppNotificationSettings(): Boolean {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -940,6 +982,46 @@ class MainActivity : FlutterActivity() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return startSettingsActivity(intent)
+    }
+
+    private fun installedLaunchableApps(): List<Map<String, Any?>> {
+        val intent = Intent(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_LAUNCHER)
+        val resolved = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.queryIntentActivities(
+                intent,
+                PackageManager.ResolveInfoFlags.of(0L),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.queryIntentActivities(intent, 0)
+        }
+        val seen = HashSet<String>()
+        val apps = ArrayList<Map<String, Any?>>()
+        for (info in resolved.orEmpty()) {
+            val activityInfo = info.activityInfo ?: continue
+            val appPackage = activityInfo.packageName ?: continue
+            if (appPackage == packageName || !seen.add(appPackage)) continue
+            val appInfo = activityInfo.applicationInfo
+            val rawLabel = if (appInfo == null) {
+                ""
+            } else {
+                runCatching {
+                    appInfo.loadLabel(packageManager).toString().trim()
+                }.getOrDefault("")
+            }
+            apps.add(
+                mapOf(
+                    "label" to rawLabel.ifEmpty { appPackage },
+                    "packageName" to appPackage,
+                    "isSystemApp" to (
+                        appInfo != null &&
+                            (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                    ),
+                ),
+            )
+        }
+        return apps.sortedBy { it["label"].toString().lowercase() }
     }
 
     private fun hasFocusBlockerAccessibilityAccess(): Boolean {

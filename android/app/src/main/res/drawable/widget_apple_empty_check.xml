@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 空状态装饰：灰描边 check-circle（无按钮语义，仅视觉）。颜色可按需 setColorFilter。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#A6A6AE"
+        android:strokeWidth="1.5"
+        android:pathData="M12,3A9,9 0 1,0 12,21A9,9 0 1,0 12,3Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#A6A6AE"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7.8,12.1l2.7,2.7l5.6,-5.7" />
+</vector>

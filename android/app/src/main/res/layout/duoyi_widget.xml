@@ -35,6 +35,15 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
+        <ImageView
+            android:id="@+id/widget_brand_logo"
+            android:layout_width="0dp"
+            android:layout_height="24dp"
+            android:layout_weight="1"
+            android:contentDescription="@string/app_name"
+            android:scaleType="fitStart"
+            android:src="@drawable/duoyi_widget_logo" />
+
         <TextView
             android:id="@+id/widget_title"
             android:layout_width="0dp"
@@ -45,7 +54,8 @@
             android:text="多仪"
             android:textColor="#FF6B6B"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widget_date"
@@ -87,6 +97,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_todo_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -115,6 +126,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_habit_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -143,6 +155,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/widget_pomodoro_caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -159,7 +172,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="6dp"
-        android:weightSum="2">
+        android:weightSum="1">
 
         <TextView
             android:id="@+id/widget_quick_pomodoro"

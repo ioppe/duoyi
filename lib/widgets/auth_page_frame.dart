@@ -244,11 +244,16 @@ class AuthFormFieldTheme extends StatelessWidget {
 
   const AuthFormFieldTheme({super.key, required this.child});
 
-  static double heightOf(BuildContext context) => math.max(
-    DesignTokens.formFieldMinHeight,
-    MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeMd) * 1.5 +
-        DesignTokens.spaceLg * 2,
-  );
+  static double heightOf(BuildContext context) {
+    final contentHeight =
+        MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeMd) * 1.5 +
+        DesignTokens.spaceLg * 2;
+    // Whole logical pixels keep Linux text metrics and visible borders aligned
+    // when a text scale would otherwise produce a fractional row height.
+    return math
+        .max(DesignTokens.formFieldMinHeight, contentHeight)
+        .ceilToDouble();
+  }
 
   @override
   Widget build(BuildContext context) => AppFormFieldTheme(
@@ -256,8 +261,24 @@ class AuthFormFieldTheme extends StatelessWidget {
       builder: (context) {
         final theme = Theme.of(context);
         final height = heightOf(context);
+        final scaledFontSize = MediaQuery.textScalerOf(
+          context,
+        ).scale(DesignTokens.fontSizeMd);
+        // InputDecorator sizes icon-free borders from the content line, not
+        // from its minimum constraint. Keep that line inside the shared row.
+        final inputLineHeight = scaledFontSize > 0
+            ? (height - DesignTokens.spaceLg * 2) / scaledFontSize
+            : 1.5;
         return Theme(
           data: theme.copyWith(
+            textTheme: theme.textTheme.copyWith(
+              bodyLarge: theme.textTheme.bodyLarge?.copyWith(
+                height: inputLineHeight,
+              ),
+              titleMedium: theme.textTheme.titleMedium?.copyWith(
+                height: inputLineHeight,
+              ),
+            ),
             inputDecorationTheme: theme.inputDecorationTheme.copyWith(
               constraints: BoxConstraints.tightFor(height: height),
               // Compact desktop density otherwise shortens icon-free borders.

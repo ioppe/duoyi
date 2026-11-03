@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 淡 accent CTA（浅色）：低透明度品牌红，12dp 圆角（pre-S 静态回退）。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="12dp" />
+    <solid android:color="#1FC95455" />
+</shape>

@@ -17,6 +17,9 @@ void main() {
       'lib/providers/pomodoro_provider.dart',
     ).readAsStringSync();
     final model = File('lib/models/pomodoro.dart').readAsStringSync();
+    final picker = File(
+      'lib/widgets/focus_distraction_app_picker.dart',
+    ).readAsStringSync();
     final screen = File('lib/screens/pomodoro_screen.dart').readAsStringSync();
 
     expect(manifest, contains('android.permission.PACKAGE_USAGE_STATS'));
@@ -42,6 +45,22 @@ void main() {
     expect(mainActivity, contains('setFocusBlocker'));
     expect(mainActivity, contains('hasFocusBlockerAccessibilityAccess'));
     expect(mainActivity, contains('FocusBlockerStore.setConfig'));
+    expect(mainActivity, contains('"getInstalledApps"'));
+    expect(mainActivity, contains('queryIntentActivities'));
+    expect(mainActivity, contains('Intent.ACTION_MAIN'));
+    expect(mainActivity, contains('Intent.CATEGORY_LAUNCHER'));
+    expect(mainActivity, contains('appPackage == packageName'));
+    expect(mainActivity, contains('seen.add(appPackage)'));
+    expect(mainActivity, contains('loadLabel(packageManager)'));
+    expect(mainActivity, contains('ApplicationInfo.FLAG_SYSTEM'));
+    expect(mainActivity, contains('sortedBy'));
+    expect(manifest, isNot(contains('QUERY_ALL_PACKAGES')));
+    final launchQueries = manifest.substring(
+      manifest.indexOf('<queries>'),
+      manifest.indexOf('</queries>'),
+    );
+    expect(launchQueries, contains('android.intent.action.MAIN'));
+    expect(launchQueries, contains('android.intent.category.LAUNCHER'));
     expect(mainActivity, contains('queryUsageStats'));
     expect(mainActivity, contains('foregroundPackageName'));
     final blocker = File(
@@ -78,8 +97,25 @@ void main() {
     expect(provider, contains('setFocusBlocker'));
     expect(provider, contains('_checkDistractingForegroundApp'));
     expect(provider, contains('FocusPenaltyReason.distractingApp'));
+    expect(service, contains('class InstalledFocusApp'));
+    expect(service, contains('getInstalledApps'));
+    expect(service, contains('packageName'));
+    expect(service, contains('isSystemApp'));
+    expect(model, contains('String distractingAppSelectionMode'));
+    expect(model, contains("distractionModeBlacklist = 'blacklist'"));
+    expect(model, contains("distractionModeWhitelist = 'whitelist'"));
+    expect(model, contains('resolveBlockedDistractionPackages'));
+    expect(provider, contains('setDistractingAppSelectionMode'));
+    expect(provider, contains('loadInstalledFocusApps'));
+    expect(provider, contains('isDistractionWhitelistMode'));
+    expect(provider, contains('focusDistractionAppScanFailed'));
+    expect(picker, contains('class FocusDistractionAppPicker'));
+    expect(picker, contains('SegmentedButton<String>'));
+    expect(picker, contains('CheckboxListTile'));
+    expect(screen, contains('focus_distraction_app_picker.dart'));
+    expect(screen, contains('_showDistractingAppPicker'));
+    expect(screen, isNot(contains('分心应用包名')));
     expect(screen, contains('监控分心应用'));
-    expect(screen, contains('分心应用包名'));
     expect(screen, contains('使用情况权限'));
     expect(screen, contains('辅助功能拦截'));
   });

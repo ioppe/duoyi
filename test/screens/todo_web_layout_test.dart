@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/design_tokens.dart';
+import 'package:duoyi/core/desktop_tokens.dart';
 import 'package:duoyi/core/web_target.dart';
 import 'package:duoyi/models/todo.dart';
 import 'package:duoyi/providers/auth_provider.dart';
@@ -14,6 +15,7 @@ import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/providers/todo_provider.dart';
 import 'package:duoyi/screens/todo_screen.dart';
 import 'package:duoyi/services/ai_service.dart';
+import 'package:duoyi/widgets/eisenhower_matrix.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -139,6 +141,11 @@ Future<void> _expectTopFilterBehavior(
   String? exportTodaySelected,
 }) async {
   await _openTodo(tester, size: size, theme: theme, textScale: textScale);
+  expect(
+    tester.widget<EisenhowerMatrix>(find.byType(EisenhowerMatrix)).fourColumn,
+    size.width >= DesktopTokens.breakpointThreeColumn,
+    reason: '最宽 Web/macOS 档保留单行四列，窄屏使用 2×2',
+  );
   if (exportInitial != null) await _exportPng(tester, exportInitial);
   _expectTopFilterLayout(tester);
   expect(find.text('自定义视图 · 2/2'), findsOneWidget);
@@ -365,6 +372,12 @@ void main() {
         tester,
         size: const Size(1600, 900),
         theme: AppBrands.defaultBrand.theme,
+      );
+      expect(
+        tester
+            .widget<EisenhowerMatrix>(find.byType(EisenhowerMatrix))
+            .fourColumn,
+        isTrue,
       );
       final dividers = find.byType(VerticalDivider);
       expect(dividers, findsWidgets);

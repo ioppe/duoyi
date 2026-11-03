@@ -1,4 +1,5 @@
 import 'package:duoyi/core/app_clock.dart';
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/app_brand.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
@@ -55,6 +56,20 @@ void main() {
     expect(find.byKey(const ValueKey('language-selection')), findsOneWidget);
     expect(find.textContaining('America/New_York'), findsOneWidget);
     expect(find.textContaining('May 31'), findsOneWidget);
+    expect(find.text('App font size'), findsOneWidget);
+    expect(
+      find.textContaining('Only changes text inside Duoyi'),
+      findsOneWidget,
+    );
+    expect(find.text('Standard (100%)'), findsOneWidget);
+
+    await tester.runAsync(() => preferences.setTextScale(AppTextScale.small));
+    await tester.pumpAndSettle();
+    expect(find.text('Small (85%)'), findsOneWidget);
+    expect(
+      find.textContaining('Only changes text inside Duoyi'),
+      findsOneWidget,
+    );
 
     await tester.runAsync(() => preferences.setAppTimeZone('Asia/Shanghai'));
     await tester.pumpAndSettle();
@@ -64,6 +79,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('显示与行为'), findsOneWidget);
     expect(find.text('界面语言'), findsOneWidget);
+    expect(find.text('应用字体大小'), findsOneWidget);
+    expect(find.text('小（85%）'), findsOneWidget);
     expect(find.textContaining('2026年6月1日'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

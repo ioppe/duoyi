@@ -49,7 +49,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 | TimeEntry + TimeAuditProvider | 已实现 | 模型/CRUD/dedupeKey/分类，番茄/待办/日历入口写入 |
 | Workspace + ShareProvider | 已实现 | 模型/角色/邀请码/评论/提及/负责人/排行榜 |
 | FocusSoundService | 已实现 | 13 条单音轨，循环/淡入/淡出，自定义音轨播放 |
-| HomeWidgetService | 已实现 | 10 个可见独立 Android 小组件数据推送和点击流 |
+| HomeWidgetService + HomeWidgetPushScheduler | 已实现 | 4 个可见核心 Android 小组件（标准 3x2 可调整）数据推送、按实例真实高度自适应排版、串行排程/生命周期 flush、核心四页组件内切换、App 分页/详情入口；其余 24 个兼容入口 hide_from_picker 隐藏但保持启用，旧后台动作兼容 |
 | HolidayCalendar | 已实现 | 2024-2026 内置数据，updateFrom 扩展口 |
 | FeatureFlags | 已实现 | 4 个开关，全部默认 true |
 | AudioService (deprecated) | 保留 | 转发到 FocusSoundService 的 shim |
@@ -63,7 +63,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 5. ShareProvider 后端 workspace API、邀请 UI、viewer 权限、任务负责人、空间/任务评论、@ 提及、成员排行榜、共享目标/本地共享日程和同步冲突记录已落地；仍需字段级冲突解释和多账号端到端回归。
 6. AchievementProvider 已补解锁反馈、时光币、成长等级、挑战和奖励商店；后续可继续补更强的解锁动效和目标里程碑奖励。
 7. 倒数日、纪念日、课程表与日历/提醒已有深度联动；仍需强提醒、农历生日和课程深链真机回归。
-8. Android 已暴露 10 个可见独立小组件，待办勾选、快捷添加、习惯打卡和 deep-link 已接入；iOS 已补 10 个 WidgetKit kind、App Group 数据契约、Runner URL scheme、Xcode Extension target、待办详情/完成、快捷添加、习惯打卡、开始专注和底部导航 Link，仍缺开发者账号签名/App Group capability 真机确认、iOS 真机添加和 Android launcher 尺寸拖拽真机回归。
+8. Android 系统选择器只暴露 4 个可见核心小组件（待办/习惯/月历/专注，标准 3x2 可调整，其余 24 个兼容入口 hide_from_picker 隐藏但启用），核心待办/习惯/月历/专注及历史兼容综合实例支持底栏原生四页切换，上方进入 App 对应分页，具体任务/习惯进入详情；旧后台动作保持兼容。iOS 已补 WidgetKit kind、App Group 数据契约、Runner URL scheme、Xcode Extension target、待办详情/完成、快捷添加、习惯打卡、开始专注和底部导航 Link，仍缺开发者账号签名/App Group capability 真机确认、iOS 真机添加和 Android launcher 尺寸拖拽真机回归。
 9. 中文自然语言日期解析、看板、专注 DND、专注标签统计、习惯弹性规则、周/月/年报告、通知栏快捷添加、Flutter gen-l10n/ARB 和 HolidayCalendar 2026 数据已落地；剩余以真机验证、逐页硬编码文案迁移和深度扩展为主。
 10. TodoProvider/GoalProvider 已可注入 ReminderScheduler 并在关键写路径直接重同步；常规路径仍保留 main.dart listener 兜底。
 11. deprecated AudioService shim 仍保留以兼容旧调用，后续确认无引用后可移除。
@@ -103,7 +103,7 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 
 ### 2.6 目标与待办创建表单
 
-- 目标编辑页与新建待办共用 `AppFormFieldTheme`：NotoSansSC 和 `DesignTokens` 字阶/字重、输入区域至少 56px 高，使用相同内边距、圆角和焦点边框；名称与描述按内容自动增高。
+- 目标编辑页与新建待办共用 `AppFormFieldTheme`：共享输入文字令牌为 Noto Sans SC 常规字重 14、标签 12，原生 Android 叠加平台基准后标准档正文有效字号为 12，标签按同一层级缩放；输入区域至少 56px 高，使用相同内边距、圆角和焦点边框；名称与描述按内容自动增高。
 - 两种表单共用 `creationFormMaxWidth`（720px）；新建目标通过 `showGoalCreateSheet` 使用平台适配的共享弹窗，已有目标仍可进入编辑页，分组标题、提示及选择控件采用共享二级控件字号。
 - 日期选择保持窄屏双列和短日期格式，控件最小高度与输入框一致；目标数值输入不再单独套紧凑装饰。
 - 新建目标底部提供与待办相同样式的取消和主操作按钮，保存继续执行既有校验、权限判断与提交逻辑；新建弹窗不再包含独立页面 AppBar，编辑模式保留顶部保存和删除入口。
@@ -122,7 +122,8 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 
 ### 2.8 共享视觉状态与动态效果
 
-- 全主题沿用 NotoSansSC 与 `DesignTokens` 的字阶、字重和间距；主题色、背景图与品牌文案继续由 `AppBrand` / `BrandStrings` 提供。
+- 全主题使用随包提供的 Noto Sans SC 无衬线字体，共享字阶保留正文 14 / 400、辅助 12 / 400、说明 11、按钮 12 / 500、页标题 18 / 600。原生 Android 通过 `DesignTokens.androidFontSizeBody = 12` 与根部 `AppTypography` 设定 12/14 平台基准，标准 100% 默认正文有效字号为 12，标题、辅助、说明、按钮和导航文字等全部角色按同一比例保留原层级；Web（含安卓浏览器）、iOS 和桌面不应用该基准。平台基准与用户档位在系统缩放之前组合，保留 Android 非线性无障碍缩放，不改变图标、间距与触控尺寸。Android 应用档位为 55% / 70% / 85% / 100% / 115% / 130% / 145% 七档，默认标准 100% 位于第四档，向小、向大各三档；其他平台保持原八档 85% 至 190%。
+- 默认 App 主题（`AppBrands.defaultBrand`）与 Android 核心小组件共享同一套 Apple minimal 视觉语言：`#F2F2F7` 雾灰画布、白色卡面、低对比边界与极淡阴影、18 / 12 圆角、左对齐标题和更高半透明底栏，品牌色继续使用珊瑚红，字体仍为随包的 Noto Sans SC；`AppSurfaceStyle.appleMinimal` 是默认主题档位，其余品牌主题与液态玻璃档保持原观感。
 - 视觉动画经 `AppMotion` 取值：轻量反馈 160ms、内容和 Web/桌面路由过渡 240ms，进入使用 `easeOutCubic`、退出使用 `easeInCubic`。Web/桌面路由采用淡入与最多 12px 的短位移；原生 iOS/macOS 与 Android 委托 Flutter 的原生切换器，保留原生时长、边缘返回与预测返回支持。
 - Web/macOS 共享居中弹窗采用轻淡入与 0.96→1 的小幅缩放，时长和曲线复用 `AppMotion`；无额外装饰渐变或重阴影。减少动画时直接显示最终状态，不改变网络、计时或保存语义。
 - 系统启用「减少动态效果」后，本轮共享路由、弹层、折叠、快捷创建、日期/时间反馈及接入的页面动画即时显示；时间滚轮直接定位，原生 iOS/macOS 仍保留返回手势容器。计时、通知、网络超时与提示停留时长不受视觉策略影响。
@@ -136,6 +137,11 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 - 应用根部覆盖 Flutter 的 `EditableTextTapOutsideIntent`：点击输入区域外的空白或控件清除焦点并隐藏键盘；输入框之间切换和输入区域内的辅助操作沿用 `TextFieldTapRegion` 语义。实际焦点脱离输入框后再次隐藏键盘，避免只失焦但 IME 留在屏幕。
 - 全局 Material 滚动配置启用拖动收键盘；共享弹层打开、路由切换和一级导航切换清理离开页面的焦点，返回时不恢复已离开的输入状态。新页面主动聚焦的输入框仍可唤起键盘。
 - 设置页的填充、描边、文字按钮使用相同最小高度、内边距和标准密度；同组菜单入口等宽，设置下拉框等宽。`AppSettingsTile` 不缩放尾部操作；窄屏和大字号时操作区移到文字下方，控件可随文本自然增高。
+- 应用字体大小使用独立页面：顶部返回、标题与“完成”，可滚动的气泡文字预览区，底部安全区固定当前平台的离散档位滑块与标准标记。Android 七档的标准滑块值为 3、刻度间隔数为 6，100% 标记水平居中；其他平台保留原八档与标准位置。标记位置根据实际标准索引计算。拖动只修改预览，“完成”保存并应用，返回取消。控制区使用平台基准与系统缩放；预览剥离已保存的应用比例后只叠加一次草稿，保留 Android 的 12 字号基准，最大档仍可触达滑块和完成按钮。
+- 应用字号默认标准（100%）；有效的已存档位原样保留，超出当前平台范围的旧值按最近档位读取归一化，因此 Android 原 160% / 175% / 190% 生效为 145%，普通加载不重写磁盘。保存与账号绑定继续使用既有写盘、失败恢复和归属校验。不执行旧版 100% 到 85% 的强制默认迁移，旧迁移标记不再影响加载；无法区分旧包自动保存的 85% 与用户主动选择，因此保留有效 85%，用户可在字号页选标准 100%。有效字号在普通重启、会话失效及同账号重新登录后保留，只有确认服务器/用户身份变更时恢复标准（100%）；首次绑定接纳归一化后的升级前字号。新账号不能保存旧账号遗留的预览草稿，其他本机偏好和私有数据隔离策略保持各自约定。
+- 严格专注的分心应用设置使用可启动应用扫描选择器，不要求用户手填包名；黑名单模式只记录勾选项，白名单模式把勾选项视为无关应用并将未勾选可启动应用转换为拦截集合。选择器支持搜索、草稿取消、完成保存、空结果/失败重试和窄屏大字号滚动；白名单扫描失败必须 fail-safe，不能静默放行。
+
+
 
 ### 2.10 本地账号与 AI 服务来源
 
@@ -159,6 +165,19 @@ backend/      FastAPI auth/sync/admin/feedback/announcements
 - 中部展示本周效率分及较上周同段的升降／持平状态，底部轻分隔线下展示完成率、专注分钟和习惯次数，数值位于标签上方。分数和统计继续使用 `AppClock` 与 `ReportEngine` 的原有应用时区口径。
 - 布局按实际可用宽度和 `TextScaler` 调整分数／趋势排列及统计列数；320px 窄屏、中英文、200% 字号和较长数值自然换行，卡片高度随内容增长。颜色随明暗主题变化，字体、字阶、间距沿用 `DesignTokens`。
 - 整卡可点击并支持键盘聚焦、Enter／Space 激活；辅助技术可读取入口名称、统计内容和报表提示。新增文案同步进入中英文 I18n、ARB 与生成类。
+
+### 2.13 Android 小组件与系统日历
+
+- 旧 `HomeWidgetBackgroundIntent` 请求继续进入后台 Dart 回调并保留完成待办、打卡和旧开始专注解析；核心专注页新增带 scope/session/revision/expected-state 的开始/继续、暂停、停止按钮。先校验登录/匿名本地 scope、服务器/账号 owner 与会话版本，再调用 Provider；重复或陈旧按钮 no-op，不回退为第二次冷后台执行。
+- Android 核心待办、习惯、月历、专注（含尺寸变体）及历史兼容综合小组件的底部四标签使用原生广播，只保存当前 `appWidgetId` 的选中页并重绘 `RemoteViews`，不启动 Activity 或业务后台回调。各实例独立保存页签，常规刷新、包更新与尺寸变化后保留选择，删除实例时清理状态；失效 ID、非法页签或不匹配的实际 Provider 广播不生效。
+- 上述核心小组件上方 logo、标题、只读内容、空白、日期与摘要通过 Activity 深链进入当前 App 分页；待办集合行仍使用详情 URI，底部四标签仍使用原生广播。月历“今天”按钮改为同一实例内的本地月份定位，不启动 Activity；专注三按钮直接执行受保护的后台控制。其他独立模块与 iOS 入口保持原契约。
+- 核心 4 页按实例真实尺寸和系统字体度量排版。待办正文使用 `RemoteViews` 集合列表，完整保留今日可见未完成事项，并按 Q1、Q3、Q2、Q4 的显示顺序稳定排序；月历恢复原尺寸的固定单月布局，月份标题位于头栏，星期和完整 4–6 周网格占用原来的正文区域。要求的左右手势切月在当前标准 RemoteViews 中尚未实现，不得用纵向列表、卡片缩放或裁剪替代。
+- 核心四页采用苹果小组件式的信息层次：24dp 圆角、轻中性表面，通常 14dp 内边距，月历不超过 12dp；短实例按真实高度收紧留白。18dp 统一红白 logo 配模块名，底栏使用至少 28dp 高的轻分段控件，标签为 10sp、短实例降至 9.5sp，只有当前标签获得局部选中底色。浅色主文字为 `#1C1C1E`、辅助文字为 `#6E6E73`；深色使用高对比文字，强调色继续适配主题，已有图片背景保留。系统字体缩放继续参与测量，不改变 Flutter 全局字体基准。
+- 待办空态在正文可用区域居中，使用轻量完成图形、标题和下一步说明；有内容时显示完整可滚动任务集合，按 Q1→Q3→Q2→Q4 稳定排序，数量与单位独立。习惯以单一主百分比配今日完成率和连续天数；专注以左侧主时间、右侧次数/分钟呈现，直接提供开始/继续、暂停、停止三个受保护控制。短高度优先完整保留数据与底栏，再整块收起装饰或可选说明，不裁半行。App 内四核心预览采用相同视觉，其他五类预览保持原布局。
+- 月历角标按事项归日而非日程区间展开：从完整 Todo 集合读取，含已完成、不含归档，每个事项计一次，内嵌子任务不另计。截止日期优先，无截止日期用创建当天；纯日期不偏移，UTC 时刻转换至应用时区，无偏移创建墙钟复用 `todoDateInAppZone`。Dart 统一生成日期计数和完整月份预览；原生 `DuoyiCalendarMonth` 根据应用时区生成同一月份网格并读取对应 ISO 日期计数。计数、时区与本地化标签进入快照签名和账号清理路径，跨日和时区变化沿既有串行队列刷新。
+- 小组件尺寸按当前方向配对：竖屏为 `OPTION_APPWIDGET_MIN_WIDTH` + `OPTION_APPWIDGET_MAX_HEIGHT`，横屏为 `OPTION_APPWIDGET_MAX_WIDTH` + `OPTION_APPWIDGET_MIN_HEIGHT`；缺失时依次采用该轴相反 key、API 31 `OPTION_APPWIDGET_SIZES` 和 180x110dp 回落值。核心四个 Provider 继续使用 `RemoteViews(landscapeViews, portraitViews)`，保持原生本地底栏、实际宿主身份、账号与业务动作边界。中文行高包含回退字体度量，日历日期与角标另按实际可用格高适配。
+- 所有活动品牌标记复用已批准的红底白色三块几何 Logo：固定品牌红 `#C85656`，唯一母版为 `assets/logo/duoyi_app_logo.svg`，原始参考和校验规则见 [应用 Logo 约定](branding.md)。原生小组件使用由同一母版生成的 `duoyi_widget_logo.xml`，Flutter 的 `WidgetBrandLogo` 使用同源资源；`python3 scripts/sync_app_icons.py --check` 检查平台派生资源。保留控件 ID、无障碍名称、现有点击和历史实例兼容行为。
+- 任务详情有截止日期时提供系统日历创建入口，`duoyi/system_calendar` 通道使用 `ACTION_INSERT` 预填任务标题、备注、应用时区和起止时间；纯日期创建全天草稿，具体时刻创建一小时草稿。用户在系统页面确认保存；多仪不申请日历读写权限、不保存事件 ID、不接管后续修改或删除，无法打开日历时显示失败提示。
 
 ## 3. 目标架构（v2）
 
@@ -646,46 +665,36 @@ CalendarEventSheet 中 course 类型的 `_open` 已导航到
 
 #### 4.8.1 Widget 完成操作
 
-Android 端 `DuoyiTodoWidgetProvider.kt` 在待办项旁增加完成按钮：
+旧 Android 后台动作 URI `duoyi://action/complete_todo?id=<todoId>`、`checkin_habit`、`start_pomodoro` 继续兼容，当前核心小组件上方普通入口改为打开 App 分页或对象详情；月历“今天”和专注三控制例外在组件内处理；底栏仍只执行原生切页。
 
-```kotlin
-// 点击完成 → 发送 Intent action = "com.duoyi.COMPLETE_TODO"
-//           extra = todoId
-// BroadcastReceiver 接收后：
-//   1. 调用 HomeWidget.getWidgetData("todo_top3_1_id") 获取 id
-//   2. 通过 MethodChannel 调用 Flutter 端 TodoProvider.toggleTodo(id)
-//   3. 触发 HomeWidgetService.push() 刷新
-```
+`HomeWidgetService` 注册顶层 `homeWidgetBackgroundCallback`；后台回调经 `HomeWidgetActionRequest.parse` 和 `HomeWidgetAccountScope.blockReason` 校验 URI、登录态与服务器/账号数据归属后，调用 `HomeWidgetService.runBackgroundAction`。完成待办使用 `TodoProvider.completeTodos([id])`，重复点击不会把已完成任务反向切换为未完成；操作后刷新小组件。
 
-Flutter 端注册 background callback：
+主引擎存在时通过 isolate 消息把动作交给它已加载的 Provider，并等待执行及 payload 推送完成；已转交的请求即使失败或超时也不再回退到第二次冷后台执行。没有主引擎时，后台先重载偏好并初始化应用时区，再执行业务操作、记录本地同步变更标记，按最新状态重算完整待办集合、习惯进度/下个打卡目标或专注控制状态，最后刷新原生小组件。
 
-```dart
-// main.dart
-HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
+核心四页小组件不再依赖其最初添加的类型决定当前显示页。冷后台任一种动作后均刷新待办、习惯、月历、专注的标准/简洁/详细宿主及历史兼容综合宿主，共 13 个 Provider 目标，防止切到待办页的综合或习惯宿主显示旧摘要。刷新保持实例选中页，业务 owner 和重复操作规则不变。
 
-@pragma('vm:entry-point')
-Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
-  if (uri?.host == 'complete-todo') {
-    final todoId = uri!.pathSegments.first;
-    // 读取 SharedPreferences → toggle todo → push widget update
-  }
-}
-```
+核心底栏标签使用原生广播；上方普通区域打开 App 对应分页，任务/习惯进入详情；月历“今天”和专注三控制直接在组件内执行，不启动 App。`quick_todo` 带文字请求和 Flutter 深链解析继续供已有入口使用，Android 核心小组件不显示“+ 添加”，不提供原生输入框或带文字的后台创建入口。
 
 #### 4.8.2 Widget Deep-link
 
-HomeWidgetService.widgetClickedStream 已存在。在 main.dart 中：
+HomeWidgetService.widgetClickedStream 已存在。Widget 深链进入 App 前必须等待共享本地存储 hydration；同一 URI 在短时间内只处理一次，避免 App intent 与 widgetClicked 双投递造成重复导航：
 
 ```dart
 HomeWidgetService.widgetClickedStream.listen((uri) {
-  if (uri != null) DeepLinkRouter.handle(navigatorKey.currentContext!, uri);
+  if (uri != null) {
+    unawaited(
+      ensureDeferredLocalStorageStartup().then((_) => handleDeepLink(uri)),
+    );
+  }
 });
 ```
 
+首次 Widget URI 与普通初始深链也复用同一 hydration Future；详情 URI 仅在 Provider 数据恢复后解析对象。
+
 #### 4.8.3 数据变更刷新
 
-各 Provider mutation 后已在 main.dart listener 中调用 `HomeWidgetService.push()`。
-确认所有写操作路径（包括新增的 background callback）都触发 push。
+各 Provider mutation 在 main.dart listener 中调用 `HomeWidgetPushScheduler.schedule()`，保留未加载阶段的 dirty 状态，待共享 hydration 完成后串行调用 `HomeWidgetService.push()`；正常编辑防抖 2200ms，inactive/hidden/paused/detached 立即 flush，resumed 仅补推待处理内容。推送中再次变化继续串行补推，失败保留 dirty 等待下一次变化或恢复前台，不紧循环重试。
+Android 刷新返回 0 或失败不得缓存成功签名；原生 info 暂缺时只在系统实例列表确认真实 Provider 归属后重绘，并保留该实例页签、密度和集合滚动位置。今日待办筛选和 Q1→Q3→Q2→Q4 排序保持一致，历史综合页默认只显示聚合统计。
 
 ### D9: 智能日期解析
 
@@ -1021,12 +1030,7 @@ class QuickActionService {
 
 #### 4.14.2 Widget 快速添加
 
-HomeWidgetService 在独立待办小组件中增加"+"按钮：
-
-```kotlin
-// 点击"+" → 启动 Flutter Activity，传入 intent extra quickAdd=true
-// Flutter 端检测后直接弹出 _quickTodo 对话框
-```
+Android 核心待办小组件收起“+ 添加”按钮，上方 logo、标题和空白进入待办页后使用 App 内完整创建表单，具体任务行进入详情。`duoyi://action/quick_todo` 的 Flutter 路由保留，iOS 和通知等现有入口继续使用；当前 Android 小组件不提供原生文字输入或带文字的后台快捷添加入口。
 
 #### 4.14.3 模板快速创建
 
@@ -1260,7 +1264,7 @@ void _afterMutation() {
 |----------|------|
 | Pomodoro → TimeEntry | 完成专注后 TimeAuditProvider 自动新增 |
 | Todo 完成 → Achievement | 完成第 10 个 todo 后 achievement 解锁 |
-| Widget 完成 | Android widget background callback 正确 toggle |
+| Widget 完成 | Android widget background callback 校验账号后完成待办，重复点击不反向取消 |
 | Snooze 端到端 | 通知 action → ReminderScheduler.snooze → 延后触发 |
 | Share invite 流程 | 创建邀请码 → 另一用户接受 → 成员列表更新 |
 
@@ -1286,7 +1290,7 @@ void _afterMutation() {
 | 2026 节假日预估不准 | 日历标注错误 | updateFrom 动态覆盖，正式公告后更新内置 |
 | i18n 工作量大 | 延期 | 分阶段：先基础框架，后逐页替换 |
 | 看板拖拽性能 | 大量 todo 时卡顿 | 虚拟化列表，限制单列显示数 |
-| Widget background callback | 进程被系统 kill 后无法执行 | Fallback 到打开 App 后同步状态 |
+| Widget background callback | 系统后台限制可能导致按钮操作不生效 | 回调记录失败日志；随后打开 App 核对实际状态，ROM 行为留待实机验证 |
 | 共享空间后端稳定性 | 同步失败 | 离线模式优先，sync 失败不阻塞本地操作 |
 | AudioService 清理遗漏 | 编译失败 | CI 全量构建验证 |
 | Snooze 通知 id 冲突 | 覆盖正常通知 | snooze 使用独立 id namespace |

@@ -2,11 +2,41 @@ import '../core/focus_sound_catalog.dart';
 
 enum PomodoroType { focus, shortBreak, longBreak }
 
+/// 桌面小组件可远程触发的专注控制动作。
+///
+/// 只包含幂等的三段控制（开始/继续、暂停、停止）：跳过与完成语义另走 App
+/// 内路径，避免小组件把“停止”当成完成或跳到休息。
+enum PomodoroWidgetControlAction { start, pause, stop }
+
+/// 小组件读取的控制身份状态；`wireName` 即 `focus_timer_state` 协议值。
+enum PomodoroWidgetTimerState {
+  idle,
+  running,
+  paused;
+
+  String get wireName => name;
+
+  static PomodoroWidgetTimerState? fromWire(Object? raw) {
+    final value = raw?.toString().trim().toLowerCase();
+    for (final state in PomodoroWidgetTimerState.values) {
+      if (state.wireName == value) return state;
+    }
+    return null;
+  }
+}
+
 class PomodoroConfig {
   static const int defaultFocusDuration = 1500;
   static const int defaultShortBreakDuration = 300;
   static const int defaultLongBreakDuration = 900;
   static const double defaultFocusSoundVolume = 0.6;
+
+  /// 分心应用选择模式：勾选的包名就是分心应用（旧数据默认）。
+  static const String distractionModeBlacklist = 'blacklist';
+
+  /// 分心应用选择模式：勾选的包名视为无关应用，其余可启动应用都是分心应用。
+  static const String distractionModeWhitelist = 'whitelist';
+
   static const int _minStoredDurationSeconds = 60;
   static const int _maxStoredDurationSeconds = 12 * 60 * 60;
 
@@ -21,6 +51,7 @@ class PomodoroConfig {
   bool strictFocusMode;
   bool monitorDistractingApps;
   List<String> distractingAppPackages;
+  String distractingAppSelectionMode;
   String? focusRoomId;
   double focusSoundVolume;
   DateTime updatedAt;
@@ -41,6 +72,7 @@ class PomodoroConfig {
     this.strictFocusMode = false,
     this.monitorDistractingApps = false,
     List<String>? distractingAppPackages,
+    this.distractingAppSelectionMode = distractionModeBlacklist,
     this.focusRoomId,
     this.focusSoundVolume = defaultFocusSoundVolume,
     this.playSoundInBreak = false,
@@ -64,6 +96,7 @@ class PomodoroConfig {
     'strictFocusMode': strictFocusMode,
     'monitorDistractingApps': monitorDistractingApps,
     'distractingAppPackages': distractingAppPackages,
+    'distractingAppSelectionMode': distractingAppSelectionMode,
     'focusRoomId': focusRoomId,
     'focusSoundVolume': focusSoundVolume,
     'playSoundInBreak': playSoundInBreak,
@@ -98,6 +131,9 @@ class PomodoroConfig {
       autoEnableDnd: json['autoEnableDnd'] ?? false,
       strictFocusMode: json['strictFocusMode'] ?? false,
       monitorDistractingApps: json['monitorDistractingApps'] ?? false,
+      distractingAppSelectionMode: normalizeDistractionSelectionMode(
+        json['distractingAppSelectionMode'],
+      ),
       distractingAppPackages:
           (json['distractingAppPackages'] as List?)
               ?.map((e) => e.toString().trim())
@@ -118,6 +154,45 @@ class PomodoroConfig {
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
+
+  /// 白名单模式：勾选项是无关应用，其余可启动应用都算分心。
+  bool get isDistractionWhitelistMode =>
+      distractingAppSelectionMode == distractionModeWhitelist;
+
+  /// 未知/缺失模式一律回退黑名单，保证旧数据语义不变。
+  static String normalizeDistractionSelectionMode(Object? raw) {
+    final value = raw?.toString().trim().toLowerCase();
+    return value == distractionModeWhitelist
+        ? distractionModeWhitelist
+        : distractionModeBlacklist;
+  }
+
+  /// 最终交给原生拦截与前台检查的包名集合（去重、排序）。
+  ///
+  /// 黑名单模式直接返回勾选集合；白名单模式返回所有可启动应用里未勾选的
+  /// 包名。[launchablePackages] 必须来自一次完整扫描；扫描失败时调用方
+  /// 应保留旧集合，不能用空结果覆盖拦截语义。
+  static List<String> resolveBlockedDistractionPackages({
+    required String selectionMode,
+    required Iterable<String> selectedPackages,
+    required Iterable<String> launchablePackages,
+  }) {
+    final selected = _normalizedPackages(selectedPackages);
+    if (normalizeDistractionSelectionMode(selectionMode) !=
+        distractionModeWhitelist) {
+      return selected.toList()..sort();
+    }
+    final launchable = _normalizedPackages(launchablePackages);
+    return [
+      for (final package in launchable)
+        if (!selected.contains(package)) package,
+    ]..sort();
+  }
+
+  static Set<String> _normalizedPackages(Iterable<String> packages) => {
+    for (final package in packages)
+      if (package.trim().isNotEmpty) package.trim(),
+  };
 
   static int _storedDuration(Object? raw, int fallback) {
     final value = switch (raw) {

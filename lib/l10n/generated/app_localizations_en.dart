@@ -2447,11 +2447,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSectionStylesSubtitle => 'Changes apply to the whole app';
 
   @override
-  String get themeStyleDefaultName => 'Duoyi';
+  String get themeStyleDefaultName => 'Apple Minimal';
 
   @override
-  String get themeStyleDefaultDescription =>
-      'Clean original · warm orange base';
+  String get themeStyleDefaultDescription => 'Soft grey canvas · coral accent';
 
   @override
   String get themeStyleRe0Name => 'Re:Zero';
@@ -3751,7 +3750,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reminders follow the system time zone';
 
   @override
-  String get widgetCalendarMonthSummary => 'Month view · today is marked';
+  String get widgetCalendarMonthSummary => 'Numbers show each day’s task count';
 
   @override
   String get widgetHabitPending => 'Habits to check in today';
@@ -4438,4 +4437,241 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reminderWebStatusDismissed =>
       'No notification permission was chosen yet. You can tap \"Enable notifications\" again.';
+
+  @override
+  String get widgetTodoPreviewDescription =>
+      'Show the top three tasks today. Switch widget tabs below; tap a task for details.';
+
+  @override
+  String get widgetFocusPreviewDescription =>
+      'Today’s focus sessions and duration. Tap to open Focus.';
+
+  @override
+  String get todoSystemCalendarAdd => 'Add to system calendar';
+
+  @override
+  String get todoSystemCalendarOpened =>
+      'System calendar opened. Tap Save to create it.';
+
+  @override
+  String get todoSystemCalendarFailed => 'Unable to open the system calendar';
+
+  @override
+  String get preferencesMenuTextScale => 'Font size';
+
+  @override
+  String get preferencesTextScaleTitle => 'App font size';
+
+  @override
+  String get preferencesTextScaleSubtitle =>
+      'Only changes text inside Duoyi. Other apps and system settings stay unchanged.';
+
+  @override
+  String get preferencesTextScaleSmall => 'Small (85%)';
+
+  @override
+  String get preferencesTextScaleStandard => 'Standard (100%)';
+
+  @override
+  String get preferencesTextScaleLarge => 'Large (115%)';
+
+  @override
+  String get preferencesTextScalePreviewTitle => 'Preview font size';
+
+  @override
+  String get preferencesTextScalePreviewHint =>
+      'Drag the slider below to choose a comfortable font size.';
+
+  @override
+  String get preferencesTextScalePreviewNote =>
+      'Text in tasks, habits, focus, and settings will use this size. Tap Done to save your choice.';
+
+  @override
+  String preferencesTextScalePercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get preferencesTextScaleStandardMarker => 'Standard';
+
+  @override
+  String get preferencesTextScaleDone => 'Done';
+
+  @override
+  String get preferencesTextScaleSaveFailed =>
+      'Unable to save font size. Please try again.';
+
+  @override
+  String get widgetCalendarWeekdayMon => 'Mon';
+
+  @override
+  String get widgetCalendarWeekdayTue => 'Tue';
+
+  @override
+  String get widgetCalendarWeekdayWed => 'Wed';
+
+  @override
+  String get widgetCalendarWeekdayThu => 'Thu';
+
+  @override
+  String get widgetCalendarWeekdayFri => 'Fri';
+
+  @override
+  String get widgetCalendarWeekdaySat => 'Sat';
+
+  @override
+  String get widgetCalendarWeekdaySun => 'Sun';
+
+  @override
+  String widgetCalendarDayCountLabel(Object count, Object date) {
+    return 'Items on $date: $count';
+  }
+
+  @override
+  String widgetCalendarMonthTitle(Object month, Object year) {
+    return '$year-$month';
+  }
+
+  @override
+  String widgetTodoEmptyHint(Object tab) {
+    return 'Open $tab to plan what’s next';
+  }
+
+  @override
+  String get widgetTodoCountUnit => 'left';
+
+  @override
+  String get widgetHabitTodayLabel => 'Today’s progress';
+
+  @override
+  String get widgetFocusCountLabel => 'Sessions';
+
+  @override
+  String get widgetFocusMinutesLabel => 'Minutes';
+
+  @override
+  String get widgetFocusNextLabel => 'Next (min)';
+
+  @override
+  String get widgetFocusRemainingLabel => 'Remaining';
+
+  @override
+  String get widgetFocusOpenLabel => 'Open focus';
+
+  @override
+  String get widgetFocusRunningLabel => 'View timer';
+
+  @override
+  String get widgetFocusStartLabel => 'Start';
+
+  @override
+  String get widgetFocusResumeLabel => 'Resume';
+
+  @override
+  String get widgetFocusPauseLabel => 'Pause';
+
+  @override
+  String get widgetFocusStopLabel => 'Stop';
+
+  @override
+  String get widgetFocusPausedLabel => 'Paused';
+
+  @override
+  String get widgetTodayLabel => 'Today';
+
+  @override
+  String get widgetAndroidPickerHint =>
+      'Pick Todo, Focus, Habits or Calendar from the system widget list, then drag the widget edges on the home screen to resize.';
+
+  @override
+  String get widgetAndroidCatalogDensityHint =>
+      'This is the default display density for new widgets. The system widget list only offers Todo, Focus, Habits and Calendar; drag the widget edges on the home screen to resize after adding.';
+
+  @override
+  String get widgetMobilePickerHint =>
+      'Find Duoyi in your phone\'s system widget list: on Android drag the widget edges to resize after adding, on iOS pick a size in the widget gallery.';
+
+  @override
+  String get focusDistractionTileTitle => 'Distraction app selection';
+
+  @override
+  String get focusDistractionTileSelected => 'Selected';
+
+  @override
+  String get focusDistractionTileBlacklistEmpty =>
+      'Blacklist: no apps selected';
+
+  @override
+  String get focusDistractionTileBlacklist => 'Blacklist';
+
+  @override
+  String get focusDistractionTileWhitelistScanFailed =>
+      'Whitelist scan failed; blocking is paused';
+
+  @override
+  String get focusDistractionTileWhitelist =>
+      'Whitelist (unselected apps distract)';
+
+  @override
+  String get focusDistractionModeBlacklist => 'Blacklist';
+
+  @override
+  String get focusDistractionModeWhitelist => 'Whitelist';
+
+  @override
+  String get focusDistractionModeBlacklistHint =>
+      'Selected apps are recorded as distractions.';
+
+  @override
+  String get focusDistractionModeWhitelistHint =>
+      'Selected apps are treated as unrelated; other launchable apps are distractions.';
+
+  @override
+  String get focusDistractionPickerTitle => 'Choose distraction apps';
+
+  @override
+  String get focusDistractionPickerSubtitle =>
+      'Scan launchable apps on this phone; changes save only after Done.';
+
+  @override
+  String get focusDistractionPickerCancel => 'Cancel';
+
+  @override
+  String get focusDistractionPickerDone => 'Done';
+
+  @override
+  String get focusDistractionPickerSearch =>
+      'Search app names or package names';
+
+  @override
+  String get focusDistractionPickerLoading => 'Scanning installed apps…';
+
+  @override
+  String get focusDistractionPickerLoadFailed =>
+      'Unable to read installed apps. Try again.';
+
+  @override
+  String get focusDistractionPickerRetry => 'Scan again';
+
+  @override
+  String get focusDistractionPickerEmpty => 'No launchable apps were found.';
+
+  @override
+  String get focusDistractionPickerNoMatches => 'No matching apps.';
+
+  @override
+  String get focusDistractionPickerSystemApp => 'system app';
+
+  @override
+  String get focusDistractionPickerSummarySelected => 'Selected';
+
+  @override
+  String get focusDistractionPickerSummaryRemaining =>
+      'remaining as distractions';
+
+  @override
+  String get focusDistractionPickerSummaryAvailable => 'available apps';
+
+  @override
+  String get focusDistractionPickerSaveFailed => 'Unable to save. Try again.';
 }

@@ -104,4 +104,5 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    testImplementation("junit:junit:4.13.2")
 }

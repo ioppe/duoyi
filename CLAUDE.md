@@ -65,9 +65,9 @@ The release gate. Runs 8 groups: batched Flutter tests (static guards, screens, 
 
 ### Static guard tests enforce project rules
 
-Roughly 95 of ~240 Flutter test files match `*_static_test.dart`. These regex-scan `lib/` source and **fail when banned patterns appear anywhere in the codebase**. Typography guards require the shared `DesignTokens.fontFamily` family and the three shared weight tokens (`fontWeightRegular` 400 / `fontWeightMedium` 500 / `fontWeightStrong` 600); local `FontWeight` literals and raw `fontFamily` strings are forbidden. When your change trips a guard, read the test's `reason` message and fix the code to comply — do not weaken the guard. Expect any UI change to be checked against them.
+About 100 of roughly 380 Flutter test files match `*_static_test.dart`. These regex-scan `lib/` source and **fail when banned patterns appear anywhere in the codebase**. Typography guards require the shared `DesignTokens.fontFamily` family and the three shared weight tokens (`fontWeightRegular` 400 / `fontWeightMedium` 500 / `fontWeightStrong` 600); local `FontWeight` literals and raw `fontFamily` strings are forbidden. When your change trips a guard, read the test's `reason` message and fix the code to comply — do not weaken the guard. Expect any UI change to be checked against them.
 
-All brands, app controls, input text and secondary pages share `NotoSansSC` (bundled Noto Sans SC variable font, offline) through `DesignTokens.fontFamily`. Body copy, secondary copy, input hints, menus and snackbars are Regular (`DesignTokens.fontWeightRegular`, 400); buttons, navigation labels, chips and floating labels are Medium (`DesignTokens.fontWeightMedium`, 500); titles, AppBar titles and emphasis are Semibold (`DesignTokens.fontWeightStrong`, 600). Sizes come from the `DesignTokens.fontSize*` scale (body 16 / secondary 14 / caption 12 / page title 20), and shared buttons use `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Keep the existing color/spacing hierarchy and one shared navigation style across primary pages. The font is bundled for consistent offline display; its source, checksum and SIL Open Font License live in `assets/fonts/`. PDF/report font handling is independent.
+All brands, app controls, input text and secondary pages share `NotoSansSC` (bundled Noto Sans SC variable font, offline) through `DesignTokens.fontFamily`. Body copy, secondary copy, input hints, menus and snackbars are Regular (`DesignTokens.fontWeightRegular`, 400); buttons, navigation labels, chips and floating labels are Medium (`DesignTokens.fontWeightMedium`, 500); titles, AppBar titles and emphasis are Semibold (`DesignTokens.fontWeightStrong`, 600). Shared typography tokens remain body 14 / secondary 12 / caption 11 / page title 18. Native Android uses `DesignTokens.androidFontSizeBody = 12` through the root `AppTypography` scaler (12/14), so standard 100% renders body at 12 before system scaling and all other text roles scale proportionally. Native Android offers 55/70/85/100/115/130/145%, with default 100% in the fourth, center position and three steps on each side. Web (including Android browsers), iOS and desktop keep the shared baseline and original eight ratios 85–190%. Apply this platform base separately from user ratios and preserve nonlinear system scaling; previews must retain the base and replace only the saved application ratio. Valid saved ratios remain; an out-of-range legacy ratio normalizes to the closest available current-platform option. Ordinary loading does not rewrite the stored ratio or run a forced default migration. Keep existing account-owner and save/cancel semantics. Shared buttons use `minimumSize: Size(0, DesignTokens.controlMinHeight)` with 16/10 padding so text scaling grows the control instead of clipping. Keep the existing color/spacing hierarchy and one shared navigation style across primary pages. The font is bundled for consistent offline display; its source, checksum and SIL Open Font License live in `assets/fonts/`. PDF/report font handling is independent.
 
 Web startup is the exception to complete offline font loading: the configured build wrapper registers one checked-in variable-font subset, then the app loads the complete Noto font after the first frame and idle delay. Native full-font registrations remain intact; rare Web glyphs may need the engine's on-demand fallback before the complete font is ready. See `docs/web-font-loading.md`.
 
@@ -174,13 +174,15 @@ Workflow `.github/workflows/build-apk.yml` validates a shared profile first and 
 
 | Trigger | Job | Output |
 |---------|-----|--------|
-| Push to `main` / `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or PR targeting `main` / `self-hosted-skydrow` | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
+| Push to `main` / `self-hosted-skydrow` / `build/macos-dmg` / `fix/android-input-settings-device-test`, push a `v*` tag, or PR targeting `main` / `self-hosted-skydrow` | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
 | Same triggers, after checks pass | `android` | Signed universal APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
 | Same triggers, after checks pass | `macos` → reusable `build-macos.yml` | Universal unsigned macOS DMG + ZIP + SHA-256 checksums from the same commit/profile as Android |
-| Push to `main`, push `self-hosted-skydrow` / `build/macos-dmg`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only, except the `main` desktop tarball which auto-deploys once the server entry and single Secret are configured; Pages stays `main`-only |
+| Push to `main`, push `self-hosted-skydrow` / `build/macos-dmg` / `fix/android-input-settings-device-test`, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only, except the `main` desktop tarball which auto-deploys once the server entry and single Secret are configured; Pages stays `main`-only |
 | Tag `v*` push, after Android/Web/macOS succeed | `release` | Auto-creates GitHub Release with APKs, AAB, web tarballs and macOS packages |
 
-Each push to the three build branches must enter the main `build` workflow so Android and macOS cannot drift onto different commits. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release (the `main` desktop Web tarball also auto-deploys once the server entry and single Secret are configured); newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.
+Each push to the four build branches must enter the main `build` workflow so Android and macOS cannot drift onto different commits. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release (the `main` desktop Web tarball also auto-deploys once the server entry and single Secret are configured); newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.
+
+Mainline integration follows `docs/mainline-integration.md`: verify the candidate contains every intended local/origin head, the approved Logo reference and generator checks, and the main-only deployment job. Keep unrelated worktrees and uncommitted files intact.
 
 ### Required Repository Secrets
 
@@ -231,7 +233,7 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 
 ## Testing Strategy
 
-- Flutter tests live under `test/{core,models,providers,screens,services,widgets}/` (~240 files); shared helpers in `test/test_support/`
+- Flutter tests live under `test/{core,models,providers,screens,services,widgets}/` (~380 files); shared helpers in `test/test_support/`
 - `*_static_test.dart` files are source-scanning convention guards (see Critical Conventions above)
 - Integration smoke test: `integration_test/app_alignment_smoke_test.dart`
 - Backend API tests: `backend/test_workspaces.py`; discover `backend/test_*.py` to include access-token, config and Web build-policy tests (unittest-style).
@@ -247,6 +249,8 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 - Preserve the configured SQLite/data directories and password salt across upgrades; no database reset is needed.
 
 ### Web Client
+
+Only a `main` push publishes the same-run desktop Web artifact through `deploy-self-hosted-web`, `scripts/deploy_web_ci.py` and the restricted `/usr/local/sbin/duoyi-web-deploy` entry. The checked-in public profile and pinned host key, archive/commit verification, atomic symlink switch and rollback remain required. Production Web publication does not change backend/DB/Nginx or credentials; tags and other branches do not publish it. See `docs/web-auto-deploy.md`.
 
 Use the shared build entrypoint for same-origin deployment:
 

@@ -31,6 +31,12 @@ void main() {
       'duoyi_oauth_calendar_events_google': '[{"summary":"admin oauth"}]',
       'todos_corrupt_backup_20260607': '[{"title":"old backup"}]',
       'widget_display_mode_42': 'detailed',
+      // 设备偏好的动态键：账号清理必须保留，取值与下方断言一致。
+      'pref_daily_reminder_slot9_enabled': true,
+      'pref_reminder_ringtone_fallback_channel_sound_duoyi_general_alerts_v18':
+          'duoyi_soft',
+      'pref_reminder_ringtone_fallback_channel_sound_schema_duoyi_general_alerts_v18':
+          2,
     });
 
     await AccountLocalDataCleaner.clearSharedPreferences();
@@ -137,106 +143,107 @@ void main() {
     expect(await File('${deviceDir.path}/report.csv').exists(), isTrue);
   });
 
-  test('keeps device settings and current auth state', () async {
-    SharedPreferences.setMockInitialValues({
-      'todos': '[{"title":"admin task"}]',
-      'habits': '[{"title":"admin habit"}]',
-      'user_profile': '{"coin_balance":999}',
-      'active_brand': 'admin-theme',
-      'theme_switch_count': 12,
-      'theme_unlocked_brands': <String>['admin-brand'],
-      'theme_shop_state': '{"activeBrand":"admin-theme"}',
-      'pref_show_lunar': false,
-      'pref_first_day_of_week': 7,
-      'pref_date_format': 'dd/MM/yyyy',
-      'pref_bottom_nav_order': <String>['1', '0'],
-      'pref_app_timezone_iana': 'Asia/Tokyo',
-      'duoyi_notif_history': '[{"title":"admin notification"}]',
-      'ai_review_history': '[{"summary":"admin review"}]',
-      'sync_pending_local_changes': true,
-      'reminder_scheduler_registry_v1': '{"1":{"title":"admin alarm"}}',
-      'duoyi_locale_v1': 'zh_CN',
-      'app_lock_enabled': true,
-      'app_lock_pin_hash': 'device-pin',
-      'app_lock_auto_minutes': 10,
-      'app_lock_last_active': '2026-06-07T00:00:00.000',
-      'duoyi_widget_display_mode': 'compact',
-      'widget_display_mode': 'compact',
-      'notification_status_bar_startup_build': 7,
-      'pref_haptic_feedback': false,
-      'pref_show_lunar': false,
-      'pref_date_format': 'MM/dd/yyyy',
-      'pref_default_tab': 3,
-      'pref_app_timezone_mode': 'fixed',
-      'pref_app_timezone_iana': 'Asia/Tokyo',
-      'pref_bottom_nav_order': <String>['0', '1', '2', '4', '6'],
-      'pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
-      'pref_daily_reminder_enabled': true,
-      'pref_daily_reminder_slot3_enabled': true,
-      'pref_reminder_ringtone_volume_percent': 70,
-      'webdav_backup_base_url': 'https://example.com/webdav',
-      'webdav_backup_username': 'device-user',
-      'webdav_backup_password': 'device-password',
-      'webdav_backup_remote_path': '/duoyi-backups',
-      'webdav_backup_filename': 'duoyi-latest.json',
-      'auth_state': '{"user_id":"test","token":"test-token"}',
-    });
+  for (final deviceCase in <(String, List<String>)>[
+    ('dd/MM/yyyy', <String>['1', '0']),
+    ('MM/dd/yyyy', <String>['0', '1', '2', '4', '6']),
+  ]) {
+    test(
+      'keeps device settings and current auth state (${deviceCase.$1})',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'todos': '[{"title":"admin task"}]',
+          'habits': '[{"title":"admin habit"}]',
+          'user_profile': '{"coin_balance":999}',
+          'active_brand': 'admin-theme',
+          'theme_switch_count': 12,
+          'theme_unlocked_brands': <String>['admin-brand'],
+          'theme_shop_state': '{"activeBrand":"admin-theme"}',
+          'pref_show_lunar': false,
+          'pref_first_day_of_week': 7,
+          'pref_date_format': deviceCase.$1,
+          'pref_bottom_nav_order': deviceCase.$2,
+          'pref_app_timezone_iana': 'Asia/Tokyo',
+          'duoyi_notif_history': '[{"title":"admin notification"}]',
+          'ai_review_history': '[{"summary":"admin review"}]',
+          'sync_pending_local_changes': true,
+          'reminder_scheduler_registry_v1': '{"1":{"title":"admin alarm"}}',
+          'duoyi_locale_v1': 'zh_CN',
+          'app_lock_enabled': true,
+          'app_lock_pin_hash': 'device-pin',
+          'app_lock_auto_minutes': 10,
+          'app_lock_last_active': '2026-06-07T00:00:00.000',
+          'duoyi_widget_display_mode': 'compact',
+          'widget_display_mode': 'compact',
+          'notification_status_bar_startup_build': 7,
+          'pref_haptic_feedback': false,
+          'pref_default_tab': 3,
+          'pref_app_timezone_mode': 'fixed',
+          'pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
+          'pref_daily_reminder_enabled': true,
+          'pref_daily_reminder_slot3_enabled': true,
+          'pref_reminder_ringtone_volume_percent': 70,
+          'webdav_backup_base_url': 'https://example.com/webdav',
+          'webdav_backup_username': 'device-user',
+          'webdav_backup_password': 'device-password',
+          'webdav_backup_remote_path': '/duoyi-backups',
+          'webdav_backup_filename': 'duoyi-latest.json',
+          'auth_state': '{"user_id":"test","token":"test-token"}',
+        });
 
-    await AccountLocalDataCleaner.clearSharedPreferences();
+        await AccountLocalDataCleaner.clearSharedPreferences();
 
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('todos'), isNull);
-    expect(prefs.getString('habits'), isNull);
-    expect(prefs.getString('user_profile'), isNull);
-    // 设备视图选择与设备习惯保留。
-    expect(prefs.getString('active_brand'), 'admin-theme');
-    expect(prefs.getInt('theme_switch_count'), 12);
-    expect(prefs.getBool('pref_show_lunar'), isFalse);
-    expect(prefs.getInt('pref_first_day_of_week'), 7);
-    expect(prefs.getString('pref_date_format'), 'dd/MM/yyyy');
-    expect(prefs.getStringList('pref_bottom_nav_order'), <String>['1', '0']);
-    expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
-    // 账号奖励/商店状态与通知历史仍按账号清理。
-    expect(prefs.getStringList('theme_unlocked_brands'), isNull);
-    expect(prefs.getString('theme_shop_state'), isNull);
-    expect(prefs.getString('duoyi_notif_history'), isNull);
-    expect(prefs.getString('ai_review_history'), isNull);
-    expect(prefs.getBool('sync_pending_local_changes'), isNull);
-    expect(prefs.getString('reminder_scheduler_registry_v1'), isNull);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('todos'), isNull);
+        expect(prefs.getString('habits'), isNull);
+        expect(prefs.getString('user_profile'), isNull);
+        // 设备视图选择与设备习惯保留。
+        expect(prefs.getString('active_brand'), 'admin-theme');
+        expect(prefs.getInt('theme_switch_count'), 12);
+        expect(prefs.getBool('pref_show_lunar'), isFalse);
+        expect(prefs.getInt('pref_first_day_of_week'), 7);
+        expect(prefs.getString('pref_date_format'), deviceCase.$1);
+        expect(prefs.getStringList('pref_bottom_nav_order'), deviceCase.$2);
+        expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
+        // 账号奖励/商店状态与通知历史仍按账号清理。
+        expect(prefs.getStringList('theme_unlocked_brands'), isNull);
+        expect(prefs.getString('theme_shop_state'), isNull);
+        expect(prefs.getString('duoyi_notif_history'), isNull);
+        expect(prefs.getString('ai_review_history'), isNull);
+        expect(prefs.getBool('sync_pending_local_changes'), isNull);
+        expect(prefs.getString('reminder_scheduler_registry_v1'), isNull);
 
-    expect(prefs.getString('duoyi_locale_v1'), 'zh_CN');
-    expect(prefs.getBool('app_lock_enabled'), isTrue);
-    expect(prefs.getString('app_lock_pin_hash'), 'device-pin');
-    expect(prefs.getInt('app_lock_auto_minutes'), 10);
-    expect(prefs.getString('app_lock_last_active'), '2026-06-07T00:00:00.000');
-    expect(prefs.getString('duoyi_widget_display_mode'), isNull);
-    expect(prefs.getString('widget_display_mode'), isNull);
-    expect(prefs.getInt('notification_status_bar_startup_build'), 7);
-    expect(prefs.getString('webdav_backup_base_url'), isNull);
-    expect(prefs.getString('webdav_backup_username'), isNull);
-    expect(prefs.getString('webdav_backup_password'), isNull);
-    expect(prefs.getString('webdav_backup_remote_path'), isNull);
-    expect(prefs.getString('webdav_backup_filename'), isNull);
-    expect(prefs.getBool('pref_haptic_feedback'), isFalse);
-    expect(prefs.getBool('pref_show_lunar'), isFalse);
-    expect(prefs.getString('pref_date_format'), 'MM/dd/yyyy');
-    expect(prefs.getInt('pref_default_tab'), 3);
-    expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
-    expect(prefs.getStringList('pref_bottom_nav_order'), <String>[
-      '0',
-      '1',
-      '2',
-      '4',
-      '6',
-    ]);
-    expect(prefs.getBool('pref_daily_reminder_enabled'), isTrue);
-    expect(prefs.getBool('pref_daily_reminder_slot3_enabled'), isTrue);
-    expect(prefs.getInt('pref_reminder_ringtone_volume_percent'), 70);
-    expect(
-      prefs.getString('auth_state'),
-      '{"user_id":"test","token":"test-token"}',
+        expect(prefs.getString('duoyi_locale_v1'), 'zh_CN');
+        expect(prefs.getBool('app_lock_enabled'), isTrue);
+        expect(prefs.getString('app_lock_pin_hash'), 'device-pin');
+        expect(prefs.getInt('app_lock_auto_minutes'), 10);
+        expect(
+          prefs.getString('app_lock_last_active'),
+          '2026-06-07T00:00:00.000',
+        );
+        expect(prefs.getString('duoyi_widget_display_mode'), isNull);
+        expect(prefs.getString('widget_display_mode'), isNull);
+        expect(prefs.getInt('notification_status_bar_startup_build'), 7);
+        expect(prefs.getString('webdav_backup_base_url'), isNull);
+        expect(prefs.getString('webdav_backup_username'), isNull);
+        expect(prefs.getString('webdav_backup_password'), isNull);
+        expect(prefs.getString('webdav_backup_remote_path'), isNull);
+        expect(prefs.getString('webdav_backup_filename'), isNull);
+        expect(prefs.getBool('pref_haptic_feedback'), isFalse);
+        expect(prefs.getBool('pref_show_lunar'), isFalse);
+        expect(prefs.getString('pref_date_format'), deviceCase.$1);
+        expect(prefs.getInt('pref_default_tab'), 3);
+        expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
+        expect(prefs.getStringList('pref_bottom_nav_order'), deviceCase.$2);
+        expect(prefs.getBool('pref_daily_reminder_enabled'), isTrue);
+        expect(prefs.getBool('pref_daily_reminder_slot3_enabled'), isTrue);
+        expect(prefs.getInt('pref_reminder_ringtone_volume_percent'), 70);
+        expect(
+          prefs.getString('auth_state'),
+          '{"user_id":"test","token":"test-token"}',
+        );
+      },
     );
-  });
+  }
 
   test(
     'declares notification, alarm, geofence, AI and calendar cache keys',

@@ -24,6 +24,13 @@ fallback, and ``macos/.../app_icon_*.png`` are RGBA tiles that keep the rounded
 corners transparent so the Dock paints its own colour behind the logo instead
 of a baked light square (the pale halo seen around the Dock icon).
 
+The native marks are generated here too, so no client can keep a second design:
+the Android widget vector (``drawable/duoyi_widget_logo.xml``) and the Flutter
+``WidgetBrandLogo`` painter (``lib/widgets/widget_brand_logo.dart``) replay the
+master's own glyph outline and transform, and the legacy ``assets/logo`` alias
+files are transparent derivatives of this master. ``generate_brand_assets.py``
+is now a thin compatibility entry point for this script and owns no artwork.
+
 Dependencies: ``Pillow`` (raster) and ``fontTools`` (SVG path parsing +
 cubic sampling). No cairosvg, no native librsvg/Inkscape, no machine-specific
 paths: the repository root is derived from this file.
@@ -165,6 +172,40 @@ FAVICON_PNG_RELATIVE = "web/favicon.png"
 FAVICON_SIZE = 32
 FAVICON_FILES = (FAVICON_PNG_RELATIVE, FAVICON_SVG_RELATIVE)
 
+# Native Android widget mark: a 24 dp vector that keeps the 24-unit viewport,
+# scales the 88-unit master artboard with one group and replays the master glyph
+# transform in a nested group, so the white glyph stays the master's own outline.
+ANDROID_WIDGET_VECTOR_RELATIVE = (
+    "android/app/src/main/res/drawable/duoyi_widget_logo.xml"
+)
+ANDROID_WIDGET_VIEWPORT = 24.0
+ANDROID_NS = "{http://schemas.android.com/apk/res/android}"
+
+# Flutter in-app mark: same master, same transform, drawn with CustomPaint.
+WIDGET_BRAND_LOGO_DART_RELATIVE = "lib/widgets/widget_brand_logo.dart"
+
+# Compatibility aliases left over from the retired per-file brand sources. They
+# stay downloadable/referenceable (evidence pages and older tooling point at
+# them) but must be transparent derivatives of the single master: the opaque
+# artwork, the shared transparent foreground, or a byte copy of the canonical
+# 1024 PNG — never an independent design.
+ALIAS_ARTWORK_PNGS = (
+    ("assets/logo/duoyi_logo_512.png", 512),
+    ("assets/logo/duoyi_logo_192.png", 192),
+    ("assets/logo/duoyi_web_logo_512.png", 512),
+)
+ALIAS_FOREGROUND_PNGS = (("assets/logo/duoyi_launcher_foreground_512.png", 512),)
+ALIAS_DUPLICATES_OF_CANONICAL = (
+    "assets/logo/duoyi_logo_1024.png",
+    "assets/logo/duoyi_logo_ios_1024.png",
+    "assets/logo/duoyi_logo_redesign_1024.png",
+)
+ALIAS_SVG_RELATIVES = (
+    "assets/logo/duoyi_logo.svg",
+    "assets/logo/duoyi_unified_logo.svg",
+    "assets/logo/duoyi_widget_mark.svg",
+)
+
 # Legacy (non-adaptive) launcher PNGs: full logo artwork, 48dp..192dp.
 ANDROID_LAUNCHER_ICONS = (
     ("android/app/src/main/res/mipmap-mdpi/ic_launcher.png", 48),
@@ -216,9 +257,19 @@ FOREGROUND_TARGETS = [
 
 
 def _checked_file_count() -> int:
-    """Rendered/verified files: canonical PNG, foreground PNG, favicon PNG+SVG."""
+    """Rendered/verified files: icons, favicon, aliases and the native marks."""
 
-    return len(ARTWORK_TARGETS) + len(FOREGROUND_TARGETS) + len(FAVICON_FILES) + 2
+    return (
+        len(ARTWORK_TARGETS)
+        + len(FOREGROUND_TARGETS)
+        + len(FAVICON_FILES)
+        + len(ALIAS_ARTWORK_PNGS)
+        + len(ALIAS_FOREGROUND_PNGS)
+        + len(ALIAS_DUPLICATES_OF_CANONICAL)
+        + len(ALIAS_SVG_RELATIVES)
+        + 2  # canonical artwork PNG + canonical foreground PNG
+        + 2  # Android widget vector + Flutter WidgetBrandLogo source
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -476,8 +527,15 @@ def load_master(path: Path = MASTER_SVG) -> Master:
     return Master(background=background, tile=tile, glyph=glyph)
 
 
-_FAVICON_SVG_TEMPLATE = (
+_TILE_SVG_HEADER = '<?xml version="1.0" encoding="UTF-8"?>\n'
+_ALIAS_SVG_HEADER = (
     '<?xml version="1.0" encoding="UTF-8"?>\n'
+    "<!-- Alias of the canonical master assets/logo/duoyi_app_logo.svg, generated\n"
+    "     by scripts/sync_app_icons.py: only the opaque artboard rect is dropped,\n"
+    "     so the red rounded tile and the white glyph stay the master's own\n"
+    "     geometry. Do not edit by hand. -->\n"
+)
+_TILE_SVG_BODY_TEMPLATE = (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88">\n'
     '  <rect x="{x}" y="{y}" width="{width}" height="{height}" rx="{radius}"'
     ' fill="{tile_fill}"/>\n'
@@ -491,25 +549,25 @@ def _format_number(value: float) -> str:
     return text or "0"
 
 
-def derive_favicon_svg(path: Path = MASTER_SVG) -> str:
-    """Derive the tab favicon SVG from the canonical master.
+def _format_precise(value: float) -> str:
+    """Eight decimals: enough to keep a 24-unit viewport scale exact."""
 
-    The master's first child is the opaque ``#F6F7F9`` artboard canvas. The
-    favicon keeps only the red rounded tile and the white glyph, so everything
-    outside the tile stays transparent and dark browser tabs no longer show a
-    light square behind the logo. The output is fully determined by the master:
-    attribute order is fixed here and the glyph data is copied verbatim.
-    """
+    text = f"{value:.8f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _derive_tile_svg(path: Path, header: str) -> str:
+    """Transparent tile SVG derived from the master, with ``header`` in front."""
 
     master = load_master(path)
     children = list(ET.parse(path).getroot())
     canvas = _parse_rect(children[0], "svg[0]")
     if canvas.radius != 0.0:
-        raise MasterError("favicon: svg[0] must be the square background canvas")
+        raise MasterError("svg[0] must be the square background canvas")
     path_data = children[2].get("d")
     if not path_data:
-        raise MasterError("favicon: svg[2] has no path data")
-    return _FAVICON_SVG_TEMPLATE.format(
+        raise MasterError("svg[2] has no path data")
+    return header + _TILE_SVG_BODY_TEMPLATE.format(
         x=_format_number(master.tile.x),
         y=_format_number(master.tile.y),
         width=_format_number(master.tile.width),
@@ -520,6 +578,307 @@ def derive_favicon_svg(path: Path = MASTER_SVG) -> str:
         transform=children[2].get("transform", ""),
         path_data=path_data,
     )
+
+
+def derive_favicon_svg(path: Path = MASTER_SVG) -> str:
+    """Derive the tab favicon SVG from the canonical master.
+
+    The master's first child is the opaque ``#F6F7F9`` artboard canvas. The
+    favicon keeps only the red rounded tile and the white glyph, so everything
+    outside the tile stays transparent and dark browser tabs no longer show a
+    light square behind the logo. The output is fully determined by the master:
+    attribute order is fixed here and the glyph data is copied verbatim.
+    """
+
+    return _derive_tile_svg(path, _TILE_SVG_HEADER)
+
+
+def derive_alias_svg(path: Path = MASTER_SVG) -> str:
+    """Legacy ``assets/logo/*.svg`` aliases: the same transparent tile.
+
+    They used to be a second, hand-drawn brand source. They stay downloadable
+    (the evidence pages link them) but are now byte-identical derivatives of the
+    canonical master, with provenance noted in the leading comment.
+    """
+
+    return _derive_tile_svg(path, _ALIAS_SVG_HEADER)
+
+
+# --------------------------------------------------------------------------- #
+# Native mark derivation (Android vector + Flutter painter)
+# --------------------------------------------------------------------------- #
+
+
+class _CommandPen(BasePen):
+    """Record the master glyph as ``moveTo``/``lineTo``/``cubicTo``/``close``.
+
+    Unlike ``_SamplingPen`` this keeps the master's own segments, so the Flutter
+    painter can replay the approved outline instead of a resampled polyline.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(None)
+        self.commands: list[tuple[str, tuple[tuple[float, float], ...]]] = []
+
+    def _moveTo(self, pt) -> None:
+        self.commands.append(("moveTo", ((float(pt[0]), float(pt[1])),)))
+
+    def _lineTo(self, pt) -> None:
+        self.commands.append(("lineTo", ((float(pt[0]), float(pt[1])),)))
+
+    def _curveToOne(self, p1, p2, p3) -> None:
+        self.commands.append(
+            (
+                "cubicTo",
+                (
+                    (float(p1[0]), float(p1[1])),
+                    (float(p2[0]), float(p2[1])),
+                    (float(p3[0]), float(p3[1])),
+                ),
+            )
+        )
+
+    def _qCurveToOne(self, p1, p2) -> None:
+        raise MasterError(
+            "quadratic segments are not part of the canonical master glyph"
+        )
+
+    def _closePath(self) -> None:
+        self.commands.append(("close", ()))
+
+    def _endPath(self) -> None:
+        self.commands.append(("close", ()))
+
+
+def _rounded_rect_path(rect: RectShape) -> str:
+    """SVG/vector path data for the master's rounded tile, in master units."""
+
+    left, top = rect.x, rect.y
+    right, bottom = rect.x + rect.width, rect.y + rect.height
+    radius = _format_number(rect.radius)
+    arc = f"A{radius},{radius} 0 0 1 "
+    return (
+        f"M{_format_number(left + rect.radius)},{_format_number(top)}"
+        f" H{_format_number(right - rect.radius)}"
+        f" {arc}{_format_number(right)},{_format_number(top + rect.radius)}"
+        f" V{_format_number(bottom - rect.radius)}"
+        f" {arc}{_format_number(right - rect.radius)},{_format_number(bottom)}"
+        f" H{_format_number(left + rect.radius)}"
+        f" {arc}{_format_number(left)},{_format_number(bottom - rect.radius)}"
+        f" V{_format_number(top + rect.radius)}"
+        f" {arc}{_format_number(left + rect.radius)},{_format_number(top)} Z"
+    )
+
+
+def _dart_number(value: float) -> str:
+    number = float(value)
+    if abs(number - round(number)) < 1e-9:
+        return str(int(round(number)))
+    return _format_precise(number)
+
+
+def _dart_glyph_cascade(glyph_path_data: str) -> str:
+    """Dart cascade lines replaying the master glyph's own M/L/C/Z segments."""
+
+    pen = _CommandPen()
+    parse_path(glyph_path_data, pen)
+    if not pen.commands:
+        raise MasterError("svg[2]: empty glyph outline")
+    lines: list[str] = []
+    for name, points in pen.commands:
+        if name == "close":
+            lines.append("  ..close()")
+            continue
+        coordinates = ", ".join(
+            f"{_dart_number(point[0])}, {_dart_number(point[1])}" for point in points
+        )
+        lines.append(f"  ..{name}({coordinates})")
+    lines[-1] = f"{lines[-1]};"
+    return "\n".join(lines)
+
+
+_ANDROID_WIDGET_VECTOR_TEMPLATE = (
+    '<?xml version="1.0" encoding="utf-8"?>\n'
+    "<!--\n"
+    "  Native widget brand mark. GENERATED by scripts/sync_app_icons.py from\n"
+    "  assets/logo/duoyi_app_logo.svg — do not edit by hand; rerun the sync\n"
+    "  script instead.\n"
+    "\n"
+    "  The 24-unit viewport keeps the master artboard: the outer group scales the\n"
+    "  88-unit master canvas onto it and the inner group replays the master glyph\n"
+    "  transform translate(20 68) scale(.09375 -.09375) verbatim, so the white\n"
+    "  path below stays the master's three-block outline instead of an\n"
+    "  approximated rectangle. Only the red rounded tile (#C85656) and the white\n"
+    "  glyph are drawn; outside the tile the canvas stays transparent.\n"
+    "-->\n"
+    '<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
+    '    android:width="24dp"\n'
+    '    android:height="24dp"\n'
+    '    android:viewportWidth="24"\n'
+    '    android:viewportHeight="24">\n'
+    "    <group\n"
+    '        android:scaleX="{scale}"\n'
+    '        android:scaleY="{scale}">\n'
+    "        <path\n"
+    '            android:fillColor="{tile_fill}"\n'
+    '            android:pathData="{tile_path}" />\n'
+    "        <group\n"
+    '            android:translateX="{translate_x}"\n'
+    '            android:translateY="{translate_y}"\n'
+    '            android:scaleX="{scale_x}"\n'
+    '            android:scaleY="{scale_y}">\n'
+    "            <path\n"
+    '                android:fillColor="#FFFFFF"\n'
+    '                android:pathData="{glyph_path}" />\n'
+    "        </group>\n"
+    "    </group>\n"
+    "</vector>\n"
+)
+
+
+def derive_android_widget_vector(path: Path = MASTER_SVG) -> str:
+    """24 dp Android widget vector derived from the canonical master."""
+
+    master = load_master(path)
+    children = list(ET.parse(path).getroot())
+    glyph_path_data = children[2].get("d")
+    if not glyph_path_data:
+        raise MasterError("svg[2]: the glyph has no path data")
+    translate_x, translate_y, scale_x, scale_y = _parse_transform(
+        children[2].get("transform"), "svg[2]"
+    )
+    return _ANDROID_WIDGET_VECTOR_TEMPLATE.format(
+        scale=_format_precise(ANDROID_WIDGET_VIEWPORT / ARTBOARD),
+        tile_fill=BRAND_RED_HEX,
+        tile_path=_rounded_rect_path(master.tile),
+        translate_x=_format_precise(translate_x),
+        translate_y=_format_precise(translate_y),
+        scale_x=_format_precise(scale_x),
+        scale_y=_format_precise(scale_y),
+        glyph_path=glyph_path_data,
+    )
+
+
+_WIDGET_BRAND_LOGO_DART_TEMPLATE = """// GENERATED FILE — 由 scripts/sync_app_icons.py 从唯一母版
+// assets/logo/duoyi_app_logo.svg 生成，请勿手改；重新生成请运行
+// `python3 scripts/sync_app_icons.py`。
+//
+// 母版：88×88 画布，#C85656 红色圆角方块（radius 32）承载白色三块几何图形，
+// 图形变换为 translate(20 68) scale(.09375 -.09375)。Android 原生小组件矢量
+// drawable/duoyi_widget_logo.xml 由同一母版生成并套用同一组变换，因此应用内
+// 预览、认证页与系统小组件不会各自维护第二种图形。
+
+import 'package:flutter/material.dart';
+
+import '../core/i18n.dart';
+
+/// 红底白标品牌标记：与 Android 小组件、各平台图标共用同一母版的矢量绘制。
+/// 红色圆角方块是标记本身，方块外部画布保持透明。
+class WidgetBrandLogo extends StatelessWidget {
+  /// 母版品牌红 `#C85656`，不随主题主色改色。
+  static const Color brandRed = Color(0xFFC85656);
+
+  /// 母版图形白 `#FFFFFF`。
+  static const Color markWhite = Color(0xFFFFFFFF);
+
+  final double size;
+  final String? semanticLabel;
+
+  const WidgetBrandLogo({super.key, this.size = 24, this.semanticLabel});
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    image: true,
+    label: semanticLabel ?? I18n.tr('mine.about.title'),
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: const _WidgetBrandLogoPainter(),
+        size: Size.square(size),
+      ),
+    ),
+  );
+}
+
+class _WidgetBrandLogoPainter extends CustomPainter {
+  const _WidgetBrandLogoPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final red = Paint()
+      ..isAntiAlias = true
+      ..color = WidgetBrandLogo.brandRed;
+    final white = Paint()
+      ..isAntiAlias = true
+      ..color = WidgetBrandLogo.markWhite;
+    canvas.save();
+    canvas.scale(size.shortestSide / _artboard);
+    canvas.drawPath(_tilePath, red);
+    canvas.save();
+    canvas.translate(_glyphTranslateX, _glyphTranslateY);
+    canvas.scale(_glyphScaleX, _glyphScaleY);
+    canvas.drawPath(_glyphPath, white);
+    canvas.restore();
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _WidgetBrandLogoPainter oldDelegate) => false;
+}
+
+/// 母版画布边长（母版 `viewBox="0 0 88 88"`）。
+const double _artboard = @ARTBOARD@;
+
+/// 母版图形变换 `translate(20 68) scale(.09375 -.09375)`，与原生 vector 一致。
+const double _glyphTranslateX = @GLYPH_TX@;
+const double _glyphTranslateY = @GLYPH_TY@;
+const double _glyphScaleX = @GLYPH_SX@;
+const double _glyphScaleY = @GLYPH_SY@;
+
+/// 母版红色圆角方块：母版 `<rect 0 0 88 88 rx 32>`。
+final RRect _tileRect = RRect.fromRectAndRadius(
+  Rect.fromLTWH(@TILE_X@, @TILE_Y@, @TILE_W@, @TILE_H@),
+  Radius.circular(@TILE_R@),
+);
+final Path _tilePath = Path()..addRRect(_tileRect);
+
+/// 母版白色三块图形：母版 `<path>` 的 M/L/C/Z 指令逐条落到 88 单位画布，
+/// 绘制时套用上面的母版变换，与 `duoyi_widget_logo.xml` 同源同形。
+final Path _glyphPath = Path()
+@GLYPH_CASCADE@
+"""
+
+
+def derive_widget_brand_logo_dart(path: Path = MASTER_SVG) -> str:
+    """Flutter ``WidgetBrandLogo`` source derived from the canonical master."""
+
+    master = load_master(path)
+    children = list(ET.parse(path).getroot())
+    glyph_path_data = children[2].get("d")
+    if not glyph_path_data:
+        raise MasterError("svg[2]: the glyph has no path data")
+    translate_x, translate_y, scale_x, scale_y = _parse_transform(
+        children[2].get("transform"), "svg[2]"
+    )
+    replacements = {
+        "@ARTBOARD@": _dart_number(ARTBOARD),
+        "@GLYPH_TX@": _dart_number(translate_x),
+        "@GLYPH_TY@": _dart_number(translate_y),
+        "@GLYPH_SX@": _dart_number(scale_x),
+        "@GLYPH_SY@": _dart_number(scale_y),
+        "@TILE_X@": _dart_number(master.tile.x),
+        "@TILE_Y@": _dart_number(master.tile.y),
+        "@TILE_W@": _dart_number(master.tile.width),
+        "@TILE_H@": _dart_number(master.tile.height),
+        "@TILE_R@": _dart_number(master.tile.radius),
+        "@GLYPH_CASCADE@": _dart_glyph_cascade(glyph_path_data),
+    }
+    text = _WIDGET_BRAND_LOGO_DART_TEMPLATE
+    for token, value in replacements.items():
+        text = text.replace(token, value)
+    return text
 
 
 # --------------------------------------------------------------------------- #
@@ -644,6 +1003,14 @@ def _save_rgba(image: Image.Image, path: Path, *, srgb_profile: bool) -> None:
     image.save(path, **options)
 
 
+def _write_text(relative: str, text: str) -> None:
+    """Write a generated markup/source file with a stable LF newline."""
+
+    destination = REPO_ROOT / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(text, encoding="utf-8", newline="\n")
+
+
 # --------------------------------------------------------------------------- #
 # Writing
 # --------------------------------------------------------------------------- #
@@ -651,16 +1018,27 @@ def _save_rgba(image: Image.Image, path: Path, *, srgb_profile: bool) -> None:
 
 def _render_cache(master: Master) -> dict[tuple[str, int], Image.Image]:
     cache: dict[tuple[str, int], Image.Image] = {}
-    opaque_sizes = {CANONICAL_SIZE} | {
-        target.size for target in ARTWORK_TARGETS if not target.transparent_tile
-    }
+    opaque_sizes = (
+        {CANONICAL_SIZE}
+        | {
+            target.size
+            for target in ARTWORK_TARGETS
+            if not target.transparent_tile
+        }
+        | {size for _, size in ALIAS_ARTWORK_PNGS}
+    )
     for size in sorted(opaque_sizes):
         cache[("artwork", size)] = render_artwork(master, size)
     for size in sorted(
         {target.size for target in ARTWORK_TARGETS if target.transparent_tile}
     ):
         cache[("transparent_tile", size)] = render_transparent_tile(master, size)
-    for size in sorted({target.size for target in FOREGROUND_TARGETS} | {CANONICAL_SIZE}):
+    foreground_sizes = (
+        {target.size for target in FOREGROUND_TARGETS}
+        | {CANONICAL_SIZE}
+        | {size for _, size in ALIAS_FOREGROUND_PNGS}
+    )
+    for size in sorted(foreground_sizes):
         cache[("foreground", size)] = render_foreground(master, size)
     cache[("favicon", FAVICON_SIZE)] = render_favicon(master, FAVICON_SIZE)
     return cache
@@ -713,6 +1091,31 @@ def write_all(master: Master, cache: dict[tuple[str, int], Image.Image]) -> None
     favicon_svg = REPO_ROOT / FAVICON_SVG_RELATIVE
     favicon_svg.parent.mkdir(parents=True, exist_ok=True)
     favicon_svg.write_text(derive_favicon_svg(), encoding="utf-8", newline="\n")
+
+    for relative, size in ALIAS_ARTWORK_PNGS:
+        _save_rgb(
+            cache[("artwork", size)],
+            REPO_ROOT / relative,
+            srgb_profile=True,
+        )
+    for relative, size in ALIAS_FOREGROUND_PNGS:
+        _save_rgba(
+            cache[("foreground", size)],
+            REPO_ROOT / relative,
+            srgb_profile=True,
+        )
+    for relative in ALIAS_DUPLICATES_OF_CANONICAL:
+        destination = REPO_ROOT / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(canonical_bytes)
+
+    alias_svg = derive_alias_svg()
+    for relative in ALIAS_SVG_RELATIVES:
+        _write_text(relative, alias_svg)
+    _write_text(ANDROID_WIDGET_VECTOR_RELATIVE, derive_android_widget_vector())
+    _write_text(
+        WIDGET_BRAND_LOGO_DART_RELATIVE, derive_widget_brand_logo_dart()
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -841,49 +1244,153 @@ def _config_problems() -> list[str]:
     return problems
 
 
-def _favicon_svg_problems(expected_text: str | None) -> list[str]:
-    """Read-only verification of the derived favicon SVG (text + structure)."""
+def _tile_svg_problems(
+    relative: str, expected_text: str | None, *, label: str
+) -> list[str]:
+    """Read-only verification of a derived transparent-tile SVG."""
 
-    path = REPO_ROOT / FAVICON_SVG_RELATIVE
+    path = REPO_ROOT / relative
     if not path.is_file():
-        return [f"{FAVICON_SVG_RELATIVE}: missing"]
+        return [f"{relative}: missing"]
     problems: list[str] = []
     text = path.read_text(encoding="utf-8")
     if expected_text is not None and text != expected_text:
-        problems.append(
-            f"{FAVICON_SVG_RELATIVE}: file text is not the master-derived favicon"
-        )
+        problems.append(f"{relative}: file text is not the master-derived {label}")
     try:
         root = ET.fromstring(text)
     except ET.ParseError as error:
-        return problems + [f"{FAVICON_SVG_RELATIVE}: invalid XML: {error}"]
+        return problems + [f"{relative}: invalid XML: {error}"]
 
     for element in root.iter():
         if _local_name(element.tag) == "image":
             problems.append(
-                f"{FAVICON_SVG_RELATIVE}: must stay vector, found an <image> element"
+                f"{relative}: must stay vector, found an <image> element"
             )
+    if root.get("viewBox") != "0 0 88 88":
+        problems.append(f"{relative}: viewBox must stay the master 0 0 88 88")
+    if "#F6F7F9" in text.upper():
+        problems.append(
+            f"{relative}: the opaque #F6F7F9 artboard must stay dropped"
+        )
     children = list(root)
     tags = [_local_name(child.tag) for child in children]
     if tags != ["rect", "path"]:
         return problems + [
-            f"{FAVICON_SVG_RELATIVE}: expected one rounded tile rect and one glyph"
-            f" path, found {tags}"
+            f"{relative}: expected one rounded tile rect and one glyph path,"
+            f" found {tags}"
         ]
     try:
-        tile = _parse_rect(children[0], "favicon[0]")
-        glyph = _parse_path(children[1], "favicon[1]")
+        tile = _parse_rect(children[0], f"{label}[0]")
+        glyph = _parse_path(children[1], f"{label}[1]")
     except MasterError as error:
-        return problems + [f"{FAVICON_SVG_RELATIVE}: {error}"]
+        return problems + [f"{relative}: {error}"]
     if tile.radius <= 0.0:
         problems.append(
-            f"{FAVICON_SVG_RELATIVE}: the tile needs its rounded corners, "
+            f"{relative}: the tile needs its rounded corners, "
             "a square rect reintroduces the opaque canvas"
         )
     if tile.fill != BRAND_RED_RGB:
-        problems.append(f"{FAVICON_SVG_RELATIVE}: tile fill must be {BRAND_RED_HEX}")
+        problems.append(f"{relative}: tile fill must be {BRAND_RED_HEX}")
     if glyph.fill != GLYPH_RGB:
-        problems.append(f"{FAVICON_SVG_RELATIVE}: glyph fill must be #FFFFFF")
+        problems.append(f"{relative}: glyph fill must be #FFFFFF")
+    return problems
+
+
+def _android_widget_vector_problems(expected_text: str | None) -> list[str]:
+    """Read-only verification of the derived native widget vector."""
+
+    relative = ANDROID_WIDGET_VECTOR_RELATIVE
+    path = REPO_ROOT / relative
+    if not path.is_file():
+        return [f"{relative}: missing"]
+    problems: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    if expected_text is not None and text != expected_text:
+        problems.append(f"{relative}: file text is not the master-derived vector")
+    for forbidden in (
+        "<bitmap",
+        "<image",
+        "<rect",
+        "android:tint=",
+        "#C95455",
+        "#F28A32",
+    ):
+        if forbidden in text:
+            problems.append(f"{relative}: must not contain {forbidden!r}")
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as error:
+        return problems + [f"{relative}: invalid XML: {error}"]
+    if _local_name(root.tag) != "vector":
+        return problems + [f"{relative}: root element must be <vector>"]
+    for key, expected in (
+        ("viewportWidth", "24"),
+        ("viewportHeight", "24"),
+        ("width", "24dp"),
+        ("height", "24dp"),
+    ):
+        if root.get(f"{ANDROID_NS}{key}") != expected:
+            problems.append(f"{relative}: {key} must be {expected}")
+
+    paths = [element for element in root.iter() if _local_name(element.tag) == "path"]
+    fills = [element.get(f"{ANDROID_NS}fillColor") for element in paths]
+    if fills != [BRAND_RED_HEX, "#FFFFFF"]:
+        problems.append(
+            f"{relative}: expected the red tile then the white glyph fill,"
+            f" found {fills}"
+        )
+    try:
+        children = list(ET.parse(MASTER_SVG).getroot())
+        master_glyph = children[2].get("d")
+        master_tile = _rounded_rect_path(load_master().tile)
+    except (MasterError, IndexError, ET.ParseError) as error:
+        return problems + [f"{relative}: cannot read the master: {error}"]
+    if len(paths) != 2:
+        problems.append(f"{relative}: expected exactly the tile and glyph path")
+    else:
+        if (paths[0].get(f"{ANDROID_NS}pathData") or "") != master_tile:
+            problems.append(
+                f"{relative}: tile path is not the master's 88x88 rx 32 tile"
+            )
+        if (paths[1].get(f"{ANDROID_NS}pathData") or "") != (master_glyph or ""):
+            problems.append(
+                f"{relative}: glyph path must be the master's own outline,"
+                " not an approximated rectangle"
+            )
+    return problems
+
+
+def _widget_brand_logo_problems(expected_text: str | None) -> list[str]:
+    """Read-only verification of the derived Flutter painter source."""
+
+    relative = WIDGET_BRAND_LOGO_DART_RELATIVE
+    path = REPO_ROOT / relative
+    if not path.is_file():
+        return [f"{relative}: missing"]
+    problems: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    if expected_text is not None and text != expected_text:
+        problems.append(f"{relative}: file text is not the master-derived painter")
+    for required in (
+        "class WidgetBrandLogo extends StatelessWidget",
+        "CustomPaint(",
+        "Color(0xFFC85656)",
+        "Color(0xFFFFFFFF)",
+        "canvas.scale(_glyphScaleX, _glyphScaleY)",
+        "drawPath(",
+    ):
+        if required not in text:
+            problems.append(f"{relative}: must contain {required!r}")
+    for forbidden in (
+        "Image.asset",
+        "0xFFC95455",
+        "0xFFF28A32",
+        "Icons.",
+        "drawRect(",
+        "canvas.drawRRect(",
+    ):
+        if forbidden in text:
+            problems.append(f"{relative}: must not contain {forbidden!r}")
     return problems
 
 
@@ -984,7 +1491,7 @@ def verify(
         problems.append(f"{FOREGROUND_RELATIVE}: {problem}")
 
     canonical_bytes = canonical_path.read_bytes() if canonical_path.is_file() else None
-    for relative in DUPLICATE_OF_CANONICAL:
+    for relative in (*DUPLICATE_OF_CANONICAL, *ALIAS_DUPLICATES_OF_CANONICAL):
         path = REPO_ROOT / relative
         if canonical_bytes is None:
             problems.append(f"{relative}: canonical PNG is unavailable")
@@ -1023,6 +1530,15 @@ def verify(
         if problem:
             problems.append(f"{target.relative}: {problem}")
 
+    for relative, size in ALIAS_ARTWORK_PNGS:
+        problem = _compare_pixels(REPO_ROOT / relative, cache[("artwork", size)])
+        if problem:
+            problems.append(f"{relative}: {problem}")
+    for relative, size in ALIAS_FOREGROUND_PNGS:
+        problem = _compare_pixels(REPO_ROOT / relative, cache[("foreground", size)])
+        if problem:
+            problems.append(f"{relative}: {problem}")
+
     problem = _compare_pixels(
         REPO_ROOT / FAVICON_PNG_RELATIVE, cache[("favicon", FAVICON_SIZE)]
     )
@@ -1035,8 +1551,40 @@ def verify(
     except MasterError as error:
         expected_svg = None
         problems.append(f"{FAVICON_SVG_RELATIVE}: cannot derive from master: {error}")
-    problems.extend(_favicon_svg_problems(expected_svg))
+    problems.extend(
+        _tile_svg_problems(FAVICON_SVG_RELATIVE, expected_svg, label="favicon")
+    )
 
+    alias_svg: str | None
+    try:
+        alias_svg = derive_alias_svg()
+    except MasterError as error:
+        alias_svg = None
+        problems.append(f"assets/logo aliases: cannot derive from master: {error}")
+    for relative in ALIAS_SVG_RELATIVES:
+        problems.extend(_tile_svg_problems(relative, alias_svg, label="alias"))
+
+    vector_expected: str | None
+    try:
+        vector_expected = derive_android_widget_vector()
+    except MasterError as error:
+        vector_expected = None
+        problems.append(
+            f"{ANDROID_WIDGET_VECTOR_RELATIVE}: cannot derive from master: {error}"
+        )
+    problems.extend(_android_widget_vector_problems(vector_expected))
+
+    dart_expected: str | None
+    try:
+        dart_expected = derive_widget_brand_logo_dart()
+    except MasterError as error:
+        dart_expected = None
+        problems.append(
+            f"{WIDGET_BRAND_LOGO_DART_RELATIVE}: cannot derive from master: {error}"
+        )
+    problems.extend(_widget_brand_logo_problems(dart_expected))
+
+    return problems
     return problems
 
 
@@ -1076,8 +1624,19 @@ def main(argv: list[str] | None = None) -> int:
     digest = hashlib.sha256(canonical.read_bytes()).hexdigest() if canonical.is_file() else "missing"
     checked = _checked_file_count()
     print(f"ok: {checked} icon files match {CANONICAL_RELATIVE}")
-    print(f"favicon: {FAVICON_PNG_RELATIVE} ({FAVICON_SIZE}x{FAVICON_SIZE}, RGBA)"
-          f" + {FAVICON_SVG_RELATIVE} derived from {MASTER_SVG.name}")
+    print(
+        f"favicon: {FAVICON_PNG_RELATIVE} ({FAVICON_SIZE}x{FAVICON_SIZE}, RGBA)"
+        f" + {FAVICON_SVG_RELATIVE} derived from {MASTER_SVG.name}"
+    )
+    print(
+        f"native marks: {ANDROID_WIDGET_VECTOR_RELATIVE} (24dp vector)"
+        f" + {WIDGET_BRAND_LOGO_DART_RELATIVE} (CustomPaint) from the same master"
+    )
+    print(
+        f"compat aliases: {len(ALIAS_ARTWORK_PNGS) + len(ALIAS_FOREGROUND_PNGS)}"
+        f" PNG + {len(ALIAS_DUPLICATES_OF_CANONICAL)} canonical copy"
+        f" + {len(ALIAS_SVG_RELATIVES)} SVG, all transparent derivatives"
+    )
     print(f"canonical sha256: {digest}")
     print(f"reference sha256: {REFERENCE_SHA256} (unchanged)")
     return 0

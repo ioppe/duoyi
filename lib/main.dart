@@ -7,15 +7,20 @@ import 'core/app_version.dart';
 import 'core/app_config.dart';
 import 'core/app_clock.dart';
 import 'core/app_motion.dart';
+import 'core/app_text_scale.dart';
+import 'core/app_typography.dart';
 import 'core/achievements.dart';
 import 'core/completion_visibility_policy.dart';
 import 'core/crash_guard.dart';
 import 'core/design_tokens.dart';
 import 'core/desktop_tokens.dart';
+import 'core/home_widget_calendar.dart';
+import 'core/home_widget_todos.dart';
 import 'core/i18n.dart';
 import 'core/iterable_extensions.dart';
 import 'core/local_timezone_resolver.dart';
 import 'core/report_engine.dart';
+import 'core/sync_reload_tasks.dart';
 import 'widgets/todo_create_sheet.dart';
 import 'core/smart_todo_draft.dart';
 import 'core/web_target.dart';
@@ -51,8 +56,8 @@ import 'models/habit.dart' show HabitKind;
 import 'models/calendar_event.dart'
     show CalendarEvent, CalendarEventType, CalendarEventTypeX;
 import 'models/note.dart' show NoteItem;
-import 'models/pomodoro.dart' show PomodoroType;
-import 'models/todo.dart' show TodoItem, TodoPriorityX;
+import 'models/pomodoro.dart' show PomodoroType, PomodoroWidgetControlAction;
+import 'models/todo.dart' show TodoItem;
 import 'services/alarm_service.dart';
 import 'services/account_local_data_cleaner.dart';
 import 'services/calendar_sync_service.dart';
@@ -60,6 +65,9 @@ import 'services/deferred_web_font_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
+import 'services/home_widget_action.dart';
+import 'services/home_widget_action_bridge.dart';
+import 'services/home_widget_push_scheduler.dart';
 import 'services/ai_service.dart';
 import 'services/app_update_service.dart';
 import 'services/backend_reminder_email_sink.dart';
@@ -95,6 +103,7 @@ import 'screens/today_detail_router.dart';
 import 'widgets/brand_background.dart';
 import 'widgets/force_update_gate.dart';
 import 'widgets/web_auth_gate.dart';
+import 'widgets/widget_brand_logo.dart';
 import 'widgets/todo_completion_flow.dart';
 import 'widgets/surface_components.dart';
 import 'widgets/keyboard_dismiss_scope.dart';
@@ -206,14 +215,20 @@ String _pomodoroHomeWidgetSignature(PomodoroProvider provider) {
 Future<void> _runSyncReloadTasksInBatches(
   List<Future<void> Function()> tasks, {
   int batchSize = 1,
-}) async {
-  for (var i = 0; i < tasks.length; i += batchSize) {
-    final end = (i + batchSize).clamp(0, tasks.length);
-    await Future.wait([for (var j = i; j < end; j++) tasks[j]()]);
-    if (end < tasks.length) {
-      await _yieldForNextFrame();
-    }
-  }
+}) {
+  // 任一任务失败都不阻断后续 collection 的重载：todo 本地水合失败可 throw，
+  // 不能让其它集合停在旧值。首个失败会在全部任务结束后抛出，onSynced 因此
+  // 仍能如实报同步失败，而不是吞成成功。
+  return runSyncReloadTasksInBatches(
+    tasks,
+    batchSize: batchSize,
+    yieldBetweenBatches: _yieldBetweenSyncReloadBatches,
+  );
+}
+
+/// 批间让出一帧：同步后的批量 reload 不能连续占满 UI 线程。
+Future<void> _yieldBetweenSyncReloadBatches() async {
+  await _yieldForNextFrame();
 }
 
 Future<void> _yieldForNextFrame([
@@ -499,6 +514,14 @@ void main() async {
   }
 
   authProvider.onAccountProfileChanged = (state) async {
+    // 登录成功/refreshMe 都走这里：先把本机字号归属到当前账号，再处理资料。
+    // 必须放在 profile 相等提前 return 之前，否则同一账号重复登录不会绑定。
+    if (state.isLoggedIn) {
+      await preferencesProvider.bindTextScaleToAccount(
+        serverUrl: authProvider.baseUrl,
+        userId: state.userId,
+      );
+    }
     final name = firstNonEmptyProfileText([
       state.displayName,
       state.username,
@@ -585,6 +608,16 @@ void main() async {
       () => themeProvider.loadFromStorage(),
       () => authProvider.loadFromStorage(refreshServerConfig: false),
       () => preferencesProvider.loadFromStorage(),
+      // 冷启动时 auth 已还原登录态：补一次字号归属校验，避免升级/重启后
+      // 已选字号被当作无主值。未登录（token 失效/退出）不绑定、不重置。
+      () {
+        final authState = authProvider.state;
+        if (!authState.isLoggedIn) return Future<void>.value();
+        return preferencesProvider.bindTextScaleToAccount(
+          serverUrl: authProvider.baseUrl,
+          userId: authState.userId,
+        );
+      },
       () => appLockProvider.loadFromStorage(),
       () => localeProvider.loadFromStorage(),
       () => userProvider.loadFromStorage(),
@@ -1344,20 +1377,6 @@ void main() async {
     queueNotificationQuickAddSync();
   }
 
-  Timer? notificationProgressMidnightTimer;
-  void scheduleNotificationProgressMidnightRefresh() {
-    notificationProgressMidnightTimer?.cancel();
-    final delay = _durationUntilNextLocalDay();
-    notificationProgressMidnightTimer = Timer(delay, () {
-      AppClock.notifyDayChanged();
-      refreshUserStats();
-      if (preferencesProvider.notificationTodayProgress) {
-        unawaited(syncNotificationQuickAddDeduped());
-      }
-      scheduleNotificationProgressMidnightRefresh();
-    });
-  }
-
   preferencesProvider.addListener(queueDailyDigestReminderSync);
   preferencesProvider.addListener(queueReportDigestReminderSync);
   preferencesProvider.addListener(queueNotificationQuickAddSync);
@@ -1381,13 +1400,6 @@ void main() async {
     queueReportDigestReminderSyncOnPomodoroSummaryChange,
   );
   timeAuditProvider.addListener(queueReportDigestReminderSync);
-  scheduleNotificationProgressMidnightRefresh();
-  LocalTimezoneResolver.timezoneListenable.addListener(() {
-    scheduleNotificationProgressMidnightRefresh();
-    refreshUserStats();
-    unawaited(refreshAchievementsNow(silentUnlockFeedback: true));
-    unawaited(syncNotificationQuickAddDeduped());
-  });
   refreshUserStats();
   refreshAchievements();
 
@@ -1552,39 +1564,45 @@ void main() async {
         reloadTasks.add(listGroupProvider.loadFromStorage);
       }
 
-      await _runSyncReloadTasksInBatches(reloadTasks);
-      if (shouldRefreshAchievementsSilently) {
-        achievementRefreshDebounce?.cancel();
-        achievementRefreshQueued = false;
-        achievementRefreshQueuedSilent = false;
-        await refreshAchievementsNow(silentUnlockFeedback: true);
-        // 云端成就基线已静默回填完毕，可恢复正常解锁反馈：
-        // 此后真正的新解锁才会弹窗 / 通知。
-        achievementProvider.resumeUnlockFeedback();
-      }
+      try {
+        await _runSyncReloadTasksInBatches(reloadTasks);
+      } finally {
+        // 重载可能失败（例如 todo 本地水合 throw）：收尾动作仍必须执行完，
+        // 首个错误随后由 _runSyncReloadTasksInBatches 原样抛给调用者，
+        // 不在这里吞成“同步成功”。
+        if (shouldRefreshAchievementsSilently) {
+          achievementRefreshDebounce?.cancel();
+          achievementRefreshQueued = false;
+          achievementRefreshQueuedSilent = false;
+          await refreshAchievementsNow(silentUnlockFeedback: true);
+          // 云端成就基线已静默回填完毕，可恢复正常解锁反馈：
+          // 此后真正的新解锁才会弹窗 / 通知。
+          achievementProvider.resumeUnlockFeedback();
+        }
 
-      final accountCollectionsChanged =
-          changedCollections.contains('user_profile') ||
-          changedCollections.contains('virtual_rewards');
-      if (accountCollectionsChanged) {
-        // 云同步回写本地资料后，再拉一次账号资料，保证其它设备改过的
-        // 昵称、头像、邮箱验证状态、时光币等账号字段能覆盖本地展示缓存。
-        await authProvider.refreshMe(reason: 'cloud_sync_account_snapshot');
-      }
-      if (changedCollections.contains('workspace_payloads')) {
-        await shareProvider.load();
-      }
-      if (changedCollections.contains('preferences')) {
-        await ReminderRingtoneSettings.applyPersistedSettingsToNative();
-      }
-      // 拉取云端后可能覆盖了本地 reminder，也要重跑一次
-      if (shouldResyncReminders) {
-        unawaited(
-          queueFullReminderResync(
-            delay: const Duration(milliseconds: 2500),
-            reason: 'cloud sync changed reminders',
-          ),
-        );
+        final accountCollectionsChanged =
+            changedCollections.contains('user_profile') ||
+            changedCollections.contains('virtual_rewards');
+        if (accountCollectionsChanged) {
+          // 云同步回写本地资料后，再拉一次账号资料，保证其它设备改过的
+          // 昵称、头像、邮箱验证状态、时光币等账号字段能覆盖本地展示缓存。
+          await authProvider.refreshMe(reason: 'cloud_sync_account_snapshot');
+        }
+        if (changedCollections.contains('workspace_payloads')) {
+          await shareProvider.load();
+        }
+        if (changedCollections.contains('preferences')) {
+          await ReminderRingtoneSettings.applyPersistedSettingsToNative();
+        }
+        // 拉取云端后可能覆盖了本地 reminder，也要重跑一次
+        if (shouldResyncReminders) {
+          unawaited(
+            queueFullReminderResync(
+              delay: const Duration(milliseconds: 2500),
+              reason: 'cloud sync changed reminders',
+            ),
+          );
+        }
       }
     });
   };
@@ -1675,43 +1693,52 @@ void main() async {
     themeProvider,
   );
 
-  Timer? homeWidgetPushDebounce;
   Timer? homeWidgetThemeDebounce;
   String lastHomeWidgetThemeSignature = '';
-  var homeWidgetPushInFlight = false;
-  var homeWidgetPushQueued = false;
+
+  // 小组件快照推送统一交给串行排程器：数据变化只标记 dirty 并按 2200ms 合并，
+  // 退到后台/暂停时立即 flush 最新状态。旧实现在 deferred hydration 未完成时
+  // 直接丢弃 push，且退出/暂停时没有 flush，会漏掉合并窗口内的最后一次更新。
+  final homeWidgetPushScheduler = HomeWidgetPushScheduler(
+    push: pushHomeWidgetNow,
+    isReady: () => deferredLocalStorageHydrated,
+    ensureReady: ensureDeferredLocalStorageStartup,
+    debounce: const Duration(milliseconds: 2200),
+    observeLifecycle: true,
+  );
+
   Future<void> runQueuedHomeWidgetPush() async {
-    if (homeWidgetPushInFlight) {
-      homeWidgetPushQueued = true;
-      return;
-    }
-    homeWidgetPushInFlight = true;
-    try {
-      final pushed = await pushHomeWidgetNow();
-      if (!pushed) {
-        debugPrint('[HomeWidget] queued push completed with failures');
-      }
-    } catch (e, st) {
-      debugPrint('[HomeWidget] queued push failed: $e\n$st');
-    } finally {
-      homeWidgetPushInFlight = false;
-    }
-    if (homeWidgetPushQueued) {
-      homeWidgetPushQueued = false;
-      homeWidgetPushDebounce?.cancel();
-      homeWidgetPushDebounce = Timer(const Duration(milliseconds: 2200), () {
-        unawaited(runQueuedHomeWidgetPush());
-      });
+    final pushed = await homeWidgetPushScheduler.flush();
+    if (!pushed) {
+      debugPrint('[HomeWidget] queued push completed with failures');
     }
   }
 
-  void queueHomeWidgetPush() {
-    if (!deferredLocalStorageHydrated) return;
-    homeWidgetPushDebounce?.cancel();
-    homeWidgetPushDebounce = Timer(const Duration(milliseconds: 2200), () {
-      unawaited(runQueuedHomeWidgetPush());
+  void queueHomeWidgetPush() => homeWidgetPushScheduler.schedule();
+
+  Timer? notificationProgressMidnightTimer;
+  void scheduleNotificationProgressMidnightRefresh() {
+    notificationProgressMidnightTimer?.cancel();
+    final delay = _durationUntilNextLocalDay();
+    notificationProgressMidnightTimer = Timer(delay, () {
+      AppClock.notifyDayChanged();
+      queueHomeWidgetPush();
+      refreshUserStats();
+      if (preferencesProvider.notificationTodayProgress) {
+        unawaited(syncNotificationQuickAddDeduped());
+      }
+      scheduleNotificationProgressMidnightRefresh();
     });
   }
+
+  scheduleNotificationProgressMidnightRefresh();
+  LocalTimezoneResolver.timezoneListenable.addListener(() {
+    scheduleNotificationProgressMidnightRefresh();
+    queueHomeWidgetPush();
+    refreshUserStats();
+    unawaited(refreshAchievementsNow(silentUnlockFeedback: true));
+    unawaited(syncNotificationQuickAddDeduped());
+  });
 
   String homeWidgetThemeSignature() {
     final payload = HomeWidgetThemePayload.fromThemeProvider(themeProvider);
@@ -1792,10 +1819,42 @@ void main() async {
 
   try {
     HomeWidgetService.widgetClickedStream.listen((uri) {
-      if (uri != null) handleDeepLink(uri);
+      if (uri != null) {
+        unawaited(
+          ensureDeferredLocalStorageStartup().then((_) => handleDeepLink(uri)),
+        );
+      }
     });
   } catch (e, st) {
     debugPrint('[startup] home widget stream failed: $e\n$st');
+  }
+
+  // 桌面小组件动作：主 isolate 仍然存活时由后台引擎转发到这里执行，写的是
+  // 同一批内存 Provider，随后的普通编辑不会用陈旧副本回滚完成态/打卡。
+  if (HomeWidgetService.supportsBackgroundActions) {
+    HomeWidgetActionBridge.registerMainHandler((uri) async {
+      final request = HomeWidgetActionRequest.parse(uri);
+      if (request == null) return HomeWidgetActionAck.skipped;
+      // 换号/登出后内存登录态立即失效，不能再用旧对象执行动作。
+      if (!authProvider.state.isLoggedIn && !request.allowsSignedOutExecution) {
+        debugPrint('[HomeWidget] live ${request.kind.name} skipped: signedOut');
+        return HomeWidgetActionAck.skipped;
+      }
+      await ensureDeferredLocalStorageStartup();
+      final changed = await HomeWidgetService.runBackgroundAction(
+        request,
+        live: HomeWidgetLiveProviders(
+          todos: todoProvider,
+          habits: habitProvider,
+          pomodoro: pomodoroProvider,
+        ),
+        signedIn: authProvider.state.isLoggedIn,
+      );
+      if (!changed) return HomeWidgetActionAck.skipped;
+      // 回执等待同一串行队列补推，避免后台动作与在途常规快照并发写入。
+      final pushed = await homeWidgetPushScheduler.flush(force: true);
+      return pushed ? HomeWidgetActionAck.done : HomeWidgetActionAck.failed;
+    });
   }
 
   Future<void> runPostFrameStartupTasks() async {
@@ -1866,6 +1925,7 @@ void main() async {
           () => DeepLinkService.takeInitialSharedText(),
         );
         if (initialDeepLink != null && initialDeepLink.toString().isNotEmpty) {
+          await ensureDeferredLocalStorageStartup();
           _handleWidgetUri(initialDeepLink, pomodoroProvider);
         }
         if (initialOAuthLink != null) {
@@ -1884,6 +1944,7 @@ void main() async {
           () => HomeWidgetService.initialLaunchUri(),
         );
         if (initial != null) {
+          await ensureDeferredLocalStorageStartup();
           _handleWidgetUri(initial, pomodoroProvider);
         }
       }, delay: const Duration(seconds: 8)),
@@ -2028,17 +2089,25 @@ Future<bool> _pushHomeWidget(
 ) async {
   final now = AppClock.now();
   final today = DateTime(now.year, now.month, now.day);
-  final activeToday = t.visibleTodayTodos(now)
-    ..sort((a, b) {
-      // 按优先级倒序
-      final r = b.priority.rank.compareTo(a.priority.rank);
-      if (r != 0) return r;
-      return a.sortOrder.compareTo(b.sortOrder);
-    });
+  // 四象限 Q1→Q3→Q2→Q4（同象限优先级倒序 / 手动次序 / 创建时刻 / ID 稳定兜底）
+  // 与小组件 helper 完全同口径：旧 Top3 字段取新排序前 3 项，总数为全列表。
+  final activeToday = buildHomeWidgetTodoItems(
+    t.visibleTodayTodos(now),
+    now: now,
+  );
   final activeTodayTodos = activeToday.length;
   final top3 = activeToday.take(3).map((e) => e.title).toList();
   final top3Ids = activeToday.take(3).map((e) => e.id).toList();
   final habitPercent = (h.todayCompletionRate * 100).round();
+  final habitPayload = HomeWidgetService.habitHomeWidgetActionPayload(h);
+  final habitHighlights = <String>[
+    for (var index = 1; index <= 3; index++)
+      (habitPayload['habit_highlight_$index'] as String?) ?? '',
+  ];
+  final habitHighlightIds = <String>[
+    for (var index = 1; index <= 3; index++)
+      (habitPayload['habit_highlight_${index}_id'] as String?) ?? '',
+  ];
   final quickCheckHabits =
       h.habits
           .where(
@@ -2131,11 +2200,10 @@ Future<bool> _pushHomeWidget(
       ? I18n.tr('widget.no_schedule_today')
       : "${I18n.tr('widget.today_prefix')}${scheduleHighlights.first}";
   final focusState = p.state;
-  final focusTimerEndsAtMillis = focusState.isRunning && !focusState.isCountUp
-      ? DateTime.now()
-            .add(Duration(seconds: focusState.remainingSeconds))
-            .millisecondsSinceEpoch
-      : 0;
+  // 结束时刻取 Provider 的 canonical 锚点：暂停/恢复/冷启动都不按 now+remaining 漂移。
+  final focusTimerEndsAtMillis = p.focusTimerEndsAtMillis;
+  final focusControlScope = await HomeWidgetService.currentFocusControlScope();
+  final todoItemsJson = encodeHomeWidgetTodoItems(activeToday);
   final focusTimerLabel = switch (focusState.type) {
     PomodoroType.focus =>
       focusState.isCountUp
@@ -2154,6 +2222,7 @@ Future<bool> _pushHomeWidget(
           (sum, session) => sum + session.durationSeconds,
         ) ~/
         60,
+    todoItemsJson: todoItemsJson,
     strings: tp.brand.strings,
     todoTop3: top3,
     todoTop3Ids: top3Ids,
@@ -2188,10 +2257,19 @@ Future<bool> _pushHomeWidget(
     focusTimerTotalSeconds: focusState.totalSeconds,
     focusTimerEndsAtMillis: focusTimerEndsAtMillis,
     focusTimerLabel: focusTimerLabel,
-    habitQuickCheckId: quickCheckHabit?.id ?? '',
+    focusTimerCountUp: focusState.isCountUp,
+    focusTimerState: p.focusTimerState.wireName,
+    focusTimerSessionId: p.focusControlSessionId,
+    focusTimerRevision: p.focusControlRevision,
+    focusControlScope: focusControlScope,
     habitQuickCheckLabel: quickCheckHabit == null
         ? I18n.tr('widget.habit_quick_check_hint')
         : "${I18n.tr('widget.habit_checkin_prefix')}${quickCheckHabit.name}",
+    habitTotalCompletions: h.todayTotalCompletions,
+    habitHighlights: habitHighlights,
+    habitHighlightIds: habitHighlightIds,
+    calendarDayCounts: buildHomeWidgetCalendarDayCounts(t.todos),
+    calendarTimezone: LocalTimezoneResolver.currentIana,
     theme: HomeWidgetThemePayload.fromThemeProvider(tp),
   );
 }
@@ -2885,7 +2963,7 @@ void _drainPendingWidgetUris(PomodoroProvider pomodoro) {
   }
 }
 
-bool _reserveWidgetActionUri(Uri uri) {
+bool _reserveWidgetUri(Uri uri) {
   final now = DateTime.now();
   _recentWidgetActionUris.removeWhere(
     (_, at) => now.difference(at) > const Duration(seconds: 5),
@@ -2893,7 +2971,7 @@ bool _reserveWidgetActionUri(Uri uri) {
   final key = uri.toString();
   final last = _recentWidgetActionUris[key];
   if (last != null && now.difference(last) <= const Duration(seconds: 5)) {
-    debugPrint('[DeepLink] duplicate widget action skipped: $uri');
+    debugPrint('[DeepLink] duplicate deep link skipped: $uri');
     return false;
   }
   _recentWidgetActionUris[key] = now;
@@ -2925,6 +3003,7 @@ void _handleWidgetUri(
     }
     return;
   }
+  if (!_reserveWidgetUri(uri)) return;
 
   if (uri.host == 'tab') {
     final tab = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
@@ -3064,14 +3143,56 @@ void _handleWidgetUri(
     ns.handleSnoozeDeepLink(uri);
   } else if (uri.host == 'action') {
     final action = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
-    if (!_reserveWidgetActionUri(uri)) return;
-    if (action == 'start_pomodoro') {
+    if (action == 'start_pomodoro' ||
+        action == 'pause_pomodoro' ||
+        action == 'stop_pomodoro') {
       state.navigateTo(4, allowHidden: true);
-      if (pomodoro.state.isRunning) {
-        if (ctx != null) _showWidgetActionFeedback(ctx, '专注计时正在进行');
-      } else {
-        pomodoro.startIfIdle();
-        if (ctx != null) _showWidgetActionFeedback(ctx, '已开始专注');
+      final request = HomeWidgetActionRequest.parse(uri);
+      final sessionId = request?.focusSessionId;
+      final revision = request?.focusRevision;
+      final expected = request?.focusState;
+      if (request != null &&
+          request.isBoundFocusControl &&
+          sessionId != null &&
+          revision != null &&
+          expected != null) {
+        // 新版绑定按钮：与后台动作同一套 session+revision+state 校验。
+        final control = switch (request.kind) {
+          HomeWidgetActionKind.pausePomodoro =>
+            PomodoroWidgetControlAction.pause,
+          HomeWidgetActionKind.stopPomodoro => PomodoroWidgetControlAction.stop,
+          _ => PomodoroWidgetControlAction.start,
+        };
+        if (ctx == null) return;
+        final liveProviders = HomeWidgetLiveProviders(
+          todos: ctx.read<TodoProvider>(),
+          habits: ctx.read<HabitProvider>(),
+          pomodoro: pomodoro,
+        );
+        unawaited(
+          HomeWidgetService.runBackgroundAction(
+            request,
+            live: liveProviders,
+            signedIn: ctx.read<AuthProvider>().state.isLoggedIn,
+          ).then((changed) {
+            if (!changed || !ctx.mounted) return;
+            _showWidgetActionFeedback(ctx, switch (control) {
+              PomodoroWidgetControlAction.start => '已开始专注',
+              PomodoroWidgetControlAction.pause => '已暂停专注',
+              PomodoroWidgetControlAction.stop => '已停止专注',
+            });
+          }),
+        );
+      } else if (action == 'start_pomodoro' &&
+          request != null &&
+          !request.isBoundFocusControl) {
+        // legacy 无绑定按钮：保持原有“空闲才启动”的行为。
+        if (pomodoro.state.isRunning) {
+          if (ctx != null) _showWidgetActionFeedback(ctx, '专注计时正在进行');
+        } else {
+          pomodoro.startIfIdle();
+          if (ctx != null) _showWidgetActionFeedback(ctx, '已开始专注');
+        }
       }
     } else if (action == 'quick_todo' && ctx != null) {
       final text = uri.queryParameters['text']?.trim();
@@ -3090,42 +3211,39 @@ void _handleWidgetUri(
       state.navigateTo(1, allowHidden: true);
       final todos = Provider.of<TodoProvider>(ctx, listen: false);
       final target = todos.todos.where((todo) => todo.id == id).firstOrNull;
-      if (target == null) {
-        _showWidgetActionFeedback(ctx, '这个任务不存在或已被删除');
-        return;
+      // 与后台动作共用同一套目标校验，避免两处判断漂移。
+      switch (homeWidgetTodoTargetState(target)) {
+        case HomeWidgetTodoTargetState.missing:
+          _showWidgetActionFeedback(ctx, '这个任务不存在或已被删除');
+        case HomeWidgetTodoTargetState.alreadyCompleted:
+          _showWidgetActionFeedback(ctx, '“${target!.title}”已经完成');
+        case HomeWidgetTodoTargetState.ready:
+          unawaited(_completeTodoFromWidgetAction(ctx, todos, target!));
       }
-      if (target.isCompleted) {
-        _showWidgetActionFeedback(ctx, '“${target.title}”已经完成');
-        return;
-      }
-      unawaited(_completeTodoFromWidgetAction(ctx, todos, target));
     } else if (action == 'checkin_habit' && ctx != null) {
       final id = uri.queryParameters['id'];
       state.navigateTo(2, allowHidden: true);
       if (id == null || id.isEmpty) return;
       final habits = Provider.of<HabitProvider>(ctx, listen: false);
       final target = habits.habits.where((habit) => habit.id == id).firstOrNull;
-      if (target == null) {
-        _showWidgetActionFeedback(ctx, '这个习惯不存在或已被删除');
-        return;
+      // 与后台动作共用同一套目标校验，避免两处判断漂移。
+      switch (homeWidgetHabitTargetState(target)) {
+        case HomeWidgetHabitTargetState.missing:
+          _showWidgetActionFeedback(ctx, '这个习惯不存在或已被删除');
+        case HomeWidgetHabitTargetState.unsupportedKind:
+          _showWidgetActionFeedback(ctx, '这个习惯不支持快捷打卡');
+        case HomeWidgetHabitTargetState.notActiveToday:
+          _showWidgetActionFeedback(ctx, '“${target!.name}”今天不需要打卡');
+        case HomeWidgetHabitTargetState.alreadyCompleted:
+          _showWidgetActionFeedback(ctx, '“${target!.name}”今天已经完成');
+        case HomeWidgetHabitTargetState.ready:
+          final habit = target!;
+          unawaited(
+            habits.incrementHabit(id).then((_) {
+              _showWidgetActionFeedbackFromShell('已打卡：${habit.name}');
+            }),
+          );
       }
-      if (target.kind != HabitKind.positive) {
-        _showWidgetActionFeedback(ctx, '这个习惯不支持快捷打卡');
-        return;
-      }
-      if (!target.isActiveToday()) {
-        _showWidgetActionFeedback(ctx, '“${target.name}”今天不需要打卡');
-        return;
-      }
-      if (target.isCompletedToday()) {
-        _showWidgetActionFeedback(ctx, '“${target.name}”今天已经完成');
-        return;
-      }
-      unawaited(
-        habits.incrementHabit(id).then((_) {
-          _showWidgetActionFeedbackFromShell('已打卡：${target.name}');
-        }),
-      );
     }
   } else {
     debugPrint('[DeepLink] unknown duoyi host: ${uri.host} uri=$uri');
@@ -3954,19 +4072,39 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       scrollBehavior: const KeyboardDismissScrollBehavior(),
       navigatorObservers: [_keyboardObserver],
-      builder: (context, child) => KeyboardDismissScope(
-        child: Theme(
-          data: AppMotion.themeFor(context, Theme.of(context)),
-          child: AppClockScope(
-            child: PomodoroFloatingWindowHost(
-              child: WebAuthGate(
-                enabled: WebTarget.isWebBuild && !mustUpdate,
-                child: child!,
+      builder: (context, child) {
+        // 应用字号是设备本地偏好，与系统字号相乘后只作用于多仪内部文字；
+        // 这里只替换 textScaler，padding / viewInsets 仍沿用系统值。
+        // 原生 Android 先叠加基础正文 12 的基准（其它平台基准仍为 14），
+        // 再乘用户档位：默认档位保持 100%，系统缩放 / 非线性缩放原样保留。
+        final mediaQuery = MediaQuery.of(context);
+        final textScale = context.select<PreferencesProvider, double>(
+          (prefs) => prefs.textScale,
+        );
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: AppTextScale.resolve(
+              system: AppTypography.platformScaler(
+                system: mediaQuery.textScaler,
+              ),
+              appScale: textScale,
+            ),
+          ),
+          child: KeyboardDismissScope(
+            child: Theme(
+              data: AppMotion.themeFor(context, Theme.of(context)),
+              child: AppClockScope(
+                child: PomodoroFloatingWindowHost(
+                  child: WebAuthGate(
+                    enabled: WebTarget.isWebBuild && !mustUpdate,
+                    child: child!,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
       theme: brand.theme,
       themeAnimationStyle: AppMotion.overlayStyle(context),
       home: mustUpdate
@@ -4420,7 +4558,7 @@ class _DesktopRailHeader extends StatelessWidget {
     final titleStyle = Theme.of(
       context,
     ).textTheme.titleMedium?.copyWith(color: cs.onSurface);
-    final icon = Icon(Icons.dashboard_customize_rounded, color: cs.primary);
+    const icon = WidgetBrandLogo();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(12, 14, 12, extended ? 18 : 10),

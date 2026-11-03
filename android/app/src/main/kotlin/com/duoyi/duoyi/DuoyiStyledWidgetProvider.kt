@@ -4,13 +4,21 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 open class DuoyiStyledWidgetProvider : AppWidgetProvider() {
+    override fun onReceive(context: Context, intent: Intent) {
+        // 核心 4 页的切页 / 刷新 / per-ID 更新分流在这里完成；未接管时保持原生命周期。
+        if (DuoyiWidgetNavigation.handleReceive(context, intent, this)) return
+        super.onReceive(context, intent)
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
+        DuoyiWidgetNavigation.clearForWidgets(context, appWidgetIds)
         DuoyiWidgetProviderRegistry.disableVariantProviderIfUnused(
             context,
             ComponentName(context, this::class.java),

@@ -42,7 +42,12 @@ void main() {
     expect(screen, contains('严格专注'));
     expect(screen, contains('确认记录'));
     expect(screen, contains('监控分心应用'));
-    expect(screen, contains('分心应用包名'));
+    expect(screen, contains('AppSettingsTile('));
+    expect(screen, contains('_showDistractingAppPicker'));
+    expect(screen, contains('FocusDistractionAppPicker'));
+    expect(screen, contains('focus.distraction.tile.title'));
+    expect(screen, isNot(contains('分心应用包名')));
+    expect(screen, isNot(contains('packageCtrl')));
     expect(screen, contains('使用情况权限'));
     expect(screen, contains('辅助功能拦截'));
     expect(screen, contains('开启辅助功能后'));

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/report_reminder_config.dart';
 import 'package:duoyi/models/goal.dart' show ReminderKind;
@@ -13,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
 /// 设备/用户习惯偏好：登出、切号、401 清理后都应当保留。
 const _devicePreferences = <String, Object>{
@@ -66,6 +68,30 @@ void _expectAccountDataCleared(SharedPreferences prefs) {
   expect(prefs.getString('webdav_backup_username'), isNull);
   expect(prefs.getString('duoyi_oauth_calendar_accounts_v1'), isNull);
   expect(prefs.getString(AccountLocalDataCleaner.accountDataOwnerKey), isNull);
+}
+
+/// 可暂停指定键写盘的 SharedPreferences 平台假件：用于确定性地制造
+/// “迁移写盘进行中用户又改了设置”的并发窗口，不依赖 delay 概率。
+class _GatedPreferencesStore extends InMemorySharedPreferencesStore {
+  _GatedPreferencesStore(super.data) : super.withData();
+
+  final Completer<void> gateEntered = Completer<void>();
+  final Completer<void> gateRelease = Completer<void>();
+  String? _gateKey;
+
+  /// 只拦截一次 [preferenceKey] 的写入，之后（并发 setter 的写入）正常通过。
+  void gateOn(String preferenceKey) => _gateKey = 'flutter.$preferenceKey';
+
+  @override
+  Future<bool> setValue(String valueType, String key, Object value) async {
+    final gated = _gateKey;
+    if (gated != null && key == gated) {
+      _gateKey = null;
+      if (!gateEntered.isCompleted) gateEntered.complete();
+      await gateRelease.future;
+    }
+    return super.setValue(valueType, key, value);
+  }
 }
 
 void main() {
@@ -391,8 +417,8 @@ void main() {
         isFalse,
         reason: 'timezone mode',
       );
-      expect(preferences.bottomNavOrder, <int>[0, 1, 2, 4, 6, 3, 5]);
-      expect(preferences.visibleBottomNavTabs, <int>[0, 1, 2, 4, 6]);
+      expect(preferences.bottomNavOrder, <int>[0, 2, 4, 6, 3, 5]);
+      expect(preferences.visibleBottomNavTabs, <int>[0, 2, 4, 6]);
       expect(preferences.dailyReminderEnabled, isTrue);
       expect(preferences.dailyReminderSlots[0].kind, ReminderKind.popup);
       expect(preferences.dailyReminderHour, 7);
@@ -427,7 +453,8 @@ void main() {
       expect(prefs.getString('sync_preferences_updated_at'), isNull);
       expect(prefs.getBool('sync_pending_local_changes'), isNull);
       expect(prefs.getString('webdav_backup_password'), isNull);
-      expect(prefs.getString('active_brand'), isNull);
+      // 当前主题属于设备偏好，账号清理和连续重启都应保留。
+      expect(prefs.getString('active_brand'), 're0');
       first.dispose();
 
       // 第二次冷启动使用同一份持久化存储，模拟用户重启 App。
@@ -564,6 +591,86 @@ void main() {
       expect(provider.weeklyReportReminderMinute, 15);
       expect(provider.notificationQuickAdd, isTrue);
       provider.dispose();
+    });
+    test('账号边界清理后本机字号档位仍保留', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'pref_text_scale': AppTextScale.large,
+      });
+
+      // 账号清理只清账号数据；pref_* 设备偏好必须保留。
+      await AccountLocalDataCleaner.clearSharedPreferences();
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getDouble('pref_text_scale'), AppTextScale.large);
+
+      final provider = PreferencesProvider();
+      addTearDown(provider.dispose);
+      await provider.loadFromStorage();
+      expect(provider.textScale, AppTextScale.large, reason: 'text scale');
+    });
+    test('旧导航迁移写盘期间切换默认页：旧快照不覆盖新设置', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = _GatedPreferencesStore(<String, Object>{
+        'flutter.pref_bottom_nav_order': <String>['0', '1', '2', '4', '6'],
+        'flutter.pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
+        'flutter.pref_default_tab': 1,
+      });
+      SharedPreferencesStorePlatform.instance = store;
+      addTearDown(() {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+      });
+      store.gateOn('pref_bottom_nav_visible');
+
+      final provider = PreferencesProvider();
+      addTearDown(provider.dispose);
+      final load = provider.loadFromStorage();
+      // 载入停在“清洗旧导航”的写盘上：此刻用户显式切换默认页。
+      await store.gateEntered.future.timeout(const Duration(seconds: 1));
+      await provider.setDefaultTab(2);
+      store.gateRelease.complete();
+      await load.timeout(const Duration(seconds: 2));
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(provider.defaultTab, 2, reason: '迁移写盘不能用旧快照覆盖新设置');
+      expect(prefs.getInt('pref_default_tab'), 2);
+      // 旧导航里的待办入口仍被清洗，迁移本身没有被跳过。
+      expect(prefs.getStringList('pref_bottom_nav_visible'), <String>[
+        '0',
+        '2',
+        '4',
+        '6',
+      ]);
+    });
+
+    test('旧导航迁移写盘期间调整导航顺序：旧快照不覆盖新顺序', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = _GatedPreferencesStore(<String, Object>{
+        'flutter.pref_bottom_nav_order': <String>['0', '1', '2', '4', '6'],
+        'flutter.pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
+      });
+      SharedPreferencesStorePlatform.instance = store;
+      addTearDown(() {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+      });
+      store.gateOn('pref_bottom_nav_visible');
+
+      final provider = PreferencesProvider();
+      addTearDown(provider.dispose);
+      final load = provider.loadFromStorage();
+      await store.gateEntered.future.timeout(const Duration(seconds: 1));
+      await provider.moveBottomNavTab(4, -1);
+      store.gateRelease.complete();
+      await load.timeout(const Duration(seconds: 2));
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(provider.bottomNavOrder, <int>[0, 4, 2, 6, 3, 5]);
+      expect(prefs.getStringList('pref_bottom_nav_order'), <String>[
+        '0',
+        '4',
+        '2',
+        '6',
+        '3',
+        '5',
+      ]);
     });
   });
 }

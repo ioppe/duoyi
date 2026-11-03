@@ -1,10 +1,26 @@
 import 'package:duoyi/providers/preferences_provider.dart';
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/core/report_reminder_config.dart';
 import 'package:duoyi/models/goal.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+
+/// 在指定目标平台下跑用例：字号档位表按该平台计算。
+Future<void> _onPlatform(
+  TargetPlatform platform,
+  Future<void> Function() body,
+) async {
+  final previous = debugDefaultTargetPlatformOverride;
+  debugDefaultTargetPlatformOverride = platform;
+  try {
+    await body();
+  } finally {
+    debugDefaultTargetPlatformOverride = previous;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +60,163 @@ void main() {
     preferences.resetLocalState();
     expect(preferences.showHomeCalendar, isFalse);
     preferences.dispose();
+  });
+
+  test('应用字体大小保存档位，重载和普通清理不重置', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.standard);
+
+    await preferences.setTextScale(0.9);
+    expect(preferences.textScale, AppTextScale.small);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getDouble('pref_text_scale'), AppTextScale.small);
+
+    await preferences.setTextScale(AppTextScale.large);
+    expect(prefs.getDouble('pref_text_scale'), AppTextScale.large);
+
+    final reloaded = PreferencesProvider();
+    await reloaded.loadFromStorage();
+    expect(reloaded.textScale, AppTextScale.large);
+
+    reloaded.resetLocalState();
+    expect(reloaded.textScale, AppTextScale.large);
+    preferences.dispose();
+    reloaded.dispose();
+  });
+
+  test('载入扩展字号时保留有效档位（非 Android 八档）', () async {
+    await _onPlatform(TargetPlatform.linux, () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'pref_text_scale': 1.6,
+      });
+      final preferences = PreferencesProvider();
+      await preferences.loadFromStorage();
+      expect(preferences.textScale, 1.6);
+      // 读取只做归一化，不写盘：磁盘保留历史值。
+      expect(
+        (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
+        1.6,
+      );
+      preferences.dispose();
+    });
+  });
+
+  test('Android 七档载入 160% 吸到 145%，磁盘保留历史值且不写迁移标记', () async {
+    await _onPlatform(TargetPlatform.android, () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'pref_text_scale': 1.6,
+      });
+      final preferences = PreferencesProvider();
+      await preferences.loadFromStorage();
+      expect(preferences.textScale, 1.45);
+      final stored = await SharedPreferences.getInstance();
+      expect(stored.getDouble('pref_text_scale'), 1.6);
+      expect(stored.getBool('device_text_scale_default_migration_v2'), isNull);
+
+      SharedPreferences.resetStatic();
+      final restarted = PreferencesProvider();
+      await restarted.loadFromStorage();
+      expect(restarted.textScale, 1.45);
+      expect(
+        (await SharedPreferences.getInstance()).getDouble('pref_text_scale'),
+        1.6,
+      );
+      preferences.dispose();
+      restarted.dispose();
+    });
+  });
+
+  test('载入字号偏好时把临近档位的历史值吸附到最近档位', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': 1.18,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.large);
+    preferences.dispose();
+  });
+
+  test('已保存的 100% 载入后原样保留，不再被默认档改写', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': AppTextScale.standard,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.standard);
+    final stored = await SharedPreferences.getInstance();
+    expect(stored.getDouble('pref_text_scale'), AppTextScale.standard);
+    // 载入本身不写盘：旧版迁移标记既不写也不读。
+    expect(stored.getBool('device_text_scale_default_migration_v2'), isNull);
+
+    // 模拟重启：丢弃 SharedPreferences 缓存，重新从磁盘快照载入。
+    SharedPreferences.resetStatic();
+    final restarted = PreferencesProvider();
+    await restarted.loadFromStorage();
+    expect(restarted.textScale, AppTextScale.standard);
+    preferences.dispose();
+    restarted.dispose();
+  });
+
+  test('非 Android 已保存的非默认档位跨重启保留，不被改写', () async {
+    await _onPlatform(TargetPlatform.linux, () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'pref_text_scale': 1.6,
+      });
+      final preferences = PreferencesProvider();
+      await preferences.loadFromStorage();
+      expect(preferences.textScale, 1.6);
+      final stored = await SharedPreferences.getInstance();
+      expect(stored.getDouble('pref_text_scale'), 1.6);
+      expect(stored.getBool('device_text_scale_default_migration_v2'), isNull);
+
+      SharedPreferences.resetStatic();
+      final restarted = PreferencesProvider();
+      await restarted.loadFromStorage();
+      expect(restarted.textScale, 1.6);
+      preferences.dispose();
+      restarted.dispose();
+    });
+  });
+
+  test('旧版小档与迁移标记不决定档位，主动选 100% 后重启仍是 100%', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_text_scale': AppTextScale.small,
+      'device_text_scale_default_migration_v2': true,
+    });
+    final preferences = PreferencesProvider();
+    await preferences.loadFromStorage();
+    expect(preferences.textScale, AppTextScale.small);
+
+    SharedPreferences.resetStatic();
+    final restarted = PreferencesProvider();
+    await restarted.loadFromStorage();
+    expect(restarted.textScale, AppTextScale.small);
+
+    await restarted.setTextScale(AppTextScale.standard);
+    expect(restarted.textScale, AppTextScale.standard);
+    SharedPreferences.resetStatic();
+    final afterExplicitChoice = PreferencesProvider();
+    await afterExplicitChoice.loadFromStorage();
+    expect(afterExplicitChoice.textScale, AppTextScale.standard);
+    preferences.dispose();
+    restarted.dispose();
+    afterExplicitChoice.dispose();
+  });
+
+  test('个性设置页提供独立字号预览页入口', () {
+    final source = File(
+      'lib/screens/preferences_screen.dart',
+    ).readAsStringSync();
+
+    expect(source, contains("I18n.tr('preferences.menu.text_scale')"));
+    expect(source, contains("I18n.tr('preferences.text_scale.title')"));
+    expect(source, contains("I18n.tr('preferences.text_scale.subtitle')"));
+    expect(source, contains('Icons.format_size'));
+    expect(source, contains("ValueKey('preferences_text_scale_tile')"));
+    expect(source, contains('TextSizeSettingsScreen'));
+    expect(source, contains('onTap: _openTextSize'));
   });
 
   test('旧版底部导航偏好升级后保留我的并限制 5 个', () async {

@@ -2311,10 +2311,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSectionStylesSubtitle => '切换后会同步全局主题';
 
   @override
-  String get themeStyleDefaultName => '多仪';
+  String get themeStyleDefaultName => '苹果简约';
 
   @override
-  String get themeStyleDefaultDescription => '简洁原版 · 暖橙基调';
+  String get themeStyleDefaultDescription => '雾灰画布 · 珊瑚红点缀';
 
   @override
   String get themeStyleRe0Name => '从零开始';
@@ -3557,7 +3557,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get widgetScheduleTimezoneHint => '提醒会跟随系统时区';
 
   @override
-  String get widgetCalendarMonthSummary => '本月日期 · 今日已标记';
+  String get widgetCalendarMonthSummary => '右上角为当天事项数';
 
   @override
   String get widgetHabitPending => '今日习惯待打卡';
@@ -4215,4 +4215,227 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reminderWebStatusDismissed => '未选择通知权限，可以再次点击“通知授权”';
+
+  @override
+  String get widgetTodoPreviewDescription => '展示前三个今日任务，底栏切页，点击任务进入详情';
+
+  @override
+  String get widgetFocusPreviewDescription => '今日专注次数和时长，点击进入专注';
+
+  @override
+  String get todoSystemCalendarAdd => '添加到系统日历';
+
+  @override
+  String get todoSystemCalendarOpened => '已打开系统日历，请点击保存';
+
+  @override
+  String get todoSystemCalendarFailed => '无法打开系统日历';
+
+  @override
+  String get preferencesMenuTextScale => '字体大小';
+
+  @override
+  String get preferencesTextScaleTitle => '应用字体大小';
+
+  @override
+  String get preferencesTextScaleSubtitle => '只调整多仪内文字，不改变手机其他应用';
+
+  @override
+  String get preferencesTextScaleSmall => '小（85%）';
+
+  @override
+  String get preferencesTextScaleStandard => '标准（100%）';
+
+  @override
+  String get preferencesTextScaleLarge => '大（115%）';
+
+  @override
+  String get preferencesTextScalePreviewTitle => '预览字体大小';
+
+  @override
+  String get preferencesTextScalePreviewHint => '拖动下面的滑块，选择合适的字体大小。';
+
+  @override
+  String get preferencesTextScalePreviewNote =>
+      '设置后，待办、习惯、专注和设置页面的文字会一起调整。选好后点击“完成”保存。';
+
+  @override
+  String preferencesTextScalePercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get preferencesTextScaleStandardMarker => '标准';
+
+  @override
+  String get preferencesTextScaleDone => '完成';
+
+  @override
+  String get preferencesTextScaleSaveFailed => '字号保存失败，请重试';
+
+  @override
+  String get widgetCalendarWeekdayMon => '一';
+
+  @override
+  String get widgetCalendarWeekdayTue => '二';
+
+  @override
+  String get widgetCalendarWeekdayWed => '三';
+
+  @override
+  String get widgetCalendarWeekdayThu => '四';
+
+  @override
+  String get widgetCalendarWeekdayFri => '五';
+
+  @override
+  String get widgetCalendarWeekdaySat => '六';
+
+  @override
+  String get widgetCalendarWeekdaySun => '日';
+
+  @override
+  String widgetCalendarDayCountLabel(Object count, Object date) {
+    return '$date，$count项';
+  }
+
+  @override
+  String widgetCalendarMonthTitle(Object month, Object year) {
+    return '$year年$month月';
+  }
+
+  @override
+  String widgetTodoEmptyHint(Object tab) {
+    return '打开$tab，安排下一件事';
+  }
+
+  @override
+  String get widgetTodoCountUnit => '项';
+
+  @override
+  String get widgetHabitTodayLabel => '今日完成率';
+
+  @override
+  String get widgetFocusCountLabel => '次数';
+
+  @override
+  String get widgetFocusMinutesLabel => '分钟';
+
+  @override
+  String get widgetFocusNextLabel => '下轮专注（分钟）';
+
+  @override
+  String get widgetFocusRemainingLabel => '剩余时间';
+
+  @override
+  String get widgetFocusOpenLabel => '前往专注';
+
+  @override
+  String get widgetFocusRunningLabel => '查看倒计时';
+
+  @override
+  String get widgetFocusStartLabel => '开始';
+
+  @override
+  String get widgetFocusResumeLabel => '继续';
+
+  @override
+  String get widgetFocusPauseLabel => '暂停';
+
+  @override
+  String get widgetFocusStopLabel => '停止';
+
+  @override
+  String get widgetFocusPausedLabel => '已暂停';
+
+  @override
+  String get widgetTodayLabel => '今天';
+
+  @override
+  String get widgetAndroidPickerHint =>
+      '请从系统小组件列表选择待办、专注、习惯或月历，添加后在桌面拖动边缘调整大小。';
+
+  @override
+  String get widgetAndroidCatalogDensityHint =>
+      '这里选择的是新添加小组件的默认显示密度；系统小组件列表只有待办、专注、习惯、月历四个入口，添加后在桌面拖动边缘调整大小。';
+
+  @override
+  String get widgetMobilePickerHint =>
+      '请在手机的系统小组件列表中查找多仪：Android 添加后拖动边缘调整大小，iOS 可在小组件库选择尺寸。';
+
+  @override
+  String get focusDistractionTileTitle => '分心应用选择';
+
+  @override
+  String get focusDistractionTileSelected => '已选';
+
+  @override
+  String get focusDistractionTileBlacklistEmpty => '黑名单：未选择应用';
+
+  @override
+  String get focusDistractionTileBlacklist => '黑名单';
+
+  @override
+  String get focusDistractionTileWhitelistScanFailed => '白名单扫描失败，暂未拦截';
+
+  @override
+  String get focusDistractionTileWhitelist => '白名单（未选应用为分心）';
+
+  @override
+  String get focusDistractionModeBlacklist => '黑名单';
+
+  @override
+  String get focusDistractionModeWhitelist => '白名单';
+
+  @override
+  String get focusDistractionModeBlacklistHint => '选择的应用会记录为分心应用。';
+
+  @override
+  String get focusDistractionModeWhitelistHint =>
+      '选择的应用视为无关应用，其余可启动应用会记录为分心应用。';
+
+  @override
+  String get focusDistractionPickerTitle => '选择分心应用';
+
+  @override
+  String get focusDistractionPickerSubtitle => '扫描手机上可启动的应用；只在点击完成后保存。';
+
+  @override
+  String get focusDistractionPickerCancel => '取消';
+
+  @override
+  String get focusDistractionPickerDone => '完成';
+
+  @override
+  String get focusDistractionPickerSearch => '搜索应用名或包名';
+
+  @override
+  String get focusDistractionPickerLoading => '正在扫描已安装应用…';
+
+  @override
+  String get focusDistractionPickerLoadFailed => '无法读取已安装应用，请重试。';
+
+  @override
+  String get focusDistractionPickerRetry => '重新扫描';
+
+  @override
+  String get focusDistractionPickerEmpty => '没有找到可启动应用。';
+
+  @override
+  String get focusDistractionPickerNoMatches => '没有匹配的应用。';
+
+  @override
+  String get focusDistractionPickerSystemApp => '系统应用';
+
+  @override
+  String get focusDistractionPickerSummarySelected => '已选';
+
+  @override
+  String get focusDistractionPickerSummaryRemaining => '剩余作为分心';
+
+  @override
+  String get focusDistractionPickerSummaryAvailable => '可选应用';
+
+  @override
+  String get focusDistractionPickerSaveFailed => '保存失败，请重试';
 }

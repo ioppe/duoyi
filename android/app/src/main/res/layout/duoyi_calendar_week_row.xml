@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  月历的一整周：横向等分 7 列，行高由父容器按整月周数等分（0dp + weight=1）。
+  每个格子通过 RemoteViews.addView 加入本行，root 自身即容器。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_calendar_week_row"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:baselineAligned="false"
+    android:orientation="horizontal" />

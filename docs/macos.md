@@ -59,7 +59,7 @@ macOS 的全部 AppIcon 尺寸由同一红白 Logo 母版生成 RGBA 图片，�
 
 ## GitHub Actions 构建
 
-`.github/workflows/build-apk.yml` 的主 `build` 是多端安装包的统一自动入口：推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` 或 `v*` 标签都会触发，面向 `main` / `self-hosted-skydrow` 的 PR 保留原有触发规则。配置校验、分析与测试通过后，同一提交的 Android、macOS 安装包与 Web 桌面/手机包（`duoyi-web` 默认仅上传 artifact；`main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布到自托管站点，GitHub Pages 仍只部署 `main`）并行构建，macOS 通过可复用的 `.github/workflows/build-macos.yml` 运行，并与 Android 使用同一份已验证的公开部署配置。手动运行主流程时，`build_macos` 默认开启，也可明确关闭；单独手动运行 `build-macos.yml` 仍可选择公开配置路径和初始服务器地址。
+`.github/workflows/build-apk.yml` 的主 `build` 是多端安装包的统一自动入口：推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` / `fix/android-input-settings-device-test` 或 `v*` 标签都会触发，面向 `main` / `self-hosted-skydrow` 的 PR 保留原有触发规则。配置校验、分析与测试通过后，同一提交的 Android、macOS 安装包与 Web 桌面/手机包（`duoyi-web` 默认仅上传 artifact；`main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布到自托管站点，GitHub Pages 仍只部署 `main`）并行构建，macOS 通过可复用的 `.github/workflows/build-macos.yml` 运行，并与 Android 使用同一份已验证的公开部署配置。手动运行主流程时，`build_macos` 默认开启，也可明确关闭；单独手动运行 `build-macos.yml` 仍可选择公开配置路径和初始服务器地址。
 
 独立手动入口首次需要工作流文件进入仓库默认分支后才会显示；自动主流程在目标分支推送包含工作流与macOS源码的提交后生效。
 

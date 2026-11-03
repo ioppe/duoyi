@@ -93,8 +93,14 @@ void main() {
 
     expect(
       _inlineList(push, 'branches'),
-      containsAll(<String>['main', 'self-hosted-skydrow', 'build/macos-dmg']),
-      reason: '推送 main/self-hosted-skydrow/build/macos-dmg 都必须触发多端安装包构建.',
+      containsAll(<String>[
+        'main',
+        'self-hosted-skydrow',
+        'build/macos-dmg',
+        'fix/android-input-settings-device-test',
+      ]),
+      reason:
+          '推送 main/self-hosted-skydrow/build/macos-dmg/Android 测试分支都必须触发多端安装包构建.',
     );
     expect(
       _inlineList(push, 'tags'),

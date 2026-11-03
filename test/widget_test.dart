@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:duoyi/main.dart';
+import 'package:duoyi/core/app_text_scale.dart';
 import 'package:duoyi/core/app_version.dart';
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/providers/app_lock_provider.dart';
@@ -31,49 +33,51 @@ import 'package:duoyi/services/ai_service.dart';
 import 'package:duoyi/services/app_update_service.dart';
 import 'package:duoyi/services/calendar_sync_service.dart';
 
+/// 真实 App 根：所有 Provider 与主题、字号缩放都由 [DuoyiApp] 自己装配。
+Widget _app() => MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (_) => TodoProvider()),
+    ChangeNotifierProvider(create: (_) => HabitProvider()),
+    ChangeNotifierProvider(create: (_) => PomodoroProvider()),
+    ChangeNotifierProvider(create: (_) => ThemeProvider()),
+    ChangeNotifierProvider(create: (_) => FocusRoomProvider()),
+    ChangeNotifierProvider(create: (_) => CustomFocusSoundProvider()),
+    ChangeNotifierProvider(create: (_) => CloudSyncProvider()),
+    ChangeNotifierProvider(create: (_) => CalendarProvider()),
+    ChangeNotifierProvider(create: (_) => UserProvider()),
+    ChangeNotifierProvider(create: (_) => CountdownProvider()),
+    ChangeNotifierProvider(create: (_) => NoteProvider()),
+    ChangeNotifierProvider(create: (_) => AnniversaryProvider()),
+    ChangeNotifierProvider(create: (_) => DiaryProvider()),
+    ChangeNotifierProvider(create: (_) => GoalProvider()),
+    ChangeNotifierProvider(create: (_) => CourseProvider()),
+    ChangeNotifierProvider(create: (_) => AppLockProvider()),
+    ChangeNotifierProvider(create: (_) => PreferencesProvider()),
+    ChangeNotifierProvider(create: (_) => AchievementProvider()),
+    ChangeNotifierProvider(create: (_) => ShareProvider()),
+    ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
+    ChangeNotifierProvider(create: (_) => NotificationService()),
+    ChangeNotifierProvider(create: (_) => AuthProvider()),
+    ChangeNotifierProvider(create: (_) => AiService()),
+    ChangeNotifierProvider(create: (_) => LocaleProvider()),
+    ChangeNotifierProvider(create: (_) => LocationReminderProvider()),
+    ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),
+    ChangeNotifierProvider(
+      create: (_) => AppUpdateService(
+        repo: 'dq52099/duoyi',
+        currentVersion: AppVersion.name,
+      ),
+    ),
+  ],
+  child: const DuoyiApp(),
+);
+
 void main() {
   testWidgets('App renders default bottom tabs: 今日/习惯/专注/我的', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => TodoProvider()),
-          ChangeNotifierProvider(create: (_) => HabitProvider()),
-          ChangeNotifierProvider(create: (_) => PomodoroProvider()),
-          ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => FocusRoomProvider()),
-          ChangeNotifierProvider(create: (_) => CustomFocusSoundProvider()),
-          ChangeNotifierProvider(create: (_) => CloudSyncProvider()),
-          ChangeNotifierProvider(create: (_) => CalendarProvider()),
-          ChangeNotifierProvider(create: (_) => UserProvider()),
-          ChangeNotifierProvider(create: (_) => CountdownProvider()),
-          ChangeNotifierProvider(create: (_) => NoteProvider()),
-          ChangeNotifierProvider(create: (_) => AnniversaryProvider()),
-          ChangeNotifierProvider(create: (_) => DiaryProvider()),
-          ChangeNotifierProvider(create: (_) => GoalProvider()),
-          ChangeNotifierProvider(create: (_) => CourseProvider()),
-          ChangeNotifierProvider(create: (_) => AppLockProvider()),
-          ChangeNotifierProvider(create: (_) => PreferencesProvider()),
-          ChangeNotifierProvider(create: (_) => AchievementProvider()),
-          ChangeNotifierProvider(create: (_) => ShareProvider()),
-          ChangeNotifierProvider(create: (_) => TimeAuditProvider()),
-          ChangeNotifierProvider(create: (_) => NotificationService()),
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
-          ChangeNotifierProvider(create: (_) => AiService()),
-          ChangeNotifierProvider(create: (_) => LocaleProvider()),
-          ChangeNotifierProvider(create: (_) => LocationReminderProvider()),
-          ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),
-          ChangeNotifierProvider(
-            create: (_) => AppUpdateService(
-              repo: 'dq52099/duoyi',
-              currentVersion: AppVersion.name,
-            ),
-          ),
-        ],
-        child: const DuoyiApp(),
-      ),
-    );
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
     expect(
       tester
@@ -91,4 +95,34 @@ void main() {
     expect(find.text('小组件'), findsNothing);
     expect(find.text('日历'), findsNothing);
   });
+
+  // 实际 App 根部在 Android 上以正文 12 为标准，再叠加用户字号档位。
+  testWidgets(
+    'Android 根字号按正文 12 排版并随用户档位缩放',
+    (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+
+      double effectiveBodySize() {
+        final context = tester.element(find.byType(MainShell));
+        final fontSize = Theme.of(context).textTheme.bodyMedium!.fontSize!;
+        return MediaQuery.textScalerOf(context).scale(fontSize);
+      }
+
+      expect(
+        effectiveBodySize(),
+        closeTo(12 * AppTextScale.defaultScale, 1e-9),
+      );
+
+      final preferences = Provider.of<PreferencesProvider>(
+        tester.element(find.byType(MainShell)),
+        listen: false,
+      );
+      await tester.runAsync(() => preferences.setTextScale(AppTextScale.large));
+      await tester.pump();
+      expect(effectiveBodySize(), closeTo(12 * AppTextScale.large, 1e-9));
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 }

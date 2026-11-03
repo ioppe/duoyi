@@ -30,7 +30,9 @@ class HomePageStyle {
       HomePageStyle.fromTheme(Theme.of(context));
 
   factory HomePageStyle.fromTheme(ThemeData theme) {
-    final reference = theme.extension<AppSurfaceStyle>() == AppSurfaceStyle.ios;
+    final reference = AppSurfaceStyle.isDefaultTheme(
+      theme.extension<AppSurfaceStyle>(),
+    );
     final cs = theme.colorScheme;
     final muted = theme.textTheme.bodySmall?.color ?? cs.onSurfaceVariant;
     return HomePageStyle._(

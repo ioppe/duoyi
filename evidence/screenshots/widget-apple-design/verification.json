@@ -1,0 +1,40 @@
+{
+  "task": "apple_style_core_widget_layout",
+  "status": "completed_local",
+  "branch": "fix/android-input-settings-device-test",
+  "version": {"name": "1.1.54", "build": 140020, "changed": false},
+  "release_published": false,
+  "design_skill": "frontend-design",
+  "visual": {"radius_dp": 24, "padding_dp": 14, "calendar_padding_dp": 12, "logo_dp": 18, "module_title_sp": 13, "nav_min_height_dp": 28, "nav_label_sp": 10, "short_nav_label_sp": 9.5},
+  "checks": {
+    "distinct_suites": 19,
+    "distinct_tests": 173,
+    "passed": 173,
+    "failed": 0,
+    "skipped": 0,
+    "count_basis": "run2 other 18 suites:133 passed; final resource suite:40 passed",
+    "dart_analyze_fatal_infos": {"exit_code": 0, "result": "No issues found!"},
+    "flutter_analyze": {"exit_code": 255, "attempts": 2, "reason": "LSP initialize JSON parse failure; replaced by successful whole-project dart analyze"},
+    "format": {"exit_code": 0},
+    "git_diff_check": {"exit_code": 0},
+    "production_source_hashes": {"count": 29, "changed_during_builds": [], "live_source_matches_final_build": true}
+  },
+  "builds": {
+    "apk": {"command": "python3 scripts/flutter_with_config.py build apk --debug --target-platform android-arm64 --no-pub", "exit_code": 0, "duration_seconds": 26, "path": "build/app/outputs/flutter-apk/app-debug.apk", "bytes": 202210424, "sha256": "8f1a2b50f28c037de40ac1bf0eede6a11380b3cd612c8779d290ba18f4893ba3", "debuggable": true, "flutter_engine_abi": "arm64-v8a", "target_sdk": 36, "min_sdk": 24, "installed_apk_sha256_matches": true},
+    "web": {"command": "python3 scripts/flutter_with_config.py build web --debug --no-pub", "exit_code": 0, "duration_seconds": 55, "index_bytes": 1624, "main_js_bytes": 29462916, "dev_url": "http://localhost:18655/", "dev_server_restarted": true, "browser_login_page_rendered": true, "browser_widget_preview_verified": false}
+  },
+  "device": {
+    "serial": "emulator-5554", "api": 35, "avd": "duoyi_api35_arm64", "density": 2.75, "font_scale": 1.0,
+    "widget_id": 2, "physical_provider": "DuoyiTodoWidgetProvider", "legacy_widget_id_3_preserved": true,
+    "stable_root_bounds_px": [64,466,767,1032], "stable_size_px": [703,566],
+    "stable_capture_count": 8, "all_stable_captures_four_tabs_visible": true, "all_stable_captures_launcher_in_front": true, "all_stable_text_bounds_inside_card": true, "app_anrs_observed": [],
+    "calendar": {"month": "2026-10", "dates_once": 31, "monday_first": true, "real_provider_fixture_day": "2026-10-27", "fixture_count": 3, "observed_label": "2026-10-27，3项", "after_cleanup_count": 0, "after_cleanup_full_month": true},
+    "todo": {"fixture_total": 3, "standard_visible_rows": 2, "fixture_created_via": "TodoProvider.addTodo", "own_fixture_ids_deleted": 3, "remaining_fixture_tasks": 0, "provider_todo_count_after_cleanup": 0, "empty_state_restored": true},
+    "transient_observations_excluded": ["initial-calendar-transition", "after-todo-populated"],
+    "startup_route_assertion_observed": "/habit",
+    "startup_route_assertion_reproduced_during_stable_four_tab_check": false
+  },
+  "screenshots": {"overview": "overview.png", "todo": "after-todo-empty.png", "habit": "after-habit.png", "calendar": "after-calendar.png", "focus": "after-focus.png", "populated_todo": "after-todo-content.png", "populated_calendar": "after-populated-observe.png", "cleaned_todo": "after-todo-cleaned.png", "cleaned_calendar": "after-calendar-cleaned.png", "web_refresh": "web-refreshed.jpg"},
+  "verified_theme_scope": {"native": ["light"], "flutter_widget_tests": ["light", "dark"]},
+  "not_executed_this_task": ["native dark UI", "native image background UI", "supported landscape UI", "other launchers and ROMs", "physical phone", "iOS WidgetKit device run", "signed release"]
+}

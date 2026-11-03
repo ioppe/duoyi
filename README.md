@@ -4,7 +4,7 @@
 
 > Flutter 客户端 + 自托管 FastAPI 后端，开源、可自部署。
 
-配置入口、优先级和迁移说明见 [docs/configuration.md](docs/configuration.md)；当前自托管实例的构建命令见 [docs/self-hosting-skydrow.md](docs/self-hosting-skydrow.md)。
+配置入口、优先级和迁移说明见 [docs/configuration.md](docs/configuration.md)；当前自托管实例的构建命令见 [docs/self-hosting-skydrow.md](docs/self-hosting-skydrow.md)；分支汇总与发布核验见 [主线集成](docs/mainline-integration.md)。
 
 安装端（Android、iOS、Windows、Linux、macOS）在登录页填写服务器地址和访问令牌；Web 默认连接当前站点后端。可先在网页版账号的“我的 → 个人资料 → 访问令牌”创建令牌，支持按设备命名、查看最近使用时间、设置有效期和单独撤销。安装端也保留账号密码登录入口。
 
@@ -95,10 +95,10 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 | 触发 | 作业 | 产物 |
 |---|---|---|
-| 推送到 `main` / `self-hosted-skydrow`，或向这两个分支提交 PR | `analyze` | `flutter analyze`、完整 Flutter 测试和后端测试 |
+| 推送到 `main` / `self-hosted-skydrow` / `build/macos-dmg` / `fix/android-input-settings-device-test`，或向前两个分支提交 PR | `analyze` | `flutter analyze`、完整 Flutter 测试和后端测试 |
 | 同上，通过检查后 | `android` | 正式签名通用 APK + 分 ABI APK (armeabi-v7a / arm64-v8a / x86_64) |
 | 同上，或手动保持 `build_macos=true`（默认） | `macos` | Apple Silicon / Intel 通用 DMG + 应用 ZIP + SHA-256 校验文件 |
-| 推送 `main` / `self-hosted-skydrow` / `build/macos-dmg` / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
+| 推送上述四个构建分支 / 推 `v*` tag / 手动将 `build_web` 设为 `true` | `web` | `duoyi-web-*.tar.gz` 可直接解压到 nginx |
 | 推送 `main` 且同一次 `web` 成功 | `deploy-self-hosted-web` | 同 run 桌面 Web 包经受限 SSH 发布到自托管站点；需先安装服务端入口并配置唯一 Secret |
 | 推 `v*` tag | `release` | 汇总 APK + AAB + Web + macOS DMG/ZIP，全部成功后自动建 GitHub Release |
 

@@ -10,6 +10,7 @@ import '../core/i18n_date_format.dart';
 import '../providers/preferences_provider.dart';
 import '../widgets/surface_components.dart';
 import '../widgets/language_settings_tile.dart';
+import 'text_size_settings_screen.dart';
 
 /// 个性设置入口页。这里只做二级入口，不直接承载具体设置项。
 class PreferencesScreen extends StatelessWidget {
@@ -240,6 +241,11 @@ class _PersonalizationSettingsScreenState
                   title: I18n.tr('preferences.menu.display'),
                   items: [
                     _PreferenceMenuItem(
+                      icon: Icons.format_size,
+                      label: I18n.tr('preferences.menu.text_scale'),
+                      onTap: _openTextSize,
+                    ),
+                    _PreferenceMenuItem(
                       icon: Icons.calendar_month_outlined,
                       label: I18n.tr('preferences.menu.calendar'),
                       onTap: () => _scrollToMenuTarget(_dateSectionKey),
@@ -266,6 +272,25 @@ class _PersonalizationSettingsScreenState
                 subtitle: I18n.tr('preferences.section.date.subtitle'),
                 children: [
                   const LanguageSettingsTile(),
+                  AppSettingsTile(
+                    key: const ValueKey('preferences_text_scale_tile'),
+                    icon: Icons.format_size,
+                    color: cs.primary,
+                    title: I18n.tr('preferences.text_scale.title'),
+                    subtitle: I18n.tr('preferences.text_scale.subtitle'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          textScaleLabel(p.textScale),
+                          style: appSecondaryControlTextStyle(context),
+                        ),
+                        const SizedBox(width: DesignTokens.spaceXs),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                    onTap: _openTextSize,
+                  ),
                   AppSwitchTile(
                     key: const ValueKey('preferences_home_calendar_switch'),
                     icon: Icons.calendar_today_outlined,
@@ -526,6 +551,12 @@ class _PersonalizationSettingsScreenState
           ],
         ),
       ),
+    );
+  }
+
+  void _openTextSize() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const TextSizeSettingsScreen()),
     );
   }
 

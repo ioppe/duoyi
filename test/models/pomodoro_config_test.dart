@@ -10,6 +10,7 @@ void main() {
         strictFocusMode: true,
         monitorDistractingApps: true,
         distractingAppPackages: ['com.tencent.mm', 'com.ss.android.ugc.aweme'],
+        distractingAppSelectionMode: PomodoroConfig.distractionModeWhitelist,
         focusRoomId: 'deep_work_room',
         focusSoundVolume: 0.8,
       );
@@ -22,6 +23,10 @@ void main() {
         'com.tencent.mm',
         'com.ss.android.ugc.aweme',
       ]);
+      expect(
+        json['distractingAppSelectionMode'],
+        PomodoroConfig.distractionModeWhitelist,
+      );
       expect(json['focusRoomId'], 'deep_work_room');
       expect(json['focusSoundVolume'], 0.8);
 
@@ -35,6 +40,10 @@ void main() {
       ]);
       expect(restored.focusRoomId, 'deep_work_room');
       expect(restored.focusSoundVolume, 0.8);
+      expect(
+        restored.distractingAppSelectionMode,
+        PomodoroConfig.distractionModeWhitelist,
+      );
 
       final legacy = PomodoroConfig.fromJson(<String, dynamic>{
         'focusDuration': 1500,
@@ -47,10 +56,78 @@ void main() {
       expect(legacy.strictFocusMode, isFalse);
       expect(legacy.monitorDistractingApps, isFalse);
       expect(legacy.distractingAppPackages, isEmpty);
+      expect(
+        legacy.distractingAppSelectionMode,
+        PomodoroConfig.distractionModeBlacklist,
+      );
       expect(legacy.focusRoomId, isNull);
       expect(legacy.focusSoundVolume, PomodoroConfig.defaultFocusSoundVolume);
     },
   );
+
+  test(
+    'PomodoroConfig falls back to blacklist for missing or unknown modes',
+    () {
+      expect(
+        PomodoroConfig.fromJson(<String, dynamic>{
+          'distractingAppPackages': ['com.tencent.mm'],
+        }).distractingAppSelectionMode,
+        PomodoroConfig.distractionModeBlacklist,
+      );
+      expect(
+        PomodoroConfig.fromJson(<String, dynamic>{
+          'distractingAppSelectionMode': 'something-else',
+        }).distractingAppSelectionMode,
+        PomodoroConfig.distractionModeBlacklist,
+      );
+      expect(
+        PomodoroConfig.fromJson(<String, dynamic>{
+          'distractingAppSelectionMode': ' WHITELIST ',
+        }).distractingAppSelectionMode,
+        PomodoroConfig.distractionModeWhitelist,
+      );
+    },
+  );
+
+  test('distraction mode resolves the blocked package set', () {
+    const launchable = [
+      'com.android.settings',
+      'com.tencent.mm',
+      'com.zhiliaoapp.musically',
+    ];
+    expect(
+      PomodoroConfig.resolveBlockedDistractionPackages(
+        selectionMode: PomodoroConfig.distractionModeBlacklist,
+        selectedPackages: ['com.tencent.mm', ' com.tencent.mm ', ' '],
+        launchablePackages: launchable,
+      ),
+      ['com.tencent.mm'],
+    );
+    expect(
+      PomodoroConfig.resolveBlockedDistractionPackages(
+        selectionMode: PomodoroConfig.distractionModeWhitelist,
+        selectedPackages: ['com.android.settings'],
+        launchablePackages: launchable,
+      ),
+      ['com.tencent.mm', 'com.zhiliaoapp.musically'],
+    );
+    expect(
+      PomodoroConfig.resolveBlockedDistractionPackages(
+        selectionMode: PomodoroConfig.distractionModeWhitelist,
+        selectedPackages: const [],
+        launchablePackages: launchable,
+      ),
+      ['com.android.settings', 'com.tencent.mm', 'com.zhiliaoapp.musically'],
+    );
+    expect(
+      PomodoroConfig.resolveBlockedDistractionPackages(
+        selectionMode: PomodoroConfig.distractionModeWhitelist,
+        selectedPackages: launchable,
+        launchablePackages: launchable,
+      ),
+      isEmpty,
+    );
+  });
 
   test('PomodoroConfig clamps corrupted focus sound volume on restore', () {
     expect(

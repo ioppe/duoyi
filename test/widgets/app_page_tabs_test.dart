@@ -61,7 +61,7 @@ void main() {
           expect(bar.indicator, isA<PageTabIndicator>());
           expect(bar.labelColor, style.labelColor);
           expect(bar.unselectedLabelColor, style.unselectedLabelColor);
-          expect(bar.labelStyle!.fontSize, 14);
+          expect(bar.labelStyle!.fontSize, DesignTokens.fontSizeSm);
           expect(bar.labelStyle!.fontWeight, DesignTokens.fontWeightMedium);
           expect(bar.labelStyle!.fontFamily, DesignTokens.fontFamily);
           final first = find.widgetWithText(Tab, '今日打卡');

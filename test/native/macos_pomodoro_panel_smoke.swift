@@ -59,7 +59,8 @@ struct MacOSPomodoroPanelSmoke {
     let defaultAppearance =
       PomodoroFloatingPanelAppearance(dictionary: defaultAppearancePayload)
       ?? PomodoroFloatingPanelAppearance.semanticFallback
-    let alternateAppearancePayload = fixtures["alternate"]?["appearance"] as? [String: Any]
+    let alternateAppearancePayload = (fixtures["alternate"]?["appearance"] as? [String: Any])
+      ?? fallbackAppearancePayload()
     let alternateTheme = alternateAppearance(from: alternateAppearancePayload)
 
     let controller = PomodoroFloatingPanelController.shared
@@ -703,6 +704,40 @@ struct MacOSPomodoroPanelSmoke {
     )
   }
 
+  /// Feed the fallback palette through the same serialized contract as fixtures.
+  /// Otherwise a nil snapshot payload silently restores the default appearance.
+  static func fallbackAppearancePayload() -> [String: Any] {
+    let appearance = alternateAppearance(from: nil)
+    var payload: [String: Any] = [
+      "borderWidth": appearance.borderWidth,
+      "cornerRadius": appearance.cornerRadius,
+      "controlRadius": appearance.controlRadius,
+      "timeFontSize": appearance.timeFontSize,
+      "captionFontSize": appearance.captionFontSize,
+      "buttonFontSize": appearance.buttonFontSize,
+    ]
+    (NSApp.appearance ?? NSAppearance(named: .aqua)!).performAsCurrentDrawingAppearance {
+      for (key, raw) in [
+        "backgroundColor": appearance.backgroundColor,
+        "foregroundColor": appearance.foregroundColor,
+        "secondaryColor": appearance.secondaryColor,
+        "primaryColor": appearance.primaryColor,
+        "onPrimaryColor": appearance.onPrimaryColor,
+        "borderColor": appearance.borderColor,
+      ] {
+        let color = raw.usingColorSpace(.sRGB)!
+        func byte(_ value: CGFloat) -> UInt32 {
+          UInt32((max(0, min(1, value)) * 255).rounded())
+        }
+        payload[key] = (byte(color.alphaComponent) << 24)
+          | (byte(color.redComponent) << 16)
+          | (byte(color.greenComponent) << 8)
+          | byte(color.blueComponent)
+      }
+    }
+    return payload
+  }
+
   /// Recursive identifier lookup so nested stacks/tracks stay verifiable.
   static func view(_ identifier: NSUserInterfaceItemIdentifier, in root: NSView) -> NSView? {
     if root.identifier == identifier {
@@ -771,7 +806,25 @@ struct MacOSPomodoroPanelSmoke {
     let scaleY = Double(image.pixelsHigh) / Double(view.bounds.height)
     let minX = max(0, Int((Double(region.minX) - 2) * scaleX))
     let maxX = min(image.pixelsWide, Int((Double(region.maxX) + 2) * scaleX))
-    let colors = [time.textColor, status.textColor].compactMap { $0?.usingColorSpace(.sRGB) }
+    // Dynamic semantic colors must resolve under the same appearance as the
+    // cached view, even when the host system uses a different appearance.
+    // Compare the composited text color because label colors include alpha.
+    var colors: [NSColor] = []
+    view.effectiveAppearance.performAsCurrentDrawingAppearance {
+      let background = (view.layer?.backgroundColor)
+        .flatMap { NSColor(cgColor: $0)?.usingColorSpace(.sRGB) }
+        ?? NSColor.windowBackgroundColor.usingColorSpace(.sRGB)!
+      colors = [time.textColor, status.textColor].compactMap { raw in
+        guard let color = raw?.usingColorSpace(.sRGB) else { return nil }
+        let alpha = color.alphaComponent
+        return NSColor(
+          srgbRed: color.redComponent * alpha + background.redComponent * (1 - alpha),
+          green: color.greenComponent * alpha + background.greenComponent * (1 - alpha),
+          blue: color.blueComponent * alpha + background.blueComponent * (1 - alpha),
+          alpha: 1
+        )
+      }
+    }
     var firstY = image.pixelsHigh
     var lastY = -1
     let inset = Int(4 * scaleY)

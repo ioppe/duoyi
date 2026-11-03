@@ -1,6 +1,6 @@
 # 自托管构建：todo.skydrow.site
 
-Fork：<https://github.com/ioppe/duoyi>。本地工作分支为 `self-hosted-skydrow`；`origin` 指向本 Fork，`upstream` 指向原项目。
+Fork：<https://github.com/ioppe/duoyi>。`main` 为集成主线，`self-hosted-skydrow` 保留为 Fork 工作分支；`origin` 指向本 Fork，`upstream` 指向原项目。
 
 公开部署参数统一放在 `config/deployment.json`：
 
@@ -39,7 +39,7 @@ python3 scripts/flutter_with_config.py build apk --release
 
 GitHub Actions 需要在本仓库配置 `DUOYI_KEYSTORE_BASE64`、`DUOYI_KEYSTORE_PASSWORD`、`DUOYI_KEY_ALIAS`、`DUOYI_KEY_PASSWORD`。Secrets 不随 Fork 复制；后续 APK 应持续使用自己的同一份签名密钥。
 
-每次推送到 `self-hosted-skydrow`、`main` 或 `build/macos-dmg` 都会自动运行 `.github/workflows/build-apk.yml`：先校验共享配置、分析并测试，再从同一提交并行构建正式签名的通用/各 ABI Android APK、macOS 通用 DMG/ZIP，以及 Web 桌面/手机包 `duoyi-web`（分支推送默认仅上传 artifact；仅 `main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布，GitHub Pages 仍只部署 `main`）。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建；手动输入 `build_macos` 默认开启。macOS 子工作流不再独立响应 push，避免重复构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
+每次推送到 `main`、`self-hosted-skydrow`、`build/macos-dmg` 或 `fix/android-input-settings-device-test` 都会自动运行 `.github/workflows/build-apk.yml`：先校验共享配置、分析并测试，再从同一提交并行构建正式签名的通用/各 ABI Android APK、macOS 通用 DMG/ZIP，以及 Web 桌面/手机包 `duoyi-web`（分支推送默认仅上传 artifact；仅 `main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布，GitHub Pages 仍只部署 `main`）。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建；手动输入 `build_macos` 默认开启。macOS 子工作流不再独立响应 push，避免重复构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
 
 构建成功后，在该次主 `build` 运行的 Artifacts 中下载 `duoyi-android`、`duoyi-macos-universal-unsigned` 或 `duoyi-web`。Android 解压后安装通用包 `duoyi-<日期>-<提交>.apk` 或以 `-arm64-v8a.apk` 结尾的手机专用包；macOS 包含同一提交的 DMG、ZIP 与校验文件，当前仍未签名/公证，具体边界见 [macOS 客户端说明](macos.md)；`duoyi-web` 是同一提交/profile 的桌面与手机可用静态站点压缩包；`main` 的桌面 Web 包在发布配置完成后自动部署到自托管站点，其余仅作 artifact，不覆盖 GitHub Pages。产物保留 30 天并按提交区分；普通分支推送不创建正式 Release，`v*` tag 仍按原流程生成 AAB 并在各端构建全部成功后发布 GitHub Release。
 

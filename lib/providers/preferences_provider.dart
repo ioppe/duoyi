@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_text_scale.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/notification_history_policy.dart';
 import '../core/pomodoro_floating_window_size.dart';
 import '../core/report_reminder_config.dart';
+import '../core/server_connection.dart';
 import '../core/web_target.dart';
 import '../models/goal.dart' show ReminderKind;
 
@@ -220,6 +223,8 @@ class PreferencesProvider extends ChangeNotifier {
   static const _kFocusNavigationMigrated = 'pref_focus_navigation_v1';
   static const _kAppTimeZone = LocalTimezoneResolver.preferenceKey;
   static const _kAppTimeZoneMode = LocalTimezoneResolver.modePreferenceKey;
+  static const _kTextScale = 'pref_text_scale';
+  static const _kTextScaleOwner = 'pref_text_scale_owner_v1';
 
   Future<void> Function()? onAppTimeZoneChanged;
 
@@ -242,6 +247,12 @@ class PreferencesProvider extends ChangeNotifier {
   // 本机首页布局偏好，与账号业务数据独立。
   bool _showHomeCalendar = false;
   bool _showCompletedTodos = false;
+  // 应用内字号档位：只在本机生效，不进入账号业务数据。
+  double _textScale = AppTextScale.defaultScale;
+  // 当前字号归属的本机账号（服务器规范身份 + 用户ID）；null 表示尚未绑定。
+  String? _textScaleOwner;
+  // 字号相关写入的串行队列：换号重置必须排在旧的字号写入之后落盘。
+  Future<void> _textScaleWriteQueue = Future<void>.value();
   int _defaultPomodoroMinutes = 25;
   PomodoroFloatingWindowSize _pomodoroFloatingWindowSize =
       PomodoroFloatingWindowSize.defaultSize;
@@ -297,6 +308,8 @@ class PreferencesProvider extends ChangeNotifier {
   bool get showLunar => _showLunar;
   bool get showHomeCalendar => _showHomeCalendar;
   bool get showCompletedTodos => _showCompletedTodos;
+  double get textScale => _textScale;
+  String? get textScaleOwner => _textScaleOwner;
   int get defaultPomodoroMinutes => _defaultPomodoroMinutes;
   PomodoroFloatingWindowSize get pomodoroFloatingWindowSize =>
       _pomodoroFloatingWindowSize;
@@ -446,6 +459,9 @@ class PreferencesProvider extends ChangeNotifier {
     _showLunar = true;
     _showHomeCalendar = false;
     _showCompletedTodos = false;
+    // 字号与归属账号是跨账号保留的本机偏好：账号清理/重载不回到标准档，
+    // 是否重置由 bindTextScaleToAccount 判定；新建 provider 仍由字段默认值
+    // 初始化为标准档。
     _defaultPomodoroMinutes = 25;
     _pomodoroFloatingWindowSize = PomodoroFloatingWindowSize.defaultSize;
     _quickCaptureFab = true;
@@ -605,6 +621,9 @@ class PreferencesProvider extends ChangeNotifier {
           : (p.getString(_kAppTimeZone) ?? LocalTimezoneResolver.defaultIana),
     );
     if (generation != _storageGeneration) return false;
+    // timezone await 期间用户可能已改写设置：先确认代际再读取字段，
+    // 避免旧快照覆盖 setter 刚写入的值。
+    if (mutationVersion != _mutationVersion) return true;
     _appTimeZone = LocalTimezoneResolver.currentIana;
     final storedOrder = p.getStringList(_kBottomNavOrder);
     final storedVisible = p.getStringList(_kBottomNavVisible);
@@ -636,7 +655,19 @@ class PreferencesProvider extends ChangeNotifier {
     _haptic = p.getBool(_kHapticFeedback) ?? true;
     _showLunar = p.getBool(_kShowLunar) ?? true;
     _showHomeCalendar = p.getBool(_kShowHomeCalendar) ?? false;
+    // 载入时保留仍然有效的档位：正数就近吸附到当前平台的档位表（Android
+    // 七档 55–145，其它平台八档 85–190），超出范围取最近边界，非法值回落
+    // 标准 100%；旧版迁移标记只留在磁盘上，不再读取也不再写入。
+    // 载入本身不写盘，只有 setTextScale / 账号绑定成功才落盘，因此磁盘上
+    // 可能仍是升级前的历史值（例如 Android 保存过的 175%），下次读取会再次
+    // 按当前平台范围吸附，不做强制迁移。
+    _textScale = AppTextScale.normalize(p.getDouble(_kTextScale));
     _showCompletedTodos = p.getBool(_kShowCompletedTodos) ?? false;
+    final storedTextScaleOwner = p.getString(_kTextScaleOwner)?.trim();
+    _textScaleOwner =
+        storedTextScaleOwner == null || storedTextScaleOwner.isEmpty
+        ? null
+        : storedTextScaleOwner;
     _defaultPomodoroMinutes = p.getInt(_kDefaultPomodoroMinutes) ?? 25;
     _pomodoroFloatingWindowSize = PomodoroFloatingWindowSize.parse(
       p.getString(_kPomodoroFloatingWindowSize),
@@ -763,9 +794,12 @@ class PreferencesProvider extends ChangeNotifier {
         storedOrder?.map(int.tryParse).contains(legacyTodoNavTab) ?? false;
     final storedVisibleHasLegacyTodo =
         storedVisible?.map(int.tryParse).contains(legacyTodoNavTab) ?? false;
+    // 迁移写盘前必须确认没有 setter 插入：写入值来自本次读到的旧快照，
+    // 用户刚改过导航/默认页时写旧值会覆盖新设置（返回 true 由上层重读）。
     if ((WebTarget.isWebBuild || legacyFocusDefault) &&
         storedVisible != null &&
         !setEquals(storedVisibleSet, _bottomNavVisible)) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setStringList(
         _kBottomNavVisible,
         _bottomNavVisible.map((tab) => '$tab').toList(),
@@ -773,6 +807,7 @@ class PreferencesProvider extends ChangeNotifier {
       if (generation != _storageGeneration) return false;
     }
     if (storedVisibleHasLegacyTodo) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setStringList(
         _kBottomNavVisible,
         _bottomNavVisible.map((tab) => '$tab').toList(),
@@ -780,6 +815,7 @@ class PreferencesProvider extends ChangeNotifier {
       if (generation != _storageGeneration) return false;
     }
     if (storedOrderHasLegacyTodo) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setStringList(
         _kBottomNavOrder,
         _bottomNavOrder.map((tab) => '$tab').toList(),
@@ -789,14 +825,17 @@ class PreferencesProvider extends ChangeNotifier {
     // 默认页同样只允许一级导航入口：旧存储里指向待办（1）的值归零并回写，
     // 否则每次冷启动都要重新纠正一次。
     if (storedDefaultTabRaw != null && storedDefaultTabRaw != _defaultTab) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setInt(_kDefaultTab, _defaultTab);
       if (generation != _storageGeneration) return false;
     }
     if (needsWebNavMigration) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setBool(_kWebNavigationMigrated, true);
       if (generation != _storageGeneration) return false;
     }
     if (needsFocusNavMigration) {
+      if (mutationVersion != _mutationVersion) return true;
       await p.setBool(_kFocusNavigationMigrated, true);
       if (generation != _storageGeneration) return false;
     }
@@ -1491,6 +1530,85 @@ class PreferencesProvider extends ChangeNotifier {
       await p.setBool(_kDailyReminderPauseHolidays, value);
     });
     await _notifyPreferenceKeys(const [_kDailyReminderPauseHolidays]);
+  }
+
+  Future<void> _queueTextScaleWrite(Future<void> Function() operation) {
+    final queued = _textScaleWriteQueue
+        .then<void>((_) {}, onError: (Object _, StackTrace _) {})
+        .then<void>((_) => operation());
+    _textScaleWriteQueue = queued.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return _trackPreferenceWrite(() => queued);
+  }
+
+  /// 只接受当前平台 [AppTextScale.options] 中的档位，其他输入按同一档位表
+  /// 归一化后保存。
+  Future<void> setTextScale(double value) {
+    final next = AppTextScale.normalize(value);
+    final ownerAtRequest = _textScaleOwner;
+    return _queueTextScaleWrite(() async {
+      if (_textScaleOwner != ownerAtRequest) {
+        throw StateError('Text scale account changed before saving');
+      }
+      final p = await SharedPreferences.getInstance();
+      try {
+        if (!await p.setDouble(_kTextScale, next)) {
+          throw StateError('Unable to persist text scale');
+        }
+      } catch (_) {
+        // Legacy SharedPreferences changes its cache before the platform write.
+        // Re-read the stored snapshot so a failed draft cannot reappear on load.
+        await p.reload();
+        rethrow;
+      }
+      _textScale = next;
+      notifyListeners();
+    });
+  }
+
+  /// 把本机字号绑定到当前账号（服务器规范身份 + 用户ID）。
+  ///
+  /// - 空 [userId] 不绑定，也不清除已有归属；
+  /// - 首次绑定（无旧 owner）保留当前已保存字号；
+  /// - 同一账号不重置；
+  /// - 不同已知账号把字号恢复默认档并记录新 owner。
+  Future<void> bindTextScaleToAccount({
+    required String serverUrl,
+    required String? userId,
+  }) {
+    final normalizedUserId = userId?.trim();
+    if (normalizedUserId == null || normalizedUserId.isEmpty) {
+      return Future<void>.value();
+    }
+    final owner = jsonEncode([
+      ServerConnection.identity(serverUrl),
+      normalizedUserId,
+    ]);
+    return _queueTextScaleWrite(() async {
+      final p = await SharedPreferences.getInstance();
+      final storedOwner = p.getString(_kTextScaleOwner)?.trim();
+      final previousOwner =
+          _textScaleOwner ??
+          (storedOwner == null || storedOwner.isEmpty ? null : storedOwner);
+      if (previousOwner == owner && _textScaleOwner == owner) return;
+      final nextScale = previousOwner == null || previousOwner == owner
+          ? AppTextScale.normalize(p.getDouble(_kTextScale) ?? _textScale)
+          : AppTextScale.defaultScale;
+      try {
+        if (!await p.setDouble(_kTextScale, nextScale) ||
+            !await p.setString(_kTextScaleOwner, owner)) {
+          throw StateError('Unable to persist text scale account');
+        }
+      } catch (_) {
+        await p.reload();
+        rethrow;
+      }
+      _textScale = nextScale;
+      _textScaleOwner = owner;
+      notifyListeners();
+    });
   }
 
   List<DailyReminderSlot> _replaceSlot(int index, DailyReminderSlot slot) {
