@@ -41,7 +41,7 @@ void main() {
       expect(
         main,
         contains('const Duration(seconds: 14)'),
-        reason: '首帧后的延迟本地加载不能和首屏渲染立即抢资源。',
+        reason: 'todo 之外的重模块本地存储仍在首帧后错峰补载，不能和首屏渲染立即抢资源。',
       );
       expect(main, contains('delay: const Duration(milliseconds: 2400)'));
       expect(main, contains('delay: const Duration(milliseconds: 1100)'));
@@ -63,6 +63,89 @@ void main() {
         startupTasks.indexOf("reason: 'initial post-frame startup'"),
         lessThan(startupTasks.indexOf('const Duration(seconds: 14)')),
         reason: '公开配置与首次同步应在首帧后启动，不依赖延迟的数据补载。',
+      );
+
+      // 回归：todo 首帧后独立轻量水合，不再排进 14s 的重模块存储批次。
+      expect(startupTasks, contains("'initial todo storage'"));
+      expect(
+        RegExp(
+          r"unawaited\(\s*_startupGuard\(\s*'initial todo storage',",
+        ).hasMatch(startupTasks),
+        isTrue,
+        reason: 'todo 首帧后水合是独立轻量任务，不能在首次公开配置与同步前被 await。',
+      );
+      expect(
+        RegExp(
+          r"_startupGuard\(\s*'initial todo storage',\s*\(\) =>\s*"
+          r'cloudSyncProvider\.suppressDirtyMarkWhile\(\s*\(\) =>\s*'
+          r'todoProvider\.loadFromStorage\(\)',
+        ).hasMatch(startupTasks),
+        isTrue,
+        reason: '脏标记抑制必须包住真实读取的整个生命周期，守卫超时只结束观察。',
+      );
+      final initialTodoHydrationIndex = startupTasks.indexOf(
+        "'initial todo storage'",
+      );
+      final suppressDirtyMarkIndex = startupTasks.indexOf(
+        'suppressDirtyMarkWhile',
+      );
+      final initialTodoLoadIndex = startupTasks.indexOf(
+        '() => todoProvider.loadFromStorage()',
+      );
+      expect(
+        initialTodoHydrationIndex,
+        lessThan(suppressDirtyMarkIndex),
+        reason: '先进入守卫再进入抑制，保证读取全程处于抑制范围内。',
+      );
+      expect(
+        suppressDirtyMarkIndex,
+        lessThan(initialTodoLoadIndex),
+        reason: '抑制必须包裹真实的 todo 存储读取入口。',
+      );
+      final heavyStorageDelayIndex = startupTasks.indexOf(
+        'const Duration(seconds: 14)',
+      );
+      final deferredStorageCallIndex = startupTasks.indexOf(
+        'await ensureDeferredLocalStorageStartup();',
+      );
+      expect(initialTodoHydrationIndex, greaterThanOrEqualTo(0));
+      expect(
+        initialTodoHydrationIndex,
+        lessThan(startupTasks.indexOf("reason: 'initial post-frame startup'")),
+        reason: 'todo 水合须在首次公开配置与同步入口之前启动。',
+      );
+      expect(
+        initialTodoHydrationIndex,
+        lessThan(heavyStorageDelayIndex),
+        reason: 'todo 不再等 14s 重模块批次，升级后首帧即可看到任务。',
+      );
+      expect(
+        heavyStorageDelayIndex,
+        lessThan(deferredStorageCallIndex),
+        reason: '其余 17 个 provider 的重模块读取仍在 14s 后错峰，不能被一并提前。',
+      );
+      expect(
+        RegExp("'initial todo storage'").allMatches(main).length,
+        1,
+        reason: 'todo 首帧水合只能有一个启动点，不能在别处重复触发。',
+      );
+      expect(
+        main.indexOf("'initial todo storage'"),
+        greaterThan(
+          main.indexOf('Future<void> runPostFrameStartupTasks() async'),
+        ),
+        reason: 'todo 水合只能在首帧后的 runPostFrameStartupTasks 内触发。',
+      );
+      expect(
+        main,
+        isNot(contains('await todoProvider.loadFromStorage()')),
+        reason: '启动路径不得 await 阻塞 todo 读取，runApp 前更不能同步等待。',
+      );
+      expect(main, contains('unawaited(runPostFrameStartupTasks())'));
+      expect(
+        main.indexOf('unawaited(runPostFrameStartupTasks())'),
+        greaterThan(main.indexOf('runApp(')),
+        reason: '启动任务必须在 runApp 之后的 post-frame 回调里才启动。',
       );
       expect(
         startupTasks,

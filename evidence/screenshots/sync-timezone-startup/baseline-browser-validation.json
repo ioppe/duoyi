@@ -1,0 +1,204 @@
+{
+  "phase": "stage 1 - OLD bundle baseline only (no new build, no source/fixture change, no commit)",
+  "recorded_at": "2026-11-03T01:38:08.429351+00:00",
+  "candidate": {
+    "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-macos-dmg-build",
+    "head": "30371ccb7bae47423abba9bfb31deae6c4680683",
+    "dirty_fixes": [
+      "lib/main.dart",
+      "lib/providers/todo_provider.dart",
+      "lib/widgets/sync_status_card.dart",
+      "test/providers/todo_storage_safety_test.dart",
+      "test/services/startup_performance_static_test.dart",
+      "test/widgets/sync_status_card_test.dart"
+    ],
+    "dirty_note": "these are the in-progress fixes; the served bundle is still the 30371 release and does NOT contain them",
+    "bundle_under_test": {
+      "main_dart_js_bytes": 9715827,
+      "main_dart_js_sha256": "a136ba1be7ec872a86c0c2a7bca0ea036f603a2f5e903bf63d3b331685f9fe2f",
+      "verification": "in-page fetch('main.dart.js',{cache:'no-store'}) + crypto.subtle SHA-256 inside the browser (not only the server file)"
+    }
+  },
+  "environment": {
+    "origin": "http://127.0.0.1:18821",
+    "fixture_pid": 24343,
+    "fixture_background_task": "b5041459-0ef2-4d20-9350-d0ada8dc3965",
+    "fixture_script": "scratch/sync-timezone-startup-fixture.py",
+    "fixture_mode": "read-only remote full snapshot; POST /api/sync|/api/sync/pull|/api/sync/delta always answers with the seeded snapshot, client writes are recorded but not applied",
+    "fixture_state": {
+      "server_version": 1,
+      "ai_enabled": false,
+      "seeded_todos": [
+        {
+          "id": "startup-remote-1",
+          "title": "启动待办验收 1",
+          "date": "2026-11-03T00:00:00.000",
+          "subtask": "验收子任务 1"
+        },
+        {
+          "id": "startup-remote-2",
+          "title": "启动待办验收 2",
+          "date": "2026-11-03T00:00:00.000",
+          "subtask": "验收子任务 2"
+        }
+      ],
+      "seed_date_rule": "Asia/Shanghai 'today' at fixture start"
+    },
+    "server_restarted_or_stopped": false,
+    "browser": {
+      "tool": "agent-browser 0.20.7 headless Chrome (CDP)",
+      "session": "sync-timezone-startup-e2e",
+      "viewport": "1280x1000",
+      "device_pixel_ratio": 1,
+      "intl_system_timezone": "America/New_York",
+      "system_local_now_at_start": "Mon Nov 02 2026 20:26:47 GMT-0500 (Eastern Standard Time)",
+      "system_timezone_override": "none - the OS/browser zone was left as is; only the APP timezone was fixed"
+    },
+    "prefs_preseeded": {
+      "how": "written directly into the app's own SharedPreferences web storage and then a normal reload; the settings UI was NOT used",
+      "storage_format": "shared_preferences web: localStorage key 'flutter.<pref>' with the value JSON-encoded as a string (quotes included), copied from the existing 'flutter.pref_app_timezone_mode' = \"system\"",
+      "keys": {
+        "flutter.duoyi_locale_v1": "\"zh\" (reused from the previous round)",
+        "flutter.pref_app_timezone_mode": "\"fixed\"",
+        "flutter.pref_app_timezone_iana": "\"Asia/Shanghai\""
+      },
+      "source_of_keys": "lib/core/local_timezone_resolver.dart:27-31 (preferenceKey='pref_app_timezone_iana', modePreferenceKey='pref_app_timezone_mode', fixedValue='fixed')",
+      "why": "the seed tasks are dated with Asia/Shanghai 'today' (2026-11-03) while the browser zone is America/New_York (still 2026-11-02), so the app timezone must be fixed to Asia/Shanghai to make the rows belong to Today; verified visually by the Today header '11月3日，星期二'"
+    }
+  },
+  "step1_login": {
+    "account": "startup-preview (fixture-only-password)",
+    "actions": [
+      "opened http://127.0.0.1:18821/ (Chinese login form after the locale preset)",
+      "typed username (first fill cleared the field - retyped with click+type and verified the input values)",
+      "clicked 登录, then polled in a single eval up to 20s"
+    ],
+    "observed": {
+      "both_titles_and_subtitles_visible_ms_after_login_click": 2519,
+      "localStorage_todo_ids": [
+        "startup-remote-1",
+        "startup-remote-2"
+      ],
+      "note": "no navigation was needed; the known first-login changed.todos -> force reload path resolved well inside the window"
+    },
+    "no_new_todo_created": true,
+    "did_not_open_all_todos": true
+  },
+  "step2_3_reload_timeline": {
+    "method": "normal page reload keeping login/data/prefs; a non-blocking in-page tracer (200ms tick, ~45s) samples the Flutter semantics tree for the two titles/subtasks, reads localStorage flutter.todos and records performance.now(); read back with short evals so no early sample is lost",
+    "cycle_A_14s_window": {
+      "window_ms": 14106,
+      "titles_seen": 0,
+      "subtasks_seen": 0,
+      "ids_in_localStorage_at_ms_0": [
+        "startup-remote-1",
+        "startup-remote-2"
+      ],
+      "ids_at_end": 2
+    },
+    "cycle_B_tracer": {
+      "navigation_start": "2026-11-03T01:32:28.584Z",
+      "first_sample": {
+        "pageMs": 1248,
+        "titles": 0,
+        "subs": 0,
+        "ids": 2
+      },
+      "first_both_visible": {
+        "pageMs": 14729,
+        "titles": 2,
+        "subs": 2,
+        "ids": 2,
+        "utc": "2026-11-03T01:32:43.313Z",
+        "ms_after_navigation_start": 14729
+      }
+    },
+    "cycle_C_tracer_on_a_later_reload": {
+      "first_sample": {
+        "pageMs": 4646,
+        "titles": 0,
+        "subs": 0,
+        "ids": 2
+      },
+      "first_both_visible": {
+        "pageMs": 14706,
+        "titles": 2,
+        "subs": 2,
+        "ids": 2,
+        "utc": "2026-11-03T01:36:44.882Z",
+        "ms_after_navigation_start": 14706
+      }
+    },
+    "reproducibility": "3 observations: 13.9s window with 0 titles, then 14.729s and 14.706s to first visible; the two tracer runs agree within 23ms",
+    "fixture_side": {
+      "request": "POST /api/sync (seq 38)",
+      "authenticated": true,
+      "client_todo_ids": [
+        "startup-remote-1",
+        "startup-remote-2"
+      ],
+      "returned_todo_ids": [
+        "startup-remote-1",
+        "startup-remote-2"
+      ],
+      "at_utc": "2026-11-03T01:32:29.201Z",
+      "responded_at_utc": "2026-11-03T01:32:29.203Z",
+      "response_time_ms": 2
+    },
+    "correlation": "the sync response carrying both todos arrived 617ms after navigation start, but the Today list only showed them 14729ms after navigation start (~14.1s later), without any navigation, scroll or manual reload",
+    "today_screen_during_window": "header 11月3日，星期二 / 今日待办 0 / 0 项待完成 / '今天暂无待办，点击查看或添加任务' / 待办 0 项 (screenshot baseline-today-missing)",
+    "today_screen_after": "启动待办验收 1 + 验收子任务 1, 启动待办验收 2 + 验收子任务 2, 2 项待完成 (screenshot baseline-today-visible)",
+    "not_done": "no Today-filter change, no automatic date shifting, no hidden Dart method, no manual provider load/sync trigger"
+  },
+  "step4_sync_status_card_optional": {
+    "result": "NOT OBSERVED",
+    "reason": "3 UI-location attempts failed (text search on 我的, 16-step Tab traversal, then the 设置 tile pattern); per the task budget the optional item was closed instead of exploring further. The card is not on the 我的 first screen in this bundle; lib/screens/mine_screen.dart:729 does host SyncStatusCard, and the previous round saw it inside 我的 -> 设置.",
+    "stored_value_evidence": {
+      "localStorage_flutter_sync_last_time": "\"2026-11-02T20:32:29.205\"",
+      "shape": "bare local ISO, no zone designator",
+      "as_browser_zone_America/New_York": "2026-11-03T01:32:29.205Z (equals the fixture's responded_at 01:32:29.203, i.e. it is the browser-local wall clock)",
+      "expected_if_app_zone_Asia/Shanghai": "2026-11-03T09:32:29.205+08:00 (would render 11月3日 09:32)"
+    },
+    "conclusion": "the persisted value is browser-local and cannot match the fixed app timezone; whether the old card renders that mismatch could not be captured on screen in this phase",
+    "source_note": "the working tree's lib/widgets/sync_status_card.dart carries an unshipped comment about rebuilding the timestamp in the app IANA zone - that is exactly what the old bundle lacks, but the old bundle's rendering was not visually verified"
+  },
+  "console_and_errors": {
+    "page_errors": "[] (agent-browser errors -> []) across login, reloads and both tracer windows",
+    "console": "199 entries in the last page; 2 error-level entries that are one message plus its stack: 'Null check operator used on a null value' at main.dart.js:184744, in the auth/account-cleanup path (same pre-existing signature seen in earlier rounds, only line numbers shift with the bundle); the rest is the usual MissingPluginException noise (duoyi/deep_links, path_provider, location_geofence) plus AlarmService cleanup warnings",
+    "notification_unrelated": true
+  },
+  "tool_limitations": [
+    "a single blocking eval longer than ~30s fails with 'Failed to read: Resource temporarily unavailable' - the 38s poll was lost and had to be replaced by a non-blocking tracer stored on window",
+    "screenshots are only meaningful when timed against the tracer: a first attempt produced three byte-identical Today frames (all post-appearance), which were discarded rather than presented as an early/late pair",
+    "Flutter web does not scroll on synthetic wheel events; Tab traversal is used to bring widgets into view (not needed for the Today flow)"
+  ],
+  "handover": {
+    "session_state_saved": "scratch/sync-timezone-startup-state.json (cookies + localStorage of the fixture account only)",
+    "session": "sync-timezone-startup-e2e browser closed; fixture left running untouched for the main session to clean up",
+    "for_next_phase": "resume with --session sync-timezone-startup-e2e --state <that file> after the new bundle is frozen; the same 3 prefs and the same tracer timings are reusable for the comparison"
+  },
+  "screenshots": [
+    {
+      "file": "baseline-me-screen-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 69503,
+      "sha256": "fbbd984d267aad541acbf0dd177cecdd5befb0cba481d2c31da7ad52ef50a449"
+    },
+    {
+      "file": "baseline-today-missing-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 39552,
+      "sha256": "6bed43f5b668bc68a741c268286937631234f58dde671d11f95bb6e5a0b74307"
+    },
+    {
+      "file": "baseline-today-visible-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 45822,
+      "sha256": "b328f65e5a34d9ef88a41ae106c6bb286738e54d4f6be997727c8a59743ffd24"
+    }
+  ],
+  "screenshot_count": 3
+}

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../core/i18n_date_format.dart';
@@ -15,6 +16,9 @@ import 'surface_components.dart';
 /// 包装）：四态渲染——失败（lastError 红字 + 自动重试提示）、同步中
 /// （转圈）、从未同步（引导文案）、已同步（上次同步时间，
 /// hasPendingChanges 时附"待同步"角标）。
+///
+/// 已同步时间按**应用墙钟**呈现：读取 [AppClock]（IANA 应用时区）换算后交给
+/// I18nDateFormat；存储的 lastSync 仍是真实 instant，不换算、不回写、不触发同步。
 ///
 /// 手动同步入口：整卡可点击，点击调用 `SyncStatusController.requestSync()`，
 /// 由应用层注入的回调先刷新公共后端配置 / 账号 AI 配置，再同步业务数据。
@@ -30,6 +34,8 @@ class SyncStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<SyncStatusController?>();
     if (controller == null) return const SizedBox.shrink();
+    // 上次同步时间按应用墙钟展示：跟随 IANA 应用时区重建（main 根部已有 scope）。
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final canSync = controller.canSync;
 
@@ -71,9 +77,11 @@ class SyncStatusCard extends StatelessWidget {
       stateLabel = I18n.tr('sync.state.synced');
       stateColor = cs.primary;
       stateIcon = Icons.cloud_done_outlined;
+      // 存储的 lastSync 是真实 instant：只按应用时区换算显示，不回写、不触发同步。
+      final syncedAt = AppClock.toLocal(controller.lastSync);
       detail =
           '${I18n.tr('sync.last_sync_prefix')}'
-          '${I18nDateFormat.shortDateTime(controller.lastSync)}';
+          '${I18nDateFormat.shortDateTime(syncedAt)}';
       if (controller.hasPendingChanges) {
         trailing = Container(
           key: const ValueKey('sync_status_card_pending_badge'),

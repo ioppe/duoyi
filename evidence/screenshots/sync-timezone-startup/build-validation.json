@@ -1,0 +1,39 @@
+{
+  "task":"sync-timezone-startup",
+  "status":"PASS",
+  "phase":"final local Release Web r4",
+  "candidate_base_commit":"30371ccb7bae47423abba9bfb31deae6c4680683",
+  "command":"TZ=UTC FLUTTER_BIN=<pinned Flutter 3.44.1>/bin/flutter python3 scripts/flutter_with_config.py build web --release --base-href=/ --dart-define=DUOYI_WEB_TARGET=desktop",
+  "exit_code":0,
+  "duration_seconds":99.45,
+  "version":"1.1.47",
+  "build_number":140013,
+  "source_input_count":409,
+  "inputs_stable_before_after":true,
+  "source_input_set_sha256":"dd2bcf0fd938607ad7f1576f644c359a2d0cb19a295b795449c59744195da45b",
+  "runtime_files":120,
+  "runtime_bytes":107541481,
+  "runtime_set_sha256":"fd47c9454194903fd153905878e96fd55dc3e28baa5b793d727c7b20d143d847",
+  "set_digest_algorithm":"SHA-256 of UTF-8 JSON file-path-to-SHA256 mapping with sorted keys, ensure_ascii=false, separators=(',',':')",
+  "main_dart_js_bytes":9717248,
+  "main_dart_js_sha256":"d490aa793096e908e47d9508988f16a62e095d54996b8591e31f52be04a0d628",
+  "excluded_runtime_marker":".last_build_id",
+  "source_six_files_match_automated_validation":true,
+  "git_diff_check_exit_code":0,
+  "protected_assets_unchanged":true,
+  "protected_assets_sha256":{
+    "assets/assets/logo/duoyi_app_logo_1024.png":"2af3cdbb9d18199ced728b8525f0c8cad9fc6e1c6197c3ec5df64cd18142328b",
+    "favicon.svg":"acac7b607708c651b224c2acb89083fc10039cacd7eb91704b5decc387988a69",
+    "favicon.png":"3c31699acc9095c7d7a911627caafa6af46c08dbe4f0de9fd1d850dab9113a2c"
+  },
+  "startup_font_registration_verified":true,
+  "fonts":[
+    {"path":"assets/assets/fonts/NotoSansSC-Startup.ttf","bytes":2098692,"sha256":"42b03900af80613a9ed2a85ff1c1bc85e5cf0240b94faf61b8c6cc43ea701edd"},
+    {"path":"assets/assets/fonts/NotoSansSC-Variable.ttf","bytes":17772300,"sha256":"a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da"},
+    {"path":"assets/assets/fonts/NotoSansSC-OFL.txt","bytes":4387,"sha256":"babcfe66c8a098b2fa279bc724a3a342f8124f77ce18941fbcc1bbb39823cded"}
+  ],
+  "stderr":"Five Dart VM MallocStackLogging notices; build exited successfully.",
+  "binding_policy":"After creating the delivery commit, bind all 409 captured source inputs to the exact git blobs and verify the same 120 local runtime files. Keep the bound full manifest and delivery SHA in the session delivery receipts. This record describes the pre-commit build content, without a self-referential commit SHA.",
+  "ci_comparison_policy":"Origin must carry the final delivery SHA and the same runtime path set. Only one generated serviceWorkerVersion number in flutter_bootstrap.js may differ between local and CI builds; every other bootstrap byte and runtime file must match. Public resources must match the deployed CI bytes exactly.",
+  "scratch_receipts":["sync-timezone-startup-build-inputs-before.json","sync-timezone-startup-build-inputs-after.json","sync-timezone-startup-web-manifest.json","sync-timezone-startup-build-checks.json","sync-timezone-startup-r4-build.log","sync-timezone-startup-r4-build.stderr"]
+}

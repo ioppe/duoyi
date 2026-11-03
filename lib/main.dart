@@ -1468,6 +1468,11 @@ void main() async {
         // 否则内存列表停留在旧快照，下一次本地写入会覆盖同步结果。
         reloadTasks.add(() => todoProvider.loadFromStorage(force: true));
         shouldResyncReminders = true;
+      } else if (!todoProvider.isHydrated) {
+        // 升级后本地存储与云端一致时 changed 集合为空：云同步不会回填数据，
+        // 这里只补一次惰性水合，让首帧后仍未完成的本地读取落地。
+        // 没有数据变化，因此不触发 reminder 重同步，也不产生任何上传。
+        reloadTasks.add(() => todoProvider.loadFromStorage());
       }
       if (changedCollections.contains('habits')) {
         reloadTasks.add(habitProvider.loadFromStorage);
@@ -1781,6 +1786,20 @@ void main() async {
   }
 
   Future<void> runPostFrameStartupTasks() async {
+    // todo 从 14s 的本地存储批次里独立提前：首帧后立刻做一次轻量水合，不再
+    // 排进下面 14s 组（该组仍承载其余 provider 的错峰读取，todo 在其中保留为
+    // 幂等 fallback）。升级后本地 prefs 与云端一致时 changedCollections 为空、
+    // 云同步不回填，若仍等 14s 用户会长时间看到空列表。
+    // 脏标记抑制必须包住真实读取的整个生命周期：_startupGuard 的 12s 超时只
+    // 结束观察，底层读取仍会继续，其 notify 不能被当成用户本地改动。
+    unawaited(
+      _startupGuard(
+        'initial todo storage',
+        () => cloudSyncProvider.suppressDirtyMarkWhile(
+          () => todoProvider.loadFromStorage(),
+        ),
+      ),
+    );
     // 轻量入口：首帧后立即拉公开的 /api/config，并在已登录时立刻开始首次同步。
     // guest 也走这里（只 GET 公开配置），但不发任何个人数据请求。
     unawaited(

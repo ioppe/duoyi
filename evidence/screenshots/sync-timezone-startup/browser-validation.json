@@ -1,0 +1,302 @@
+{
+  "phase": "stage 2 - FINAL new bundle (r4 release web) browser acceptance",
+  "recorded_at": "2026-11-03T02:25:12.002872+00:00",
+  "candidate": {
+    "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-macos-dmg-build",
+    "head": "30371ccb7bae47423abba9bfb31deae6c4680683",
+    "dirty_source": true,
+    "build_or_source_change_this_phase": false
+  },
+  "bundles": {
+    "old_baseline": {
+      "main_dart_js_bytes": 9715827,
+      "main_dart_js_sha256": "a136ba1be7ec872a86c0c2a7bca0ea036f603a2f5e903bf63d3b331685f9fe2f",
+      "source": "previous phase, NOT reused and NOT overwritten; baseline-browser-validation.json + baseline-*.png untouched"
+    },
+    "new_final": {
+      "main_dart_js_bytes": 9717248,
+      "main_dart_js_sha256": "d490aa793096e908e47d9508988f16a62e095d54996b8591e31f52be04a0d628",
+      "manifest": "scratch/sync-timezone-startup-web-manifest.json (source_input_count 409, inputs_stable true, runtime_files 120, runtime_bytes 107541481)",
+      "verification": "in-page fetch('main.dart.js',{cache:'no-store'}) + crypto.subtle SHA-256, checked twice (before login navStart 2026-11-03T02:13:15.713Z and after the third-task step navStart 2026-11-03T02:16:36.148Z) - both 9717248 / d490aa79..."
+    }
+  },
+  "environment": {
+    "origin": "http://127.0.0.1:18821",
+    "fixture_pid": 24343,
+    "fixture_restarted": false,
+    "fixture": "read-only remote snapshot; client uploads recorded not applied; POST /api/sync|sync/pull answer the seeded snapshot; /__fixture/advance adds startup-remote-3 and bumps server_version",
+    "viewport": [
+      "1280x1000",
+      "390x844"
+    ],
+    "dpr": 1,
+    "intl_system_timezone": "America/New_York (not overridden)",
+    "app_timezone": "Asia/Shanghai (pref)",
+    "app_locale": "zh (pref)",
+    "session": "agent-browser 0.20.7, session sync-timezone-startup-e2e, headless Chrome",
+    "prefs_are_preset_not_ui": true,
+    "prefs": {
+      "flutter.duoyi_locale_v1": "\"zh\"",
+      "flutter.pref_app_timezone_mode": "\"fixed\"",
+      "flutter.pref_app_timezone_iana": "\"Asia/Shanghai\"",
+      "flutter.sync_auto": "toggled false then true for step 2/3"
+    }
+  },
+  "deviation_saved_login_restore": {
+    "expected_by_brief": "resume the saved state file and keep the existing login without logging in again",
+    "actual": "After --state restoration and the first page load, only four device keys were observed (pref_app_timezone_mode=system, two navigation keys, auth_state_server_url); auth_state/todos/locale/fixed-zone keys were absent when the page became observable. No before-bootstrap storage snapshot or console log for that load was retained, so whether import omitted keys or startup later removed them is undetermined.",
+    "state_file_verified": "The saved JSON contains auth_state, todos and locale/timezone keys. This verifies the file contents, not successful import before application startup; no conclusion about application deletion is made.",
+    "workaround_used": "re-applied the same three prefs through the app's own keys + normal reload, then a real form login (startup-preview / fixture-only-password typed into the UI)",
+    "impact": "Within the final build, real login followed by normal reload retained login, the two todos and prefs in steps 1/2/3. Step 1 therefore covers a cached saved-login reload after real login; it does not prove successful cross-build state-file restoration or native in-place installation."
+  },
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "cached today (saved prefs, local == remote, no 14s wait)",
+      "build": "new_final",
+      "result": "PASS",
+      "actions": [
+        "normal reload with login + prefs, Today route",
+        "non-blocking 200ms tracer (window.__trace) started right after reload",
+        "read back with short evals"
+      ],
+      "timeline": {
+        "first_sample": {
+          "pageMs": 632,
+          "titles": 0,
+          "subs": 0,
+          "ids": 2
+        },
+        "first_both_visible": {
+          "pageMs": 3315,
+          "titles": 2,
+          "subs": 2,
+          "ids": 2
+        },
+        "sampling_bound": "tracer began at pageMs ~630, so first paint is only bounded: visible no later than pageMs 3315; no precise firstPaint claimed"
+      },
+      "comparison_old_baseline": {
+        "old_pageMs": [
+          14729,
+          14706
+        ],
+        "new_pageMs": 3315,
+        "improvement": "~11.4s earlier"
+      },
+      "not_done": [
+        "no 全部待办 navigation",
+        "no date filter change",
+        "no manual sync"
+      ],
+      "screenshot": "final-today-cached-1280x1000.png"
+    },
+    {
+      "id": 2,
+      "name": "auto sync OFF -> local restore without server",
+      "build": "new_final",
+      "result": "PASS",
+      "actions": [
+        "set flutter.sync_auto = JSON false (persisted pref preset, not a UI action)",
+        "normal reload",
+        "tracer + fixture request log around the reload"
+      ],
+      "timeline": {
+        "first_sample": {
+          "pageMs": 237,
+          "titles": 0,
+          "subs": 0,
+          "ids": 2
+        },
+        "first_both_visible": {
+          "pageMs": 855,
+          "titles": 2,
+          "subs": 2,
+          "ids": 2
+        }
+      },
+      "fixture_requests_after_reload": {
+        "seq_range": "82-87",
+        "rows": [
+          "GET /api/workspaces (auth)",
+          "GET /api/workspaces/mentions (auth)",
+          "GET /api/auth/me (auth)",
+          "GET /api/config (auth)",
+          "GET /api/mobile/apps/duoyi/update (no auth)",
+          "GET /api/config (no auth)"
+        ],
+        "personal_sync_posts": 0
+      },
+      "assertions": [
+        "both tasks and both subtasks rendered while auto sync was off",
+        "no POST /api/sync or /api/sync/pull issued for that page; ordinary authenticated workspace/auth GETs and public configuration/update GETs still occurred"
+      ],
+      "restored_auto": "flutter.sync_auto set back to true and reloaded; visible at pageMs 1425",
+      "screenshot": "final-autooff-local-1280x1000.png"
+    },
+    {
+      "id": 3,
+      "name": "remote update arrives by the app's own poll (auto on, no navigation)",
+      "build": "new_final",
+      "result": "PASS",
+      "actions": [
+        "stayed on Today with auto sync on",
+        "POST /__fixture/advance once",
+        "kept sampling with a 500ms tracer, no manual sync"
+      ],
+      "timeline": {
+        "advance_requested_utc": null,
+        "advance_time_estimate": "Approximately 2026-11-03T02:17:01Z, derived from navStart 02:16:36.148Z plus tracer anchor pageMs 24985 (=02:17:01.133Z); advance followed shortly after. The exact request timestamp was not retained. The original date(1) output 02:17:01.3NZ was malformed because macOS date does not support %3N.",
+        "advance_response": {
+          "server_version": 2,
+          "todo_count": 3
+        },
+        "poll_status_utc": "2026-11-03T02:18:36.872Z",
+        "poll_pull_utc": "2026-11-03T02:18:36.875Z",
+        "pull_returned_ids": [
+          "startup-remote-1",
+          "startup-remote-2",
+          "startup-remote-3"
+        ],
+        "third_visible_pageMs": 121223,
+        "seconds_after_advance": null,
+        "approximate_seconds_to_third_visible": 96,
+        "latency_boundary": "Approximate advance-to-visible duration only. The first sampled third-task frame is pageMs 121223 (=02:18:37.371Z), 496ms after pull responded at 02:18:36.875Z. The tracer interval was 500ms; no exact advance timestamp or precise first paint was measured.",
+        "final_ids": [
+          "startup-remote-1",
+          "startup-remote-2",
+          "startup-remote-3"
+        ]
+      },
+      "poll_mechanism": "source shows _remotePollDelay = 2 minutes (lib/providers/cloud_sync_provider.dart:118); GET /api/sync/status then POST /api/sync/pull observed, matching that interval",
+      "screenshot": "final-remote-third-1280x1000.png"
+    },
+    {
+      "id": 4,
+      "name": "cloud sync card text uses the app timezone (core bug)",
+      "build": "new_final",
+      "result": "PASS",
+      "actions": [
+        "我的 tab -> 设置 tile (mine_settings_entry) -> _MineMenuScreen",
+        "read the 云同步 card and flutter.sync_last_time"
+      ],
+      "actual_ui_text": "云同步 / 已同步 / 上次同步 11月3日 10:18",
+      "stored_value": "\"2026-11-02T21:18:36.881\" (bare local ISO, browser zone)",
+      "conversion": {
+        "as_browser_zone_ny_utc": "2026-11-03T02:18:36.881Z",
+        "expected_in_app_zone_shanghai": "2026-11-03T10:18:36.881+08:00 -> 11月3日 10:18",
+        "matches_actual": true
+      },
+      "cross_check": "The client success time 02:18:36.881Z is 6ms later than the fixture pull response 02:18:36.875Z: two records from the same successful operation, not equal timestamp values. Rendering the client instant in Asia/Shanghai gives the actual card text 11月3日 10:18.",
+      "old_bundle_contrast": "the previous bundle stored the same shape of value but had no app-zone rebuild; its on-screen text could not be captured in the baseline phase (recorded NOT OBSERVED there), so this is a new-bundle positive result, not a verified before/after pair",
+      "screenshots": [
+        "final-sync-shanghai-1280x1000.png",
+        "final-sync-shanghai-390x844.png"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "switch app timezone to America/New_York through the real settings UI",
+      "build": "new_final",
+      "result": "NOT RUN",
+      "attempts": [
+        "1) 个性设置 -> 显示与行为 -> ref click on the 应用时区 tile (semantics button e9) : no picker appeared, screenshot unchanged",
+        "2) scanned every semantics node for America|New_York|Shanghai|UTC|跟随系统 after that click: no option nodes existed (only the row label)",
+        "3) CDP mouse move/down/up at the dropdown control coordinates (1167,645): frame unchanged (byte-identical screenshot)",
+        "4) 40x Tab traversal + Enter, then a fresh ref click after the row was scrolled into view: the click landed on the neighbouring 震动反馈 row instead (flutter.pref_haptic_feedback is now false) and the picker still did not open"
+      ],
+      "boundary": "the timezone dropdown could not be opened with this tool set; the NY -> Shanghai round trip and the 'storage is not rewritten on zone change' assertion are NOT verified live. Unit coverage of the same mounted card (NY/Kathmandu, DST, instant unchanged) exists per the main session but is not a browser PASS.",
+      "non_claim": "no live UI coverage for NY; the card was only verified in the Shanghai state"
+    },
+    {
+      "id": 6,
+      "name": "390x844 Today with 3 tasks (app zone Shanghai)",
+      "build": "new_final",
+      "result": "PASS",
+      "actions": [
+        "viewport 390x844 while on Today",
+        "semantics check + screenshot"
+      ],
+      "assertions": {
+        "titles_present": [
+          "启动待办验收 1",
+          "启动待办验收 2",
+          "启动待办验收 3"
+        ],
+        "subtask_1_present": true,
+        "document_scrollWidth": 390,
+        "innerWidth": 390,
+        "horizontal_overflow": false
+      },
+      "screenshot": "final-today-390x844.png"
+    }
+  ],
+  "distinct_scenarios": 6,
+  "scenario_counts": {
+    "PASS": 5,
+    "FAIL": 0,
+    "NOT_RUN": 1
+  },
+  "console_and_errors": {
+    "page_errors": "[] (agent-browser errors -> [])",
+    "console": "276 entries: 270 log / 4 debug / 2 error. The 2 error entries are one message plus its stack: 'Null check operator used on a null value' at main.dart.js:184777 in the auth/account-cleanup path (same pre-existing signature as earlier rounds, line shifted with the new bundle). 19 MissingPluginException entries for duoyi/deep_links, path_provider, location_geofence and AlarmService cleanup warnings remain - they are pre-existing web plugin gaps, not a clean console.",
+    "notification_related": "none"
+  },
+  "tool_limitations": [
+    "cross-build --state restoration was not established; the first observable page had only four keys, with no pre-bootstrap snapshot to establish the cause (see deviation_saved_login_restore)",
+    "blocking eval longer than ~30s fails with 'Resource temporarily unavailable'; a non-blocking tracer on window + short reads was used",
+    "Flutter dropdowns did not open through ref click, coordinate click, JS semantics click or Tab+Enter; the neighbouring row received the 4th click",
+    "synthetic wheel events do not scroll Flutter web; Tab traversal was used to bring the timezone row into view",
+    "screenshots are only meaningful when timed against the tracer; final-today-cached and final-autooff-local are pixel-identical because both show the same 2-task Today screen"
+  ],
+  "not_covered": [
+    "real OS timezone change",
+    "live UI NY/DST switch (NOT RUN)",
+    "device install/perf baselines (loopback headless only)",
+    "editing/LWW through the fixture (read-only by design)"
+  ],
+  "screenshots": [
+    {
+      "file": "final-autooff-local-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 45822,
+      "sha256": "b328f65e5a34d9ef88a41ae106c6bb286738e54d4f6be997727c8a59743ffd24"
+    },
+    {
+      "file": "final-remote-third-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 52762,
+      "sha256": "c0bb2f04362c8410cc97d7c25a5e50dc81fad75407f956c4c92eea79635ee126"
+    },
+    {
+      "file": "final-sync-shanghai-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 55421,
+      "sha256": "03c763deea55b6ff61c545097e7f3cd98f09e144d42e2241473bab93b5d95d17"
+    },
+    {
+      "file": "final-sync-shanghai-390x844.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 49169,
+      "sha256": "7b4c47e15163bf3ee603bc9a6fb18a6b72b825245590f197ccc7f2fc0545827e"
+    },
+    {
+      "file": "final-today-390x844.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 44162,
+      "sha256": "eb5373aea4fbef61bf25420b7c3289dd4e2effe986ec1d941bdd0b245047758e"
+    },
+    {
+      "file": "final-today-cached-1280x1000.png",
+      "width": 1280,
+      "height": 1000,
+      "bytes": 45822,
+      "sha256": "b328f65e5a34d9ef88a41ae106c6bb286738e54d4f6be997727c8a59743ffd24"
+    }
+  ],
+  "screenshot_count": 6
+}

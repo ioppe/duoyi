@@ -8,7 +8,9 @@ import 'package:http/testing.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:duoyi/core/app_clock.dart';
 import 'package:duoyi/core/i18n.dart';
+import 'package:duoyi/core/local_timezone_resolver.dart';
 import 'package:duoyi/providers/cloud_sync_provider.dart';
 import 'package:duoyi/providers/sync_status_presenter.dart';
 import 'package:duoyi/services/api_client.dart';
@@ -19,9 +21,13 @@ const _cardKey = ValueKey('sync_status_card');
 const _spinnerKey = ValueKey('sync_status_card_spinner');
 const _syncActionKey = ValueKey('sync_status_card_sync_action');
 
+/// 仿真真实应用结构：main 在 MaterialApp 外层提供 [AppClockScope]，
+/// 卡片据此在应用时区变化时重建。
 Widget _wrap(SyncStatusController? controller) {
-  final child = const MaterialApp(
-    home: Scaffold(body: SingleChildScrollView(child: SyncStatusCard())),
+  final child = AppClockScope(
+    child: const MaterialApp(
+      home: Scaffold(body: SingleChildScrollView(child: SyncStatusCard())),
+    ),
   );
   if (controller == null) return child;
   return ChangeNotifierProvider<SyncStatusController>.value(
@@ -38,6 +44,16 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    // 隔离全局 clock 状态：tz.local 与 I18n 都是进程级全局量，固定 zh + UTC
+    // 基线，避免宿主机器时区或上一条用例影响卡片渲染出的文字。
+    I18n.setLocale(AppLocale.zh);
+    await LocalTimezoneResolver.setApplicationTimeZone('UTC');
+  });
+
+  tearDown(() async {
+    // 与 setUp 对称收尾，不把应用时区/语言泄漏给后续用例。
+    I18n.setLocale(AppLocale.zh);
+    await LocalTimezoneResolver.setApplicationTimeZone('UTC');
   });
 
   /// 点击整卡并排空即时完成的微任务（回调立即返回时请求已收尾）。
@@ -327,6 +343,190 @@ void main() {
 
     controller.dispose();
     cloud.dispose();
+  });
+
+  testWidgets('上次同步时间按应用时区渲染（UTC 基线 vs Asia/Shanghai）', (tester) async {
+    const stored = '2026-11-01T23:20:00.000Z';
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sync_last_time': stored,
+    });
+    await LocalTimezoneResolver.setApplicationTimeZone('UTC');
+    final cloud = CloudSyncProvider();
+    await cloud.loadFromStorage();
+    var syncRequests = 0;
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        syncRequests++;
+        return http.Response('{}', 200);
+      }),
+    );
+    cloud.apiClientGetter = () => client;
+    cloud.serverConfigGetter = () => <String, dynamic>{'backup_enabled': true};
+    final controller = SyncStatusController(source: cloud);
+
+    await tester.pumpWidget(_wrap(controller));
+    await tester.pump();
+
+    // 应用时区 = UTC：墙上时间就是 instant 本身（不跟随宿主系统时区）。
+    expect(find.textContaining('11月1日 23:20'), findsOneWidget);
+
+    await tester.runAsync(
+      () => LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai'),
+    );
+    await tester.pump();
+
+    // 同一 instant 在 Asia/Shanghai 的墙钟是次日 07:20。
+    expect(find.textContaining('11月2日 07:20'), findsOneWidget);
+    expect(find.textContaining('11月1日 23:20'), findsNothing);
+
+    // 只做显示换算：instant 与持久化值不变，也没有触发任何同步。
+    expect(controller.lastSync.toUtc(), DateTime.utc(2026, 11, 1, 23, 20));
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('sync_last_time'), stored);
+    expect(syncRequests, 0);
+    expect(cloud.isSyncing, isFalse);
+    expect(controller.syncRequestFailed, isFalse);
+
+    controller.dispose();
+    cloud.dispose();
+  });
+
+  testWidgets('生产本地 ISO 同步时间按应用时区显示且不改写', (tester) async {
+    final instant = DateTime.utc(2026, 11, 1, 23, 20);
+    // 与生产 DateTime.now().toIso8601String() 相同：无 Z 的系统本地时间。
+    final stored = instant.toLocal().toIso8601String();
+    expect(stored, isNot(endsWith('Z')));
+    expect(DateTime.parse(stored).toUtc(), instant);
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sync_last_time': stored,
+    });
+    await LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai');
+    final cloud = CloudSyncProvider();
+    await cloud.loadFromStorage();
+    final controller = SyncStatusController(source: cloud);
+
+    await tester.pumpWidget(_wrap(controller));
+    await tester.pump();
+
+    expect(find.textContaining('11月2日 07:20'), findsOneWidget);
+    expect(controller.lastSync.toUtc(), instant);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('sync_last_time'), stored);
+
+    controller.dispose();
+    cloud.dispose();
+  });
+
+  testWidgets('已挂载卡片随 IANA 应用时区重建，不触发 provider 通知或同步', (tester) async {
+    const stored = '2026-11-01T23:20:00.000Z';
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sync_last_time': stored,
+    });
+    await LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai');
+    final cloud = CloudSyncProvider();
+    await cloud.loadFromStorage();
+    var providerNotifications = 0;
+    cloud.addListener(() => providerNotifications++);
+    var syncRequests = 0;
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'test-token',
+      httpClient: MockClient((request) async {
+        syncRequests++;
+        return http.Response('{}', 200);
+      }),
+    );
+    cloud.apiClientGetter = () => client;
+    cloud.serverConfigGetter = () => <String, dynamic>{'backup_enabled': true};
+    var manualRequests = 0;
+    final controller = SyncStatusController(
+      source: cloud,
+      onSyncRequested: () async {
+        manualRequests++;
+      },
+    );
+
+    await tester.pumpWidget(_wrap(controller));
+    await tester.pump();
+    expect(find.textContaining('11月2日 07:20'), findsOneWidget);
+
+    // 首次挂载会冲出 loadFromStorage 的微任务通知；只比较切区产生的增量。
+    final notificationsBeforeZoneChange = providerNotifications;
+
+    // 同一个已挂载的卡片（不重新 pumpWidget）：切到纽约。
+    await tester.runAsync(
+      () => LocalTimezoneResolver.setApplicationTimeZone('America/New_York'),
+    );
+    await tester.pump();
+    // 2026-11-01T23:20Z 在纽约是 EST（UTC-5）→ 11 月 1 日 18:20。
+    expect(find.textContaining('11月1日 18:20'), findsOneWidget);
+
+    await tester.runAsync(
+      () => LocalTimezoneResolver.setApplicationTimeZone('Asia/Kathmandu'),
+    );
+    await tester.pump();
+    // 加德满都是 UTC+5:45（非整小时偏移）→ 11 月 2 日 05:05。
+    expect(find.textContaining('11月2日 05:05'), findsOneWidget);
+
+    // 纯显示：无新增 provider 通知、无自动/手动同步、instant 与存储值不变。
+    expect(providerNotifications, notificationsBeforeZoneChange);
+    expect(syncRequests, 0);
+    expect(manualRequests, 0);
+    expect(cloud.isSyncing, isFalse);
+    expect(controller.lastSync.toUtc(), DateTime.utc(2026, 11, 1, 23, 20));
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('sync_last_time'), stored);
+
+    controller.dispose();
+    cloud.dispose();
+  });
+
+  testWidgets('纽约夏令时/冬令时对比：IANA 偏移不是固定值', (tester) async {
+    await LocalTimezoneResolver.setApplicationTimeZone('America/New_York');
+
+    // 夏季：EDT（UTC-4）。
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sync_last_time': '2026-07-01T23:20:00.000Z',
+    });
+    final summerCloud = CloudSyncProvider();
+    await summerCloud.loadFromStorage();
+    final summerController = SyncStatusController(source: summerCloud);
+    await tester.pumpWidget(_wrap(summerController));
+    await tester.pump();
+    expect(find.textContaining('7月1日 19:20'), findsOneWidget);
+    summerController.dispose();
+    summerCloud.dispose();
+
+    // 冬季：EST（UTC-5）。同一个 23:20Z 在纽约冬夏相差 1 小时。
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'sync_last_time': '2026-12-15T02:30:00.000Z',
+    });
+    final winterCloud = CloudSyncProvider();
+    await winterCloud.loadFromStorage();
+    final winterController = SyncStatusController(source: winterCloud);
+    await tester.pumpWidget(_wrap(winterController));
+    await tester.pump();
+    expect(find.textContaining('12月14日 21:30'), findsOneWidget);
+    expect(
+      winterController.lastSync.toUtc(),
+      DateTime.utc(2026, 12, 15, 2, 30),
+    );
+
+    // 与恒为 UTC+8 的上海对比：同一 instant 偏移不同，说明按 IANA 规则换算。
+    await tester.runAsync(
+      () => LocalTimezoneResolver.setApplicationTimeZone('Asia/Shanghai'),
+    );
+    await tester.pump();
+    expect(find.textContaining('12月15日 10:30'), findsOneWidget);
+    expect(
+      winterController.lastSync.toUtc(),
+      DateTime.utc(2026, 12, 15, 2, 30),
+    );
+
+    winterController.dispose();
+    winterCloud.dispose();
   });
 
   testWidgets('有本地改动未同步：已同步态追加待同步角标', (tester) async {

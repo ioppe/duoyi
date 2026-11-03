@@ -1,0 +1,91 @@
+{
+  "task": "sync-timezone-startup",
+  "status": "PASS",
+  "candidate_base_commit": "30371ccb7bae47423abba9bfb31deae6c4680683",
+  "candidate_note": "These results cover the exact six file contents below before the delivery commit. The final Web manifest is bound to the delivery commit after commit creation; baseline/browser bundles are recorded separately.",
+  "toolchain": {
+    "flutter": "3.44.1",
+    "dart": "3.12.1",
+    "flutter_revision": "924134a44c189315be2148659913dda1671cbe99",
+    "host_process_timezone": "UTC",
+    "flutter_command_wrapper": "python3 scripts/flutter_with_config.py",
+    "test_arguments": "test --no-pub --reporter=json --concurrency=2",
+    "analysis_command": "dart analyze --fatal-infos"
+  },
+  "final_r3": {
+    "targeted": {"suite_files":14,"cases":161,"passed":161,"failed":0,"errors":0,"skipped":0,"exit_code":0,"duration_seconds":52.59,"runs":1},
+    "full": {"suite_files":348,"cases":2448,"passed":2448,"failed":0,"errors":0,"skipped":0,"exit_code":0,"duration_seconds":744.36,"runs":1},
+    "counting": "Counted final testDone per suite path and test identity; excluded loading/hooks, no duplicate final events. Targeted and full counts are separate and are never added together.",
+    "analysis": {"exit_code":0,"result":"No issues found!","duration_seconds":6.57},
+    "format_before_tests": {"files":6,"changed":1,"changed_file":"test/providers/todo_storage_safety_test.dart","change":"formatter removed an extra empty line"},
+    "format_after_tests": {"files":6,"changed":0,"exit_code":0},
+    "git_diff_check": {"exit_code":0},
+    "source_stable_after_format_through_all_checks": true,
+    "test_cases_by_targeted_suite": {
+      "test/widgets/sync_status_card_test.dart":25,
+      "test/providers/todo_storage_safety_test.dart":12,
+      "test/services/startup_performance_static_test.dart":1,
+      "test/services/cloud_sync_provider_test.dart":29,
+      "test/services/backend_sync_coordinator_test.dart":10,
+      "test/screens/today_mine_smoke_test.dart":43,
+      "test/providers/todo_parent_completion_test.dart":6,
+      "test/core/app_clock_test.dart":3,
+      "test/core/local_timezone_resolver_test.dart":6,
+      "test/services/application_timezone_services_test.dart":10,
+      "test/screens/localization_timezone_settings_test.dart":1,
+      "test/services/todo_reminder_timezone_roundtrip_test.dart":2,
+      "test/services/account_local_data_cleaner_test.dart":9,
+      "test/core/flutter_l10n_static_test.dart":4
+    }
+  },
+  "independent_card_host_timezone_runs_r2": [
+    {"host_process_timezone":"UTC","cases":25,"passed":25,"failed":0,"skipped":0,"exit_code":0},
+    {"host_process_timezone":"America/New_York","cases":25,"passed":25,"failed":0,"skipped":0,"exit_code":0}
+  ],
+  "production_format_roundtrip": {
+    "instant":"2026-11-01T23:20:00.000Z",
+    "local_iso_in_UTC_host":"2026-11-01T23:20:00.000",
+    "local_iso_in_New_York_host":"2026-11-01T18:20:00.000",
+    "both_parse_back_to_same_instant":true,
+    "both_render_with_Shanghai_application_zone":"11月2日 07:20",
+    "sync_last_time_unchanged":true,
+    "live_card_zone_switches":"America/New_York and Asia/Kathmandu on the same mounted tree; no new provider notifications, automatic requests or manual requests",
+    "dst_coverage":"New York summer UTC-4 and winter UTC-5; cross-date and Kathmandu UTC+5:45 covered"
+  },
+  "storage_and_startup_regressions": [
+    "Complete local cache and a valid empty list become hydrated only after load completion.",
+    "Concurrent normal loads coalesce and publish the complete snapshot once.",
+    "Account reset invalidates the old generation and new account hydration remains available.",
+    "Initial load, forced reload and local writes share the storage queue.",
+    "A controlled prefs gate pauses a large corrupt-cache repair while cloud replaces storage; the old repair must not overwrite remote records, and a later local edit retains the remote records.",
+    "A force reload queued during initial hydration finishes with the cloud snapshot.",
+    "Repeated external snapshot replacement fails hydration and the dependent mutation; a later stable read and edit succeed without dropping the remote record.",
+    "Post-frame todo hydration remains unawaited, inside actual dirty-mark suppression; the timeout guard wraps that future. Public config starts immediately; other 14s/75s/12s staggering remains guarded."
+  ],
+  "source_sha256": {
+    "lib/main.dart":"c14219bd0362fd9def170d31422193d40b15900b550d924f0966c7818f337f57",
+    "lib/providers/todo_provider.dart":"20697d95ecabb5d36f891145642513f06c08af34591fbec727927662cc9864dd",
+    "lib/widgets/sync_status_card.dart":"4d29d168c77be384324e30833d0cc04db78ab29e7fd6875975d9842f00703fd5",
+    "test/providers/todo_storage_safety_test.dart":"765f2c1267fe609b214e6616409d4c665fbe3149fc4da1dafca902369485a0f1",
+    "test/services/startup_performance_static_test.dart":"ce143b74de45dc593f00de16a0c0e77a88f3882310cd14d50d7ca457da67d750",
+    "test/widgets/sync_status_card_test.dart":"0026fc6e2ca6bf9b9d5b9c064ec15b6109a9ef6b8d75dc0b84ad816259cde6fb"
+  },
+  "old_web_bundle_not_modified_during_tests": {"main_dart_js_bytes":9715827,"main_dart_js_sha256":"a136ba1be7ec872a86c0c2a7bca0ea036f603a2f5e903bf63d3b331685f9fe2f"},
+  "review": {
+    "single_code_review_completed":true,
+    "confirmed_concurrency_and_timeout_findings_fixed":true,
+    "instant_conversion_claim_checked_against_real_Dart_semantics":"The claim that a local DateTime immediately shifts incorrectly was not supported by the production-format tests in both host zones; no storage migration or global formatter change was made.",
+    "initial_test_notification_failure":"An initial new assertion counted the provider load-complete microtask. The final test takes its notification baseline after initial pump and asserts that zone changes add no notification. Earlier failure logs are retained in scratch.",
+    "single_spec_sync_completed":true,
+    "spec_followup":"Added bounded hydration failure/retry semantics to docs/cloud-sync-v2-contract.md and docs/design-v2.md. The five changed docs otherwise matched the implementation."
+  },
+  "boundaries": {
+    "backend_source_changed":false,
+    "local_backend_test_suite_run":false,
+    "native_source_changed":false,
+    "native_application_installation_verified":false,
+    "system_timezone_changed":false,
+    "browser_and_new_web_build_results":"Recorded separately; these unit/widget results are not browser or device-installation evidence."
+  },
+  "scratch_log_prefixes": ["sync-timezone-startup-r1-", "sync-timezone-startup-card-r2-", "sync-timezone-startup-r3-"]
+}
