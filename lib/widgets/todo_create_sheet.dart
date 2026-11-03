@@ -903,25 +903,13 @@ class _SmartDatePreview extends StatelessWidget {
           Icon(Icons.auto_awesome, size: 16, color: cs.primary),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${I18n.tr('quick.todo.parsed_prefix')}${I18nDateFormat.smartDate(parsed.dateTime!, includeTime: parsed.hasTimeOfDay)}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.primary),
-                ),
-                const SizedBox(height: DesignTokens.spaceXs),
-                Text(
-                  '${I18n.tr('todo.create.timezone')} ${LocalTimezoneResolver.currentIana}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
+            child: Text(
+              '${I18n.tr('quick.todo.parsed_prefix')}${I18nDateFormat.smartDate(parsed.dateTime!, includeTime: parsed.hasTimeOfDay)}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.primary),
             ),
           ),
         ],

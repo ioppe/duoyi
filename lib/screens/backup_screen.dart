@@ -1532,7 +1532,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         child: SelectableText(
                           _exported!,
                           style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamilyRounded,
+                            fontFamily: DesignTokens.fontFamily,
                             fontSize: 11,
                           ),
                         ),

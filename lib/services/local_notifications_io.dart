@@ -15,7 +15,7 @@ import 'notification_settings.dart';
 import 'reminder_ringtone_settings.dart';
 import 'reminder_notification_id.dart';
 
-/// 本地通知 / 每日闹钟(Android + iOS + Linux 实现)。
+/// 本地通知 / 每日闹钟(Android + iOS + macOS + Linux 实现)。
 class LocalNotifications {
   static final LocalNotifications instance = LocalNotifications._();
   LocalNotifications._();
@@ -335,6 +335,8 @@ class LocalNotifications {
     }
   }
 
+  bool get _isMacOS => !kIsWeb && Platform.isMacOS;
+
   Future<bool> requestPermission() async {
     try {
       if (!_initialized) await init();
@@ -370,7 +372,28 @@ class LocalNotifications {
       _granted = granted;
       return granted;
     }
-    // Linux / macOS: 假设可用
+    if (_isMacOS) {
+      try {
+        final macOS = _plugin
+            .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin
+            >();
+        _granted =
+            await macOS?.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            ) ??
+            false;
+      } catch (e, st) {
+        debugPrint(
+          '[LocalNotifications] macOS permission request failed: $e\n$st',
+        );
+        _granted = false;
+      }
+      return _granted;
+    }
+    // Linux 的通知服务不提供统一授权查询。
     _granted = true;
     return true;
   }
@@ -384,6 +407,14 @@ class LocalNotifications {
     }
     if (_isIOS) {
       _granted = await _permissionHandlerNotificationGranted() ?? false;
+      return;
+    }
+    if (_isMacOS) {
+      final macOS = _plugin
+          .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin
+          >();
+      _granted = (await macOS?.checkPermissions())?.isEnabled ?? false;
       return;
     }
     _granted = true;

@@ -150,7 +150,6 @@ void main() {
 
   testWidgets('编辑增删与其它字段共用草稿，保存后重开及存储重载均保留', (tester) async {
     final provider = await _openDetail(tester);
-    final before = _snapshot(provider);
     final initialDraft = _editor(tester).subtasks;
     expect(identical(initialDraft, provider.todos.single.subtasks), isFalse);
     for (var i = 0; i < initialDraft.length; i++) {
@@ -167,8 +166,6 @@ void main() {
     await _addChild(tester);
     final addedId = _editor(tester).subtasks.last.id;
     expect(_draftIds(tester), ['a', 'c', addedId]);
-    expect(_snapshot(provider), before);
-    expect(provider.updates, 0);
     expect(provider.recomputes, 0);
 
     final title = find.widgetWithText(TextField, '任务名称');
@@ -183,11 +180,10 @@ void main() {
     await tester.ensureVisible(description);
     await tester.enterText(description, '修改描述');
     await tester.pump();
-    expect(_snapshot(provider), before);
     await _save(tester);
 
     expect(find.byType(TodoDetailScreen), findsNothing);
-    expect(provider.updates, 1);
+    expect(provider.updates, greaterThanOrEqualTo(1));
     expect(provider.recomputes, 0);
     final stored = provider.todos.single;
     expect(stored.title, '修改父任务\n保留第二行');
@@ -213,12 +209,11 @@ void main() {
   });
 
   for (final operation in ['edit', 'add', 'delete', 'toggle', 'reorder']) {
-    testWidgets('仅子任务 $operation 也提示未保存，取消保留草稿，放弃不污染 provider', (tester) async {
+    testWidgets('仅子任务 $operation 自动保存：返回不弹确认框且重开保留', (tester) async {
       final provider = await _openDetail(tester);
-      final before = _snapshot(provider);
       switch (operation) {
         case 'edit':
-          await tester.enterText(_child('a'), '未保存的内容');
+          await tester.enterText(_child('a'), '自动保存的内容');
         case 'add':
           await _addChild(tester);
         case 'delete':
@@ -234,43 +229,42 @@ void main() {
           // ignore: deprecated_member_use
           list.onReorder!(0, 3);
       }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
+
       final draft = jsonEncode(
         _editor(tester).subtasks.map((child) => child.toJson()).toList(),
       );
-      expect(_snapshot(provider), before);
+      expect(provider.recomputes, 0);
+      expect(
+        jsonEncode(
+          provider.todos.single.subtasks
+              .map((child) => child.toJson())
+              .toList(),
+        ),
+        draft,
+      );
+      expect(
+        jsonEncode(
+          (await _reloadStoredTodo()).subtasks
+              .map((child) => child.toJson())
+              .toList(),
+        ),
+        draft,
+      );
+
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
-      expect(find.text('放弃未保存的修改？'), findsOneWidget);
-      await tester.tap(find.text('取消'));
+      expect(find.text('放弃未保存的修改？'), findsNothing);
+      expect(find.byType(TodoDetailScreen), findsNothing);
+      await tester.tap(find.text('open-detail'));
       await tester.pumpAndSettle();
       expect(
         jsonEncode(
           _editor(tester).subtasks.map((child) => child.toJson()).toList(),
         ),
         draft,
-      );
-      await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('放弃'));
-      await tester.pumpAndSettle();
-      expect(find.byType(TodoDetailScreen), findsNothing);
-      expect(_snapshot(provider), before);
-      expect(provider.updates, 0);
-      expect(provider.recomputes, 0);
-      final reloaded = await _reloadStoredTodo();
-      expect(jsonEncode(reloaded.toJson()), before);
-      await tester.tap(find.text('open-detail'));
-      await tester.pumpAndSettle();
-      expect(_draftIds(tester), ['a', 'b', 'c']);
-      expect(tester.widget<TextField>(_child('a')).controller!.text, '子任务 a');
-      expect(
-        tester
-            .widget<Checkbox>(
-              find.byKey(const ValueKey('todo_subtask_complete_a')),
-            )
-            .value,
-        isFalse,
       );
     });
   }
@@ -340,7 +334,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextField, '任务名称'), '只改标题');
     await tester.pump();
     await _save(tester);
-    expect(provider.updates, 1);
+    expect(provider.updates, greaterThanOrEqualTo(1));
     expect(provider.recomputes, 0);
     expect(provider.todos.single.title, '只改标题');
   });
@@ -400,8 +394,7 @@ void main() {
   });
 
   testWidgets('真实把手拖动完成后不会出现新序回跳旧序的一帧', (tester) async {
-    final provider = await _openDetail(tester);
-    final before = _snapshot(provider);
+    await _openDetail(tester);
     final handle = find.byKey(const ValueKey('todo_subtask_drag_a'));
     final start = tester.getCenter(handle);
     final target = Offset(
@@ -425,14 +418,12 @@ void main() {
       if (sawNewOrder) {
         expect(ids, ['b', 'c', 'a'], reason: '把手放下后第 $frame 帧');
       }
-      expect(_snapshot(provider), before);
     }
     expect(sawNewOrder, isTrue);
     expect(
       tester.getTopLeft(_child('c')).dy,
       lessThan(tester.getTopLeft(_child('a')).dy),
     );
-    expect(provider.updates, 0);
     expect(tester.takeException(), isNull);
     await _save(tester);
     expect((await _reloadStoredTodo()).subtasks.map((child) => child.id), [
@@ -494,7 +485,7 @@ void main() {
     await tester.pump();
     await _save(tester);
     expect(find.byType(TodoDetailScreen), findsOneWidget);
-    expect(find.textContaining('保存失败：'), findsOneWidget);
+    expect(find.text(I18n.tr('todo.autosave.failed')), findsOneWidget);
     expect(tester.widget<TextField>(_child('a')).controller!.text, '失败后仍然保留');
     expect(_snapshot(provider), before);
     expect(provider.recomputes, 0);
@@ -505,26 +496,33 @@ void main() {
     expect(provider.recomputes, 0);
   });
 
-  testWidgets('保存进行中禁用标题和子任务编辑，等待完成再返回', (tester) async {
+  testWidgets('写入在途仍可继续编辑：不丢草稿，落盘最后一次修改', (tester) async {
     final provider = await _openDetail(tester);
     provider.saveGate = Completer<void>();
-    await tester.enterText(_child('a'), '提交中的草稿');
+    await tester.enterText(_child('a'), '在途提交的草稿');
     await tester.pump();
     await tester.tap(_saveButton());
     await tester.pump();
+
+    // 写入在途：输入仍可用，不阻塞用户继续修改。
     expect(find.byType(TodoDetailScreen), findsOneWidget);
     expect(
       tester.widget<TextField>(find.widgetWithText(TextField, '任务名称')).enabled,
-      isFalse,
+      isTrue,
     );
-    expect(_editor(tester).enabled, isFalse);
-    _editor(tester).onChanged([]);
+    expect(_editor(tester).enabled, isTrue);
+
+    await tester.enterText(_child('a'), '在途后继续修改');
     await tester.pump();
-    expect(_draftIds(tester), ['a', 'b', 'c']);
+
     provider.saveGate!.complete();
     await tester.pumpAndSettle();
-    expect(find.byType(TodoDetailScreen), findsNothing);
-    expect(provider.todos.single.subtasks.first.title, '提交中的草稿');
+    // 返回请求会立即补写在途期间的新草稿，不再等待另一个防抖窗口。
+
+    expect(provider.todos.single.subtasks.first.title, '在途后继续修改');
     expect(provider.recomputes, 0);
+
+    expect(find.byType(TodoDetailScreen), findsNothing);
+    expect(provider.todos.single.subtasks.first.title, '在途后继续修改');
   });
 }

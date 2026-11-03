@@ -123,6 +123,80 @@ void main() {
     provider.dispose();
   });
 
+  test('偏好 setter 返回时同步 stamp 与 changedKeys 已落盘且保留最新 stamp', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final provider = CloudSyncProvider()..dirtyMarkEnabled = true;
+
+    final first = provider.markPreferencesChanged(const [
+      'pref_haptic_feedback',
+    ]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final secondStampFloor = DateTime.now().toUtc();
+    final second = provider.markPreferencesChanged(const ['pref_show_lunar']);
+    await Future.wait<void>([first, second]);
+
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString('sync_preferences_updated_at') ?? '';
+    expect(stored, isNotEmpty);
+    expect(
+      DateTime.parse(stored).isBefore(secondStampFloor),
+      isFalse,
+      reason: '连续设置时旧 stamp 不能覆盖新 stamp: $stored',
+    );
+    expect(prefs.getStringList('sync_preferences_changed_keys'), <String>[
+      'pref_haptic_feedback',
+      'pref_show_lunar',
+    ]);
+    expect(prefs.getBool('sync_pending_local_changes'), isTrue);
+
+    provider.dispose();
+  });
+
+  test('没有 pendingKeys 时旧远端偏好不覆盖更新的本地 stamp', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'pref_haptic_feedback': true,
+      'sync_preferences_updated_at': '2026-06-07T12:00:00.000Z',
+    });
+    final client = ApiClient(
+      baseUrl: 'https://duoyi.test',
+      token: 'admin-token',
+      httpClient: MockClient((request) async {
+        return http.Response(
+          json.encode({
+            'server_updated_at': '2026-06-07T10:00:00.000Z',
+            'server_version': 1,
+            'todos': [
+              {'id': 'remote-newer', 'title': '远端新数据'},
+            ],
+            'preferences': {
+              'updatedAt': '2026-06-07T10:00:00.000Z',
+              'values': {'pref_haptic_feedback': false},
+            },
+          }),
+          200,
+          headers: const {'content-type': 'application/json'},
+        );
+      }),
+    );
+    final provider = CloudSyncProvider();
+    provider.apiClientGetter = () => client;
+    provider.serverConfigGetter = () => {'backup_enabled': true};
+
+    await provider.syncNow().timeout(const Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    // 同一响应里更新的远端集合确实落盘，证明响应被应用过；
+    // 只有过期的偏好被跳过。
+    expect(prefs.getString('todos'), contains('remote-newer'));
+    expect(prefs.getBool('pref_haptic_feedback'), isTrue);
+    expect(
+      prefs.getString('sync_preferences_updated_at'),
+      '2026-06-07T12:00:00.000Z',
+    );
+
+    provider.dispose();
+  });
+
   test('resetForAccountChange 会等待进行中的同步回调退出', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final onSyncedStarted = Completer<void>();
@@ -972,8 +1046,10 @@ void main() {
 
     for (final field in const [
       'static const _preferencesChangedKeysStorageKey',
-      'void markPreferencesChanged([Iterable<String>? keys])',
-      'if (keys != null && normalizedKeys.isEmpty) return;',
+      'Future<void> markPreferencesChanged([Iterable<String>? keys])',
+      'if (keys != null && normalizedKeys.isEmpty) return Future<void>.value();',
+      'Future<void> _persistPreferenceSyncMetadata()',
+      'if (generation != _accountGeneration) return;',
       'final changedKeys = _readPendingPreferenceChangedKeys(prefs);',
       "if (changedKeys.isNotEmpty) 'changedKeys': changedKeys",
       'await prefs.remove(_preferencesChangedKeysStorageKey);',
@@ -990,8 +1066,8 @@ void main() {
       'lib/services/reminder_ringtone_settings.dart',
     ).readAsStringSync();
     for (final field in const [
-      'void Function(Iterable<String> keys)? onChangedKeys;',
-      'onChangedKeys?.call(cleanKeys);',
+      'FutureOr<void> Function(Iterable<String> keys)? onChangedKeys;',
+      'await callback(cleanKeys);',
       '_notifyPreferenceKeys(const [_kFirstDayOfWeek]);',
       '_notifyPreferenceKeys(_dailyReminderSlotKeys(index));',
       '_notifyPreferenceKeys(const [_kBottomNavVisible]);',
@@ -1000,7 +1076,7 @@ void main() {
       expect(preferencesProvider, contains(field), reason: field);
     }
     for (final field in const [
-      'static void Function(Iterable<String> keys)? onChanged;',
+      'static FutureOr<void> Function(Iterable<String> keys)? onChanged;',
       'onChanged?.call(const [volumePreferenceKey]);',
       'onChanged?.call(const [soundPreferenceKey]);',
     ]) {

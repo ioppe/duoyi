@@ -1,0 +1,77 @@
+{
+  "status": "passed",
+  "scope": {
+    "accountLanguageSync": ["zh", "en", "system"],
+    "taskDetailAutosaveDebounceMs": 600,
+    "failedDraftRecovery": "Current account session; restored when reopening task detail and cleared on account data reset"
+  },
+  "toolchain": {
+    "flutter": "3.44.1",
+    "dart": "3.12.1"
+  },
+  "verification": {
+    "flutterTests": {
+      "command": "python3 scripts/flutter_with_config.py test --no-pub --reporter json",
+      "exitCode": 0,
+      "suites": 336,
+      "visibleCases": 2301,
+      "failed": 0,
+      "skipped": 0,
+      "excludedLoadingEvents": 336,
+      "excludedLifecycleEvents": 32,
+      "elapsedMs": 128085
+    },
+    "markdownCompatibilityGuard": {
+      "command": "python3 scripts/flutter_with_config.py test --no-pub --reporter json test/screens/todo_detail_markdown_static_test.dart",
+      "exitCode": 0,
+      "cases": 4
+    },
+    "dartAnalyze": {
+      "command": "dart analyze --fatal-infos",
+      "scope": "Original repository",
+      "exitCode": 0,
+      "diagnostics": 0
+    },
+    "flutterAnalyze": {
+      "command": "flutter analyze --no-pub",
+      "scope": "Short ASCII path snapshot; 604 lib/test/integration_test Dart files matched original repository hashes",
+      "exitCode": 0,
+      "diagnostics": 0,
+      "originalPathLimitation": "Initial analysis in the original long path exited 255 during LSP initialization JSON decoding; SDK and repository source were not changed to work around this"
+    },
+    "webRelease": {
+      "command": "python3 scripts/flutter_with_config.py build web --release --no-pub",
+      "exitCode": 0,
+      "output": "build/web",
+      "mainDartJsBytes": 9755784,
+      "mainDartJsSha256": "71f7087a6cce8c2be2e55840ee204237e5a75f4d129cde7d188d5b678f29cd0f"
+    },
+    "gitDiffCheckExitCode": 0,
+    "sourceHashesVerified": 17,
+    "unrelatedBaselineFilesChanged": 0
+  },
+  "delivery": {
+    "deployed": false,
+    "androidPhysicalDeviceRegression": "not_run",
+    "macosPhysicalDeviceRegression": "not_run"
+  },
+  "sourceSha256": {
+    "lib/core/i18n.dart": "764541c90a09c052ddde6792d7d2356da8291cc2367a950a2786ba7ee146b87f",
+    "lib/main.dart": "0c066c9131a1413f5321d050684dce7169b659eafa6ace989d131a42054814e0",
+    "lib/providers/cloud_sync_provider.dart": "97238e283716244bc437fab14e56f6b313285ab7d12bfeef3785e038e8cd93fc",
+    "lib/providers/todo_provider.dart": "94dd08821338fc107f1ff9290f63aba73af041a901bd44da8fb5c575b28070c5",
+    "lib/screens/todo_detail_screen.dart": "1bc084c425662a8cca2647c16ac71aa462cdb41d17cada4f877c5ca355da0adb",
+    "lib/l10n/app_zh.arb": "ed67883ae37aa6597110b9575c0fcce30036093f9b7de1bd7ed1eec911286af3",
+    "lib/l10n/app_en.arb": "5c5d541140ebadd1c248ee5407bae2e0a8fb5f762ff4f1ffa4ca5983b3807018",
+    "lib/l10n/generated/app_localizations.dart": "e17dd4280254a782fcd6aaf7c2eae1d2f7d83d9e2e934ea525ba51361f9e6079",
+    "lib/l10n/generated/app_localizations_zh.dart": "65815c3ed3bc8d35162085e42c41eaa79c453269a709af59ac543ae8ddadc4cf",
+    "lib/l10n/generated/app_localizations_en.dart": "77af435470cb80376b525114590363ffe9bb8bdc69e576f219a41b97efe05fd3",
+    "test/core/locale_preferences_test.dart": "063e43bc8c651ee5b510a1defbe8b1090481f5683c9e7919ef60af2db18d7a6b",
+    "test/services/locale_cloud_sync_test.dart": "58160a36e142786876fcaf0c066a099a142480896f4b88a592a174587e78de0d",
+    "test/screens/todo_detail_autosave_test.dart": "f1a635cebedbaf8941e685b894a6ce0ecf5c9d49b096934f10f85d9f4db61911",
+    "test/screens/todo_detail_save_stay_test.dart": "d054e2a7df87ef8477b6251ecc8ff4e4e3810b05d4e52015316e438f9e7eae94",
+    "test/screens/todo_subtask_edit_test.dart": "ccfe1c5f1ca5ce6d0f6804dd84a90924ffdc194560016be123b6fb7ed38911c4",
+    "test/screens/todo_detail_list_group_test.dart": "d6a7201df11b7dccdbd3ee76d429d09b06c64f647ba4614e7e55225f5f85edbf",
+    "test/providers/todo_storage_failure_test.dart": "a25314db98888a38e53774c5e10869b9b50af83c5ab3376ac2a976aa717916a8"
+  }
+}

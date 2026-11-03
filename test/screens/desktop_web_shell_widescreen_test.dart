@@ -253,10 +253,10 @@ void main() {
       (const Size(390, 844), 1.0),
       (const Size(320, 720), 1.5),
     ]) {
-      testWidgets('${brand.id} $size ×$scale 五个一级页面共用圆体粗体底栏', (tester) async {
-        await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
-              rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
-            ))
+      testWidgets('${brand.id} $size ×$scale 五个一级页面共用导航字体', (tester) async {
+        await (FontLoader(
+              DesignTokens.fontFamily,
+            )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf')))
             .load();
         tester.view.padding = const FakeViewPadding(bottom: 24);
         await _pumpShellAt(tester, brand.theme, size, textScale: scale);
@@ -300,8 +300,8 @@ void main() {
             final style = DefaultTextStyle.of(
               tester.element(label),
             ).style.merge(text.style);
-            expect(style.fontFamily, DesignTokens.fontFamilyRounded);
-            expect(style.fontWeight, FontWeight.w700);
+            expect(style.fontFamily, DesignTokens.fontFamily);
+            expect(style.fontWeight, DesignTokens.fontWeightMedium);
             expect(style.fontSize, DesignTokens.fontSizeBottomNavLabel);
             final selected = item == destinations.elementAt(navIndex);
             final expectedStyle = shared.labelTextStyle!.resolve(

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/i18n.dart';
 import '../core/server_connection.dart';
+import '../core/web_target.dart';
 import '../services/account_local_data_cleaner.dart';
 import '../services/api_client.dart';
 
@@ -248,7 +249,11 @@ class AuthProvider extends ChangeNotifier {
     if (!kIsWeb && _baseUrl.isNotEmpty) {
       await prefs.setString(serverUrlStorageKey, _baseUrl);
     }
-    await prefs.setString('auth_state', json.encode(_state.toJson()));
+    if (_state.isLoggedIn) {
+      await prefs.setString('auth_state', json.encode(_state.toJson()));
+    } else {
+      await prefs.remove('auth_state');
+    }
     await _persistAccountDataOwner(prefs, _state);
   }
 
@@ -620,6 +625,9 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_state');
     await prefs.remove(AccountLocalDataCleaner.accountDataOwnerKey);
+    if (cleanupError == null && !WebTarget.isWebBuild) {
+      await prefs.setBool(AccountLocalDataCleaner.localAccountMarkerKey, true);
+    }
     notifyListeners();
     if (cleanupError != null) {
       Error.throwWithStackTrace(cleanupError, cleanupStackTrace!);
@@ -673,6 +681,12 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _clearResidualAccountDataIfSignedOut(
     SharedPreferences prefs,
   ) async {
+    final isOwnedLocalData =
+        !WebTarget.isWebBuild &&
+        prefs.getBool(AccountLocalDataCleaner.localAccountMarkerKey) == true &&
+        !prefs.containsKey(AccountLocalDataCleaner.accountDataOwnerKey) &&
+        !prefs.containsKey('auth_state');
+    if (isOwnedLocalData) return;
     if (!_hasStoredAccountScopedData(prefs)) return;
     // 免费外观允许游客使用。只恢复明确由游客选择的外观，绝不恢复账号数据。
     final keepGuestAppearance =
@@ -798,8 +812,17 @@ class AuthProvider extends ChangeNotifier {
     final owner = _scopedAccountIdentity(state);
     if (state.isLoggedIn && owner != null) {
       await prefs.setString(AccountLocalDataCleaner.accountDataOwnerKey, owner);
+      await prefs.remove(AccountLocalDataCleaner.localAccountMarkerKey);
     } else {
       await prefs.remove(AccountLocalDataCleaner.accountDataOwnerKey);
+      // Signed-out state is represented by absence, never a persisted null token.
+      await prefs.remove('auth_state');
+      if (!WebTarget.isWebBuild) {
+        await prefs.setBool(
+          AccountLocalDataCleaner.localAccountMarkerKey,
+          true,
+        );
+      }
     }
   }
 

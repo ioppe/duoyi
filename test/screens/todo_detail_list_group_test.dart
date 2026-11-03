@@ -280,7 +280,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('只有 TodoProvider 的旧用法仍可选内置清单：脏状态拦截返回，保存只写名称', (tester) async {
+  testWidgets('只有 TodoProvider 的旧用法仍可选内置清单：返回时自动保存名称', (tester) async {
     final todos = TodoProvider();
     final item = TodoItem(
       id: 'task-builtin',
@@ -304,16 +304,13 @@ void main() {
     }
 
     await _selectListGroup(tester, '学习');
-    expect(todos.todos.single.listGroupName, isNull, reason: '保存前不得写 provider');
+    expect(_picker(tester).value, '学习', reason: '选择立即更新页面草稿');
 
+    // 返回键先落盘再离开，不再询问是否放弃。
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-    expect(find.text('放弃未保存的修改？'), findsOneWidget);
-    await tester.tap(find.text('取消'));
-    await tester.pumpAndSettle();
-    expect(find.byType(TodoDetailScreen), findsOneWidget);
-
-    await _tapSave(tester);
+    expect(find.text('放弃未保存的修改？'), findsNothing);
+    expect(find.byType(TodoDetailScreen), findsNothing);
     final stored = todos.todos.single;
     expect(stored.listGroupName, '学习');
     expect(stored.listGroupId, isNull, reason: '内置清单没有自定义 ID');
@@ -402,9 +399,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('放弃清单修改：取消留在页面，放弃返回且 provider 不变', (tester) async {
+  testWidgets('选择清单后返回：自动保存选择且不弹放弃确认框', (tester) async {
     final todos = TodoProvider();
-    final item = TodoItem(id: 'task-discard', title: '放弃清单修改');
+    final item = TodoItem(id: 'task-autosave-group', title: '清单自动保存');
     await todos.addTodo(item);
 
     await _pumpDetail(
@@ -414,25 +411,16 @@ void main() {
       todoId: item.id,
     );
     await _selectListGroup(tester, '学习');
-    expect(todos.todos.single.listGroupName, isNull);
+    expect(_picker(tester).value, '学习', reason: '选择立即更新页面草稿');
 
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-    expect(find.text('放弃未保存的修改？'), findsOneWidget);
-    await tester.tap(find.text('取消'));
-    await tester.pumpAndSettle();
-    expect(find.byType(TodoDetailScreen), findsOneWidget);
-    expect(todos.todos.single.listGroupName, isNull);
-
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('放弃'));
-    await tester.pumpAndSettle();
+    expect(find.text('放弃未保存的修改？'), findsNothing);
     expect(find.byType(TodoDetailScreen), findsNothing);
-    final stored = todos.todos.single;
-    expect(stored.listGroupName, isNull);
-    expect(stored.listGroupId, isNull);
     expect(find.text('open-detail'), findsOneWidget);
+    final stored = todos.todos.single;
+    expect(stored.listGroupName, '学习');
+    expect(stored.listGroupId, isNull);
     expect(tester.takeException(), isNull);
   });
 
@@ -458,7 +446,8 @@ void main() {
     final action = find.byKey(const ValueKey('todo_list_group_create'));
     await _revealOption(tester, action);
     await tester.tap(action);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     final created = groups.groups.single;
     expect(created.name, '专项复习');
@@ -470,6 +459,7 @@ void main() {
     );
     expect(todos.todos.single.listGroupName, isNull, reason: '任务只在下一次保存时写入');
     expect(todos.todos.single.listGroupId, isNull);
+    await tester.pumpAndSettle();
     expect(_selectedListGroup(tester), '专项复习');
     expect(find.byType(TodoDetailScreen), findsOneWidget);
 

@@ -5,11 +5,11 @@ import 'design_tokens.dart';
 import 'i18n.dart';
 import 'page_tab_style.dart';
 
-const String _cnFontFamily = DesignTokens.fontFamilyRounded;
+const String _cnFontFamily = DesignTokens.fontFamily;
 const List<String> _cnFontFallback = [
   'PingFang SC',
   'Hiragino Sans GB',
-  'Noto Sans CJK SC',
+  'Noto Sans SC',
   'Source Han Sans SC',
   'Microsoft YaHei',
   'WenQuanYi Micro Hei',
@@ -61,7 +61,7 @@ TextTheme _textTheme({
     double size,
     Color color, {
     double height = 1.3,
-    FontWeight weight = DesignTokens.fontWeightStrong,
+    FontWeight weight = DesignTokens.fontWeightRegular,
   }) {
     return TextStyle(
       fontFamily: _cnFontFamily,
@@ -112,43 +112,58 @@ TextTheme _textTheme({
       weight: DesignTokens.fontWeightStrong,
     ),
     titleLarge: style(
-      18,
+      DesignTokens.fontSizePageTitle,
       headingColor,
       height: 1.24,
       weight: DesignTokens.fontWeightStrong,
     ),
     titleMedium: style(
-      15.5,
+      DesignTokens.fontSizeMd,
       headingColor,
       height: 1.28,
       weight: DesignTokens.fontWeightStrong,
     ),
     titleSmall: style(
-      13.5,
+      DesignTokens.fontSizeSm,
       headingColor,
       height: 1.3,
       weight: DesignTokens.fontWeightStrong,
     ),
-    bodyLarge: style(16, bodyColor, height: 1.56),
-    bodyMedium: style(14, bodyColor, height: 1.58),
-    bodySmall: style(12, mutedColor, height: 1.5),
+    bodyLarge: style(
+      DesignTokens.fontSizeMd,
+      bodyColor,
+      height: 1.56,
+      weight: DesignTokens.fontWeightRegular,
+    ),
+    bodyMedium: style(
+      DesignTokens.fontSizeMd,
+      bodyColor,
+      height: 1.58,
+      weight: DesignTokens.fontWeightRegular,
+    ),
+    bodySmall: style(
+      DesignTokens.fontSizeSm,
+      mutedColor,
+      height: 1.5,
+      weight: DesignTokens.fontWeightRegular,
+    ),
     labelLarge: style(
-      14,
+      DesignTokens.fontSizeSm,
       bodyColor,
       height: 1.2,
-      weight: DesignTokens.fontWeightStrong,
+      weight: DesignTokens.fontWeightMedium,
     ),
     labelMedium: style(
-      12,
+      DesignTokens.fontSizeXs,
       bodyColor,
       height: 1.2,
-      weight: DesignTokens.fontWeightStrong,
+      weight: DesignTokens.fontWeightMedium,
     ),
     labelSmall: style(
-      11,
+      DesignTokens.fontSizeXs,
       bodyColor,
       height: 1.2,
-      weight: DesignTokens.fontWeightStrong,
+      weight: DesignTokens.fontWeightMedium,
     ),
   );
 }
@@ -193,7 +208,6 @@ class _SharedFeel {
   final double controlRadius;
   final double dialogRadius;
   final double sheetTopRadius;
-  final double buttonMinHeight;
   final double inputVerticalPadding;
   final double navBarAlphaLight;
   final double dividerAlphaLight;
@@ -203,7 +217,6 @@ class _SharedFeel {
     this.controlRadius = DesignTokens.radiusControl,
     this.dialogRadius = 18,
     this.sheetTopRadius = 20,
-    this.buttonMinHeight = 38,
     this.inputVerticalPadding = 9,
     this.navBarAlphaLight = 0.96,
     this.dividerAlphaLight = 0.64,
@@ -216,7 +229,6 @@ class _SharedFeel {
     controlRadius: DesignTokens.radiusControlIos,
     dialogRadius: DesignTokens.dialogIosRadius,
     sheetTopRadius: DesignTokens.sheetIosTopRadius,
-    buttonMinHeight: DesignTokens.buttonIosMinHeight,
     inputVerticalPadding: DesignTokens.inputIosVerticalPadding,
     navBarAlphaLight: DesignTokens.navBarIosBackgroundAlpha,
     dividerAlphaLight: DesignTokens.dividerIosAlpha,
@@ -262,7 +274,7 @@ ThemeData _withSharedControls(
   final appBarTitleText = (theme.textTheme.titleMedium ?? const TextStyle())
       .copyWith(
         color: appBarForeground,
-        fontSize: DesignTokens.fontSizeMd,
+        fontSize: DesignTokens.fontSizePageTitle,
         fontWeight: DesignTokens.fontWeightStrong,
         height: 1.2,
         letterSpacing: 0,
@@ -270,7 +282,8 @@ ThemeData _withSharedControls(
   final appBarToolbarText = (theme.textTheme.bodyMedium ?? const TextStyle())
       .copyWith(
         color: appBarForeground,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontSize: DesignTokens.fontSizeBody,
+        fontWeight: DesignTokens.fontWeightRegular,
         letterSpacing: 0,
       );
 
@@ -279,19 +292,19 @@ ThemeData _withSharedControls(
     color: cs.onSurface.withValues(alpha: 0.68),
   );
   final label = theme.textTheme.labelMedium?.copyWith(
-    fontSize: DesignTokens.fontSizeBase,
-    fontWeight: DesignTokens.fontWeightStrong,
+    fontSize: DesignTokens.fontSizeButton,
+    fontWeight: DesignTokens.fontWeightMedium,
   );
   final secondaryControlText = theme.textTheme.bodySmall?.copyWith(
     fontSize: DesignTokens.fontSizeSm,
-    height: 1.2,
-    fontWeight: DesignTokens.fontWeightStrong,
+    height: 1.35,
+    fontWeight: DesignTokens.fontWeightRegular,
     color: cs.onSurface,
   );
   final secondaryLabelText = theme.textTheme.labelSmall?.copyWith(
     fontSize: DesignTokens.fontSizeXs,
     height: 1.16,
-    fontWeight: DesignTokens.fontWeightStrong,
+    fontWeight: DesignTokens.fontWeightMedium,
   );
   final selectedControlBackground = Color.alphaBlend(
     cs.primary.withValues(alpha: isDark ? 0.18 : 0.10),
@@ -337,15 +350,15 @@ ThemeData _withSharedControls(
     ),
     hintStyle: secondaryControlText?.copyWith(
       color: cs.onSurface.withValues(alpha: 0.46),
-      fontWeight: DesignTokens.fontWeightStrong,
+      fontSize: DesignTokens.fontSizeBody,
+      fontWeight: DesignTokens.fontWeightRegular,
     ),
-    labelStyle: secondaryLabelText?.copyWith(
+    labelStyle: secondaryControlText?.copyWith(
       color: cs.onSurface.withValues(alpha: 0.72),
-      fontWeight: DesignTokens.fontWeightStrong,
     ),
     floatingLabelStyle: secondaryLabelText?.copyWith(
       color: cs.primary,
-      fontWeight: DesignTokens.fontWeightStrong,
+      fontWeight: DesignTokens.fontWeightMedium,
     ),
     prefixIconColor: WidgetStateColor.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) {
@@ -425,7 +438,7 @@ ThemeData _withSharedControls(
       actionTextColor: cs.primary,
       contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
         color: cs.onSurface,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightRegular,
       ),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -440,14 +453,14 @@ ThemeData _withSharedControls(
       surfaceTintColor: surfaceTint,
       textStyle: secondaryControlText?.copyWith(
         color: cs.onSurface,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightRegular,
       ),
       iconColor: cs.onSurfaceVariant,
     ),
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: secondaryControlText?.copyWith(
         color: cs.onSurface,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightRegular,
       ),
       inputDecorationTheme: inputTheme,
       menuStyle: MenuStyle(
@@ -490,7 +503,8 @@ ThemeData _withSharedControls(
         disabledForegroundColor: cs.onSurface.withValues(alpha: 0.38),
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        minimumSize: Size(0, feel.buttonMinHeight),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         overlayColor: actionForeground.withValues(alpha: 0.10),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -508,7 +522,8 @@ ThemeData _withSharedControls(
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        minimumSize: Size(0, feel.buttonMinHeight),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         overlayColor: actionForeground.withValues(alpha: 0.10),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -520,8 +535,9 @@ ThemeData _withSharedControls(
       style: OutlinedButton.styleFrom(
         foregroundColor: cs.onSurface,
         side: BorderSide(color: actionBorder, width: 0.7),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        minimumSize: const Size(0, 36),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         overlayColor: cs.primary.withValues(alpha: 0.07),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -532,8 +548,9 @@ ThemeData _withSharedControls(
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: actionBackground,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        minimumSize: const Size(0, 34),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         overlayColor: actionBackground.withValues(alpha: 0.07),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -589,7 +606,10 @@ ThemeData _withSharedControls(
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
-        minimumSize: const Size(36, 36),
+        minimumSize: const Size(
+          DesignTokens.controlMinHeight,
+          DesignTokens.controlMinHeight,
+        ),
         padding: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -604,14 +624,14 @@ ThemeData _withSharedControls(
       deleteIconColor: cs.onSurface.withValues(alpha: 0.72),
       checkmarkColor: selectedControlForeground,
       labelStyle: theme.textTheme.labelMedium?.copyWith(
-        fontSize: 11,
+        fontSize: DesignTokens.fontSizeXs,
         color: cs.onSurface,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
       secondaryLabelStyle: theme.textTheme.labelMedium?.copyWith(
-        fontSize: 11,
+        fontSize: DesignTokens.fontSizeXs,
         color: selectedControlForeground,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       side: BorderSide(
@@ -718,7 +738,7 @@ ThemeData _withSharedControls(
       valueIndicatorColor: cs.primary,
       valueIndicatorTextStyle: theme.textTheme.bodySmall?.copyWith(
         color: primaryForeground,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
       trackHeight: 4,
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
@@ -756,8 +776,9 @@ ThemeData _withSharedControls(
       labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>((states) {
         final selected = states.contains(WidgetState.selected);
         return theme.textTheme.labelSmall?.copyWith(
+          fontSize: DesignTokens.fontSizeBottomNavLabel,
           color: selected ? selectedNavigationForeground : cs.onSurfaceVariant,
-          fontWeight: DesignTokens.fontWeightStrong,
+          fontWeight: DesignTokens.fontWeightMedium,
           letterSpacing: 0,
         );
       }),
@@ -771,10 +792,10 @@ ThemeData _withSharedControls(
     ),
     navigationRailTheme: theme.navigationRailTheme.copyWith(
       selectedLabelTextStyle: theme.textTheme.labelMedium?.copyWith(
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
       unselectedLabelTextStyle: theme.textTheme.labelMedium?.copyWith(
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -804,7 +825,7 @@ ThemeData _withSharedControls(
       ),
       weekdayStyle: theme.textTheme.bodySmall?.copyWith(
         color: cs.onSurfaceVariant,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightMedium,
       ),
       dayStyle: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface),
       dayForegroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
@@ -857,12 +878,16 @@ ThemeData _withSharedControls(
       dividerColor: cs.outlineVariant.withValues(alpha: 0.52),
       cancelButtonStyle: TextButton.styleFrom(
         foregroundColor: cs.onSurfaceVariant,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         textStyle: label,
       ),
       confirmButtonStyle: FilledButton.styleFrom(
         backgroundColor: actionBackground,
         foregroundColor: actionForeground,
-        minimumSize: const Size(0, 38),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
@@ -891,12 +916,13 @@ ThemeData _withSharedControls(
       hourMinuteTextColor: cs.onSurface,
       helpTextStyle: theme.textTheme.bodyMedium?.copyWith(
         color: cs.onSurfaceVariant,
-        fontWeight: DesignTokens.fontWeightStrong,
+        fontWeight: DesignTokens.fontWeightRegular,
       ),
       confirmButtonStyle: FilledButton.styleFrom(
         backgroundColor: actionBackground,
         foregroundColor: actionForeground,
-        minimumSize: const Size(0, 38),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
@@ -904,6 +930,9 @@ ThemeData _withSharedControls(
       ),
       cancelButtonStyle: TextButton.styleFrom(
         foregroundColor: cs.onSurfaceVariant,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        visualDensity: VisualDensity.standard,
         textStyle: label,
       ),
     ),
@@ -1006,7 +1035,7 @@ ThemeData _lightTheme({
       centerTitle: true,
       foregroundColor: const Color(0xFF1E2532),
       titleTextStyle: const TextStyle(
-        fontSize: DesignTokens.fontSizeMd,
+        fontSize: DesignTokens.fontSizePageTitle,
         fontWeight: DesignTokens.fontWeightStrong,
         color: Color(0xFF1E2532),
       ),
@@ -1316,7 +1345,7 @@ final _liquidGlassTheme = _withSharedControls(
       centerTitle: true,
       foregroundColor: Color(0xFF101B2D),
       titleTextStyle: TextStyle(
-        fontSize: DesignTokens.fontSizeMd,
+        fontSize: DesignTokens.fontSizePageTitle,
         fontWeight: DesignTokens.fontWeightStrong,
         color: Color(0xFF101B2D),
       ),

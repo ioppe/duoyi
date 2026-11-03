@@ -9,6 +9,142 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get aiLocalTitle => 'AI service';
+
+  @override
+  String get aiLocalEntryHint => 'Local AI settings and active service';
+
+  @override
+  String get aiLocalDescription =>
+      'Connect to your OpenAI-compatible service while signed out. Keys stay on this device and are excluded from Duoyi servers and backups. Signed-in accounts use server AI.';
+
+  @override
+  String get aiLocalEnabled => 'Enable local AI';
+
+  @override
+  String get aiLocalBaseUrl => 'Service URL';
+
+  @override
+  String get aiLocalBaseUrlHint => 'For example, https://api.example.com/v1';
+
+  @override
+  String get aiLocalModel => 'Model name';
+
+  @override
+  String get aiLocalModelHint => 'Enter the model ID from your provider';
+
+  @override
+  String get aiLocalApiKey => 'API key';
+
+  @override
+  String get aiLocalKeyHint => 'Leave blank for services that need no key';
+
+  @override
+  String get aiLocalKeySaved => 'Key saved. Leave blank to keep it.';
+
+  @override
+  String get aiLocalShowKey => 'Show newly entered key';
+
+  @override
+  String get aiLocalHideKey => 'Hide key';
+
+  @override
+  String get aiLocalSave => 'Save settings';
+
+  @override
+  String get aiLocalSaved => 'Local AI settings saved';
+
+  @override
+  String get aiLocalTest => 'Test connection';
+
+  @override
+  String get aiLocalTestOk => 'Connected. The model returned a response.';
+
+  @override
+  String get aiLocalClear => 'Clear local settings';
+
+  @override
+  String get aiLocalClearTitle => 'Clear local AI settings?';
+
+  @override
+  String get aiLocalClearMessage =>
+      'Remove the service URL, model and key saved on this device, and turn off local AI.';
+
+  @override
+  String get aiLocalCleared => 'Local AI settings cleared';
+
+  @override
+  String get aiLocalServerTitle => 'Using server AI';
+
+  @override
+  String get aiLocalServerEnabled => 'Server AI is enabled';
+
+  @override
+  String get aiLocalServerDisabled => 'Server AI is not enabled';
+
+  @override
+  String get aiLocalServerDescription =>
+      'You are signed in. AI requests use the current server and do not use local settings. Contact the server administrator to change the service.';
+
+  @override
+  String get aiLocalNotConfigured =>
+      'Configure and enable AI in Settings → AI service';
+
+  @override
+  String get aiLocalUnavailable =>
+      'AI is managed by the server in the current mode';
+
+  @override
+  String get aiLocalChanged =>
+      'The connection or account changed. Please try again.';
+
+  @override
+  String get aiLocalKeyNewHost =>
+      'The service URL changed. Enter a key for the new service.';
+
+  @override
+  String get aiLocalErrorUrl =>
+      'Enter a valid HTTP or HTTPS service URL without credentials';
+
+  @override
+  String get aiLocalErrorModel => 'Enter a model name';
+
+  @override
+  String get aiLocalErrorAuth =>
+      'Authorization failed. Check the API key and access permissions.';
+
+  @override
+  String get aiLocalErrorEndpoint =>
+      'The endpoint or model was not found. Check the URL and model.';
+
+  @override
+  String get aiLocalErrorRate =>
+      'Rate limit or quota reached. Please try again later.';
+
+  @override
+  String get aiLocalErrorServer => 'The AI service is temporarily unavailable';
+
+  @override
+  String get aiLocalErrorNetwork =>
+      'Could not connect to the AI service. Check the URL and network.';
+
+  @override
+  String get aiLocalErrorTimeout =>
+      'The AI request timed out. Please try again.';
+
+  @override
+  String get aiLocalErrorResponse =>
+      'Unsupported response. Use an OpenAI Chat Completions endpoint.';
+
+  @override
+  String get aiLocalErrorEmpty =>
+      'The model returned no response. Check the model and output budget.';
+
+  @override
+  String get aiLocalErrorStorage =>
+      'Could not access secure storage. Unlock the device and try again.';
+
+  @override
   String get stateError => 'Something went wrong';
 
   @override
@@ -321,7 +457,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Subtasks cannot be empty. Enter content or remove the item.';
 
   @override
-  String get todoSubtaskSaveHint => 'Subtask changes are saved with the task.';
+  String get todoSubtaskSaveHint => 'Changes are saved automatically.';
+
+  @override
+  String get todoAutosaveFailed =>
+      'Could not save automatically. Your edits are kept.';
+
+  @override
+  String get todoAutosaveRetry => 'Retry';
+
+  @override
+  String get todoValidationTitleRequired => 'Enter a task name.';
 
   @override
   String get todoCreateNoReminder => 'No reminder';
@@ -2696,6 +2842,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get todayProductivityCompletionRate => 'Completion';
 
   @override
+  String get todayProductivityTitle => 'Time footprints';
+
+  @override
+  String get todayProductivityComparison => 'Same days last week';
+
+  @override
   String get diaryTitle => 'Diary';
 
   @override
@@ -3280,6 +3432,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get focusReset => 'Reset';
+
+  @override
+  String get focusFloatingOpen => 'Open focus floating window';
+
+  @override
+  String get focusFloatingHide => 'Hide focus floating window';
+
+  @override
+  String get focusFloatingClose => 'Close floating window';
+
+  @override
+  String get focusFloatingError => 'Floating window action failed. Try again.';
+
+  @override
+  String get focusFloatingStart => 'Start';
+
+  @override
+  String get focusFloatingResume => 'Resume';
+
+  @override
+  String get focusFloatingPaused => 'Paused';
+
+  @override
+  String get focusFloatingReady => 'Ready';
 
   @override
   String get reminderHealth => 'Notifications';

@@ -12,6 +12,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../core/design_tokens.dart';
 import '../core/focus_report.dart';
 import '../core/focus_sound_catalog.dart';
+import '../core/platform_info.dart';
 import '../models/focus_room.dart';
 import '../models/pomodoro.dart';
 import '../providers/custom_focus_sound_provider.dart';
@@ -29,6 +30,7 @@ import '../widgets/pomodoro_timer_ring.dart';
 import '../widgets/pomodoro_session_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/surface_components.dart';
+import '../widgets/pomodoro_floating_window_host.dart';
 
 String _focusRoomErrorText(Object error) {
   final message = error is ApiException ? error.message : error.toString();
@@ -500,6 +502,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: Text(s.focusTitle),
+          actions: PlatformInfo.isMacOS
+              ? const [PomodoroFloatingWindowButton()]
+              : null,
           bottom: AppPageTabs(
             controller: _tabCtrl,
             height: AppPageTabs.heightFor(context),

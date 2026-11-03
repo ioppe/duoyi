@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -43,6 +44,28 @@ void main() {
 
     expect(await ReminderRingtoneSettings.loadVolumePercent(), 80);
     expect(await ReminderRingtoneSettings.loadSound(), 'classic');
+  });
+
+  test('ringtone saves wait for durable sync metadata callbacks', () async {
+    final gate = Completer<void>();
+    final notified = <String>{};
+    ReminderRingtoneSettings.onChanged = (keys) async {
+      notified.addAll(keys);
+      await gate.future;
+    };
+    addTearDown(() => ReminderRingtoneSettings.onChanged = null);
+    var returned = false;
+    final save = ReminderRingtoneSettings.setSound(
+      'forest',
+      preview: false,
+    ).then((_) => returned = true);
+    await Future<void>.delayed(Duration.zero);
+    expect(notified, contains(ReminderRingtoneSettings.soundPreferenceKey));
+    expect(returned, isFalse);
+    gate.complete();
+    await save;
+    expect(returned, isTrue);
+    expect(await ReminderRingtoneSettings.loadSound(), 'forest');
   });
 
   test(

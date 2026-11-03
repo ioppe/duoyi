@@ -693,7 +693,7 @@ void main() {
     expect(almanac, isNot(contains('cs.onPrimary.withValues')));
   });
 
-  test('从我的和更多应用跳转后的默认字号不超过主页面常规尺度', () {
+  test('二级页面沿用全局正文、辅助文字和标题层级', () {
     final mine = File('lib/screens/mine_screen.dart').readAsStringSync();
     final surfaceComponents = File(
       'lib/widgets/surface_components.dart',
@@ -728,11 +728,11 @@ void main() {
       surfaceComponents.indexOf('Color _appSecondaryActionBackground'),
     );
 
-    expect(_requiredFontSize(controlText), lessThan(mainRegularSize));
-    expect(_requiredFontSize(menuText), lessThan(mainRegularSize));
-    expect(routeTitle, contains('fontSize: DesignTokens.fontSizeMd'));
-    expect(controlText, contains('fontWeight: DesignTokens.fontWeightStrong'));
-    expect(menuText, contains('fontWeight: DesignTokens.fontWeightStrong'));
+    expect(controlText, contains('fontSize: DesignTokens.fontSizeBody'));
+    expect(menuText, contains('fontSize: DesignTokens.fontSizeBody'));
+    expect(routeTitle, contains('fontSize: DesignTokens.fontSizePageTitle'));
+    expect(controlText, contains('fontWeight: DesignTokens.fontWeightRegular'));
+    expect(menuText, contains('fontWeight: DesignTokens.fontWeightMedium'));
     expect(routeTitle, contains('fontWeight: DesignTokens.fontWeightStrong'));
 
     final secondaryTheme = surfaceComponents.substring(

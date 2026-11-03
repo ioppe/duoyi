@@ -646,7 +646,7 @@ void _expectTileIconAndActionCenteredWithReadableText(
   final textCenterDy = _textBlockCenterDy(titleRect, subtitleRect);
 
   expect((iconRect.center.dy - textCenterDy).abs(), lessThan(5));
-  expect((actionRect.center.dy - textCenterDy).abs(), lessThan(5));
+  expect(actionRect.top, greaterThan(subtitleRect.bottom));
   expect(subtitleRect.top, greaterThan(titleRect.bottom));
   expect(actionRect.left, greaterThan(titleRect.left));
 }

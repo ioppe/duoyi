@@ -10,6 +10,7 @@ import '../core/brand_strings.dart';
 import '../core/desktop_tokens.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
+import '../core/web_target.dart';
 import '../providers/todo_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/pomodoro_provider.dart';
@@ -42,6 +43,7 @@ import 'admin_screen.dart';
 import 'achievements_screen.dart';
 import 'backup_screen.dart';
 import 'lock_settings_screen.dart';
+import 'local_ai_settings_screen.dart';
 import 'export_screen.dart';
 import 'search_screen.dart';
 import 'ai_history_screen.dart';
@@ -703,6 +705,23 @@ class MineScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // 本机 AI 配置入口：设置分组内始终可见（含 AI 未启用时），
+            // Web 端不提供本机配置，直接隐藏。
+            if (!WebTarget.isWebBuild)
+              _Tile(
+                key: const ValueKey('mine_ai_settings_entry'),
+                icon: Icons.auto_awesome_outlined,
+                label: I18n.tr('ai.local.title'),
+                subtitle: I18n.tr('ai.local.entry_hint'),
+                color: Colors.purple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const BrandRouteSurface(child: LocalAiSettingsScreen()),
+                  ),
+                ),
+              ),
             _Tile(
               key: const ValueKey('mine_widget_settings_entry'),
               icon: Icons.widgets_outlined,

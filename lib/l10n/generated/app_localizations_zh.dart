@@ -9,6 +9,128 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get aiLocalTitle => 'AI 服务';
+
+  @override
+  String get aiLocalEntryHint => '本地 AI 配置与当前服务状态';
+
+  @override
+  String get aiLocalDescription =>
+      '未登录时可连接自己的 OpenAI 兼容服务。密钥仅保存在本机，不上传到多仪服务器或备份；登录远程账号后使用服务器 AI。';
+
+  @override
+  String get aiLocalEnabled => '启用本机 AI';
+
+  @override
+  String get aiLocalBaseUrl => '服务地址';
+
+  @override
+  String get aiLocalBaseUrlHint => '例如 https://api.example.com/v1';
+
+  @override
+  String get aiLocalModel => '模型名称';
+
+  @override
+  String get aiLocalModelHint => '填写服务商提供的模型 ID';
+
+  @override
+  String get aiLocalApiKey => 'API Key';
+
+  @override
+  String get aiLocalKeyHint => '服务支持免密时可留空';
+
+  @override
+  String get aiLocalKeySaved => '密钥已保存，留空保持不变';
+
+  @override
+  String get aiLocalShowKey => '显示新输入的密钥';
+
+  @override
+  String get aiLocalHideKey => '隐藏密钥';
+
+  @override
+  String get aiLocalSave => '保存配置';
+
+  @override
+  String get aiLocalSaved => '本机 AI 配置已保存';
+
+  @override
+  String get aiLocalTest => '测试连接';
+
+  @override
+  String get aiLocalTestOk => '连接成功，模型已返回正文';
+
+  @override
+  String get aiLocalClear => '清除本机配置';
+
+  @override
+  String get aiLocalClearTitle => '清除本机 AI 配置？';
+
+  @override
+  String get aiLocalClearMessage => '将删除此设备保存的服务地址、模型和密钥，并关闭本机 AI。';
+
+  @override
+  String get aiLocalCleared => '本机 AI 配置已清除';
+
+  @override
+  String get aiLocalServerTitle => '当前使用服务器 AI';
+
+  @override
+  String get aiLocalServerEnabled => '服务器 AI 已启用';
+
+  @override
+  String get aiLocalServerDisabled => '服务器尚未启用 AI';
+
+  @override
+  String get aiLocalServerDescription =>
+      '已登录远程账号，AI 由当前服务器提供，本机配置不参与请求。需要修改时请联系该服务器管理员。';
+
+  @override
+  String get aiLocalNotConfigured => '请在“设置 → AI 服务”配置并启用本机 AI';
+
+  @override
+  String get aiLocalUnavailable => '当前模式由服务器管理 AI，本机配置不可用';
+
+  @override
+  String get aiLocalChanged => '连接或账号已变化，请重新发起 AI 请求';
+
+  @override
+  String get aiLocalKeyNewHost => '服务地址已更换，请为新服务重新填写密钥';
+
+  @override
+  String get aiLocalErrorUrl => '请输入有效的 HTTP 或 HTTPS 服务地址，不要在地址中填写密钥';
+
+  @override
+  String get aiLocalErrorModel => '请填写模型名称';
+
+  @override
+  String get aiLocalErrorAuth => '服务拒绝授权，请检查 API Key 和访问权限';
+
+  @override
+  String get aiLocalErrorEndpoint => '接口或模型不存在，请检查服务地址和模型名称';
+
+  @override
+  String get aiLocalErrorRate => '请求过于频繁或额度不足，请稍后再试';
+
+  @override
+  String get aiLocalErrorServer => 'AI 服务暂时不可用，请稍后再试';
+
+  @override
+  String get aiLocalErrorNetwork => '无法连接 AI 服务，请检查地址和网络';
+
+  @override
+  String get aiLocalErrorTimeout => 'AI 请求超时，请稍后再试';
+
+  @override
+  String get aiLocalErrorResponse => '服务返回格式不兼容，请使用 OpenAI Chat Completions 接口';
+
+  @override
+  String get aiLocalErrorEmpty => '模型未返回正文，请检查模型或输出额度';
+
+  @override
+  String get aiLocalErrorStorage => '无法访问本机安全存储，请检查系统解锁状态后重试';
+
+  @override
   String get stateError => '出错了';
 
   @override
@@ -299,7 +421,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todoSubtaskEmpty => '子任务内容不能为空，请填写或删除该项';
 
   @override
-  String get todoSubtaskSaveHint => '子任务修改将随任务一起保存';
+  String get todoSubtaskSaveHint => '修改会自动保存';
+
+  @override
+  String get todoAutosaveFailed => '自动保存失败，修改已保留';
+
+  @override
+  String get todoAutosaveRetry => '重试';
+
+  @override
+  String get todoValidationTitleRequired => '任务名称不能为空';
 
   @override
   String get todoCreateNoReminder => '不提醒';
@@ -2560,6 +2691,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get todayProductivityCompletionRate => '完成率';
 
   @override
+  String get todayProductivityTitle => '时光足迹';
+
+  @override
+  String get todayProductivityComparison => '较上周同段';
+
+  @override
   String get diaryTitle => '日记';
 
   @override
@@ -3114,6 +3251,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get focusReset => '重置';
+
+  @override
+  String get focusFloatingOpen => '打开番茄悬浮窗';
+
+  @override
+  String get focusFloatingHide => '隐藏番茄悬浮窗';
+
+  @override
+  String get focusFloatingClose => '关闭悬浮窗';
+
+  @override
+  String get focusFloatingError => '悬浮窗操作失败，请稍后重试';
+
+  @override
+  String get focusFloatingStart => '开始';
+
+  @override
+  String get focusFloatingResume => '继续';
+
+  @override
+  String get focusFloatingPaused => '已暂停';
+
+  @override
+  String get focusFloatingReady => '待开始';
 
   @override
   String get reminderHealth => '通知健康';

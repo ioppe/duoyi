@@ -1,8 +1,15 @@
+import 'dart:async';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../core/ai_todo_breakdown.dart';
 import '../core/app_clock.dart';
 import '../core/app_config.dart';
+import '../core/i18n.dart';
+import '../core/web_target.dart';
+import 'account_local_data_cleaner.dart';
+import 'local_ai_client.dart';
+import 'local_ai_config_store.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/smart_date_parser.dart';
 import '../core/smart_todo_draft.dart';
@@ -19,39 +26,261 @@ import '../models/goal.dart'
 import '../models/todo.dart';
 import 'api_client.dart';
 
-/// AI 客户端：**不再持有任何 key/base_url**，所有调用通过 `/api/ai/chat`
-/// 由已登录用户的 token 代理到管理员在服务端配置好的上游。
-///
-/// `enabled` 状态来自 `/api/config`。
+/// Remote accounts use the server proxy. Native signed-out mode uses the
+/// device's independent, securely stored OpenAI-compatible connection.
 class AiService extends ChangeNotifier {
   ApiClient _client = ApiClient();
   bool _enabled = false;
   String _model = '';
   List<AiReviewEntry> _reviewHistory = [];
   int _storageGeneration = 0;
+  int _requestGeneration = 0;
+  int _localMutation = 0;
+  int _localClearGeneration = 0;
+  bool _remoteAccountActive = true;
+  bool _disposed = false;
+  final LocalAiConfigStore _localStore;
+  final LocalAiClient _localClient;
+  LocalAiConfig _localConfig = const LocalAiConfig();
+  bool _localConfigLoaded = false;
+  String? _localConfigError;
+  Future<void>? _localLoad;
+  Future<void> _localWriteQueue = Future<void>.value();
+  String? _boundClientIdentity;
 
-  bool get enabled => _enabled;
-  bool get isConfigured => _enabled;
-  String get model => _model;
+  AiService({
+    LocalAiConfigStore? localConfigStore,
+    http.Client? localHttpClient,
+  }) : _localStore = localConfigStore ?? SecureLocalAiConfigStore(),
+       _localClient = LocalAiClient(client: localHttpClient);
+
+  bool get supportsLocalConfiguration => !WebTarget.isWebBuild;
+  bool get usingLocalConfiguration =>
+      supportsLocalConfiguration && !_remoteAccountActive;
+  bool get enabled => usingLocalConfiguration
+      ? _localConfigLoaded && _localConfig.enabled && _validLocalConfiguration
+      : _enabled;
+  bool get isConfigured => usingLocalConfiguration
+      ? _localConfigLoaded && _validLocalConfiguration
+      : _enabled;
+  String get model => usingLocalConfiguration ? _localConfig.model : _model;
+  LocalAiConfig get localConfig => _localConfig;
+  bool get localConfigLoaded => _localConfigLoaded;
+  String? get localConfigError => _localConfigError;
   List<AiReviewEntry> get reviewHistory => List.unmodifiable(_reviewHistory);
+
+  bool get _validLocalConfiguration {
+    try {
+      LocalAiClient.endpointFor(_localConfig.baseUrl);
+      return _localConfig.model.trim().isNotEmpty;
+    } on LocalAiError {
+      return false;
+    }
+  }
 
   static const _kReviewHistory = 'ai_review_history';
   static const weeklyReviewKind = 'weekly_review';
 
+  void _changed() {
+    if (!_disposed) notifyListeners();
+  }
+
+  void setRemoteAccountActive(bool active) {
+    if (_remoteAccountActive == active) return;
+    _remoteAccountActive = active;
+    resetLocalState();
+    if (usingLocalConfiguration) unawaited(loadLocalConfiguration());
+  }
+
   void attachClient(ApiClient client) {
+    final identity = '${client.baseUrl}\n${client.token ?? ''}';
+    if (!identical(_client, client) || identity != _boundClientIdentity) {
+      _requestGeneration++;
+    }
     _client = client;
+    _boundClientIdentity = identity;
   }
 
   void updateFromServerConfig(Map<String, dynamic> cfg) {
-    _enabled = cfg['ai_enabled'] == true;
-    _model = (cfg['ai_model'] ?? '').toString();
-    notifyListeners();
+    final nextEnabled = cfg['ai_enabled'] == true;
+    final nextModel = (cfg['ai_model'] ?? '').toString();
+    if (_enabled == nextEnabled && _model == nextModel) return;
+    _enabled = nextEnabled;
+    _model = nextModel;
+    if (!usingLocalConfiguration) _requestGeneration++;
+    _changed();
+  }
+
+  Future<void> loadLocalConfiguration() {
+    if (!supportsLocalConfiguration || _localConfigLoaded || _disposed) {
+      return Future<void>.value();
+    }
+    final existing = _localLoad;
+    if (existing != null) return existing;
+    final serial = _localMutation;
+    final future = () async {
+      try {
+        final config = await _localStore.read();
+        if (serial != _localMutation || _disposed) return;
+        _localConfig = config;
+        _localConfigLoaded = true;
+        _localConfigError = null;
+      } catch (_) {
+        if (serial != _localMutation || _disposed) return;
+        _localConfig = const LocalAiConfig();
+        _localConfigError = I18n.tr('ai.local.error_storage');
+      }
+      _changed();
+    }();
+    _localLoad = future;
+    return future.whenComplete(() {
+      if (identical(_localLoad, future)) _localLoad = null;
+    });
+  }
+
+  Future<void> _requireLocalMode() async {
+    if (!usingLocalConfiguration || _disposed) {
+      throw AiException(I18n.tr('ai.local.unavailable'));
+    }
+    await loadLocalConfiguration();
+    if (!usingLocalConfiguration || _disposed) {
+      throw AiException(I18n.tr('ai.local.changed'));
+    }
+    if (!_localConfigLoaded) {
+      throw AiException(I18n.tr('ai.local.error_storage'));
+    }
+  }
+
+  LocalAiConfig _draftConfiguration({
+    required bool enabled,
+    required String baseUrl,
+    required String model,
+    String? apiKey,
+  }) {
+    try {
+      final url = enabled
+          ? LocalAiClient.normalizeBaseUrl(baseUrl)
+          : baseUrl.trim();
+      if (enabled && model.trim().isEmpty) {
+        throw const LocalAiError('ai.local.error_model');
+      }
+      if (_localConfig.hasApiKey && apiKey == null) {
+        String? origin(String value) {
+          try {
+            return Uri.parse(LocalAiClient.normalizeBaseUrl(value)).origin;
+          } on LocalAiError {
+            return null;
+          }
+        }
+
+        if (origin(url) != origin(_localConfig.baseUrl)) {
+          throw const LocalAiError('ai.local.key_new_host');
+        }
+      }
+      return LocalAiConfig(
+        enabled: enabled,
+        baseUrl: url,
+        model: model.trim(),
+        apiKey: apiKey?.trim() ?? _localConfig.apiKey,
+      );
+    } on LocalAiError catch (error) {
+      throw AiException(I18n.tr(error.messageKey));
+    }
+  }
+
+  Future<void> _queueLocalWrite(Future<void> Function() action) {
+    final operation = _localWriteQueue.then((_) => action());
+    _localWriteQueue = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
+  Future<void> saveLocalConfiguration({
+    required bool enabled,
+    required String baseUrl,
+    required String model,
+    String? apiKey,
+  }) async {
+    final clearGeneration = _localClearGeneration;
+    await _requireLocalMode();
+    if (clearGeneration != _localClearGeneration) {
+      throw AiException(I18n.tr('ai.local.changed'));
+    }
+    final config = _draftConfiguration(
+      enabled: enabled,
+      baseUrl: baseUrl,
+      model: model,
+      apiKey: apiKey,
+    );
+    final serial = ++_localMutation;
+    _requestGeneration++;
+    try {
+      await _queueLocalWrite(() => _localStore.write(config));
+      if (serial != _localMutation || _disposed) return;
+      _localConfig = config;
+      _localConfigLoaded = true;
+      _localConfigError = null;
+      _changed();
+    } catch (_) {
+      throw AiException(I18n.tr('ai.local.error_storage'));
+    }
+  }
+
+  Future<void> clearLocalConfiguration() async {
+    if (!usingLocalConfiguration || _disposed) {
+      throw AiException(I18n.tr('ai.local.unavailable'));
+    }
+    _localClearGeneration++;
+    final serial = ++_localMutation;
+    _requestGeneration++;
+    try {
+      await _queueLocalWrite(_localStore.clear);
+      if (serial != _localMutation || _disposed) return;
+      _localConfig = const LocalAiConfig();
+      _localConfigLoaded = true;
+      _localConfigError = null;
+      _changed();
+    } catch (_) {
+      throw AiException(I18n.tr('ai.local.error_storage'));
+    }
+  }
+
+  Future<String> testLocalConfiguration({
+    required String baseUrl,
+    required String model,
+    String? apiKey,
+  }) async {
+    await _requireLocalMode();
+    final config = _draftConfiguration(
+      enabled: true,
+      baseUrl: baseUrl,
+      model: model,
+      apiKey: apiKey,
+    );
+    final generation = _requestGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    try {
+      final content = await _localClient.chat(
+        config: config,
+        system: 'Reply with ok to test the configured AI service.',
+        user: 'ok',
+        temperature: 0,
+        maxTokens: 1200,
+      );
+      _checkRequest(generation, accountGeneration);
+      return content;
+    } on LocalAiError catch (error) {
+      throw AiException(I18n.tr(error.messageKey));
+    }
   }
 
   Future<void> loadFromStorage() async {
     final generation = _storageGeneration;
+    if (usingLocalConfiguration) await loadLocalConfiguration();
     final p = await SharedPreferences.getInstance();
-    if (generation != _storageGeneration) return;
+    if (generation != _storageGeneration || _disposed) return;
     final raw = p.getStringList(_kReviewHistory) ?? [];
     _reviewHistory = raw
         .map((e) {
@@ -63,45 +292,72 @@ class AiService extends ChangeNotifier {
         })
         .whereType<AiReviewEntry>()
         .toList();
-    notifyListeners();
+    _changed();
   }
 
   void resetLocalState() {
     _storageGeneration++;
+    _requestGeneration++;
     _reviewHistory = [];
-    notifyListeners();
+    _changed();
   }
 
   Future<void> _saveHistory() async {
+    final generation = _storageGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    final raw = _reviewHistory.map((e) => jsonEncode(e.toJson())).toList();
     final p = await SharedPreferences.getInstance();
-    await p.setStringList(
-      _kReviewHistory,
-      _reviewHistory.map((e) => jsonEncode(e.toJson())).toList(),
-    );
+    if (_disposed ||
+        generation != _storageGeneration ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+          accountGeneration,
+        )) {
+      return;
+    }
+    await p.setStringList(_kReviewHistory, raw);
   }
 
   Future<void> deleteReview(String id) async {
     _reviewHistory.removeWhere((e) => e.id == id);
-    notifyListeners();
+    _changed();
     await _saveHistory();
   }
 
   Future<void> clearReviewHistory() async {
     _reviewHistory.clear();
-    notifyListeners();
+    _changed();
     await _saveHistory();
+  }
+
+  void _checkRequest(int generation, int accountGeneration) {
+    if (_disposed ||
+        generation != _requestGeneration ||
+        !AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+          accountGeneration,
+        )) {
+      throw AiException(I18n.tr('ai.local.changed'));
+    }
   }
 
   Future<String> _chat(
     String systemPrompt,
     String userPrompt, {
     double temperature = 0.4,
-    // 推理型模型会先消耗大量 reasoning token，预算需覆盖“思考 + 正文”。
     int maxTokens = 1200,
   }) async {
-    if (!_enabled) throw const AiException('AI 功能未启用，请联系管理员');
-    // MiniMax M3.1 的 reasoning_content 与正文共用输出预算，网关未必单列计数。
-    final modelId = _model.toLowerCase().split('/').last;
+    final generation = _requestGeneration;
+    final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
+    if (usingLocalConfiguration) await loadLocalConfiguration();
+    _checkRequest(generation, accountGeneration);
+    if (!enabled) {
+      throw AiException(
+        usingLocalConfiguration
+            ? I18n.tr('ai.local.not_configured')
+            : 'AI 功能未启用，请联系管理员',
+      );
+    }
+    final modelId = model.toLowerCase().split('/').last;
+    // 推理型模型会先消耗大量 reasoning token，预算需覆盖思考与正文。
     final requestMaxTokens =
         modelId == 'minimax-m3.1-flash-free' &&
             maxTokens > 256 &&
@@ -109,20 +365,42 @@ class AiService extends ChangeNotifier {
         ? 8192
         : maxTokens;
     try {
+      if (usingLocalConfiguration) {
+        final content = await _localClient.chat(
+          config: _localConfig,
+          system: systemPrompt,
+          user: userPrompt,
+          temperature: temperature,
+          maxTokens: requestMaxTokens,
+        );
+        _checkRequest(generation, accountGeneration);
+        return content;
+      }
       final res = await _client.post('/api/ai/chat', {
         'system': systemPrompt,
         'user': userPrompt,
         'temperature': temperature,
         'max_tokens': requestMaxTokens,
       }, AppConfig.aiTimeout);
+      _checkRequest(generation, accountGeneration);
       final content = (res['content'] ?? '').toString().trim();
       if (content.isEmpty) {
         throw const AiException('模型未返回正文。若使用推理模型，请让管理员调大 max_tokens 或改用非推理模型。');
       }
       return content;
+    } on LocalAiError catch (error) {
+      throw AiException(I18n.tr(error.messageKey));
     } on ApiException catch (e) {
       throw AiException(_friendlyAiError(e.message));
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _requestGeneration++;
+    _localClient.dispose();
+    super.dispose();
   }
 
   Future<AiScheduleDraft> createScheduleDraft(
@@ -135,7 +413,7 @@ class AiService extends ChangeNotifier {
     }
     final localNow = now ?? DateTime.now();
     final baseDraft = _fallbackScheduleDraft(trimmed, now: localNow);
-    if (!_enabled) return baseDraft.withSource(AiScheduleSource.localParser);
+    if (!enabled) return baseDraft.withSource(AiScheduleSource.localParser);
 
     final prompt = [
       '当前本地时间：${localNow.toIso8601String()}',
@@ -277,7 +555,7 @@ class AiService extends ChangeNotifier {
       createdAt: createdAt,
       content: review,
       summary: summary,
-      model: _model,
+      model: model,
       kind: weeklyReviewKind,
     );
     _reviewHistory.insert(0, entry);
@@ -323,7 +601,7 @@ class AiService extends ChangeNotifier {
       createdAt: DateTime.now(),
       content: out,
       summary: '统计报告 AI 解读：$periodLabel',
-      model: _model,
+      model: model,
     );
     _reviewHistory.insert(0, entry);
     if (_reviewHistory.length > 50) {
@@ -350,7 +628,7 @@ class AiService extends ChangeNotifier {
       createdAt: DateTime.now(),
       content: out,
       summary: '日记深度复盘：${prompt.summary}',
-      model: _model,
+      model: model,
     );
     _reviewHistory.insert(0, entry);
     if (_reviewHistory.length > 50) {
@@ -390,7 +668,7 @@ class AiService extends ChangeNotifier {
       createdAt: entryTime,
       content: out,
       summary: summary,
-      model: _model,
+      model: model,
       kind: kind,
     );
     _reviewHistory.insert(0, entry);

@@ -27,11 +27,6 @@ void main() {
       for (final prefix in AccountLocalDataCleaner.accountScopedPrefixes)
         '${prefix}legacy': 'stale',
       'sync_future_metadata': 'stale',
-      'pref_daily_reminder_slot9_enabled': true,
-      'pref_reminder_ringtone_fallback_channel_sound_duoyi_general_alerts_v18':
-          'duoyi_soft',
-      'pref_reminder_ringtone_fallback_channel_sound_schema_duoyi_general_alerts_v18':
-          2,
       'duoyi_ics_events_work': '[{"summary":"admin calendar"}]',
       'duoyi_oauth_calendar_events_google': '[{"summary":"admin oauth"}]',
       'todos_corrupt_backup_20260607': '[{"title":"old backup"}]',
@@ -45,23 +40,57 @@ void main() {
       expect(prefs.containsKey('${prefix}legacy'), isFalse, reason: prefix);
     }
     expect(prefs.containsKey('sync_future_metadata'), isFalse);
-    expect(prefs.containsKey('pref_daily_reminder_slot9_enabled'), isFalse);
-    expect(
-      prefs.containsKey(
-        'pref_reminder_ringtone_fallback_channel_sound_duoyi_general_alerts_v18',
-      ),
-      isFalse,
-    );
-    expect(
-      prefs.containsKey(
-        'pref_reminder_ringtone_fallback_channel_sound_schema_duoyi_general_alerts_v18',
-      ),
-      isFalse,
-    );
     expect(prefs.containsKey('duoyi_ics_events_work'), isFalse);
     expect(prefs.containsKey('duoyi_oauth_calendar_events_google'), isFalse);
     expect(prefs.containsKey('todos_corrupt_backup_20260607'), isFalse);
     expect(prefs.containsKey('widget_display_mode_42'), isFalse);
+  });
+
+  test('pref_* 设备偏好不随账号清理删除', () async {
+    const devicePreferences = <String, Object>{
+      'pref_haptic_feedback': false,
+      'pref_show_lunar': false,
+      'pref_show_home_calendar': true,
+      'pref_show_completed_todos': true,
+      'pref_date_format': 'dd/MM/yyyy',
+      'pref_default_tab': 2,
+      'pref_first_day_of_week': 7,
+      'pref_app_timezone_mode': 'fixed',
+      'pref_app_timezone_iana': 'Asia/Tokyo',
+      'pref_bottom_nav_order': <String>['0', '1', '2', '4', '6'],
+      'pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
+      'pref_daily_reminder_enabled': true,
+      'pref_daily_reminder_kind': 'popup',
+      'pref_daily_reminder_slot2_enabled': true,
+      'pref_daily_reminder_slot2_kind': 'alarm',
+      'pref_weekly_report_reminder': true,
+      'pref_reminder_ringtone_volume_percent': 80,
+      'pref_reminder_ringtone_sound': 'duoyi_soft',
+      'pref_reminder_ringtone_fallback_channel_sound_duoyi_general_alerts_v18':
+          'duoyi_soft',
+      'pref_web_navigation_v2': true,
+      'pref_focus_navigation_v1': true,
+    };
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      ...devicePreferences,
+      'todos': '[{"title":"admin task"}]',
+      'duoyi_notif_history': '[{"title":"admin notification"}]',
+      'sync_preferences_updated_at': '2026-06-07T00:00:00.000Z',
+      'sync_deleted_items': '[]',
+      'webdav_backup_password': 'device-password',
+    });
+
+    await AccountLocalDataCleaner.clearSharedPreferences();
+
+    final prefs = await SharedPreferences.getInstance();
+    for (final entry in devicePreferences.entries) {
+      expect(prefs.get(entry.key), entry.value, reason: entry.key);
+    }
+    expect(prefs.getString('todos'), isNull);
+    expect(prefs.getString('duoyi_notif_history'), isNull);
+    expect(prefs.getString('sync_preferences_updated_at'), isNull);
+    expect(prefs.getString('sync_deleted_items'), isNull);
+    expect(prefs.getString('webdav_backup_password'), isNull);
   });
 
   test('clears account-scoped document directories only', () async {
@@ -113,6 +142,17 @@ void main() {
       'duoyi_widget_display_mode': 'compact',
       'widget_display_mode': 'compact',
       'notification_status_bar_startup_build': 7,
+      'pref_haptic_feedback': false,
+      'pref_show_lunar': false,
+      'pref_date_format': 'MM/dd/yyyy',
+      'pref_default_tab': 3,
+      'pref_app_timezone_mode': 'fixed',
+      'pref_app_timezone_iana': 'Asia/Tokyo',
+      'pref_bottom_nav_order': <String>['0', '1', '2', '4', '6'],
+      'pref_bottom_nav_visible': <String>['0', '1', '2', '4', '6'],
+      'pref_daily_reminder_enabled': true,
+      'pref_daily_reminder_slot3_enabled': true,
+      'pref_reminder_ringtone_volume_percent': 70,
       'webdav_backup_base_url': 'https://example.com/webdav',
       'webdav_backup_username': 'device-user',
       'webdav_backup_password': 'device-password',
@@ -147,6 +187,21 @@ void main() {
     expect(prefs.getString('webdav_backup_password'), isNull);
     expect(prefs.getString('webdav_backup_remote_path'), isNull);
     expect(prefs.getString('webdav_backup_filename'), isNull);
+    expect(prefs.getBool('pref_haptic_feedback'), isFalse);
+    expect(prefs.getBool('pref_show_lunar'), isFalse);
+    expect(prefs.getString('pref_date_format'), 'MM/dd/yyyy');
+    expect(prefs.getInt('pref_default_tab'), 3);
+    expect(prefs.getString('pref_app_timezone_iana'), 'Asia/Tokyo');
+    expect(prefs.getStringList('pref_bottom_nav_order'), <String>[
+      '0',
+      '1',
+      '2',
+      '4',
+      '6',
+    ]);
+    expect(prefs.getBool('pref_daily_reminder_enabled'), isTrue);
+    expect(prefs.getBool('pref_daily_reminder_slot3_enabled'), isTrue);
+    expect(prefs.getInt('pref_reminder_ringtone_volume_percent'), 70);
     expect(
       prefs.getString('auth_state'),
       '{"user_id":"test","token":"test-token"}',
@@ -170,13 +225,31 @@ void main() {
           'duoyi_caldav_write_target_v1',
           'duoyi_caldav_pushed_uids_v1',
           'duoyi_caldav_pushed_etags_v1',
-          'pref_daily_reminder_kind',
-          'pref_daily_reminder_repeat_days',
         ]),
+      );
+      // pref_* 是设备配置（PreferencesProvider 注释与文件头分类），不得再进入
+      // 账号清理集；否则登录/切号/令牌过期会把用户的本机设置重置为默认值。
+      expect(
+        AccountLocalDataCleaner.accountScopedKeys.where(
+          (key) => key.startsWith(
+            AccountLocalDataCleaner.deviceConfigurationKeyPrefix,
+          ),
+        ),
+        isEmpty,
+        reason: '设备偏好不应出现在 accountScopedKeys',
+      );
+      expect(
+        AccountLocalDataCleaner.accountScopedPrefixes.where(
+          (prefix) => AccountLocalDataCleaner.deviceConfigurationKeyPrefix
+              .startsWith(prefix),
+        ),
+        isEmpty,
+        reason: '账号清理前缀不得命中 pref_* 设备偏好',
       );
       expect(
         AccountLocalDataCleaner.accountScopedPrefixes,
         containsAll(<String>[
+          'sync_',
           'duoyi_ics_',
           'duoyi_ics_events_',
           'duoyi_oauth_calendar_',

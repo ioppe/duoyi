@@ -98,6 +98,246 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @aiLocalTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 服务'**
+  String get aiLocalTitle;
+
+  /// No description provided for @aiLocalEntryHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'本地 AI 配置与当前服务状态'**
+  String get aiLocalEntryHint;
+
+  /// No description provided for @aiLocalDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'未登录时可连接自己的 OpenAI 兼容服务。密钥仅保存在本机，不上传到多仪服务器或备份；登录远程账号后使用服务器 AI。'**
+  String get aiLocalDescription;
+
+  /// No description provided for @aiLocalEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用本机 AI'**
+  String get aiLocalEnabled;
+
+  /// No description provided for @aiLocalBaseUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务地址'**
+  String get aiLocalBaseUrl;
+
+  /// No description provided for @aiLocalBaseUrlHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如 https://api.example.com/v1'**
+  String get aiLocalBaseUrlHint;
+
+  /// No description provided for @aiLocalModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型名称'**
+  String get aiLocalModel;
+
+  /// No description provided for @aiLocalModelHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写服务商提供的模型 ID'**
+  String get aiLocalModelHint;
+
+  /// No description provided for @aiLocalApiKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'API Key'**
+  String get aiLocalApiKey;
+
+  /// No description provided for @aiLocalKeyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务支持免密时可留空'**
+  String get aiLocalKeyHint;
+
+  /// No description provided for @aiLocalKeySaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'密钥已保存，留空保持不变'**
+  String get aiLocalKeySaved;
+
+  /// No description provided for @aiLocalShowKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示新输入的密钥'**
+  String get aiLocalShowKey;
+
+  /// No description provided for @aiLocalHideKey.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏密钥'**
+  String get aiLocalHideKey;
+
+  /// No description provided for @aiLocalSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存配置'**
+  String get aiLocalSave;
+
+  /// No description provided for @aiLocalSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机 AI 配置已保存'**
+  String get aiLocalSaved;
+
+  /// No description provided for @aiLocalTest.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试连接'**
+  String get aiLocalTest;
+
+  /// No description provided for @aiLocalTestOk.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接成功，模型已返回正文'**
+  String get aiLocalTestOk;
+
+  /// No description provided for @aiLocalClear.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除本机配置'**
+  String get aiLocalClear;
+
+  /// No description provided for @aiLocalClearTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除本机 AI 配置？'**
+  String get aiLocalClearTitle;
+
+  /// No description provided for @aiLocalClearMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'将删除此设备保存的服务地址、模型和密钥，并关闭本机 AI。'**
+  String get aiLocalClearMessage;
+
+  /// No description provided for @aiLocalCleared.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机 AI 配置已清除'**
+  String get aiLocalCleared;
+
+  /// No description provided for @aiLocalServerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前使用服务器 AI'**
+  String get aiLocalServerTitle;
+
+  /// No description provided for @aiLocalServerEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器 AI 已启用'**
+  String get aiLocalServerEnabled;
+
+  /// No description provided for @aiLocalServerDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器尚未启用 AI'**
+  String get aiLocalServerDisabled;
+
+  /// No description provided for @aiLocalServerDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'已登录远程账号，AI 由当前服务器提供，本机配置不参与请求。需要修改时请联系该服务器管理员。'**
+  String get aiLocalServerDescription;
+
+  /// No description provided for @aiLocalNotConfigured.
+  ///
+  /// In zh, this message translates to:
+  /// **'请在“设置 → AI 服务”配置并启用本机 AI'**
+  String get aiLocalNotConfigured;
+
+  /// No description provided for @aiLocalUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前模式由服务器管理 AI，本机配置不可用'**
+  String get aiLocalUnavailable;
+
+  /// No description provided for @aiLocalChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接或账号已变化，请重新发起 AI 请求'**
+  String get aiLocalChanged;
+
+  /// No description provided for @aiLocalKeyNewHost.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务地址已更换，请为新服务重新填写密钥'**
+  String get aiLocalKeyNewHost;
+
+  /// No description provided for @aiLocalErrorUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入有效的 HTTP 或 HTTPS 服务地址，不要在地址中填写密钥'**
+  String get aiLocalErrorUrl;
+
+  /// No description provided for @aiLocalErrorModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'请填写模型名称'**
+  String get aiLocalErrorModel;
+
+  /// No description provided for @aiLocalErrorAuth.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务拒绝授权，请检查 API Key 和访问权限'**
+  String get aiLocalErrorAuth;
+
+  /// No description provided for @aiLocalErrorEndpoint.
+  ///
+  /// In zh, this message translates to:
+  /// **'接口或模型不存在，请检查服务地址和模型名称'**
+  String get aiLocalErrorEndpoint;
+
+  /// No description provided for @aiLocalErrorRate.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求过于频繁或额度不足，请稍后再试'**
+  String get aiLocalErrorRate;
+
+  /// No description provided for @aiLocalErrorServer.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 服务暂时不可用，请稍后再试'**
+  String get aiLocalErrorServer;
+
+  /// No description provided for @aiLocalErrorNetwork.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法连接 AI 服务，请检查地址和网络'**
+  String get aiLocalErrorNetwork;
+
+  /// No description provided for @aiLocalErrorTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 请求超时，请稍后再试'**
+  String get aiLocalErrorTimeout;
+
+  /// No description provided for @aiLocalErrorResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务返回格式不兼容，请使用 OpenAI Chat Completions 接口'**
+  String get aiLocalErrorResponse;
+
+  /// No description provided for @aiLocalErrorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'模型未返回正文，请检查模型或输出额度'**
+  String get aiLocalErrorEmpty;
+
+  /// No description provided for @aiLocalErrorStorage.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法访问本机安全存储，请检查系统解锁状态后重试'**
+  String get aiLocalErrorStorage;
+
   /// No description provided for @stateError.
   ///
   /// In zh, this message translates to:
@@ -677,8 +917,26 @@ abstract class AppLocalizations {
   /// No description provided for @todoSubtaskSaveHint.
   ///
   /// In zh, this message translates to:
-  /// **'子任务修改将随任务一起保存'**
+  /// **'修改会自动保存'**
   String get todoSubtaskSaveHint;
+
+  /// No description provided for @todoAutosaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动保存失败，修改已保留'**
+  String get todoAutosaveFailed;
+
+  /// No description provided for @todoAutosaveRetry.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get todoAutosaveRetry;
+
+  /// No description provided for @todoValidationTitleRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'任务名称不能为空'**
+  String get todoValidationTitleRequired;
 
   /// No description provided for @todoCreateNoReminder.
   ///
@@ -5144,6 +5402,18 @@ abstract class AppLocalizations {
   /// **'完成率'**
   String get todayProductivityCompletionRate;
 
+  /// No description provided for @todayProductivityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时光足迹'**
+  String get todayProductivityTitle;
+
+  /// No description provided for @todayProductivityComparison.
+  ///
+  /// In zh, this message translates to:
+  /// **'较上周同段'**
+  String get todayProductivityComparison;
+
   /// No description provided for @diaryTitle.
   ///
   /// In zh, this message translates to:
@@ -6247,6 +6517,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'重置'**
   String get focusReset;
+
+  /// No description provided for @focusFloatingOpen.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开番茄悬浮窗'**
+  String get focusFloatingOpen;
+
+  /// No description provided for @focusFloatingHide.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏番茄悬浮窗'**
+  String get focusFloatingHide;
+
+  /// No description provided for @focusFloatingClose.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭悬浮窗'**
+  String get focusFloatingClose;
+
+  /// No description provided for @focusFloatingError.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮窗操作失败，请稍后重试'**
+  String get focusFloatingError;
+
+  /// No description provided for @focusFloatingStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get focusFloatingStart;
+
+  /// No description provided for @focusFloatingResume.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get focusFloatingResume;
+
+  /// No description provided for @focusFloatingPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get focusFloatingPaused;
+
+  /// No description provided for @focusFloatingReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'待开始'**
+  String get focusFloatingReady;
 
   /// No description provided for @reminderHealth.
   ///

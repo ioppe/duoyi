@@ -81,10 +81,9 @@ Future<Rect> _openMenu(WidgetTester tester) async {
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
-          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
-        ))
-        .load();
+    await (FontLoader(
+      DesignTokens.fontFamily,
+    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
   });
 
   for (final compact in [false, true]) {

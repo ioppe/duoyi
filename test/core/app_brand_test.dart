@@ -132,9 +132,13 @@ void main() {
       source,
       contains('checkColor: WidgetStatePropertyAll<Color>(primaryForeground)'),
     );
+    final outlinedControls = source.substring(
+      source.indexOf('outlinedButtonTheme: OutlinedButtonThemeData('),
+      source.indexOf('textButtonTheme: TextButtonThemeData('),
+    );
     expect(
-      source,
-      isNot(contains('foregroundColor: cs.onSurfaceVariant,\n        padding')),
+      outlinedControls,
+      isNot(contains('foregroundColor: cs.onSurfaceVariant')),
     );
   });
 
@@ -147,11 +151,7 @@ void main() {
       final outlined = theme.outlinedButtonTheme.style;
       final text = theme.textButtonTheme.style;
       final segmented = theme.segmentedButtonTheme.style;
-      // 默认主题与液态玻璃主题走 iOS 档（44pt 触达），其余主题保持既有 38pt 档。
-      final usesIosFeel =
-          brand.style == BrandStyle.defaultBrand ||
-          brand.style == BrandStyle.liquidGlass;
-      final primaryButtonMinHeight = usesIosFeel ? 44 : 38;
+      const primaryButtonMinHeight = DesignTokens.controlMinHeight;
 
       expect(filled, isNotNull, reason: '${brand.id} filled button theme');
       expect(elevated, isNotNull, reason: '${brand.id} elevated button theme');
@@ -204,7 +204,10 @@ void main() {
         greaterThanOrEqualTo(4.5),
         reason: '${brand.id} outlined button text must contrast surface.',
       );
-      expect(outlined.minimumSize?.resolve(const <WidgetState>{})?.height, 36);
+      expect(
+        outlined.minimumSize?.resolve(const <WidgetState>{})?.height,
+        primaryButtonMinHeight,
+      );
 
       final textFg = _resolveColor(
         text!.foregroundColor,
@@ -215,7 +218,10 @@ void main() {
         greaterThanOrEqualTo(4.5),
         reason: '${brand.id} text button color must contrast surface.',
       );
-      expect(text.minimumSize?.resolve(const <WidgetState>{})?.height, 34);
+      expect(
+        text.minimumSize?.resolve(const <WidgetState>{})?.height,
+        primaryButtonMinHeight,
+      );
 
       final segmentBg = _resolveSelectedColor(
         segmented!.backgroundColor,

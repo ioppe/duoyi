@@ -15,17 +15,20 @@ void main() {
       source.indexOf('TextStyle appSecondaryControlLabelStyle'),
       source.indexOf('TextStyle appSecondaryMenuItemTextStyle'),
     );
-    expect(controlStyle, contains('fontSize: 12'));
-    expect(controlStyle, isNot(contains('fontSize: 11,')));
-    expect(labelStyle, contains('fontSize: 11'));
-    expect(labelStyle, isNot(contains('fontSize: 10')));
+    expect(controlStyle, contains('fontSize: DesignTokens.fontSizeBody'));
+    expect(
+      controlStyle,
+      contains('fontWeight: DesignTokens.fontWeightRegular'),
+    );
+    expect(labelStyle, contains('fontSize: DesignTokens.fontSizeSecondary'));
+    expect(labelStyle, contains('fontWeight: DesignTokens.fontWeightRegular'));
     expect(source, contains('TextStyle appSecondaryMenuItemTextStyle'));
     final menuStyle = source.substring(
       source.indexOf('TextStyle appSecondaryMenuItemTextStyle'),
       source.indexOf('Color _appSecondaryActionBackground'),
     );
-    expect(menuStyle, contains('fontSize: 12'));
-    expect(menuStyle, isNot(contains('fontSize: 11,')));
+    expect(menuStyle, contains('fontSize: DesignTokens.fontSizeBody'));
+    expect(menuStyle, contains('fontWeight: DesignTokens.fontWeightMedium'));
     expect(source, isNot(contains('fontSize: 13.5')));
     expect(source, contains('fontWeight: DesignTokens.fontWeightStrong'));
     expect(source, contains('class AppSecondaryControlTheme'));
@@ -72,9 +75,12 @@ void main() {
     );
     expect(
       source,
-      contains('copyWith(textStyle: WidgetStatePropertyAll(controlText))'),
+      contains('copyWith(textStyle: WidgetStatePropertyAll(buttonText))'),
     );
-    expect(source, contains('minimumSize: const Size(0, 34)'));
+    expect(
+      source,
+      contains('minimumSize: const Size(0, DesignTokens.controlMinHeight)'),
+    );
     expect(source, contains('OutlinedButton.styleFrom('));
     expect(source, isNot(contains('minimumSize: const Size(0, 40)')));
     expect(source, contains('segmentedButtonTheme'));
@@ -263,7 +269,8 @@ void main() {
     expect(source, isNot(contains('DropdownButtonFormField(')));
     expect(source, isNot(contains('DropdownButtonFormField<')));
     expect(source, isNot(contains('fontWeight: FontWeight.normal')));
-    expect(source, isNot(contains('DesignTokens.fontWeightRegular')));
+    expect(source, contains('DesignTokens.fontWeightRegular'));
+    expect(source, contains('DesignTokens.fontWeightMedium'));
   });
 
   test('危险按钮和状态徽标显式使用高对比前景色', () {

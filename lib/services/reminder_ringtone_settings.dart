@@ -86,7 +86,7 @@ class ReminderRingtoneSettings {
   static const MethodChannel _channel = MethodChannel(
     'duoyi/reminder_ringtone',
   );
-  static void Function(Iterable<String> keys)? onChanged;
+  static FutureOr<void> Function(Iterable<String> keys)? onChanged;
 
   static ReminderRingtonePlatformPolicy get platformPolicy => platformPolicyFor(
     isAndroid: PlatformInfo.isAndroid,
@@ -200,7 +200,7 @@ class ReminderRingtoneSettings {
     final next = _normalizeVolume(value);
     final p = await SharedPreferences.getInstance();
     await p.setInt(volumePreferenceKey, next);
-    onChanged?.call(const [volumePreferenceKey]);
+    await onChanged?.call(const [volumePreferenceKey]);
     if (!preview) {
       await applyPersistedSettingsToNative();
       return;
@@ -213,7 +213,7 @@ class ReminderRingtoneSettings {
     final p = await SharedPreferences.getInstance();
     await p.setBool(legacyAlarmMigrationPreferenceKey, true);
     await p.setString(soundPreferenceKey, next);
-    onChanged?.call(const [soundPreferenceKey]);
+    await onChanged?.call(const [soundPreferenceKey]);
     if (!preview) {
       await applyPersistedSettingsToNative();
       return;
@@ -330,7 +330,7 @@ class ReminderRingtoneSettings {
         preferences.getBool(legacyAlarmMigrationPreferenceKey) != true) {
       await preferences.setBool(legacyAlarmMigrationPreferenceKey, true);
       await preferences.setString(soundPreferenceKey, defaultSound);
-      onChanged?.call(const [soundPreferenceKey]);
+      await onChanged?.call(const [soundPreferenceKey]);
       return defaultSound;
     }
     return _normalizeSound(stored ?? defaultSound);

@@ -23,6 +23,17 @@ class TodoImportSummary {
 }
 
 class TodoProvider extends ChangeNotifier {
+  /// 本次账号会话内的失败编辑草稿；不进入业务集合或云同步。
+  final Map<String, ({TodoItem todo, String timeTargetText})> _detailDrafts =
+      {};
+
+  void preserveDetailDraft(TodoItem todo, {required String timeTargetText}) {
+    _detailDrafts[todo.id] = (todo: todo, timeTargetText: timeTargetText);
+  }
+
+  ({TodoItem todo, String timeTargetText})? takeDetailDraft(String id) =>
+      _detailDrafts.remove(id);
+
   static const Duration _reminderSyncTimeout = Duration(seconds: 5);
 
   /// 超过该条数时，持久化编码放到后台 isolate 执行：主 isolate 只付出
@@ -246,6 +257,7 @@ class TodoProvider extends ChangeNotifier {
   void resetLocalState() {
     _storageGeneration++;
     _todos = [];
+    _detailDrafts.clear();
     _storageLoaded = false;
     _storageLoadFuture = null;
     _lastReminderSyncIssue = null;
@@ -409,6 +421,9 @@ class TodoProvider extends ChangeNotifier {
   /// - `_loadFromStorage` 的损坏重写分支（加载流程已与队列串行：
   ///   pending 写入先于加载执行，加载期间新提交的写入链在加载完成之后；
   ///   若此处再走队列，强制重读会链到自身导致循环等待死锁）。
+  ///
+  /// 本地写入失败（`setString` 返回 false 或抛异常）必须抛给调用方：
+  /// 任务详情页据此保留草稿并提示重试，不能把没落盘的修改当成已保存。
   Future<void> _writeTodosSnapshot() async {
     final generation = _storageGeneration;
     final accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
@@ -425,7 +440,34 @@ class TodoProvider extends ChangeNotifier {
         )) {
       return;
     }
-    await prefs.setString('todos', data);
+    final bool written;
+    try {
+      written = await prefs.setString('todos', data);
+    } catch (e) {
+      await _discardSpeculativePreferenceCache(prefs);
+      rethrow;
+    }
+    if (!written) {
+      await _discardSpeculativePreferenceCache(prefs);
+      throw StateError('local todo storage write was not persisted');
+    }
+  }
+
+  /// 写入失败后清除 shared_preferences 的推测缓存。
+  ///
+  /// `setString` 先更新内存缓存再等平台回执；失败时缓存里已经留下
+  /// "看起来已保存"的新值，必须重读存储覆盖，避免下一次读取把未落盘的
+  /// 数据当成真实值，也避免后续写入基于错误的缓存做判断。
+  Future<void> _discardSpeculativePreferenceCache(
+    SharedPreferences prefs,
+  ) async {
+    try {
+      await prefs.reload();
+    } catch (e, st) {
+      debugPrint(
+        '[TodoProvider] reload prefs after failed write failed: $e\n$st',
+      );
+    }
   }
 
   Future<void> _writeToStorage() async {
@@ -651,12 +693,20 @@ class TodoProvider extends ChangeNotifier {
         next = next.copyWith(kanbanColumnId: defaultKanbanPendingColumnId);
       }
       _todos[idx] = next;
+      try {
+        await _saveToStorage();
+      } catch (_) {
+        final currentIndex = _todos.indexWhere((todo) => todo.id == id);
+        if (currentIndex != -1 && identical(_todos[currentIndex], next)) {
+          _todos[currentIndex] = prev;
+        }
+        rethrow;
+      }
       if (!prev.isCompleted && next.isCompleted) {
         DomainEventBus.instance.publish(
           DomainEvent(type: DomainEventType.todoCompleted, objectId: next.id),
         );
       }
-      await _saveToStorage();
       _notify();
       if (waitForReminderSync) {
         await _syncTodoRemindersNow();

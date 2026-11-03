@@ -12,18 +12,17 @@ import 'package:duoyi/screens/todo_detail_screen.dart';
 
 import '../test_support/recording_reminder_scheduler.dart';
 
-/// TodoDetailScreen 保存返回路由测试。
+/// TodoDetailScreen 保存 / 返回路由测试。
 ///
 /// Feature: app-alignment-overhaul
 /// Property 18 (P18): 保存成功或无改动点击保存时，详情页返回上一页。
 ///
 /// Validates: Requirements 2.3, 2.4, 2.5
 ///
-/// 用例形态：
-/// - 在一个 `Navigator` 下从 `/home` push 一个 detail route；
-/// - 在详情页中编辑标题并点 AppBar 的保存按钮；
-/// - 断言：保存后回到 home，provider 已持久化修改。
-/// - 再覆盖几个关键状态转移：脏 → 返回 → 确认弹窗 → 取消/放弃。
+/// 自动保存语义（见 `docs/task-detail-settings.md`）：
+/// - 编辑在 600ms 后自动保存，页面留在详情；
+/// - 勾号与返回键只是"立即落盘最新草稿并返回"，不再询问是否放弃；
+/// - 本地写入完成后提醒重调度在后台执行，不阻塞返回。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -86,13 +85,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TodoDetailScreen), findsOneWidget);
 
-      // 编辑标题，让页面进入 editing 状态。
+      // 编辑标题，仍在 600ms 防抖窗口内。
       final titleField = find.widgetWithText(TextField, '任务名称');
       expect(titleField, findsOneWidget);
       await tester.enterText(titleField, '修改后的标题');
       await tester.pump();
 
-      // 点 AppBar 的 check 按钮触发保存。
+      // 点 AppBar 的 check 按钮触发立即落盘并返回。
       final checkBtn = find.widgetWithIcon(IconButton, Icons.check);
       expect(checkBtn, findsOneWidget);
       await tester.tap(checkBtn);
@@ -106,7 +105,7 @@ void main() {
       expect(stored.title, '修改后的标题');
     });
 
-    testWidgets('编辑保存会等待提醒同步完成后再返回', (tester) async {
+    testWidgets('编辑后返回不被提醒同步阻塞：本地先落盘，页面先离开', (tester) async {
       final (provider, item) = await buildProviderWithOne();
       final scheduler = _GatedTodoScheduler();
       provider.scheduler = scheduler;
@@ -116,26 +115,24 @@ void main() {
       await tester.tap(find.text('open-detail'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.widgetWithText(TextField, '任务名称'), '等待提醒同步');
+      await tester.enterText(find.widgetWithText(TextField, '任务名称'), '不等提醒同步');
       await tester.pump();
 
       await tester.tap(find.widgetWithIcon(IconButton, Icons.check));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
 
+      // 提醒同步仍被 gate 卡住，页面已经返回且本地写入完成。
       expect(scheduler.started, isTrue);
-      expect(find.byType(TodoDetailScreen), findsOneWidget);
-      expect(find.text('home-root'), findsNothing);
+      expect(find.byType(TodoDetailScreen), findsNothing);
+      expect(find.text('home-root'), findsOneWidget);
+      expect(provider.todos.single.title, '不等提醒同步');
 
       scheduler.complete();
       await tester.pumpAndSettle();
-
-      expect(find.byType(TodoDetailScreen), findsNothing);
-      expect(find.text('home-root'), findsOneWidget);
-      expect(provider.todos.single.title, '等待提醒同步');
     });
 
-    testWidgets('子任务保存等待父完成聚合后的提醒同步再返回', (tester) async {
+    testWidgets('子任务勾选后返回：父完成聚合落盘，提醒注册不阻塞返回', (tester) async {
       final provider = TodoProvider();
       final item = TodoItem(
         title: '等待子任务聚合',
@@ -156,17 +153,16 @@ void main() {
 
       await tester.tap(find.widgetWithIcon(IconButton, Icons.check));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(scheduler.todoSyncs, hasLength(1));
+      await tester.pumpAndSettle();
+      expect(scheduler.todoSyncs, isNotEmpty);
+      expect(provider.todos.single.subtasks.single.isCompleted, isTrue);
       expect(provider.todos.single.isCompleted, isTrue);
-      expect(find.byType(TodoDetailScreen), findsOneWidget);
-      expect(find.text('home-root'), findsNothing);
+      expect(provider.todos.single.completedAt, isNotNull);
+      expect(find.byType(TodoDetailScreen), findsNothing);
+      expect(find.text('home-root'), findsOneWidget);
 
       scheduler.complete();
       await tester.pumpAndSettle();
-      expect(find.byType(TodoDetailScreen), findsNothing);
-      expect(find.text('home-root'), findsOneWidget);
-      expect(provider.todos.single.completedAt, isNotNull);
     });
 
     testWidgets('clean 状态点保存：直接返回 home', (tester) async {
@@ -273,55 +269,51 @@ void main() {
     });
   });
 
-  group('Editing 下返回键弹出确认框', () {
-    testWidgets('取消 → 保持 editing，路由不 pop', (tester) async {
+  group('自动保存：返回先落盘，不再询问是否放弃', () {
+    testWidgets('防抖窗口内返回：先保存最新标题再回 home，无确认框', (tester) async {
       final (provider, item) = await buildProviderWithOne();
       await tester.pumpWidget(buildApp(provider: provider, todoId: item.id));
       await tester.pumpAndSettle();
       await tester.tap(find.text('open-detail'));
       await tester.pumpAndSettle();
 
-      // 制造脏状态。
+      // 制造脏状态，但不推进 600ms 防抖窗口。
       await tester.enterText(find.widgetWithText(TextField, '任务名称'), '改名中');
       await tester.pump();
+      expect(
+        provider.todos.firstWhere((t) => t.id == item.id).title,
+        '原始标题',
+        reason: '仍在防抖窗口内',
+      );
 
       // 点 AppBar 的返回按钮。
       await tester.tap(find.byIcon(Icons.arrow_back));
       await tester.pumpAndSettle();
 
-      expect(find.text('放弃未保存的修改？'), findsOneWidget);
+      expect(find.text('放弃未保存的修改？'), findsNothing);
+      expect(find.text('放弃'), findsNothing);
 
-      await tester.tap(find.text('取消'));
-      await tester.pumpAndSettle();
-
-      // 仍然停留在详情页。
-      expect(find.byType(TodoDetailScreen), findsOneWidget);
-      expect(find.text('home-root'), findsNothing);
+      // 已经回到 home，且改动已落盘。
+      expect(find.text('home-root'), findsOneWidget);
+      expect(find.byType(TodoDetailScreen), findsNothing);
+      expect(provider.todos.firstWhere((t) => t.id == item.id).title, '改名中');
     });
 
-    testWidgets('放弃 → 路由 pop 回 home，改动未写入', (tester) async {
+    testWidgets('编辑后等待防抖：自动保存不离开详情页也不弹提示', (tester) async {
       final (provider, item) = await buildProviderWithOne();
       await tester.pumpWidget(buildApp(provider: provider, todoId: item.id));
       await tester.pumpAndSettle();
       await tester.tap(find.text('open-detail'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.widgetWithText(TextField, '任务名称'), '即将被放弃');
+      await tester.enterText(find.widgetWithText(TextField, '任务名称'), '自动保存标题');
       await tester.pump();
-
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pump(const Duration(milliseconds: 700));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('放弃'));
-      await tester.pumpAndSettle();
-
-      // 已经回到 home。
-      expect(find.text('home-root'), findsOneWidget);
-      expect(find.byType(TodoDetailScreen), findsNothing);
-
-      // Provider 中仍是原始标题。
-      final stored = provider.todos.firstWhere((t) => t.id == item.id);
-      expect(stored.title, '原始标题');
+      expect(provider.todos.firstWhere((t) => t.id == item.id).title, '自动保存标题');
+      expect(find.byType(TodoDetailScreen), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
   });
 }
@@ -348,7 +340,9 @@ class _GatedTodoScheduler extends RecordingReminderScheduler {
 class _GatedAggregationScheduler extends RecordingReminderScheduler {
   final Completer<void> _aggregationGate = Completer<void>();
 
-  void complete() => _aggregationGate.complete();
+  void complete() {
+    if (!_aggregationGate.isCompleted) _aggregationGate.complete();
+  }
 
   @override
   Future<void> syncTodos(

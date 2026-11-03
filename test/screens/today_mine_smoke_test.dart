@@ -212,6 +212,11 @@ void main() {
           'mine_settings_entry',
           'mine_support_entry',
         ]) {
+          await tester.scrollUntilVisible(
+            find.byKey(ValueKey(key)),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
           expect(find.byKey(ValueKey(key)), findsOneWidget);
         }
         expect(find.text('日程日期'), findsNothing);
@@ -226,7 +231,16 @@ void main() {
           'mine_support_entry',
         ]) {
           final entry = find.byKey(ValueKey(key));
-          await tester.ensureVisible(entry);
+          tester
+              .state<ScrollableState>(find.byType(Scrollable).first)
+              .position
+              .jumpTo(0);
+          await tester.pump();
+          await tester.scrollUntilVisible(
+            entry,
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
           await tester.pumpAndSettle();
           await tester.tap(entry);
           await tester.pumpAndSettle();
@@ -675,11 +689,20 @@ void main() {
     await tester.pumpAndSettle();
     final greeting = find.byKey(const ValueKey('home_greeting'));
     final date = find.byKey(const ValueKey('home_date'));
-    expect(tester.widget<Text>(greeting).style?.fontSize, 19);
+    expect(
+      tester.widget<Text>(greeting).style?.fontSize,
+      DesignTokens.homeHeadingSize,
+    );
     expect(tester.getTopLeft(greeting).dy, closeTo(28, 2));
-    expect(tester.widget<Text>(date).style?.fontSize, 11);
+    expect(
+      tester.widget<Text>(date).style?.fontSize,
+      DesignTokens.homeCaptionSize,
+    );
     expect(tester.widget<Text>(date).style?.color, DesignTokens.homeMuted);
-    expect(tester.widget<Text>(find.text('工作').first).style?.fontSize, 15);
+    expect(
+      tester.widget<Text>(find.text('工作').first).style?.fontSize,
+      DesignTokens.homeTaskTitleSize,
+    );
     for (final pair in [('today_todos_tab', '1'), ('today_goals_tab', '2')]) {
       expect(
         find.descendant(
@@ -918,6 +941,7 @@ void main() {
     final efficiency = find.byKey(const ValueKey('mine_weekly_productivity'));
     final stats = find.byKey(const ValueKey('mine_stats_stable_grid'));
     expect(find.text(I18n.tr('today.productivity.weekly')), findsOneWidget);
+    expect(find.text(I18n.tr('today.productivity.title')), findsOneWidget);
     expect(
       tester.getBottomLeft(header).dy,
       lessThanOrEqualTo(tester.getTopLeft(efficiency).dy),
@@ -1223,7 +1247,7 @@ void main() {
     expect(mine, contains('height: baseHeight + fontGrowth * 2'));
     expect(mine, contains('RepaintBoundary('));
     expect(mine, isNot(contains('GridView.count(')));
-    expect(surface, contains('fontSize: 12'));
+    expect(surface, contains('fontSize: DesignTokens.fontSizeBody'));
     expect(surface, contains('fontSize: 11'));
     expect(surface, contains('fontSize: DesignTokens.fontSizeMd'));
     expect(surface, contains('iconBoxSize = 28'));
@@ -1383,7 +1407,6 @@ void main() {
     final beforeTitleTop = tester.getTopLeft(title).dy;
     final beforeHeaderTop = tester.getTopLeft(header).dy;
     final beforeStatsTop = tester.getTopLeft(stats).dy;
-    final beforeMenuTop = tester.getTopLeft(menuEntry).dy;
 
     scrollable.position.jumpTo(targetOffset);
     await tester.pump();
@@ -1398,9 +1421,21 @@ void main() {
       _topOrScrolledAway(tester, stats),
       anyOf(isNull, lessThan(beforeStatsTop)),
     );
+    await tester.scrollUntilVisible(
+      menuEntry,
+      120,
+      scrollable: scrollableFinder,
+    );
+    await tester.pumpAndSettle();
+    final beforeMenuTop = tester.getTopLeft(menuEntry).dy;
+    final menuOffset = scrollable.position.pixels;
+    expect(menuOffset, greaterThan(0));
+    scrollable.position.jumpTo(menuOffset > 80 ? menuOffset - 80 : 0);
+    await tester.pump();
+    expect(tester.getTopLeft(title).dy, closeTo(beforeTitleTop, 0.1));
     expect(
       _topOrScrolledAway(tester, menuEntry),
-      anyOf(isNull, lessThan(beforeMenuTop)),
+      anyOf(isNull, greaterThan(beforeMenuTop)),
     );
   });
 
@@ -1951,7 +1986,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('mine_settings_entry')));
+      final settingsEntry = find.byKey(const ValueKey('mine_settings_entry'));
+      await tester.ensureVisible(settingsEntry);
+      await tester.pumpAndSettle();
+      await tester.tap(settingsEntry);
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('通知支持'),

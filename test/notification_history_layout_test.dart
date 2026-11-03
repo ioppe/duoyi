@@ -265,13 +265,15 @@ Future<void> _pumpFixedFrames(
 }
 
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
+  final scrollable = find.byType(Scrollable).last;
+  tester.state<ScrollableState>(scrollable).position.jumpTo(0);
+  await tester.pump();
+  for (var step = 0; step < 20 && target.evaluate().isEmpty; step++) {
+    await tester.drag(scrollable, const Offset(0, -360));
+    await tester.pump();
+  }
   expect(target, findsAtLeastNWidgets(1));
-  await tester.scrollUntilVisible(
-    target.first,
-    360,
-    scrollable: find.byType(Scrollable).last,
-    maxScrolls: 20,
-  );
+  await tester.ensureVisible(target.first);
   await tester.pump();
 }
 
@@ -307,25 +309,18 @@ void _expectSettingsTileReadable(
   final tileRect = tester.getRect(tile);
   final titleRect = tester.getRect(titleFinder);
   final actionRect = tester.getRect(action);
-  final subtitleFinder = find.descendant(of: tile, matching: find.byType(Text));
-  final textRects = subtitleFinder
-      .evaluate()
-      .map((element) => tester.getRect(find.byWidget(element.widget)))
-      .where(
-        (rect) =>
-            rect.left >= titleRect.left - 0.5 &&
-            rect.right <= actionRect.left + 0.5,
-      )
-      .toList(growable: false);
-  final textCenterDy = textRects.isEmpty
-      ? titleRect.center.dy
-      : _rectsVerticalCenterDy(textRects);
+  final subtitle = tester.widget<AppSettingsTile>(tile).subtitle;
+  final textBottom = subtitle == null
+      ? titleRect.bottom
+      : tester
+            .getRect(find.descendant(of: tile, matching: find.text(subtitle)))
+            .bottom;
 
   _expectRectOnScreen(tester, tile);
   expect(titleRect.left, greaterThan(tileRect.left));
-  expect(titleRect.right, lessThan(actionRect.left));
+  expect(actionRect.left, greaterThanOrEqualTo(titleRect.left));
   expect(actionRect.right, lessThanOrEqualTo(tileRect.right + 0.5));
-  expect((actionRect.center.dy - textCenterDy).abs(), lessThan(9));
+  expect(actionRect.top, greaterThanOrEqualTo(textBottom));
 }
 
 void _expectHistoryEntryReadable(WidgetTester tester) {
@@ -396,16 +391,6 @@ double _textBlockCenterDy(Rect titleRect, Rect subtitleRect) {
   final bottom = titleRect.bottom > subtitleRect.bottom
       ? titleRect.bottom
       : subtitleRect.bottom;
-  return (top + bottom) / 2;
-}
-
-double _rectsVerticalCenterDy(List<Rect> rects) {
-  final top = rects
-      .map((rect) => rect.top)
-      .reduce((value, element) => value < element ? value : element);
-  final bottom = rects
-      .map((rect) => rect.bottom)
-      .reduce((value, element) => value > element ? value : element);
   return (top + bottom) / 2;
 }
 

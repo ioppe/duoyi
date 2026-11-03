@@ -42,15 +42,16 @@ import '../widgets/todo_list_group_picker.dart';
 
 /// Todo 详情页 / 编辑页。
 ///
-/// Todo 详情页 / 编辑页状态机。
+/// 行为约定（详见 `docs/task-detail-settings.md`）：
 ///
-/// - `_EditState` 四档：`clean / editing / saving / confirmDiscard`；
-/// - AppBar 的 check 按钮保存成功后返回上一页；
-/// - 返回键在 `editing` 下会弹"放弃修改"对话框；
-/// - 用 `PopScope` + `onPopInvoked` 统一拦截路由 pop，`Clean` 状态直接放行。
+/// - 所有已支持的可编辑字段在停止修改约 600ms 后自动保存；自动保存不退出页面、
+///   不弹保存成功提示、不禁用输入；
+/// - AppBar 勾号与返回键只是"立即落盘最新草稿并返回"，不再询问是否放弃修改；
+/// - 写入串行执行：在途期间的新编辑排队，最后一次修改一定会写入；
+/// - 自动保存失败保留草稿并提供重试，草稿不会因为失败被丢弃。
 ///
 /// 四象限统一表达优先级；清单类型、标签、子任务、重复、截止日等配置
-/// 保留在页面草稿中，由保存按钮统一持久化。
+/// 保留在页面草稿中。
 class TodoDetailScreen extends StatefulWidget {
   final String todoId;
 
@@ -60,17 +61,8 @@ class TodoDetailScreen extends StatefulWidget {
   State<TodoDetailScreen> createState() => _TodoDetailScreenState();
 }
 
-/// "保存不返回" 状态机的四档状态。
-///
-/// - `clean`    ：与基线一致，无未保存改动；返回键直接 pop；
-/// - `editing`  ：至少有一处与基线不同，点击保存会 → `saving`，点击返回会
-///                → `confirmDiscard`；
-/// - `saving`   ：正在写入 provider / 持久化；期间不应再触发另一次保存；
-/// - `confirmDiscard`：正在展示"放弃修改"对话框，用户选择后回到
-///                `editing`（取消）或 `clean` → pop（放弃）。
-enum _EditState { clean, editing, saving, confirmDiscard }
-
-class _TodoDetailScreenState extends State<TodoDetailScreen> {
+class _TodoDetailScreenState extends State<TodoDetailScreen>
+    with WidgetsBindingObserver {
   final _titleCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final _tagCtrl = TextEditingController();
@@ -82,17 +74,46 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   late final int _accountGeneration;
   late final (String?, String?) _accountIdentity;
 
-  /// "保存不返回"状态机当前状态。
-  _EditState _state = _EditState.clean;
+  /// 自动保存防抖窗口：连续输入只写最后一次。
+  static const Duration _autoSaveDebounce = Duration(milliseconds: 600);
 
-  /// 基线快照：`_load()` 与成功保存后都会刷新。任何与基线偏离的改动
-  /// 都会把状态抬升到 `editing`。用 JSON 化的字符串表示，避免深比较。
+  /// 防抖计时器；每次编辑重置。
+  Timer? _autoSaveTimer;
+
+  /// 串行写入循环；非空表示有写入在途。
+  Future<void>? _writer;
+
+  /// 在途期间又有新草稿排队，循环结束后继续写一次。
+  bool _writeQueued = false;
+
+  /// 当前草稿是否与 [_baseline] 不同。
+  bool _dirty = false;
+
+  /// 最近一次写入是否失败（草稿保留，下一次编辑 / 返回会重试）。
+  bool _saveFailed = false;
+
+  /// 本次失败周期内是否已经展示过失败提示，避免逐次自动保存刷屏。
+  bool _failureNoticeShown = false;
+
+  /// 当前 flush 是否由显式操作（返回 / 勾号）触发；
+  /// 只有显式操作才会提示校验错误。
+  int _explicitFlushRequests = 0;
+  int _flushRequests = 0;
+  bool get _explicitFlush => _explicitFlushRequests > 0;
+  bool _leaveRequested = false;
+
+  /// 最后一次观察到或写入的 provider 对象，用来区分"自己的保存回执"
+  /// 与真正的外部改动：只有外部改动才会回灌控制器。
+  TodoItem? _lastProviderTodo;
+
+  /// 基线快照：`_load()`、外部回灌与成功写入后刷新。用 JSON 字符串表示，
+  /// 避免深比较；子任务标题统一 trim，写回执不会让原始草稿一直判脏。
   late String _baseline;
-  late String _baselineSubtasks;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final auth = context.read<AuthProvider?>();
     _accountIdentity = (auth?.baseUrl, auth?.state.userId);
     _accountGeneration = AccountLocalDataCleaner.accountDataGeneration;
@@ -103,31 +124,47 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   /// 把当前 `_todo` + 文本控制器中的可编辑字段序列化为快照字符串。
   ///
   /// 只记录 UI 可编辑字段，包括子任务内容、完成状态及排列顺序。
-  String _snapshot(TodoItem t) {
-    final tags = [...t.tags]..sort();
+  String _snapshot(TodoItem t) => _snapshotOf(
+    title: _titleCtrl.text.trim(),
+    notes: _notesCtrl.text.trim(),
+    todo: t,
+  );
+
+  /// 用显式传入的标题 / 备注生成快照：写入时基线必须来自捕获的草稿，
+  /// 不能用 await 之后的控制器内容，否则写入期间的新编辑会被误判已保存。
+  String _snapshotOf({
+    required String title,
+    required String notes,
+    required TodoItem todo,
+  }) {
+    final tags = [...todo.tags]..sort();
     return jsonEncode(<String, dynamic>{
-      'title': _titleCtrl.text.trim(),
-      'notes': _notesCtrl.text.trim(),
-      'quadrant': t.quadrant.index,
-      'priority': t.priority.index,
-      'listGroupId': t.listGroupId,
-      'listGroupName': t.listGroupName,
+      'title': title,
+      'notes': notes,
+      'quadrant': todo.quadrant.index,
+      'priority': todo.priority.index,
+      'listGroupId': todo.listGroupId,
+      'listGroupName': todo.listGroupName,
       'tags': tags,
-      'dueDate': t.dueDate?.toIso8601String(),
-      'reminderPlan': t.reminderPlan.toJson(),
-      'focusLink': t.focusLink.toJson(),
-      'timeTargetSeconds': t.timeTargetSeconds,
-      'recurrence': t.recurrence.toJson(),
-      'autoToggleByChildren': t.autoToggleByChildren,
-      'subtasks': _subtaskSnapshot(t),
-      'workspaceId': t.workspaceId,
-      'assigneeId': t.assigneeId,
-      'attachments': t.attachments.map((a) => a.toJson()).toList(),
+      'dueDate': todo.dueDate?.toIso8601String(),
+      'reminderPlan': todo.reminderPlan.toJson(),
+      'focusLink': todo.focusLink.toJson(),
+      'timeTargetSeconds': todo.timeTargetSeconds,
+      'recurrence': todo.recurrence.toJson(),
+      'autoToggleByChildren': todo.autoToggleByChildren,
+      'subtasks': _subtaskSnapshot(todo),
+      'workspaceId': todo.workspaceId,
+      'assigneeId': todo.assigneeId,
+      'attachments': todo.attachments.map((a) => a.toJson()).toList(),
     });
   }
 
-  String _subtaskSnapshot(TodoItem todo) =>
-      jsonEncode(todo.subtasks.map((subtask) => subtask.toJson()).toList());
+  /// 子任务快照。标题 trim 后比较：已落盘的 trim 值与本地原始草稿只差空白时
+  /// 不能判成未保存，否则自动保存会反复重写。
+  String _subtaskSnapshot(TodoItem todo) => jsonEncode([
+    for (final subtask in todo.subtasks)
+      {...subtask.toJson(), 'title': subtask.title.trim()},
+  ]);
 
   bool _reminderSchedulingFieldsChanged(TodoItem before, TodoItem after) {
     // ignore: deprecated_member_use_from_same_package
@@ -155,17 +192,23 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     if (matches.isEmpty) {
       _todo = TodoItem(id: widget.todoId, title: '');
       _baseline = '';
-      _baselineSubtasks = '';
       _missingTodo = true;
-      _state = _EditState.clean;
+      _dirty = false;
+      _lastProviderTodo = null;
       return;
     }
     final todo = matches.first;
     _missingTodo = false;
     _syncDraftFromProvider(todo);
+    _lastProviderTodo = todo;
     _baseline = _snapshot(_todo);
-    _baselineSubtasks = _subtaskSnapshot(_todo);
-    _state = _EditState.clean;
+    final recovered = provider.takeDetailDraft(todo.id);
+    if (recovered != null) {
+      _syncDraftFromProvider(recovered.todo);
+      _timeTargetCtrl.text = recovered.timeTargetText;
+    }
+    _dirty = _snapshot(_todo) != _baseline;
+    if (_dirty) _scheduleAutoSave();
   }
 
   void _syncDraftFromProvider(TodoItem todo) {
@@ -193,17 +236,39 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     }
   }
 
-  /// 任一可编辑字段变动时调用；根据是否偏离基线切换状态。
-  ///
-  /// - 若当前已经是 `saving`，保持不动（在途保存不应被抢占）；
-  /// - 若当前与基线一致，回到 `clean`；否则升到 `editing`。
+  /// 任一可编辑字段变动时调用：重算脏标记并按 600ms 窗口排队自动保存。
   void _markEditing() {
-    if (_state == _EditState.saving) return;
+    _refreshDirtyState();
+    if (_dirty) _scheduleAutoSave();
+  }
+
+  /// 用当前草稿与基线比较刷新脏标记；回到基线时取消待写并清掉失败标记。
+  void _refreshDirtyState() {
     final dirty = _snapshot(_todo) != _baseline;
-    final next = dirty ? _EditState.editing : _EditState.clean;
-    if (_state != next) {
-      setState(() => _state = next);
+    if (dirty != _dirty) {
+      if (mounted) {
+        setState(() => _dirty = dirty);
+      } else {
+        _dirty = dirty;
+      }
     }
+    if (dirty) return;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    _saveFailed = false;
+    _failureNoticeShown = false;
+  }
+
+  /// 把当前草稿排进 600ms 防抖窗口；写入在途时同样只排队，
+  /// 由串行循环在下一轮写入最新草稿。
+  void _scheduleAutoSave() {
+    if (_missingTodo || !mounted) return;
+    if (!_isCurrentAccount()) return;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(_autoSaveDebounce, () {
+      _autoSaveTimer = null;
+      unawaited(_requestWrite());
+    });
   }
 
   bool _isCurrentAccount() {
@@ -265,8 +330,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
   }
 
   void _changeListGroup(String name) {
-    if (_state == _EditState.saving ||
-        !_isCurrentAccount() ||
+    if (!_isCurrentAccount() ||
         !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
       return;
     }
@@ -289,15 +353,16 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
     _markEditing();
   }
 
-  /// 保存当前编辑结果。
+  /// AppBar 勾号：立即落盘当前所有修改，成功后返回上一页。
   ///
-  /// - `clean`：不触发任何写入，直接返回上一页；
-  /// - 其他状态：`_state = saving` → `updateTodo` → 成功回到 `clean`
-  ///   并刷新基线后返回上一页；失败回到 `editing`
-  ///   并展示错误 snackbar。
-  ///
+  /// - 没有未保存改动 / 没有在途写入：直接返回；
+  /// - 校验不通过（空标题、空子任务）：提示并留在页面；
+  /// - 写入失败：保留草稿、提供重试，留在页面。
   Future<void> _save() async {
-    if (_state == _EditState.saving) return;
+    if (_missingTodo) {
+      Navigator.of(context).maybePop();
+      return;
+    }
     if (!_isCurrentAccount()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(I18n.tr('auth.connection_changed'))),
@@ -313,161 +378,320 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       );
       return;
     }
+    await _leavePage(result: true, preserveFailedDraft: false);
+  }
 
-    if (_todo.subtasks.any((subtask) => subtask.title.trim().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(I18n.tr('todo.subtask.empty')),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+  Future<void> _leavePage({
+    bool? result,
+    bool preserveFailedDraft = true,
+  }) async {
+    if (_leaveRequested) return;
+    _leaveRequested = true;
+    final allow = await _handleBack(preserveFailedDraft: preserveFailedDraft);
+    if (!mounted) return;
+    if (!allow) {
+      _leaveRequested = false;
       return;
     }
+    Navigator.of(context).pop(result);
+  }
 
-    // 同步基线检查：用户点了 check 但什么也没改 → 轻量反馈、不打扰。
-    if (_state == _EditState.clean) {
-      Navigator.of(context).maybePop();
-      return;
+  /// 用户尝试返回时（系统返回键 / AppBar 返回按钮）。
+  ///
+  /// 先保存最新草稿；失败返回时保留本次会话草稿供重开重试。
+  /// 校验不完整时留在页面，不弹放弃确认。返回 true 表示允许 pop。
+  Future<bool> _handleBack({bool preserveFailedDraft = true}) async {
+    if (_missingTodo) return true;
+    if (!_isCurrentAccount()) {
+      // 账号 / 服务器已切换：不写给新账号，也不做误导性提示，直接离开。
+      _cancelPendingWrites();
+      return true;
     }
-
-    final messenger = ScaffoldMessenger.of(context);
-    final provider = context.read<TodoProvider>();
-    final cs = Theme.of(context).colorScheme;
-    final title = _titleCtrl.text.trim();
-    if (title.isEmpty) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: const Text('任务名称不能为空'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: cs.error,
-        ),
-      );
-      return;
+    if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
+      if (!preserveFailedDraft) return false;
+      _preserveDraftForReopen();
+      _cancelPendingWrites();
+      return true;
     }
+    await _flushWrites(explicit: true);
+    if (!mounted) return false;
+    if (!_isCurrentAccount()) {
+      _cancelPendingWrites();
+      return true;
+    }
+    _refreshDirtyState();
+    if (_dirty && _saveFailed && preserveFailedDraft) {
+      _preserveDraftForReopen();
+      _cancelPendingWrites();
+      return true;
+    }
+    return !_dirty;
+  }
 
-    final nextTodo = _todo.copyWith(
-      title: title,
-      notes: _notesCtrl.text.trim(),
+  void _preserveDraftForReopen() {
+    if (!_dirty || !_isCurrentAccount()) return;
+    context.read<TodoProvider>().preserveDetailDraft(
+      _todo.copyWith(title: _titleCtrl.text, notes: _notesCtrl.text),
+      timeTargetText: _timeTargetCtrl.text,
     );
-    final subtasksChanged = _subtaskSnapshot(_todo) != _baselineSubtasks;
-    if (subtasksChanged) {
-      nextTodo.subtasks = [
-        for (final subtask in _todo.subtasks)
-          Subtask(
-            id: subtask.id,
-            title: subtask.title.trim(),
-            isCompleted: subtask.isCompleted,
-            sortOrder: subtask.sortOrder,
-          ),
-      ];
-    }
-    setState(() => _state = _EditState.saving);
+  }
 
+  // ---- 自动保存 -----------------------------------------------------------
+
+  /// 等到所有在途与排队写入完成；`explicit` 为真时校验失败会给出提示。
+  Future<void> _flushWrites({bool explicit = false}) async {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    _flushRequests++;
+    if (explicit) {
+      _explicitFlushRequests++;
+    }
     try {
-      final savedTodo = provider.todos.firstWhere(
-        (t) => t.id == widget.todoId,
-        orElse: () => _todo,
+      if (mounted && _dirty) _writeQueued = true;
+      while (true) {
+        final running = _writer;
+        if (running != null) {
+          await running;
+          continue;
+        }
+        if (!_writeQueued) return;
+        await _requestWrite();
+      }
+    } finally {
+      _flushRequests--;
+      if (explicit) {
+        _explicitFlushRequests--;
+      }
+    }
+  }
+
+  /// 排队一次写入。写入串行执行：在途时不抢占，只置位排队标记，
+  /// 由循环在下一轮迭代消费，因此永远不会出现两次并发写入。
+  Future<void> _requestWrite() {
+    _writeQueued = true;
+    final running = _writer;
+    if (running != null) return running;
+    final future = _drainWrites();
+    _writer = future;
+    return future;
+  }
+
+  Future<void> _drainWrites() async {
+    try {
+      while (_writeQueued) {
+        _writeQueued = false;
+        await _writeDraftOnce();
+      }
+    } finally {
+      _writer = null;
+    }
+  }
+
+  /// 单次写入：捕获草稿 → 提醒预检 → provider 写入 → 用捕获快照推进基线。
+  ///
+  /// 所有 `await` 之后只用捕获的草稿推进基线，绝不读取 live 控制器，
+  /// 否则写入期间的新编辑会被误判成"已保存"。
+  Future<void> _writeDraftOnce() async {
+    if (!mounted || _missingTodo) return;
+    if (!_isCurrentAccount()) {
+      _cancelPendingWrites();
+      return;
+    }
+    if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
+      return;
+    }
+    final draft = _buildDraft();
+    if (draft == null) {
+      // 用户正在输入（空标题 / 空子任务）：静默延后；
+      // 只有显式返回或勾号才提示填写或删除。
+      if (_explicitFlush) _showDraftValidationMessage();
+      return;
+    }
+    final captured = _snapshotOf(
+      title: draft.title,
+      notes: draft.notes,
+      todo: draft,
+    );
+    // 内容与基线一致时不做无意义写入（例如刚回到基线又触发了一次 flush）。
+    if (captured == _baseline) return;
+    final provider = context.read<TodoProvider>();
+    try {
+      final current = provider.todos.firstWhere(
+        (todo) => todo.id == widget.todoId,
+        orElse: () => draft,
       );
-      if (_reminderSchedulingFieldsChanged(savedTodo, nextTodo)) {
+      if (_reminderSchedulingFieldsChanged(current, draft)) {
         final reminderReady = await preflightTodoReminderSave(
           context,
-          todo: nextTodo,
+          todo: draft,
           notificationService: context.read<NotificationService?>(),
           issueTitle: '待办提醒注册失败',
         );
         if (!mounted) return;
         if (!reminderReady) {
-          _restoreEditingAfterSaveInterruption();
+          // 提醒未注册不算本地保存成功：草稿保留，预检已给出具体原因。
+          _markSaveFailed(showNotice: false);
           return;
         }
       }
-      if (!_isCurrentAccount() ||
-          !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ??
-              true)) {
-        _restoreEditingAfterSaveInterruption();
+      // 预检是异步的，回来后再核对一次账号与权限。
+      if (!_isCurrentAccount()) {
+        _cancelPendingWrites();
         return;
       }
-      await provider.updateTodo(widget.todoId, nextTodo);
-      if (!mounted) return;
-
-      // 以 provider 聚合后的最终对象刷新草稿和基线。
-      _syncDraftFromProvider(
-        provider.todos.firstWhere(
-          (t) => t.id == widget.todoId,
-          orElse: () => _todo,
-        ),
+      if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ??
+          true)) {
+        return;
+      }
+      // 提醒重调度交给后台处理，不阻塞输入与返回。
+      await provider.updateTodo(
+        widget.todoId,
+        draft,
+        waitForReminderSync: false,
       );
-      _baseline = _snapshot(_todo);
-      _baselineSubtasks = _subtaskSnapshot(_todo);
-      setState(() => _state = _EditState.clean);
+      if (!_isCurrentAccount()) {
+        _cancelPendingWrites();
+        return;
+      }
+      final saved = provider.todos.firstWhere(
+        (todo) => todo.id == widget.todoId,
+      );
+      if (_snapshotOf(
+            title: saved.title.trim(),
+            notes: saved.notes.trim(),
+            todo: saved,
+          ) !=
+          captured) {
+        throw StateError('task draft was not applied');
+      }
+      _lastProviderTodo = saved;
+      _adoptSavedCompletion(saved);
+      _baseline = captured;
+      _markSaveSucceeded();
+    } catch (e, st) {
+      if (!_isCurrentAccount()) {
+        _cancelPendingWrites();
+        return;
+      }
+      _markSaveFailed(showNotice: true, error: e, stackTrace: st);
+    }
+  }
 
-      Navigator.of(context).maybePop(true);
-    } catch (e) {
-      if (!mounted) return;
-      _restoreEditingAfterSaveInterruption();
-      messenger.showSnackBar(
+  void _cancelPendingWrites() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    _writeQueued = false;
+  }
+
+  /// 由当前草稿构造待写入对象；校验不通过时返回 `null`。
+  ///
+  /// 子任务标题在此 trim；写回执只同步派生完成态，不动本地原始草稿，
+  /// 因此不会打断正在输入的文本与光标。
+  TodoItem? _buildDraft() {
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) return null;
+    if (_todo.subtasks.any((subtask) => subtask.title.trim().isEmpty)) {
+      return null;
+    }
+    final nextTodo = _todo.copyWith(
+      title: title,
+      notes: _notesCtrl.text.trim(),
+    );
+    nextTodo.subtasks = [
+      for (final subtask in _todo.subtasks)
+        Subtask(
+          id: subtask.id,
+          title: subtask.title.trim(),
+          isCompleted: subtask.isCompleted,
+          sortOrder: subtask.sortOrder,
+        ),
+    ];
+    return nextTodo;
+  }
+
+  /// 采纳 provider 聚合出的完成态（父任务完成、完成时间、看板列），
+  /// 但保留本地草稿的其余字段，写入期间的新编辑不会被回执覆盖。
+  void _adoptSavedCompletion(TodoItem saved) {
+    _todo = _todo.copyWith(
+      isCompleted: saved.isCompleted,
+      completedAt: saved.completedAt,
+      kanbanColumnId: saved.kanbanColumnId,
+    );
+  }
+
+  void _markSaveSucceeded() {
+    _saveFailed = false;
+    _failureNoticeShown = false;
+    _refreshDirtyState();
+    // 写入期间到达的新编辑：继续排队，最后一次修改一定会落盘。
+    if (!_dirty) return;
+    if (_flushRequests > 0) {
+      _writeQueued = true;
+    } else {
+      _scheduleAutoSave();
+    }
+  }
+
+  void _markSaveFailed({
+    required bool showNotice,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    if (error != null) {
+      debugPrint('[TodoDetailScreen] autosave failed: $error\n$stackTrace');
+    }
+    if (!_saveFailed) {
+      if (mounted) {
+        setState(() => _saveFailed = true);
+      } else {
+        _saveFailed = true;
+      }
+    }
+    if (!showNotice || _failureNoticeShown || !mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    _failureNoticeShown = true;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
-          content: Text('保存失败：${userVisibleApiError(e)}'),
+          content: Text(I18n.tr('todo.autosave.failed')),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: cs.error,
-          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: I18n.tr('todo.autosave.retry'),
+            onPressed: () {
+              _failureNoticeShown = false;
+              _cancelPendingWrites();
+              unawaited(_requestWrite());
+            },
+          ),
         ),
       );
-    }
   }
 
-  void _restoreEditingAfterSaveInterruption() {
-    if (!mounted || _state != _EditState.saving) return;
-    setState(() => _state = _EditState.editing);
-  }
-
-  /// 用户尝试返回时（系统返回键 / AppBar 返回按钮）。
-  ///
-  /// - `editing`：转到 `confirmDiscard` 并弹确认框；
-  ///   - "放弃"：重置为 `clean` 后允许路由 pop；
-  ///   - "取消"：保持 `editing`，不 pop。
-  /// - 其他状态：放行。
-  ///
-  /// 返回 `true` 表示"允许 pop"，返回 `false` 表示"拦截"。
-  Future<bool> _handleBack() async {
-    if (_state == _EditState.saving) {
-      // 正在保存期间不允许离开页面，避免 provider 写入与 pop 竞态。
-      return false;
-    }
-    if (_state != _EditState.editing) return true;
-
-    setState(() => _state = _EditState.confirmDiscard);
-    final discard = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AppDialog(
-        title: const Text('放弃未保存的修改？'),
-        content: const Text('当前修改尚未保存，返回将丢弃这些改动。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('放弃'),
-          ),
-        ],
+  /// 显式返回 / 勾号时的校验提示：只在用户主动离开时才打扰。
+  void _showDraftValidationMessage() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    final hasEmptySubtask = _todo.subtasks.any(
+      (subtask) => subtask.title.trim().isEmpty,
+    );
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          hasEmptySubtask
+              ? I18n.tr('todo.subtask.empty')
+              : I18n.tr('todo.validation.title_required'),
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
-    if (!mounted) return false;
-
-    if (discard == true) {
-      setState(() => _state = _EditState.clean);
-      return true;
-    }
-    setState(() => _state = _EditState.editing);
-    return false;
   }
 
   void _updateSubtasks(List<Subtask> items) {
-    if (_state == _EditState.saving ||
-        !(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
+    if (!(context.read<ShareProvider?>()?.canEdit(_todo.workspaceId) ?? true)) {
       return;
     }
     setState(() => _todo = _todo.copyWith(subtasks: items));
@@ -714,11 +938,28 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    _writeQueued = false;
     _titleCtrl.dispose();
     _notesCtrl.dispose();
     _tagCtrl.dispose();
     _timeTargetCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 切后台 / 窗口隐藏：最佳努力落盘，回来后不丢未保存的修改。
+    if (state != AppLifecycleState.inactive &&
+        state != AppLifecycleState.paused &&
+        state != AppLifecycleState.hidden) {
+      return;
+    }
+    if (!_dirty && _writer == null) return;
+    unawaited(_flushWrites());
   }
 
   @override
@@ -763,10 +1004,15 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       (t) => t.id == widget.todoId,
       orElse: () => _todo,
     );
-    if (_state == _EditState.clean) {
-      _syncDraftFromProvider(providerTodo);
-      _baseline = _snapshot(_todo);
-      _baselineSubtasks = _subtaskSnapshot(_todo);
+    if (!identical(providerTodo, _lastProviderTodo)) {
+      _lastProviderTodo = providerTodo;
+      // 只有本地没有未保存草稿、也没有在途写入时，才把 provider 的新对象
+      // 回灌到控制器与基线。自己的保存回执、以及写入在途期间的 provider
+      // 通知一律跳过，避免用 trim 后的回执打断正在输入的文本与光标。
+      if (!_dirty && _writer == null) {
+        _syncDraftFromProvider(providerTodo);
+        _baseline = _snapshot(_todo);
+      }
     }
     final auth = context.watch<AuthProvider?>();
     final connection = (auth?.baseUrl, auth?.state.userId);
@@ -792,20 +1038,14 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
       });
     }
 
-    // canPop 反映当前状态机是否允许直接 pop：
-    // - clean：没有未保存改动，系统返回键 / AppBar 返回键直接放行；
-    // - 其它：拦截，走 `_handleBack` → 弹"放弃修改"对话框的分支。
-    final bool canPop = _state == _EditState.clean;
+    // 有任何未保存草稿或在途写入时拦截 pop，先 flush 最新草稿再离开；
+    // 正常流程不再询问是否放弃未保存改动。
+    final bool canPop = !_dirty && _writer == null;
     return PopScope(
       canPop: canPop,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        final allow = await _handleBack();
-        if (allow && mounted) {
-          // `_handleBack` 已经把 state 切回 clean；再主动请求一次 pop。
-          // ignore: use_build_context_synchronously
-          Navigator.of(context).pop();
-        }
+        await _leavePage();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -813,23 +1053,13 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
           titleTextStyle: appSecondaryRouteTitleTextStyle(context),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // 统一走 PopScope：clean → 直接 pop；其它 → 触发
-              // `onPopInvokedWithResult` 的拦截分支。
-              Navigator.of(context).maybePop();
-            },
+            onPressed: () => _leavePage(),
           ),
           actions: [
             IconButton(
-              icon: _state == _EditState.saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check),
+              icon: const Icon(Icons.check),
               tooltip: '保存',
-              onPressed: _state == _EditState.saving || !canEdit ? null : _save,
+              onPressed: canEdit ? _save : null,
             ),
           ],
         ),
@@ -849,7 +1079,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                   children: [
                     TextField(
                       controller: _titleCtrl,
-                      enabled: canEdit && _state != _EditState.saving,
+                      enabled: canEdit,
                       minLines: 1,
                       maxLines: null,
                       keyboardType: TextInputType.multiline,
@@ -867,7 +1097,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                       child: TodoSubtaskEditor(
                         subtasks: _todo.subtasks,
                         onChanged: _updateSubtasks,
-                        enabled: canEdit && _state != _EditState.saving,
+                        enabled: canEdit,
                         helperText: I18n.tr('todo.subtask.save_hint'),
                       ),
                     ),
@@ -919,7 +1149,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                               value: _listGroupValue(customLists),
                               names: _listGroupNames(provider, customLists),
                               provider: customLists,
-                              enabled: canEdit && _state != _EditState.saving,
+                              enabled: canEdit,
                               canCreate:
                                   canEdit &&
                                   customLists != null &&
@@ -937,7 +1167,7 @@ class _TodoDetailScreenState extends State<TodoDetailScreen> {
                           AppDropdownField<EisenhowerQuadrant>(
                             key: const ValueKey('todo_detail_quadrant'),
                             initialValue: _todo.quadrant,
-                            enabled: canEdit && _state != _EditState.saving,
+                            enabled: canEdit,
                             labelText: I18n.tr('todo.create.quadrant'),
                             items: const [
                               DropdownMenuItem(
@@ -2037,7 +2267,7 @@ class _TodoMarkdownPreviewBlock extends StatelessWidget {
         child: Text(
           block.text,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontFamily: DesignTokens.fontFamilyRounded,
+            fontFamily: DesignTokens.fontFamily,
             fontSize: DesignTokens.fontSizeBody,
             color: colorScheme.onSurface,
           ),
@@ -2121,7 +2351,7 @@ class _TodoInlineMarkdownText extends StatelessWidget {
             TextSpan(
               text: source.substring(i + 1, end),
               style: base.copyWith(
-                fontFamily: DesignTokens.fontFamilyRounded,
+                fontFamily: DesignTokens.fontFamily,
                 backgroundColor: cs.surfaceContainerHighest,
               ),
             ),

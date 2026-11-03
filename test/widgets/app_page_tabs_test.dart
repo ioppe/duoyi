@@ -9,10 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await (FontLoader(DesignTokens.fontFamilyRounded)..addFont(
-          rootBundle.load('assets/fonts/ResourceHanRoundedCN-Bold.ttf'),
-        ))
-        .load();
+    await (FontLoader(
+      DesignTokens.fontFamily,
+    )..addFont(rootBundle.load('assets/fonts/NotoSansSC-Variable.ttf'))).load();
   });
 
   testWidgets('九套主题共享文字短线页签，窄屏大字不溢出', (tester) async {
@@ -63,8 +62,8 @@ void main() {
           expect(bar.labelColor, style.labelColor);
           expect(bar.unselectedLabelColor, style.unselectedLabelColor);
           expect(bar.labelStyle!.fontSize, 14);
-          expect(bar.labelStyle!.fontWeight, FontWeight.w700);
-          expect(bar.labelStyle!.fontFamily, DesignTokens.fontFamilyRounded);
+          expect(bar.labelStyle!.fontWeight, DesignTokens.fontWeightMedium);
+          expect(bar.labelStyle!.fontFamily, DesignTokens.fontFamily);
           final first = find.widgetWithText(Tab, '今日打卡');
           expect(tester.getSize(first).height, greaterThanOrEqualTo(44));
           expect(tester.getSize(first).width, lessThan(width / 2));

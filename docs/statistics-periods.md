@@ -30,10 +30,10 @@
 
 `StatisticsWindow` 统一自然周期、同期和日/周/月分段；`ReportEngine`、时间切片与趋势分析共享相同边界。`StatisticsActivityCard` 按周期切换形态。`HabitHeatmap` 的明确日期范围按调用位置启用，原有习惯页及详情的滚动周数行为继续兼容。
 
-复制、分享图、PDF 和 AI 解读继续使用当前所选周期。语言和视觉风格沿用应用的国际化、主题及圆体粗字规范。
+复制、分享图、PDF 和 AI 解读继续使用当前所选周期。界面沿用应用的国际化、主题及 Noto Sans SC 全局字阶；PDF 导出字体独立处理。
 
 实际构建截图及完整验证记录见 [周期报告证据](../evidence/screenshots/report-periods/README.md)。
 
 ## 云端解读的展示
 
-统计报告的云端个性化解读与AI历史展开正文共用主题化Markdown阅读组件，渲染标题、强调、列表、引用、代码和表格；正文可选择，随外层页面滚动。资源圆体、粗字与主题颜色保持一致。对模型在粗体结束标记前加入空格的格式提供兼容，但不改写原始回复；代码中的字面标记不受影响。旧纯文本历史继续可读，历史复制仍返回完整原文。实际构建截图和验证结果见 [AI解读Markdown渲染](../evidence/screenshots/ai-review-markdown/README.md)。
+统计报告的云端个性化解读与 AI 历史展开正文共用主题化 Markdown 阅读组件，渲染标题、强调、列表、引用、代码和表格；正文可选择，随外层页面滚动。Noto Sans SC 常规正文、中等标签及较粗标题使用全局字阶和主题颜色。对模型在粗体结束标记前加入空格的格式提供兼容，但不改写原始回复；代码中的字面标记不受影响。旧纯文本历史继续可读，历史复制仍返回完整原文。历史构建截图见 [AI 解读 Markdown 渲染](../evidence/screenshots/ai-review-markdown/README.md)，当前字体以 [设计约定](design-v2.md) 为准。

@@ -145,10 +145,12 @@ void main() {
             style.tableHead,
             style.tableBody,
           ]) {
-            expect(textStyle!.fontFamily, DesignTokens.fontFamilyRounded);
-            expect(textStyle.fontWeight, DesignTokens.fontWeightStrong);
+            expect(textStyle!.fontFamily, DesignTokens.fontFamily);
             expect(textStyle.color, brand.theme.colorScheme.onSurface);
           }
+          expect(style.p!.fontWeight, DesignTokens.fontWeightRegular);
+          expect(style.strong!.fontWeight, DesignTokens.fontWeightStrong);
+          expect(style.h3!.fontWeight, DesignTokens.fontWeightStrong);
           expect(style.h3!.fontSize, greaterThan(style.p!.fontSize!));
           expect(
             tester.takeException(),

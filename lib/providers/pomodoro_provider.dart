@@ -30,6 +30,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   PomodoroConfig _config = PomodoroConfig();
   Timer? _timer;
+  bool _isPaused = false;
   final ValueNotifier<int> _timerTicks = ValueNotifier<int>(0);
   List<PomodoroSession> _sessions = [];
   List<PomodoroFocusPenalty> _penalties = [];
@@ -71,6 +72,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? _lastDistractingPackage;
 
   PomodoroState get state => _state;
+
+  /// 用户主动暂停；即使尚未经过一秒，也区别于尚未开始或重置。
+  bool get isPaused => !_state.isRunning && _isPaused;
   PomodoroConfig get config => _config;
   List<PomodoroSession> get sessions => _sessions;
   List<PomodoroFocusPenalty> get penalties => List.unmodifiable(_penalties);
@@ -211,6 +215,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _initState() {
+    _isPaused = false;
     _state = PomodoroState(
       remainingSeconds: _config.focusDuration,
       totalSeconds: _config.focusDuration,
@@ -576,6 +581,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _startTimer() {
+    _isPaused = false;
     if (_timer?.isActive ?? false) {
       if (!_state.isRunning) {
         _state = _state.copyWith(isRunning: true);
@@ -621,12 +627,14 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _cancelTimer() {
+    _isPaused = false;
     _timer?.cancel();
     _timer = null;
   }
 
   void _pauseTimer() {
     _cancelTimer();
+    _isPaused = true;
     _clearRunningSnapshot();
     _state = _state.copyWith(isRunning: false);
     notifyListeners();

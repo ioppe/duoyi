@@ -43,49 +43,54 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('AppSettingsTile keeps text readable with complex trailing', (
-    tester,
-  ) async {
-    await _pumpNarrow(
-      tester,
-      width: 320,
-      child: AppSettingsTile(
-        icon: Icons.tune_outlined,
-        title: '底部导航和通知设置里的超长设置项标题',
-        subtitle: '副标题也可能来自动态状态，需要保留可读空间',
-        color: Colors.teal,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: '上移',
-              icon: const Icon(Icons.keyboard_arrow_up),
-              onPressed: () {},
-            ),
-            IconButton(
-              tooltip: '下移',
-              icon: const Icon(Icons.keyboard_arrow_down),
-              onPressed: () {},
-            ),
-            Switch(value: true, onChanged: (_) {}),
-          ],
+  testWidgets(
+    'AppSettingsTile stacks complex actions without shrinking touch targets',
+    (tester) async {
+      await _pumpNarrow(
+        tester,
+        width: 320,
+        child: AppSettingsTile(
+          icon: Icons.tune_outlined,
+          title: '底部导航和通知设置里的超长设置项标题',
+          subtitle: '副标题也可能来自动态状态，需要保留可读空间',
+          color: Colors.teal,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: '上移',
+                icon: const Icon(Icons.keyboard_arrow_up),
+                onPressed: () {},
+              ),
+              IconButton(
+                tooltip: '下移',
+                icon: const Icon(Icons.keyboard_arrow_down),
+                onPressed: () {},
+              ),
+              Switch(value: true, onChanged: (_) {}),
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(find.textContaining('底部导航'), findsOneWidget);
-    expect(find.byType(Switch), findsOneWidget);
-    final iconRect = tester.getRect(find.byIcon(Icons.tune_outlined));
-    final titleRect = tester.getRect(find.text('底部导航和通知设置里的超长设置项标题'));
-    final subtitleRect = tester.getRect(find.text('副标题也可能来自动态状态，需要保留可读空间'));
-    final actionRect = tester.getRect(find.byType(Switch));
-    final textCenterDy = _textBlockCenterDy(titleRect, subtitleRect);
-    expect((iconRect.center.dy - textCenterDy).abs(), lessThan(5));
-    expect((actionRect.center.dy - textCenterDy).abs(), lessThan(5));
-    expect(actionRect.left, greaterThan(titleRect.left));
-    expect(subtitleRect.top, greaterThan(titleRect.bottom));
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.textContaining('底部导航'), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
+      final iconRect = tester.getRect(find.byIcon(Icons.tune_outlined));
+      final titleRect = tester.getRect(find.text('底部导航和通知设置里的超长设置项标题'));
+      final subtitleRect = tester.getRect(find.text('副标题也可能来自动态状态，需要保留可读空间'));
+      final actionRect = tester.getRect(find.byType(Switch));
+      final textCenterDy = _textBlockCenterDy(titleRect, subtitleRect);
+      expect((iconRect.center.dy - textCenterDy).abs(), lessThan(5));
+      expect(actionRect.top, greaterThan(subtitleRect.bottom));
+      expect(
+        tester.getSize(find.byType(IconButton).first).width,
+        greaterThanOrEqualTo(kMinInteractiveDimension),
+      );
+      expect(actionRect.left, greaterThan(titleRect.left));
+      expect(subtitleRect.top, greaterThan(titleRect.bottom));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('AppSettingsTile centers leading icon in the whole row', (
     tester,
@@ -112,29 +117,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('AppSettingsTile aligns daily reminder time row', (tester) async {
-    await _pumpNarrow(
-      tester,
-      width: 320,
-      child: AppSettingsTile(
-        icon: Icons.schedule,
-        title: '提醒时间',
-        subtitle: '到点发送带声音和震动的提醒',
-        color: Colors.deepOrange,
-        trailing: TextButton(onPressed: () {}, child: const Text('08:30')),
-      ),
-    );
+  testWidgets(
+    'AppSettingsTile keeps the reminder time below text on narrow screens',
+    (tester) async {
+      await _pumpNarrow(
+        tester,
+        width: 320,
+        child: AppSettingsTile(
+          icon: Icons.schedule,
+          title: '提醒时间',
+          subtitle: '到点发送带声音和震动的提醒',
+          color: Colors.deepOrange,
+          trailing: TextButton(onPressed: () {}, child: const Text('08:30')),
+        ),
+      );
 
-    final iconRect = tester.getRect(find.byIcon(Icons.schedule));
-    final titleRect = tester.getRect(find.text('提醒时间'));
-    final subtitleRect = tester.getRect(find.text('到点发送带声音和震动的提醒'));
-    final actionRect = tester.getRect(find.text('08:30'));
-    final textCenterDy = _textBlockCenterDy(titleRect, subtitleRect);
-    expect((iconRect.center.dy - textCenterDy).abs(), lessThan(4));
-    expect((actionRect.center.dy - textCenterDy).abs(), lessThan(4));
-    expect(subtitleRect.top, greaterThan(titleRect.bottom));
-    expect(tester.takeException(), isNull);
-  });
+      final iconRect = tester.getRect(find.byIcon(Icons.schedule));
+      final titleRect = tester.getRect(find.text('提醒时间'));
+      final subtitleRect = tester.getRect(find.text('到点发送带声音和震动的提醒'));
+      final actionRect = tester.getRect(find.text('08:30'));
+      final textCenterDy = _textBlockCenterDy(titleRect, subtitleRect);
+      expect((iconRect.center.dy - textCenterDy).abs(), lessThan(4));
+      expect(actionRect.top, greaterThan(subtitleRect.bottom));
+      expect(subtitleRect.top, greaterThan(titleRect.bottom));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('AppMetricCard 默认数值字号为主角，标题/单位保持 11', (tester) async {
     await _pumpNarrow(

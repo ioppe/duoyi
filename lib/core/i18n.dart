@@ -9,6 +9,8 @@
 /// 添加新词条：在 `_zh` 与 `_en` 中同步追加同一 key。
 library;
 
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,6 +43,48 @@ extension AppLocaleX on AppLocale {
 }
 
 const Map<String, String> _zh = <String, String>{
+  'ai.local.title': 'AI 服务',
+  'ai.local.entry_hint': '本地 AI 配置与当前服务状态',
+  'ai.local.description':
+      '未登录时可连接自己的 OpenAI 兼容服务。密钥仅保存在本机，不上传到多仪服务器或备份；登录远程账号后使用服务器 AI。',
+  'ai.local.enabled': '启用本机 AI',
+  'ai.local.base_url': '服务地址',
+  'ai.local.base_url_hint': '例如 https://api.example.com/v1',
+  'ai.local.model': '模型名称',
+  'ai.local.model_hint': '填写服务商提供的模型 ID',
+  'ai.local.api_key': 'API Key',
+  'ai.local.key_hint': '服务支持免密时可留空',
+  'ai.local.key_saved': '密钥已保存，留空保持不变',
+  'ai.local.show_key': '显示新输入的密钥',
+  'ai.local.hide_key': '隐藏密钥',
+  'ai.local.save': '保存配置',
+  'ai.local.saved': '本机 AI 配置已保存',
+  'ai.local.test': '测试连接',
+  'ai.local.test_ok': '连接成功，模型已返回正文',
+  'ai.local.clear': '清除本机配置',
+  'ai.local.clear_title': '清除本机 AI 配置？',
+  'ai.local.clear_message': '将删除此设备保存的服务地址、模型和密钥，并关闭本机 AI。',
+  'ai.local.cleared': '本机 AI 配置已清除',
+  'ai.local.server_title': '当前使用服务器 AI',
+  'ai.local.server_enabled': '服务器 AI 已启用',
+  'ai.local.server_disabled': '服务器尚未启用 AI',
+  'ai.local.server_description':
+      '已登录远程账号，AI 由当前服务器提供，本机配置不参与请求。需要修改时请联系该服务器管理员。',
+  'ai.local.not_configured': '请在“设置 → AI 服务”配置并启用本机 AI',
+  'ai.local.unavailable': '当前模式由服务器管理 AI，本机配置不可用',
+  'ai.local.changed': '连接或账号已变化，请重新发起 AI 请求',
+  'ai.local.key_new_host': '服务地址已更换，请为新服务重新填写密钥',
+  'ai.local.error_url': '请输入有效的 HTTP 或 HTTPS 服务地址，不要在地址中填写密钥',
+  'ai.local.error_model': '请填写模型名称',
+  'ai.local.error_auth': '服务拒绝授权，请检查 API Key 和访问权限',
+  'ai.local.error_endpoint': '接口或模型不存在，请检查服务地址和模型名称',
+  'ai.local.error_rate': '请求过于频繁或额度不足，请稍后再试',
+  'ai.local.error_server': 'AI 服务暂时不可用，请稍后再试',
+  'ai.local.error_network': '无法连接 AI 服务，请检查地址和网络',
+  'ai.local.error_timeout': 'AI 请求超时，请稍后再试',
+  'ai.local.error_response': '服务返回格式不兼容，请使用 OpenAI Chat Completions 接口',
+  'ai.local.error_empty': '模型未返回正文，请检查模型或输出额度',
+  'ai.local.error_storage': '无法访问本机安全存储，请检查系统解锁状态后重试',
   'focus.tasks.picker_hint': '先选择待办，也可展开选择子任务',
   'focus.tasks.search': '搜索任务或子任务',
   'focus.tasks.empty': '暂无未完成待办，可先添加待办或手动输入',
@@ -848,6 +892,8 @@ const Map<String, String> _zh = <String, String>{
   'today.productivity.flat': '持平',
   'today.productivity.subtitle': '较上周同段 · 点击查看统计报表',
   'today.productivity.completion_rate': '完成率',
+  'today.productivity.title': '时光足迹',
+  'today.productivity.comparison': '较上周同段',
   // 日记
   'diary.title': '日记',
   'diary.write': '写日记',
@@ -1056,7 +1102,10 @@ const Map<String, String> _zh = <String, String>{
   'todo.subtask.delete': '删除子任务',
   'todo.subtask.reorder': '拖动调整顺序',
   'todo.subtask.empty': '子任务内容不能为空，请填写或删除该项',
-  'todo.subtask.save_hint': '子任务修改将随任务一起保存',
+  'todo.subtask.save_hint': '修改会自动保存',
+  'todo.autosave.failed': '自动保存失败，修改已保留',
+  'todo.autosave.retry': '重试',
+  'todo.validation.title_required': '任务名称不能为空',
   'todo.complete.blocked_by_subtasks': '请先完成子任务，父任务会随子任务自动完成',
   'todo.create.no_reminder': '不提醒',
   'todo.create.at_time': '到点提醒',
@@ -1095,6 +1144,14 @@ const Map<String, String> _zh = <String, String>{
   'focus.pause': '暂停',
   'focus.resume': '继续',
   'focus.reset': '重置',
+  'focus.floating.open': '打开番茄悬浮窗',
+  'focus.floating.hide': '隐藏番茄悬浮窗',
+  'focus.floating.close': '关闭悬浮窗',
+  'focus.floating.error': '悬浮窗操作失败，请稍后重试',
+  'focus.floating.start': '开始',
+  'focus.floating.resume': '继续',
+  'focus.floating.paused': '已暂停',
+  'focus.floating.ready': '待开始',
   // 提醒/通知
   'reminder.health': '通知健康',
   'reminder.test_notification': '发送测试通知',
@@ -1378,6 +1435,57 @@ const Map<String, String> _zh = <String, String>{
 };
 
 const Map<String, String> _en = <String, String>{
+  'ai.local.title': 'AI service',
+  'ai.local.entry_hint': 'Local AI settings and active service',
+  'ai.local.description':
+      'Connect to your OpenAI-compatible service while signed out. Keys stay on this device and are excluded from Duoyi servers and backups. Signed-in accounts use server AI.',
+  'ai.local.enabled': 'Enable local AI',
+  'ai.local.base_url': 'Service URL',
+  'ai.local.base_url_hint': 'For example, https://api.example.com/v1',
+  'ai.local.model': 'Model name',
+  'ai.local.model_hint': 'Enter the model ID from your provider',
+  'ai.local.api_key': 'API key',
+  'ai.local.key_hint': 'Leave blank for services that need no key',
+  'ai.local.key_saved': 'Key saved. Leave blank to keep it.',
+  'ai.local.show_key': 'Show newly entered key',
+  'ai.local.hide_key': 'Hide key',
+  'ai.local.save': 'Save settings',
+  'ai.local.saved': 'Local AI settings saved',
+  'ai.local.test': 'Test connection',
+  'ai.local.test_ok': 'Connected. The model returned a response.',
+  'ai.local.clear': 'Clear local settings',
+  'ai.local.clear_title': 'Clear local AI settings?',
+  'ai.local.clear_message':
+      'Remove the service URL, model and key saved on this device, and turn off local AI.',
+  'ai.local.cleared': 'Local AI settings cleared',
+  'ai.local.server_title': 'Using server AI',
+  'ai.local.server_enabled': 'Server AI is enabled',
+  'ai.local.server_disabled': 'Server AI is not enabled',
+  'ai.local.server_description':
+      'You are signed in. AI requests use the current server and do not use local settings. Contact the server administrator to change the service.',
+  'ai.local.not_configured': 'Configure and enable AI in Settings → AI service',
+  'ai.local.unavailable': 'AI is managed by the server in the current mode',
+  'ai.local.changed': 'The connection or account changed. Please try again.',
+  'ai.local.key_new_host':
+      'The service URL changed. Enter a key for the new service.',
+  'ai.local.error_url':
+      'Enter a valid HTTP or HTTPS service URL without credentials',
+  'ai.local.error_model': 'Enter a model name',
+  'ai.local.error_auth':
+      'Authorization failed. Check the API key and access permissions.',
+  'ai.local.error_endpoint':
+      'The endpoint or model was not found. Check the URL and model.',
+  'ai.local.error_rate': 'Rate limit or quota reached. Please try again later.',
+  'ai.local.error_server': 'The AI service is temporarily unavailable',
+  'ai.local.error_network':
+      'Could not connect to the AI service. Check the URL and network.',
+  'ai.local.error_timeout': 'The AI request timed out. Please try again.',
+  'ai.local.error_response':
+      'Unsupported response. Use an OpenAI Chat Completions endpoint.',
+  'ai.local.error_empty':
+      'The model returned no response. Check the model and output budget.',
+  'ai.local.error_storage':
+      'Could not access secure storage. Unlock the device and try again.',
   'focus.tasks.picker_hint':
       'Choose a task first, or expand it to choose a subtask',
   'focus.tasks.search': 'Search tasks or subtasks',
@@ -2256,6 +2364,8 @@ const Map<String, String> _en = <String, String>{
   'today.productivity.subtitle':
       'Compared with the same days last week · open statistics',
   'today.productivity.completion_rate': 'Completion',
+  'today.productivity.title': 'Time footprints',
+  'today.productivity.comparison': 'Same days last week',
   'diary.title': 'Diary',
   'diary.write': 'Write diary',
   'diary.empty.message': 'Start recording your mood each day',
@@ -2487,7 +2597,10 @@ const Map<String, String> _en = <String, String>{
   'todo.subtask.reorder': 'Drag to reorder',
   'todo.subtask.empty':
       'Subtasks cannot be empty. Enter content or remove the item.',
-  'todo.subtask.save_hint': 'Subtask changes are saved with the task.',
+  'todo.subtask.save_hint': 'Changes are saved automatically.',
+  'todo.autosave.failed': 'Could not save automatically. Your edits are kept.',
+  'todo.autosave.retry': 'Retry',
+  'todo.validation.title_required': 'Enter a task name.',
   'todo.complete.blocked_by_subtasks':
       'Finish the subtasks first — the task completes when they all do.',
   'todo.create.no_reminder': 'No reminder',
@@ -2530,6 +2643,14 @@ const Map<String, String> _en = <String, String>{
   'focus.pause': 'Pause',
   'focus.resume': 'Resume',
   'focus.reset': 'Reset',
+  'focus.floating.open': 'Open focus floating window',
+  'focus.floating.hide': 'Hide focus floating window',
+  'focus.floating.close': 'Close floating window',
+  'focus.floating.error': 'Floating window action failed. Try again.',
+  'focus.floating.start': 'Start',
+  'focus.floating.resume': 'Resume',
+  'focus.floating.paused': 'Paused',
+  'focus.floating.ready': 'Ready',
   'reminder.health': 'Notifications',
   'reminder.test_notification': 'Send test notification',
   'reminder.snooze_5min': 'In 5 min',
@@ -2858,14 +2979,40 @@ class I18n {
   }
 }
 
+/// 用户显式选择语言后触发的同步回调。
+///
+/// 参数是本次受影响的存储键（当前恒为 [LocaleProvider.storageKey]），
+/// 交给 CloudSyncProvider 标记偏好脏键。返回 Future 时会被 await，
+/// 保证 `setLocale` / `followSystem` / `setSelection` 的 Future 完成前，
+/// 同步 stamp 与 changedKeys 已落盘。
+typedef LocalePreferenceChangedCallback =
+    FutureOr<void> Function(Iterable<String> keys);
+
 /// 持久化的 locale 偏好。
 class LocaleProvider extends ChangeNotifier with WidgetsBindingObserver {
-  static const _key = 'duoyi_locale_v1';
+  static const storageKey = 'duoyi_locale_v1';
+  static const _key = storageKey;
   static const systemValue = 'system';
+
+  /// 由 main.dart 接到 `CloudSyncProvider.markPreferencesChanged`。
+  ///
+  /// 只有用户显式选择（含显式选择 system）才会回调；启动加载与系统语言
+  /// 变化不回调，避免把跨端拉取回写或冷启动误标成本地脏改动。
+  LocalePreferenceChangedCallback? onChangedKeys;
 
   AppLocale _locale = defaultLocaleForPlatform();
   AppLocale? _preferredLocale;
   bool _observing = false;
+
+  /// 用户显式选择的序号，每次 setter 先自增。
+  ///
+  /// `loadFromStorage` 在 await 之前记录序号，回来时若序号已变，说明期间
+  /// 有了更新的用户选择，必须以最新选择为准，不能用（可能更旧的）存储值
+  /// 覆盖它。
+  int _selectionGeneration = 0;
+
+  /// 串行落盘队列：快速连续选择时按调用顺序写盘，旧值不会最后落地。
+  Future<void> _writeQueue = Future<void>.value();
 
   AppLocale get locale => _locale;
   bool get followsSystem => _preferredLocale == null;
@@ -2875,6 +3022,8 @@ class LocaleProvider extends ChangeNotifier with WidgetsBindingObserver {
   static AppLocale defaultLocaleForPlatform() => AppLocaleX.fromLanguageCode(
     WidgetsBinding.instance.platformDispatcher.locale.languageCode,
   );
+
+  bool _isLatestSelection(int generation) => generation == _selectionGeneration;
 
   void _applyLocale(AppLocale value) {
     final changed = _locale != value;
@@ -2898,13 +3047,37 @@ class LocaleProvider extends ChangeNotifier with WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
       _observing = true;
     }
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    _preferredLocale = AppLocaleX.fromStorageValue(raw);
-    if (_preferredLocale != null && raw != _preferredLocale!.storageValue) {
-      await prefs.setString(_key, _preferredLocale!.storageValue);
+    while (true) {
+      // setter 可能先于本次 reload 排队，必须等写队列稳定后再读取。
+      final pendingWrites = _writeQueue;
+      await pendingWrites;
+      if (!identical(pendingWrites, _writeQueue)) continue;
+      final generation = _selectionGeneration;
+      final prefs = await SharedPreferences.getInstance();
+      if (!_isLatestSelection(generation)) continue;
+      final raw = prefs.getString(_key);
+      final stored = AppLocaleX.fromStorageValue(raw);
+      if (stored != null && raw != stored.storageValue) {
+        final persisted = await _persistSelection(
+          stored.storageValue,
+          generation,
+        );
+        if (!_isLatestSelection(generation)) continue;
+        if (!persisted) {
+          await _restoreSelectionFromDisk(generation);
+          return;
+        }
+      }
+      final previousSelection = selection;
+      final effective = stored ?? defaultLocaleForPlatform();
+      final effectiveChanged = effective != _locale;
+      _preferredLocale = stored;
+      _applyLocale(effective);
+      if (previousSelection != selection && !effectiveChanged) {
+        notifyListeners();
+      }
+      return;
     }
-    _applyLocale(_preferredLocale ?? defaultLocaleForPlatform());
   }
 
   Future<void> setLocale(AppLocale locale) => _setPreference(locale);
@@ -2913,14 +3086,63 @@ class LocaleProvider extends ChangeNotifier with WidgetsBindingObserver {
       _setPreference(AppLocaleX.fromStorageValue(value));
 
   Future<void> _setPreference(AppLocale? locale) async {
+    final generation = ++_selectionGeneration;
     final preferenceChanged = _preferredLocale != locale;
     _preferredLocale = locale;
     final effective = locale ?? defaultLocaleForPlatform();
     final effectiveChanged = effective != _locale;
+    // 先即时切换 UI；落盘与同步元数据随后完成。
     _applyLocale(effective);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, selection);
     if (preferenceChanged && !effectiveChanged) notifyListeners();
+    final persisted = await _persistSelection(selection, generation);
+    // 期间出现了更新的选择，它自己的调用负责通知与回调，这里直接退出。
+    if (!_isLatestSelection(generation)) return;
+    if (!persisted) {
+      // 落盘失败：不回调，即不把这次选择标记为已同步；回读真实存储。
+      await _restoreSelectionFromDisk(generation);
+      return;
+    }
+    final callback = onChangedKeys;
+    if (callback != null) await callback(const <String>{_key});
+  }
+
+  Future<bool> _persistSelection(String value, int generation) {
+    final completer = Completer<bool>();
+    _writeQueue = _writeQueue.then((_) async {
+      completer.complete(await _writeSelection(value, generation));
+    });
+    return completer.future;
+  }
+
+  Future<bool> _writeSelection(String value, int generation) async {
+    // 排队期间已有更新的选择接管：过期写入不再落盘，避免旧值覆盖新值。
+    if (!_isLatestSelection(generation)) return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return await prefs.setString(_key, value);
+    } catch (error, stack) {
+      debugPrint('[LocaleProvider] 语言选择落盘失败: $error\n$stack');
+      return false;
+    }
+  }
+
+  /// 落盘失败后回读真实存储。
+  ///
+  /// `SharedPreferences.setString` 会先把新值写进内存缓存且失败时不回滚，
+  /// 因此必须 `reload` 才能读到磁盘真值；同时把 UI 拉回真实选择，避免
+  /// 出现"看起来已保存但实际没落盘"的状态。此路径不触发同步回调。
+  Future<void> _restoreSelectionFromDisk(int generation) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      if (!_isLatestSelection(generation)) return;
+      final previousSelection = selection;
+      _preferredLocale = AppLocaleX.fromStorageValue(prefs.getString(_key));
+      _applyLocale(_preferredLocale ?? defaultLocaleForPlatform());
+      if (previousSelection != selection) notifyListeners();
+    } catch (error, stack) {
+      debugPrint('[LocaleProvider] 语言选择回读失败: $error\n$stack');
+    }
   }
 
   @override

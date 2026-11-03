@@ -33,6 +33,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
   shared_preferences: ^2.3.4
+  flutter_secure_storage: ^9.2.4
   fl_chart: ^0.70.2
   flutter_markdown_plus: ^1.0.12
   markdown: ^7.3.1
@@ -93,6 +94,19 @@ flutter:
     - assets/sounds/reminders/
 
   fonts:
+    # 全局 UI 字体：Noto Sans SC 变量字库（wght 100–900）。同一个变量文件按
+    # 400/500/600/700 注册，引擎按请求字重选择并应用 wght 变体。
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansSC-Variable.ttf
+          weight: 700
+    # 旧圆体字库保留打包：UI 已不再引用，仅避免移除历史资产带来干扰。
     - family: ResourceHanRounded
       fonts:
         - asset: assets/fonts/ResourceHanRoundedCN-Bold.ttf

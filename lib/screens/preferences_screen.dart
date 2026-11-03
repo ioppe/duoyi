@@ -314,7 +314,7 @@ class _PersonalizationSettingsScreenState
                       orElse: () => _dateFormats.first,
                     )[1],
                     trailing: _compactDropdown<String>(
-                      width: 138,
+                      width: 156,
                       value: p.dateFormat,
                       items: [
                         for (final f in _dateFormats)
@@ -506,7 +506,7 @@ class _PersonalizationSettingsScreenState
     required T value,
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
-    double width = 92,
+    double width = 156,
   }) {
     return AppCompactDropdown<T>(
       value: value,
@@ -639,31 +639,31 @@ class _PreferenceSectionMenu extends StatelessWidget {
             Text(
               group.title,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 11,
-                height: 1.15,
+                fontSize: DesignTokens.fontSizeSecondary,
+                height: 1.4,
                 color: cs.onSurface.withValues(alpha: 0.58),
               ),
             ),
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final item in group.items)
-                  ActionChip(
-                    avatar: Icon(item.icon, size: 16, color: cs.primary),
-                    label: Text(
-                      item.label,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontSize: 11,
-                        height: 1.12,
-                        color: cs.onSurface,
+            LayoutBuilder(
+              builder: (context, constraints) => Wrap(
+                spacing: DesignTokens.spaceSm,
+                runSpacing: DesignTokens.spaceSm,
+                children: [
+                  for (final item in group.items)
+                    SizedBox(
+                      width: constraints.maxWidth.clamp(0.0, 180.0),
+                      child: OutlinedButton.icon(
+                        icon: Icon(
+                          item.icon,
+                          size: DesignTokens.controlIconSize,
+                        ),
+                        label: Text(item.label),
+                        onPressed: item.onTap,
                       ),
                     ),
-                    onPressed: item.onTap,
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
+                ],
+              ),
             ),
             if (group != groups.last) const SizedBox(height: 12),
           ],
@@ -755,16 +755,19 @@ class _NavConfigActions extends StatelessWidget {
       return IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        visualDensity: VisualDensity.compact,
+        icon: Icon(icon, size: DesignTokens.controlIconSize),
+        visualDensity: VisualDensity.standard,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+        constraints: const BoxConstraints.tightFor(
+          width: DesignTokens.controlMinHeight,
+          height: DesignTokens.controlMinHeight,
+        ),
       );
     }
 
     return SizedBox(
       key: ValueKey('bottom_nav_actions_$tab'),
-      width: 138,
+      width: kMinInteractiveDimension * 2 + 56,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
@@ -860,8 +863,6 @@ class _SliderSetting extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: cs.onSurface,
                         fontWeight: DesignTokens.fontWeightStrong,
@@ -887,8 +888,8 @@ class _SliderSetting extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: color,
-                    fontSize: 11,
-                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: DesignTokens.fontSizeSecondary,
+                    fontWeight: DesignTokens.fontWeightMedium,
                   ),
                 ),
               ),
