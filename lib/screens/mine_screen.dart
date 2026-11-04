@@ -1028,20 +1028,30 @@ class MineScreen extends StatelessWidget {
                           DesignTokens.spaceMd,
                           DesignTokens.spaceMd,
                         ),
-                        dividerIndent: 40,
+                        // 主分组可见组面 key（不含 margin）+ 两侧留白的分隔线。
+                        cardKey: const ValueKey('mine_menu_card'),
+                        dividerIndent: _mineMenuDividerIndent,
+                        dividerEndIndent: DesignTokens.spaceLg,
                         children: [
                           AppleRow(
                             key: const ValueKey('mine_apps_entry'),
+                            padding: _mineAppleRowPadding,
                             leading: _MineRowIcon(
                               icon: Icons.apps_outlined,
                               color: cs.primary,
                             ),
                             title: I18n.tr('mine.menu.apps'),
                             subtitle: I18n.tr('mine.menu.apps.subtitle'),
+                            trailing: Icon(
+                              Icons.chevron_right,
+                              size: 18,
+                              color: cs.onSurface.withValues(alpha: 0.34),
+                            ),
                             onTap: () => _openMenuPage(context, _MineMenu.apps),
                           ),
                           AppleRow(
                             key: const ValueKey('mine_appearance_entry'),
+                            padding: _mineAppleRowPadding,
                             leading: _MineRowIcon(
                               icon: Icons.palette_outlined,
                               color: cs.secondary,
@@ -1062,6 +1072,7 @@ class MineScreen extends StatelessWidget {
                           ),
                           AppleRow(
                             key: const ValueKey('mine_settings_entry'),
+                            padding: _mineAppleRowPadding,
                             leading: _MineRowIcon(
                               icon: Icons.settings_outlined,
                               color: cs.primary,
@@ -1076,6 +1087,7 @@ class MineScreen extends StatelessWidget {
                           ),
                           AppleRow(
                             key: const ValueKey('mine_support_entry'),
+                            padding: _mineAppleRowPadding,
                             leading: _MineRowIcon(
                               icon: Icons.help_outline,
                               color: cs.secondary,
@@ -1148,6 +1160,8 @@ class MineScreen extends StatelessWidget {
               capped(
                 _TileGroup(
                   columns: tileColumns,
+                  // 主分组卡片 key：几何验收按可见卡片取边界。
+                  cardKey: const ValueKey('mine_menu_card'),
                   title: I18n.tr('mine.menu.title'),
                   children: [
                     _Tile(
@@ -2435,6 +2449,17 @@ class _MineMenuScreen extends StatelessWidget {
   }
 }
 
+/// Apple 菜单行左右内边距：图标与尾部控件距可见组面边缘至少
+/// [DesignTokens.spaceLg]，避免文字在 320 宽屏上贴边。
+const EdgeInsets _mineAppleRowPadding = EdgeInsets.symmetric(
+  horizontal: DesignTokens.spaceLg,
+  vertical: 10,
+);
+
+/// 菜单行分隔线左缩进：对齐行内标题文字（行内边距 + 28 图标块 + 图文间距）。
+const double _mineMenuDividerIndent =
+    DesignTokens.spaceLg + 28 + DesignTokens.spaceMd;
+
 /// 扁平分组的行首图标块（28dp，Apple minimal 菜单行用）。
 class _MineRowIcon extends StatelessWidget {
   final IconData icon;
@@ -2464,11 +2489,23 @@ class _TileGroup extends StatelessWidget {
   /// 瓦片列数：1 = 原单列通栏（窄屏），2 = 宽屏两列网格。
   final int columns;
 
+  /// 分组卡片本体 key：便于按卡片几何验收内容左右边界。
+  final Key? cardKey;
+
   const _TileGroup({
     required this.title,
     required this.children,
     this.columns = 1,
+    this.cardKey,
   });
+
+  /// 卡片内水平留白：图标与尾部控件到卡片边缘至少 16（卡片自身不再叠加
+  /// 水平 padding，避免双层内边距把 320 宽的文字列挤窄）。
+  static const double tileInset = DesignTokens.spaceLg;
+
+  /// 瓦片图标列宽与图标到文字的间距，与 [_Tile] 内部保持一致。
+  static const double tileIconSize = 28;
+  static const double tileIconGap = 10;
 
   @override
   Widget build(BuildContext context) {
@@ -2500,7 +2537,8 @@ class _TileGroup extends StatelessWidget {
               ),
             ),
           AppSurfaceCard(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            key: cardKey,
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.spaceXs),
             child: columns > 1
                 ? LayoutBuilder(
                     builder: (context, constraints) {
@@ -2537,7 +2575,9 @@ class _TileGroup extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.5,
-              indent: 44,
+              // 左侧与标题文字对齐，右侧与卡片内边距对齐，两侧都留白。
+              indent: tileInset + tileIconSize + tileIconGap,
+              endIndent: tileInset,
               color: cs.outlineVariant.withValues(alpha: 0.14),
             ),
           children[i],
@@ -2635,11 +2675,16 @@ class _Tile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(
+            _TileGroup.tileInset,
+            10,
+            _TileGroup.tileInset,
+            10,
+          ),
           child: Row(
             children: [
               SizedBox.square(
-                dimension: 28,
+                dimension: _TileGroup.tileIconSize,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: isDark ? 0.18 : 0.12),
@@ -2648,7 +2693,7 @@ class _Tile extends StatelessWidget {
                   child: Icon(icon, color: color, size: 16),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: _TileGroup.tileIconGap),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

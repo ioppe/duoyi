@@ -404,6 +404,14 @@ class _TodoScreenState extends State<TodoScreen> {
     final isWidescreen =
         !useTopFilterLayout &&
         MediaQuery.widthOf(context) >= DesktopTokens.breakpointTwoColumn;
+    // 原生安卓手机窄屏：顶部页头承载创建入口，主视图区让给四象限；Web、桌面
+    // 与非安卓窄屏仍用悬浮创建按钮，并保留原有概要卡 + 常驻筛选布局。
+    final useHeaderCreate =
+        !WebTarget.isWebBuild &&
+        defaultTargetPlatform == TargetPlatform.android;
+    final isCompactHeader =
+        useHeaderCreate &&
+        MediaQuery.widthOf(context) < DesktopTokens.breakpointTwoColumn;
     // 保留最宽桌面档的单行四列，同时核对限宽与侧栏后的真实空间。
     // 至少预留 640px 给四张卡片，避免窗口虽宽而卡片内容被挤坏。
     final isWidestTier =
@@ -545,6 +553,13 @@ class _TodoScreenState extends State<TodoScreen> {
       ],
     );
 
+    final createAction = IconButton(
+      key: const ValueKey('todo_create_action'),
+      tooltip: s.todoCreateTitle,
+      onPressed: _showAddDialog,
+      icon: const Icon(Icons.add),
+    );
+
     final headerActions = <Widget>[
       if (_batchMode) ...[
         IconButton(
@@ -583,6 +598,8 @@ class _TodoScreenState extends State<TodoScreen> {
             onPressed: () => _postponeOverdue(overdueCount),
             icon: const Icon(Icons.update_outlined),
           ),
+        // 安卓页头复用同一个创建入口，批量模式下由上面的分支整组隐藏。
+        if (useHeaderCreate) createAction,
       ],
     ];
 
@@ -608,7 +625,8 @@ class _TodoScreenState extends State<TodoScreen> {
           )
         : null;
 
-    final createFab = _batchMode
+    // 页头承载创建入口时不再叠加悬浮按钮，避免同屏两个创建入口。
+    final createFab = _batchMode || useHeaderCreate
         ? null
         : AppCreateFab(label: s.todoAddAction, onPressed: _showAddDialog);
 
@@ -621,6 +639,7 @@ class _TodoScreenState extends State<TodoScreen> {
             availableListGroups: availableListGroups,
             onChanged: _setFilter,
             onClear: _clearFilter,
+            compact: isCompactHeader,
           )
         : AppleControlBand(
             margin: const EdgeInsets.only(bottom: DesignTokens.spaceMd),
@@ -632,12 +651,13 @@ class _TodoScreenState extends State<TodoScreen> {
                     selected: _viewMode,
                     onChanged: (mode) => setState(() => _viewMode = mode),
                   ),
-                _TodoTodaySummaryCard(
-                  todos: baseTodos,
-                  habits: habitProvider.habits,
-                  activeGoalCount: goalProvider.activeGoals.length,
-                  now: now,
-                ),
+                if (!isCompactHeader)
+                  _TodoTodaySummaryCard(
+                    todos: baseTodos,
+                    habits: habitProvider.habits,
+                    activeGoalCount: goalProvider.activeGoals.length,
+                    now: now,
+                  ),
                 _TodoFilterBar(
                   filter: _filter,
                   totalCount: baseTodos.length,
@@ -646,6 +666,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   availableListGroups: availableListGroups,
                   onChanged: _setFilter,
                   onClear: _clearFilter,
+                  compact: isCompactHeader,
                 ),
                 if (useTopFilterLayout)
                   _TodoViewSwitcher(
@@ -775,6 +796,8 @@ class _TodoScreenState extends State<TodoScreen> {
                 icon: const Icon(Icons.update_outlined, size: 18),
                 label: const Text('顺延'),
               ),
+            // 安卓走页头 / AppBar 单一创建入口；其余平台沿用悬浮按钮。
+            if (useHeaderCreate) createAction,
           ],
         ],
       ),
@@ -794,7 +817,8 @@ class _TodoScreenState extends State<TodoScreen> {
                     selected: _viewMode,
                     onChanged: (mode) => setState(() => _viewMode = mode),
                   ),
-                if (!_batchMode)
+                // 原生安卓手机窄屏不显示大型概要卡，把主视图区让给四象限。
+                if (!_batchMode && !isCompactHeader)
                   _TodoTodaySummaryCard(
                     todos: baseTodos,
                     habits: habitProvider.habits,
@@ -809,6 +833,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   availableListGroups: availableListGroups,
                   onChanged: _setFilter,
                   onClear: _clearFilter,
+                  compact: isCompactHeader,
                 ),
                 if (!_batchMode && useTopFilterLayout)
                   _TodoViewSwitcher(
@@ -1065,7 +1090,7 @@ class _TodoSummaryChip extends StatelessWidget {
   }
 }
 
-class _TodoFilterBar extends StatelessWidget {
+class _TodoFilterBar extends StatefulWidget {
   final TodoFilterState<EisenhowerQuadrant, TodoPriority> filter;
   final int totalCount;
   final int filteredCount;
@@ -1075,6 +1100,10 @@ class _TodoFilterBar extends StatelessWidget {
   onChanged;
   final VoidCallback onClear;
 
+  /// 原生安卓窄屏：默认折叠成一行（44 高）筛选栏，点击展开完整筛选控件；
+  /// 桌面、Web 与非安卓窄屏保持原有的常驻筛选布局。
+  final bool compact;
+
   const _TodoFilterBar({
     required this.filter,
     required this.totalCount,
@@ -1083,218 +1112,303 @@ class _TodoFilterBar extends StatelessWidget {
     required this.availableListGroups,
     required this.onChanged,
     required this.onClear,
+    this.compact = false,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final active = filter.hasActiveFilters;
+  State<_TodoFilterBar> createState() => _TodoFilterBarState();
+}
 
+class _TodoFilterBarState extends State<_TodoFilterBar> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       key: const ValueKey('todo_filter_bar'),
       padding: usesApplePageLayout(context)
           ? const EdgeInsets.fromLTRB(0, 0, 0, 10)
           : const EdgeInsets.fromLTRB(12, 0, 12, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.filter_alt_outlined,
-                size: 18,
-                color: active ? cs.primary : cs.onSurfaceVariant,
+      child: widget.compact ? _buildCompact(context) : _buildFull(context),
+    );
+  }
+
+  /// 常驻布局：标题行 + 完整筛选控件。
+  Widget _buildFull(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = widget.filter.hasActiveFilters;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.filter_alt_outlined,
+              size: 18,
+              color: active ? cs.primary : cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '自定义视图 · ${widget.filteredCount}/${widget.totalCount}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: active ? cs.primary : cs.onSurfaceVariant,
+                ),
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '自定义视图 · $filteredCount/$totalCount',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
+            ),
+            _clearButton(active),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _filterControls(),
+      ],
+    );
+  }
+
+  /// 原生安卓窄屏：一行折叠栏（图标 + 匹配数量 + 清空 + 展开箭头）。
+  Widget _buildCompact(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = widget.filter.hasActiveFilters;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            key: const ValueKey('todo_filter_toggle'),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Container(
+              constraints: const BoxConstraints(
+                minHeight: DesignTokens.controlMinHeight,
+              ),
+              padding: const EdgeInsets.only(left: DesignTokens.spaceMd),
+              decoration: BoxDecoration(
+                color: active
+                    ? cs.primary.withValues(alpha: 0.08)
+                    : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+                border: Border.all(
+                  color: active
+                      ? cs.primary.withValues(alpha: 0.28)
+                      : cs.outlineVariant.withValues(alpha: 0.45),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_alt_outlined,
+                    size: 18,
                     color: active ? cs.primary : cs.onSurfaceVariant,
                   ),
-                ),
-              ),
-              TextButton.icon(
-                key: const ValueKey('todo_clear_filters'),
-                onPressed: active ? onClear : null,
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(0, DesignTokens.controlMinHeight),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.spaceMd,
-                  ),
-                  visualDensity: VisualDensity.standard,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: const Icon(Icons.close, size: 16),
-                label: const Text('清空'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _TodoQuickFilterChip(
-                  label: '今日',
-                  icon: Icons.today_outlined,
-                  selected: filter.due == TodoDueFilter.dueToday,
-                  onPressed: () => onChanged(
-                    filter.copyWith(
-                      due: filter.due == TodoDueFilter.dueToday
-                          ? TodoDueFilter.all
-                          : TodoDueFilter.dueToday,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _TodoQuickFilterChip(
-                  label: '逾期',
-                  icon: Icons.warning_amber_outlined,
-                  selected: filter.due == TodoDueFilter.overdue,
-                  onPressed: () => onChanged(
-                    filter.copyWith(
-                      due: filter.due == TodoDueFilter.overdue
-                          ? TodoDueFilter.all
-                          : TodoDueFilter.overdue,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _TodoQuickFilterChip(
-                  label: '7天内',
-                  icon: Icons.date_range_outlined,
-                  selected: filter.due == TodoDueFilter.next7Days,
-                  onPressed: () => onChanged(
-                    filter.copyWith(
-                      due: filter.due == TodoDueFilter.next7Days
-                          ? TodoDueFilter.all
-                          : TodoDueFilter.next7Days,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _TodoQuickFilterChip(
-                  label: '已完成',
-                  icon: Icons.check_circle_outline,
-                  selected: filter.completion == TodoCompletionFilter.completed,
-                  onPressed: () => onChanged(
-                    filter.copyWith(
-                      completion:
-                          filter.completion == TodoCompletionFilter.completed
-                          ? TodoCompletionFilter.all
-                          : TodoCompletionFilter.completed,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _TodoFilterMenu<EisenhowerQuadrant>(
-                  icon: Icons.grid_view_outlined,
-                  label: filter.quadrant == null
-                      ? '象限'
-                      : _quadrantLabel(filter.quadrant!),
-                  selected: filter.quadrant != null,
-                  selectedValue: filter.quadrant,
-                  options: [
-                    const _TodoFilterOption(label: '全部象限'),
-                    for (final quadrant in EisenhowerQuadrant.values)
-                      _TodoFilterOption(
-                        label: _quadrantLabel(quadrant),
-                        value: quadrant,
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '自定义视图 · ${widget.filteredCount}/${widget.totalCount}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: active ? cs.primary : cs.onSurfaceVariant,
                       ),
-                  ],
-                  onSelected: (value) =>
-                      onChanged(filter.copyWith(quadrant: value)),
-                ),
-                const SizedBox(width: 8),
-                _TodoFilterMenu<TodoPriority>(
-                  icon: Icons.flag_outlined,
-                  label: filter.priority == null
-                      ? '优先级'
-                      : filter.priority!.label,
-                  selected: filter.priority != null,
-                  selectedValue: filter.priority,
-                  options: [
-                    const _TodoFilterOption(label: '全部优先级'),
-                    for (final priority in TodoPriority.values)
-                      _TodoFilterOption(label: priority.label, value: priority),
-                  ],
-                  onSelected: (value) =>
-                      onChanged(filter.copyWith(priority: value)),
-                ),
-                const SizedBox(width: 8),
-                _TodoFilterMenu<TodoDueFilter>(
-                  icon: Icons.event_outlined,
-                  label: filter.due == TodoDueFilter.all
-                      ? '日期'
-                      : _dueFilterLabel(filter.due),
-                  selected: filter.due != TodoDueFilter.all,
-                  selectedValue: filter.due,
-                  options: [
-                    for (final due in TodoDueFilter.values)
-                      _TodoFilterOption(
-                        label: _dueFilterLabel(due),
-                        value: due,
-                      ),
-                  ],
-                  onSelected: (value) => onChanged(filter.copyWith(due: value)),
-                ),
-                const SizedBox(width: 8),
-                _TodoFilterMenu<TodoCompletionFilter>(
-                  icon: Icons.check_circle_outline,
-                  label: filter.completion == TodoCompletionFilter.all
-                      ? '完成状态'
-                      : _completionFilterLabel(filter.completion),
-                  selected: filter.completion != TodoCompletionFilter.all,
-                  selectedValue: filter.completion,
-                  options: [
-                    for (final completion in TodoCompletionFilter.values)
-                      _TodoFilterOption(
-                        label: _completionFilterLabel(completion),
-                        value: completion,
-                      ),
-                  ],
-                  onSelected: (value) =>
-                      onChanged(filter.copyWith(completion: value)),
-                ),
-                if (availableTags.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  _TodoFilterMenu<String>(
-                    icon: Icons.sell_outlined,
-                    label: filter.tag == null ? '标签' : '#${filter.tag}',
-                    selected: filter.tag != null,
-                    selectedValue: filter.tag,
-                    options: [
-                      const _TodoFilterOption(label: '全部标签'),
-                      for (final tag in availableTags)
-                        _TodoFilterOption(label: '#$tag', value: tag),
-                    ],
-                    onSelected: (value) =>
-                        onChanged(filter.copyWith(tag: value)),
+                    ),
                   ),
+                  _clearButton(active),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: AppMotion.feedback(context),
+                    curve: AppMotion.enterCurve,
+                    child: Icon(
+                      Icons.expand_more,
+                      size: DesignTokens.controlIconSize,
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.spaceXs),
                 ],
-                if (availableListGroups.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  _TodoFilterMenu<String>(
-                    icon: Icons.folder_outlined,
-                    label: filter.listGroupName ?? '清单',
-                    selected: filter.listGroupName != null,
-                    selectedValue: filter.listGroupName,
-                    options: [
-                      const _TodoFilterOption(label: '全部清单'),
-                      for (final group in availableListGroups)
-                        _TodoFilterOption(label: group, value: group),
-                    ],
-                    onSelected: (value) =>
-                        onChanged(filter.copyWith(listGroupName: value)),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
+        ),
+        if (_expanded) ...[
+          const SizedBox(height: DesignTokens.spaceSm),
+          _filterControls(),
+        ],
+      ],
+    );
+  }
+
+  Widget _clearButton(bool active) {
+    return TextButton.icon(
+      key: const ValueKey('todo_clear_filters'),
+      onPressed: active ? widget.onClear : null,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(0, DesignTokens.controlMinHeight),
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spaceMd),
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: const Icon(Icons.close, size: 16),
+      label: const Text('清空'),
+    );
+  }
+
+  /// 完整筛选控件：4 个快捷条件 + 全部筛选菜单（折叠展开后完全一致）。
+  Widget _filterControls() {
+    final filter = widget.filter;
+    final onChanged = widget.onChanged;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _TodoQuickFilterChip(
+            label: '今日',
+            icon: Icons.today_outlined,
+            selected: filter.due == TodoDueFilter.dueToday,
+            onPressed: () => onChanged(
+              filter.copyWith(
+                due: filter.due == TodoDueFilter.dueToday
+                    ? TodoDueFilter.all
+                    : TodoDueFilter.dueToday,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _TodoQuickFilterChip(
+            label: '逾期',
+            icon: Icons.warning_amber_outlined,
+            selected: filter.due == TodoDueFilter.overdue,
+            onPressed: () => onChanged(
+              filter.copyWith(
+                due: filter.due == TodoDueFilter.overdue
+                    ? TodoDueFilter.all
+                    : TodoDueFilter.overdue,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _TodoQuickFilterChip(
+            label: '7天内',
+            icon: Icons.date_range_outlined,
+            selected: filter.due == TodoDueFilter.next7Days,
+            onPressed: () => onChanged(
+              filter.copyWith(
+                due: filter.due == TodoDueFilter.next7Days
+                    ? TodoDueFilter.all
+                    : TodoDueFilter.next7Days,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _TodoQuickFilterChip(
+            label: '已完成',
+            icon: Icons.check_circle_outline,
+            selected: filter.completion == TodoCompletionFilter.completed,
+            onPressed: () => onChanged(
+              filter.copyWith(
+                completion: filter.completion == TodoCompletionFilter.completed
+                    ? TodoCompletionFilter.all
+                    : TodoCompletionFilter.completed,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          _TodoFilterMenu<EisenhowerQuadrant>(
+            icon: Icons.grid_view_outlined,
+            label: filter.quadrant == null
+                ? '象限'
+                : _quadrantLabel(filter.quadrant!),
+            selected: filter.quadrant != null,
+            selectedValue: filter.quadrant,
+            options: [
+              const _TodoFilterOption(label: '全部象限'),
+              for (final quadrant in EisenhowerQuadrant.values)
+                _TodoFilterOption(
+                  label: _quadrantLabel(quadrant),
+                  value: quadrant,
+                ),
+            ],
+            onSelected: (value) => onChanged(filter.copyWith(quadrant: value)),
+          ),
+          const SizedBox(width: 8),
+          _TodoFilterMenu<TodoPriority>(
+            icon: Icons.flag_outlined,
+            label: filter.priority == null ? '优先级' : filter.priority!.label,
+            selected: filter.priority != null,
+            selectedValue: filter.priority,
+            options: [
+              const _TodoFilterOption(label: '全部优先级'),
+              for (final priority in TodoPriority.values)
+                _TodoFilterOption(label: priority.label, value: priority),
+            ],
+            onSelected: (value) => onChanged(filter.copyWith(priority: value)),
+          ),
+          const SizedBox(width: 8),
+          _TodoFilterMenu<TodoDueFilter>(
+            icon: Icons.event_outlined,
+            label: filter.due == TodoDueFilter.all
+                ? '日期'
+                : _dueFilterLabel(filter.due),
+            selected: filter.due != TodoDueFilter.all,
+            selectedValue: filter.due,
+            options: [
+              for (final due in TodoDueFilter.values)
+                _TodoFilterOption(label: _dueFilterLabel(due), value: due),
+            ],
+            onSelected: (value) => onChanged(filter.copyWith(due: value)),
+          ),
+          const SizedBox(width: 8),
+          _TodoFilterMenu<TodoCompletionFilter>(
+            icon: Icons.check_circle_outline,
+            label: filter.completion == TodoCompletionFilter.all
+                ? '完成状态'
+                : _completionFilterLabel(filter.completion),
+            selected: filter.completion != TodoCompletionFilter.all,
+            selectedValue: filter.completion,
+            options: [
+              for (final completion in TodoCompletionFilter.values)
+                _TodoFilterOption(
+                  label: _completionFilterLabel(completion),
+                  value: completion,
+                ),
+            ],
+            onSelected: (value) =>
+                onChanged(filter.copyWith(completion: value)),
+          ),
+          if (widget.availableTags.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            _TodoFilterMenu<String>(
+              icon: Icons.sell_outlined,
+              label: filter.tag == null ? '标签' : '#${filter.tag}',
+              selected: filter.tag != null,
+              selectedValue: filter.tag,
+              options: [
+                const _TodoFilterOption(label: '全部标签'),
+                for (final tag in widget.availableTags)
+                  _TodoFilterOption(label: '#$tag', value: tag),
+              ],
+              onSelected: (value) => onChanged(filter.copyWith(tag: value)),
+            ),
+          ],
+          if (widget.availableListGroups.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            _TodoFilterMenu<String>(
+              icon: Icons.folder_outlined,
+              label: filter.listGroupName ?? '清单',
+              selected: filter.listGroupName != null,
+              selectedValue: filter.listGroupName,
+              options: [
+                const _TodoFilterOption(label: '全部清单'),
+                for (final group in widget.availableListGroups)
+                  _TodoFilterOption(label: group, value: group),
+              ],
+              onSelected: (value) =>
+                  onChanged(filter.copyWith(listGroupName: value)),
+            ),
+          ],
         ],
       ),
     );

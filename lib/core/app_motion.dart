@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PredictiveBackEvent;
 
 import 'design_tokens.dart';
 
@@ -52,9 +53,9 @@ class AppMotion {
 
   static const PageTransitionsTheme pageTransitions = PageTransitionsTheme(
     builders: {
-      TargetPlatform.android: AppPageTransitionsBuilder(
-        nativeBuilder: PredictiveBackPageTransitionsBuilder(),
-      ),
+      TargetPlatform.android: kIsWeb
+          ? AppPageTransitionsBuilder()
+          : _AndroidSlidePageTransitionsBuilder(),
       TargetPlatform.iOS: AppPageTransitionsBuilder(
         nativeBuilder: CupertinoPageTransitionsBuilder(),
       ),
@@ -68,8 +69,110 @@ class AppMotion {
   );
 }
 
-/// A restrained fade and short vertical travel on Web/desktop. Native mobile
-/// builders keep their durations, interactive back gestures and delegation.
+/// Full-size horizontal navigation after Android confirms a back gesture.
+/// The previous page stays still; no shared-element zoom or corner morph.
+class _AndroidSlidePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _AndroidSlidePageTransitionsBuilder();
+
+  @override
+  Duration get transitionDuration => DesignTokens.durationBase;
+
+  @override
+  Duration get reverseTransitionDuration => DesignTokens.durationFast;
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) =>
+      _AndroidSlideTransition(route: route, animation: animation, child: child);
+}
+
+class _AndroidSlideTransition extends StatefulWidget {
+  const _AndroidSlideTransition({
+    required this.route,
+    required this.animation,
+    required this.child,
+  });
+
+  final PageRoute<dynamic> route;
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  State<_AndroidSlideTransition> createState() =>
+      _AndroidSlideTransitionState();
+}
+
+class _AndroidSlideTransitionState extends State<_AndroidSlideTransition>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  bool handleStartBackGesture(PredictiveBackEvent event) {
+    final route = widget.route;
+    if (event.isButtonEvent || !route.isCurrent || !route.popGestureEnabled) {
+      return false;
+    }
+    // Let Android own the gesture, but keep the route fully visible until
+    // the system commits it. Progress updates intentionally do not move it.
+    route.handleStartBackGesture(progress: 1.0);
+    return true;
+  }
+
+  @override
+  void handleCancelBackGesture() => widget.route.handleCancelBackGesture();
+
+  @override
+  void handleCommitBackGesture() {
+    final route = widget.route;
+    if (route.isCurrent && route.popDisposition != RoutePopDisposition.pop) {
+      route.handleCancelBackGesture();
+      return;
+    }
+    route.handleCommitBackGesture();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (AppMotion.reduced(context)) return widget.child;
+    final direction = Directionality.of(context);
+    final animation = widget.animation;
+    return AnimatedBuilder(
+      animation: animation,
+      child: widget.child,
+      builder: (context, child) {
+        final curve = animation.status == AnimationStatus.reverse
+            ? AppMotion.exitCurve
+            : AppMotion.enterCurve;
+        final progress = curve.transform(animation.value);
+        return FractionalTranslation(
+          translation: Offset(
+            (1 - progress) * (direction == TextDirection.ltr ? 1 : -1),
+            0,
+          ),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// A restrained fade and short vertical travel on Web/desktop. Cupertino
+/// platforms keep their native durations, interactive back and delegation.
 class AppPageTransitionsBuilder extends PageTransitionsBuilder {
   final PageTransitionsBuilder? nativeBuilder;
 

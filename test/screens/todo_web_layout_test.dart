@@ -344,9 +344,9 @@ void main() {
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
 
-  // 控制用例：其他原生平台布局必须保持原样。
+  // Android 窄屏保留自己的紧凑布局，不套用 Web/macOS 的顶部概要。
   testWidgets(
-    'Android 390 非 Web 保持页签在概要之前',
+    'Android 390 非 Web 保持页签在折叠筛选之前',
     (tester) async {
       WebTarget.debugWebBuild = false;
       await _openTodo(
@@ -354,9 +354,15 @@ void main() {
         size: const Size(390, 844),
         theme: AppBrands.defaultBrand.theme,
       );
-      final summary = tester.getRect(_summary);
+      expect(_summary, findsNothing);
+      final filters = tester.getRect(_filters);
       final views = tester.getRect(_views);
-      expect(views.bottom, lessThanOrEqualTo(summary.top));
+      expect(views.bottom, lessThanOrEqualTo(filters.top));
+      expect(find.byKey(const ValueKey('todo_filter_toggle')), findsOneWidget);
+      expect(
+        find.descendant(of: _filters, matching: find.text('今日')),
+        findsNothing,
+      );
       expect(find.byType(VerticalDivider), findsNothing);
       expect(find.text('今日任务'), findsOneWidget);
       expect(tester.takeException(), isNull);

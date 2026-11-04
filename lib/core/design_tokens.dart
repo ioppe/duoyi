@@ -44,8 +44,7 @@ class DesignTokens {
   static const Duration authFlipDuration = Duration(milliseconds: 480);
   static const double authCardTextScaleFactor = 0.75;
 
-  // ----- Habit heatmap -----
-  static const double habitHeatmapWidthFactor = 0.8;
+  // ----- Habit workspace -----
   static const double habitWorkspaceMaxWidth = 960;
 
   // ----- Home preview specification -----
@@ -285,6 +284,11 @@ class DesignTokens {
 
   /// 完成态文本的"灰度 70%"：与 `todoCompleted` 配套使用。
   static const double completedTextOpacity = 0.7;
+
+  // Habit day states stay semantic across brand palettes.
+  static const Color habitCompletedLight = Color(0xFF246A38);
+  static const Color habitCompletedDark = Color(0xFF91D69C);
+  static const Color habitPendingTint = Color(0xFF808080);
 
   // ----- 结果态 -----
   static const Color resultEmpty = Color(0xFF9E9E9E); // grey.shade500

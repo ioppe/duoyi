@@ -156,12 +156,16 @@ class AppleGroup extends StatelessWidget {
   final EdgeInsetsGeometry margin;
   final Color? color;
 
+  /// 可见组面的 key（不含 [margin]）：需要按卡片几何验收时使用。
+  final Key? surfaceKey;
+
   const AppleGroup({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.fromLTRB(14, 10, 14, 10),
     this.margin = EdgeInsets.zero,
     this.color,
+    this.surfaceKey,
   });
 
   @override
@@ -174,6 +178,7 @@ class AppleGroup extends StatelessWidget {
     return Padding(
       padding: margin,
       child: Material(
+        key: surfaceKey,
         color: Colors.transparent,
         borderRadius: radius,
         child: Ink(
@@ -202,7 +207,13 @@ class AppleGroupedList extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry margin;
   final double dividerIndent;
+
+  /// 分隔线右侧缩进：与 [dividerIndent] 配合让分隔线两侧都留白。
+  final double dividerEndIndent;
   final bool showDividers;
+
+  /// 可见组面 key（不含 [margin]）：需要按卡片几何验收时使用。
+  final Key? cardKey;
 
   const AppleGroupedList({
     super.key,
@@ -210,7 +221,9 @@ class AppleGroupedList extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(vertical: 2),
     this.margin = EdgeInsets.zero,
     this.dividerIndent = 0,
+    this.dividerEndIndent = 0,
     this.showDividers = true,
+    this.cardKey,
   });
 
   @override
@@ -224,6 +237,7 @@ class AppleGroupedList extends StatelessWidget {
             height: 0.5,
             thickness: 0.5,
             indent: dividerIndent,
+            endIndent: dividerEndIndent,
             color: Theme.of(
               context,
             ).colorScheme.outlineVariant.withValues(alpha: 0.45),
@@ -239,6 +253,7 @@ class AppleGroupedList extends StatelessWidget {
       );
     }
     return AppleGroup(
+      surfaceKey: cardKey,
       margin: margin,
       padding: padding,
       child: Column(

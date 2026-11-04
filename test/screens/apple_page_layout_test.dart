@@ -174,52 +174,56 @@ void main() {
     );
   });
 
-  testWidgets('默认主题下待办页控制带合并并保留全部关键 key', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final todos = TodoProvider();
-    await todos.addTodo(TodoItem(title: '苹果布局待办'));
-    await tester.pumpWidget(
-      _wrap(
-        const TodoScreen(),
-        theme: AppBrands.defaultBrand.theme,
-        todoProvider: todos,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ApplePageFrame), findsWidgets);
-    for (final key in [
-      'todo_view_switcher',
-      'todo_today_summary_card',
-      'todo_filter_bar',
-    ]) {
-      final finder = find.byKey(ValueKey(key));
-      expect(finder, findsOneWidget, reason: key);
-      expect(
-        find.ancestor(of: finder, matching: find.byType(AppleGroup)),
-        findsWidgets,
-        reason: '$key 应并入同一条控制带组面',
+  testWidgets(
+    '默认主题下待办页控制带合并并保留全部关键 key',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final todos = TodoProvider();
+      await todos.addTodo(TodoItem(title: '苹果布局待办'));
+      await tester.pumpWidget(
+        _wrap(
+          const TodoScreen(),
+          theme: AppBrands.defaultBrand.theme,
+          todoProvider: todos,
+        ),
       );
-    }
-    // 默认主题：没有 AppBar，标题 / 控制带 / 结果区在同一条内容流里。
-    expect(find.byType(AppBar), findsNothing);
-    expect(find.byType(ApplePageHeader), findsWidgets);
-    expect(find.byType(AppleControlBand), findsWidgets);
-    expect(
-      tester.getTopLeft(find.byType(AppleControlBand).first).dy,
-      greaterThanOrEqualTo(
-        tester.getBottomLeft(find.byType(ApplePageHeader).first).dy,
-      ),
-    );
-    // 默认主题：摘要是组面内的扁平行，不再自带独立卡片。
-    expect(
-      tester.widget(find.byKey(const ValueKey('todo_today_summary_card'))),
-      isA<Padding>(),
-    );
-    expect(tester.takeException(), isNull);
-  });
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ApplePageFrame), findsWidgets);
+      for (final key in [
+        'todo_view_switcher',
+        'todo_today_summary_card',
+        'todo_filter_bar',
+      ]) {
+        final finder = find.byKey(ValueKey(key));
+        expect(finder, findsOneWidget, reason: key);
+        expect(
+          find.ancestor(of: finder, matching: find.byType(AppleGroup)),
+          findsWidgets,
+          reason: '$key 应并入同一条控制带组面',
+        );
+      }
+      // 默认主题：没有 AppBar，标题 / 控制带 / 结果区在同一条内容流里。
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byType(ApplePageHeader), findsWidgets);
+      expect(find.byType(AppleControlBand), findsWidgets);
+      expect(
+        tester.getTopLeft(find.byType(AppleControlBand).first).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byType(ApplePageHeader).first).dy,
+        ),
+      );
+      // 默认主题：摘要是组面内的扁平行，不再自带独立卡片。
+      expect(
+        tester.widget(find.byKey(const ValueKey('todo_today_summary_card'))),
+        isA<Padding>(),
+      );
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
   testWidgets('默认主题下习惯页限宽并保留今日打卡关键节点', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -235,7 +239,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('habit_insight_before_today_list')),
+      find.byKey(const ValueKey('habit_insight_after_today_list')),
       findsOneWidget,
     );
     expect(
@@ -250,42 +254,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('非默认主题保留旧结构：不出现 Apple 页头 / 分组列表 / 扁平摘要', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final todos = TodoProvider();
-    await todos.addTodo(TodoItem(title: '非默认主题待办'));
-    await tester.pumpWidget(
-      _wrap(
-        const TodoScreen(),
-        theme: AppBrands.starRail.theme,
-        todoProvider: todos,
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    '非默认主题保留旧结构：不出现 Apple 页头 / 分组列表 / 扁平摘要',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final todos = TodoProvider();
+      await todos.addTodo(TodoItem(title: '非默认主题待办'));
+      await tester.pumpWidget(
+        _wrap(
+          const TodoScreen(),
+          theme: AppBrands.starRail.theme,
+          todoProvider: todos,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // 非默认主题：今日摘要仍是独立卡片，不是组面内的扁平行。
-    expect(
-      tester.widget(find.byKey(const ValueKey('todo_today_summary_card'))),
-      isA<AppSurfaceCard>(),
-    );
-    expect(find.byKey(const ValueKey('todo_view_switcher')), findsOneWidget);
-    expect(find.byKey(const ValueKey('todo_filter_bar')), findsOneWidget);
-    // 非默认主题仍使用旧 AppBar 外壳。
-    expect(find.byType(AppBar), findsWidgets);
+      // 非默认主题：今日摘要仍是独立卡片，不是组面内的扁平行。
+      expect(
+        tester.widget(find.byKey(const ValueKey('todo_today_summary_card'))),
+        isA<AppSurfaceCard>(),
+      );
+      expect(find.byKey(const ValueKey('todo_view_switcher')), findsOneWidget);
+      expect(find.byKey(const ValueKey('todo_filter_bar')), findsOneWidget);
+      // 非默认主题仍使用旧 AppBar 外壳。
+      expect(find.byType(AppBar), findsWidgets);
 
-    // 今日页同样回退：没有 Apple 大标题 / 扁平分组，旧页头与页签仍在。
-    await tester.pumpWidget(
-      _wrap(const TodayScreen(), theme: AppBrands.starRail.theme),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byType(ApplePageHeader), findsNothing);
-    expect(find.byType(AppleGroupedList), findsNothing);
-    expect(find.byKey(const ValueKey('home_greeting')), findsOneWidget);
-    expect(find.byKey(const ValueKey('today_home_tabs')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      // 今日页同样回退：没有 Apple 大标题 / 扁平分组，旧页头与页签仍在。
+      await tester.pumpWidget(
+        _wrap(const TodayScreen(), theme: AppBrands.starRail.theme),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ApplePageHeader), findsNothing);
+      expect(find.byType(AppleGroupedList), findsNothing);
+      expect(find.byKey(const ValueKey('home_greeting')), findsOneWidget);
+      expect(find.byKey(const ValueKey('today_home_tabs')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
   testWidgets('默认主题下我的页无 AppBar 且菜单为扁平分组行', (tester) async {
     tester.view.physicalSize = const Size(390, 844);

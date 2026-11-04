@@ -2,7 +2,9 @@ import 'package:duoyi/core/app_motion.dart';
 import 'package:duoyi/core/design_tokens.dart';
 import 'package:duoyi/widgets/app_page_tabs.dart';
 import 'package:duoyi/widgets/app_time_picker.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -114,6 +116,160 @@ void main() {
     });
   }
 
+  for (final systemBack in [false, true]) {
+    testWidgets('Android ${systemBack ? '系统' : '标题栏'}返回只横移且不缩放', (
+      tester,
+    ) async {
+      await _openAndroidPage(tester);
+      final page = find.byKey(_androidPage);
+      final original = tester.getRect(page);
+      if (systemBack) {
+        await tester.binding.handlePopRoute();
+      } else {
+        final back = tester.getCenter(find.byType(BackButton));
+        final canceled = await tester.startGesture(back);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.getRect(page), original, reason: '按住返回按钮时页面不退出');
+        await canceled.moveBy(const Offset(0, 120));
+        await canceled.up();
+        await tester.pumpAndSettle();
+        expect(tester.getRect(page), original, reason: '拖出按钮再松开应取消返回');
+
+        final released = await tester.startGesture(back);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.getRect(page), original);
+        await released.up();
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 40));
+      final frame = tester.getRect(page);
+      expect(frame.left, greaterThan(original.left));
+      expect(frame.top, original.top);
+      expect(frame.size, original.size);
+      expect(tester.getTopLeft(find.text('打开安卓次页')), Offset.zero);
+      await tester.pumpAndSettle();
+      expect(page, findsNothing);
+      expect(find.text('打开安卓次页').hitTestable(), findsOneWidget);
+    });
+  }
+
+  testWidgets('Android 侧滑按住不移动，滑回取消，松手确认后才横移', (tester) async {
+    final navigator = await _openAndroidPage(tester);
+    final page = find.byKey(_androidPage);
+    final original = tester.getRect(page);
+    final route = ModalRoute.of(tester.element(page))!;
+
+    void expectStationary() {
+      expect(route.isCurrent, isTrue);
+      expect(tester.getRect(page), original);
+    }
+
+    Future<void> dragAndHold() async {
+      await _sendBackGesture(tester, 'startBackGesture', _backEvent(0.05));
+      await tester.pump();
+      expect(navigator.userGestureInProgress, isTrue);
+      expectStationary();
+
+      await _sendBackGesture(
+        tester,
+        'updateBackGestureProgress',
+        _backEvent(0.9),
+      );
+      await tester.pump();
+      expectStationary();
+      await tester.pump(const Duration(milliseconds: 300));
+      expectStationary();
+    }
+
+    await dragAndHold();
+    await _sendBackGesture(tester, 'updateBackGestureProgress', _backEvent(0));
+    await tester.pump();
+    expectStationary();
+    await _sendBackGesture(tester, 'cancelBackGesture');
+    await tester.pump();
+    expectStationary();
+    expect(navigator.userGestureInProgress, isFalse);
+    await tester.pumpAndSettle();
+    expectStationary();
+
+    await dragAndHold();
+    await _sendBackGesture(tester, 'commitBackGesture');
+    await tester.pump();
+    expect(tester.getRect(page), original);
+    await tester.pump(const Duration(milliseconds: 40));
+    final frame = tester.getRect(page);
+    expect(frame.left, greaterThan(original.left));
+    expect(frame.top, original.top);
+    expect(frame.size, original.size);
+    expect(tester.getTopLeft(find.text('打开安卓次页')), Offset.zero);
+    await tester.pumpAndSettle();
+    expect(page, findsNothing);
+    expect(find.text('打开安卓次页').hitTestable(), findsOneWidget);
+    expect(navigator.userGestureInProgress, isFalse);
+  });
+
+  testWidgets('Android 减少动效时预测手势仍可返回且页面不移动', (tester) async {
+    final navigator = await _openAndroidPage(tester, reduced: true);
+    final page = find.byKey(_androidPage);
+    final original = tester.getRect(page);
+    await _sendBackGesture(tester, 'startBackGesture', _backEvent(0));
+    expect(navigator.userGestureInProgress, isTrue);
+    await _sendBackGesture(
+      tester,
+      'updateBackGestureProgress',
+      _backEvent(0.4),
+    );
+    await tester.pump();
+    expect(tester.getRect(page), original);
+    await _sendBackGesture(tester, 'commitBackGesture');
+    await tester.pumpAndSettle();
+    expect(page, findsNothing);
+    expect(navigator.userGestureInProgress, isFalse);
+  });
+
+  testWidgets('Android 预测返回遵守页面的 PopScope', (tester) async {
+    final navigator = await _openAndroidPage(tester, canPop: false);
+    final page = find.byKey(_androidPage);
+    final original = tester.getRect(page);
+    await _sendBackGesture(tester, 'startBackGesture', _backEvent(0));
+    expect(navigator.userGestureInProgress, isFalse);
+    await _sendBackGesture(
+      tester,
+      'updateBackGestureProgress',
+      _backEvent(0.4),
+    );
+    await _sendBackGesture(tester, 'commitBackGesture');
+    await tester.pumpAndSettle();
+    expect(tester.getRect(page), original);
+    expect(navigator.userGestureInProgress, isFalse);
+  });
+
+  testWidgets('Android 侧滑期间禁止退出时提交不返回也不移动', (tester) async {
+    final canPop = ValueNotifier(true);
+    addTearDown(canPop.dispose);
+    final navigator = await _openAndroidPage(tester, popAllowed: canPop);
+    final page = find.byKey(_androidPage);
+    final original = tester.getRect(page);
+    await _sendBackGesture(tester, 'startBackGesture', _backEvent(0));
+    expect(navigator.userGestureInProgress, isTrue);
+    await _sendBackGesture(
+      tester,
+      'updateBackGestureProgress',
+      _backEvent(0.4),
+    );
+    await tester.pump();
+    expect(tester.getRect(page), original);
+
+    canPop.value = false;
+    await tester.pump();
+    await _sendBackGesture(tester, 'commitBackGesture');
+    await tester.pump();
+    expect(tester.getRect(page), original);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(page), original);
+    expect(navigator.userGestureInProgress, isFalse);
+  });
+
   testWidgets('分页在设置变化后保留选择并可立即切换', (tester) async {
     var selected = 0;
     Widget switcher() => StatefulBuilder(
@@ -172,6 +328,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+const _androidPage = ValueKey('motion-android-page');
+
+Future<NavigatorState> _openAndroidPage(
+  WidgetTester tester, {
+  bool reduced = false,
+  bool canPop = true,
+  ValueListenable<bool>? popAllowed,
+}) async {
+  late NavigatorState navigator;
+  await _pump(
+    tester,
+    Builder(
+      builder: (context) {
+        navigator = Navigator.of(context);
+        return GestureDetector(
+          onTap: () => navigator.push(
+            MaterialPageRoute<void>(
+              builder: (_) {
+                final page = Scaffold(key: _androidPage, appBar: AppBar());
+                if (popAllowed == null) {
+                  return PopScope(canPop: canPop, child: page);
+                }
+                return ValueListenableBuilder<bool>(
+                  valueListenable: popAllowed,
+                  child: page,
+                  builder: (_, allowed, child) =>
+                      PopScope(canPop: allowed, child: child!),
+                );
+              },
+            ),
+          ),
+          child: const Text('打开安卓次页'),
+        );
+      },
+    ),
+    platform: TargetPlatform.android,
+    reduced: reduced,
+  );
+  await tester.tap(find.text('打开安卓次页'));
+  await tester.pumpAndSettle();
+  return navigator;
+}
+
+Map<String, Object> _backEvent(double progress) => {
+  'touchOffset': <double>[5 + 200 * progress, 300],
+  'progress': progress,
+  'swipeEdge': 0,
+};
+
+Future<void> _sendBackGesture(
+  WidgetTester tester,
+  String method, [
+  Map<String, Object>? arguments,
+]) => tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+  'flutter/backgesture',
+  const StandardMethodCodec().encodeMethodCall(MethodCall(method, arguments)),
+  (_) {},
+);
 
 Future<void> _pump(
   WidgetTester tester,

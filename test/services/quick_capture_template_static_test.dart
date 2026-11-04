@@ -11,6 +11,9 @@ void main() {
       'lib/providers/quick_capture_template_provider.dart',
     ).readAsStringSync();
     final fab = File('lib/widgets/quick_capture_fab.dart').readAsStringSync();
+    final sharedFab = File(
+      'lib/widgets/app_create_fab.dart',
+    ).readAsStringSync();
     final main = File('lib/main.dart').readAsStringSync();
     final i18n = File('lib/core/i18n.dart').readAsStringSync();
     final zhArb = File('lib/l10n/app_zh.arb').readAsStringSync();
@@ -53,12 +56,11 @@ void main() {
     expect(fab, contains('template.toTodo(input)'));
     expect(fab, contains('template.toHabit(input)'));
     expect(fab, contains('GestureDetector'));
-    expect(
-      fab,
-      contains(
-        'onLongPress: widget.label == null ? _showTemplateSheet : _toggle',
-      ),
-    );
+    expect(fab, contains('onLongPress: _showTemplateSheet'));
+    expect(fab, contains('onLongPress: _toggle'));
+    expect(fab, contains('AppCreateFab('));
+    expect(sharedFab, contains('GestureDetector(onLongPress: onLongPress'));
+    expect(sharedFab, contains('triggerMode: TooltipTriggerMode.manual'));
     expect(fab, contains('onTap: _showTemplateSheet'));
     expect(fab, contains('triggerMode: TooltipTriggerMode.manual'));
 

@@ -2130,6 +2130,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitRecordsMakeUpOnce => 'Make up once';
 
   @override
+  String get habitCalendarTitle => 'Make-up calendar';
+
+  @override
+  String get habitCalendarHint => 'Expand to choose a date to record';
+
+  @override
+  String get habitCalendarExpandedHint =>
+      'Choose a date to view or add a record';
+
+  @override
+  String get habitCalendarExpand => 'Expand calendar';
+
+  @override
+  String get habitCalendarCollapse => 'Collapse calendar';
+
+  @override
+  String get habitCalendarPreviousMonth => 'Previous month';
+
+  @override
+  String get habitCalendarNextMonth => 'Next month';
+
+  @override
+  String get habitDayDetails => 'Daily details';
+
+  @override
+  String get habitDayPending => 'Not completed';
+
+  @override
+  String get habitDayRecorded => 'Recorded occurrence';
+
+  @override
+  String get habitDayFuture => 'Future date';
+
+  @override
+  String get habitDayCount => 'Recorded';
+
+  @override
+  String get habitDayTarget => 'Daily target';
+
+  @override
+  String get habitInsightTitle => 'Habit insights';
+
+  @override
   String get habitTrendTitle => 'Habit trend';
 
   @override

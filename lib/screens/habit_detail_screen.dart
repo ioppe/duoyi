@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/i18n.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +34,50 @@ const List<int> _habitEditColors = <int>[
   0xFFFF5722,
   0xFF607D8B,
 ];
+
+/// 详情页主滚动列表的稳定 key：趋势卡片被回收重建后列表身份不变。
+const Key habitDetailListKey = ValueKey<String>('habit_detail_list');
+
+/// 趋势卡片 key：范围选择器随卡片滚动进出，状态由详情页持有。
+const Key habitTrendCardKey = ValueKey<String>('habit_trend_card');
+
+/// 趋势范围选择器 key。
+const Key habitTrendWindowSelectorKey = ValueKey<String>(
+  'habit_trend_window_selector',
+);
+
+/// 补卡日历卡片 key（沿用原「最近记录 / 补卡」卡片的稳定 key）。
+const Key habitRecentRecordsCardKey = ValueKey<String>(
+  'habit_recent_records_card',
+);
+
+/// 补卡日历展开/收起入口 key。
+const Key habitCalendarToggleKey = ValueKey<String>('habit_calendar_toggle');
+
+/// 补卡日历上/下个月按钮 key。
+const Key habitCalendarPrevMonthKey = ValueKey<String>(
+  'habit_calendar_prev_month',
+);
+const Key habitCalendarNextMonthKey = ValueKey<String>(
+  'habit_calendar_next_month',
+);
+
+/// 当日详情浮层、关闭按钮与两个写入按钮 key。
+const Key habitDayDetailsCardKey = ValueKey<String>('habit_day_details_card');
+const Key habitDayDetailsCloseKey = ValueKey<String>('habit_day_details_close');
+const Key habitDayDetailsPrimaryKey = ValueKey<String>(
+  'habit_day_details_primary',
+);
+const Key habitDayDetailsUndoKey = ValueKey<String>('habit_day_details_undo');
+
+/// 日期格 key 前缀：趋势格 `habit_trend_day_yyyy-MM-dd`、
+/// 日历格 `habit_calendar_day_yyyy-MM-dd`。
+const String habitTrendDayKeyPrefix = 'habit_trend_day_';
+const String habitCalendarDayKeyPrefix = 'habit_calendar_day_';
+
+/// 补卡日历日格的行高倍数与状态点直径。
+const double _habitCalendarLineHeight = 1.25;
+const double _habitCalendarDotSize = 5;
 
 ButtonStyle _habitDangerFilledButtonStyle(BuildContext context) {
   final cs = Theme.of(context).colorScheme;
@@ -560,6 +605,31 @@ class HabitDetailScreen extends StatefulWidget {
 }
 
 class _HabitDetailScreenState extends State<HabitDetailScreen> {
+  /// 趋势范围是详情页状态：趋势卡片滚出缓存被销毁后不能回退到默认值。
+  HabitTrendWindow _trendWindow = HabitTrendWindow.days14;
+
+  /// 补卡日历同样默认收起，展开状态与所在月份都由详情页持有：
+  /// 卡片滚出缓存重建、provider 更新都不会把用户折叠回默认视图。
+  bool _calendarExpanded = false;
+  DateTime _calendarMonth = _currentHabitCalendarMonth();
+
+  static DateTime _currentHabitCalendarMonth() {
+    final today = AppClock.today();
+    return DateTime(today.year, today.month);
+  }
+
+  @override
+  void didUpdateWidget(covariant HabitDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 只有真正切到另一个习惯才回到默认 14 天与收起的当月日历；provider
+    // 更新（打卡、编辑保存、提醒同步）都不会重置用户选中的范围。
+    if (oldWidget.habitId != widget.habitId) {
+      _trendWindow = HabitTrendWindow.days14;
+      _calendarExpanded = false;
+      _calendarMonth = _currentHabitCalendarMonth();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     AppClock.watch(context);
@@ -665,6 +735,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
         ],
       ),
       body: ListView(
+        key: habitDetailListKey,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
@@ -789,95 +860,27 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
           ),
           HabitHeatmap(heatmapData: heatmapData, weeks: 20),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: _HabitTrendCard(habit: habit),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              I18n.tr('habit.records.title'),
-              style: TextStyle(
-                fontWeight: DesignTokens.fontWeightStrong,
-                fontSize: 15,
-                color: cs.onSurface,
-              ),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, DesignTokens.spaceMd),
+            child: _HabitTrendCard(
+              key: habitTrendCardKey,
+              habit: habit,
+              window: _trendWindow,
+              onWindowChanged: (window) =>
+                  setState(() => _trendWindow = window),
             ),
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 30,
-            itemBuilder: (_, i) {
-              final d = AppClock.today().subtract(Duration(days: i));
-              final activeForDay = habit.activeForDate(d);
-              final count = habit.countForDate(d);
-              final progress = habit.progressForDate(d);
-              final completed = habit.isCompletedForDate(d);
-              final unit = habitUnit(habit);
-              final countLabel = !activeForDay
-                  ? I18n.tr('habit.records.inactive')
-                  : habit.kind == HabitKind.negative
-                  ? _habitCountLabel(count, unit)
-                  : habit.hasFlexRule
-                  ? localizedHabitCountForDate(habit, d)
-                  : '$count/${habit.targetCount}';
-              return ListTile(
-                dense: true,
-                leading: Text(
-                  '${d.month}/${d.day}',
-                  style: const TextStyle(fontSize: 13),
-                ),
-                title: LinearProgressIndicator(
-                  value: progress,
-                  color: activeForDay
-                      ? (completed ? Colors.green : cs.error)
-                      : cs.onSurfaceVariant,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      countLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: !activeForDay
-                            ? cs.onSurfaceVariant
-                            : completed
-                            ? Colors.green
-                            : Colors.grey,
-                      ),
-                    ),
-                    if (count > 0 && activeForDay)
-                      Tooltip(
-                        message: I18n.tr('habit.records.undo_once'),
-                        child: IconButton(
-                          visualDensity: VisualDensity.compact,
-                          iconSize: 18,
-                          onPressed: () =>
-                              provider.decrementHabitForDate(habit.id, d),
-                          icon: const Icon(Icons.undo),
-                        ),
-                      ),
-                    Tooltip(
-                      message: !activeForDay
-                          ? I18n.tr('habit.records.inactive')
-                          : habit.kind == HabitKind.negative
-                          ? I18n.tr('habit.records.record_once')
-                          : I18n.tr('habit.records.make_up_once'),
-                      child: IconButton(
-                        visualDensity: VisualDensity.compact,
-                        iconSize: 18,
-                        onPressed: activeForDay
-                            ? () => provider.incrementHabitForDate(habit.id, d)
-                            : null,
-                        icon: const Icon(Icons.add_circle_outline),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+          Padding(
+            // 左右各 12：给 7 列月历留出 320dp 屏也够用的网格宽度。
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, DesignTokens.spaceLg),
+            child: _HabitBackfillCalendarCard(
+              key: habitRecentRecordsCardKey,
+              habit: habit,
+              expanded: _calendarExpanded,
+              month: _calendarMonth,
+              onExpandedChanged: (expanded) =>
+                  setState(() => _calendarExpanded = expanded),
+              onMonthChanged: (month) => setState(() => _calendarMonth = month),
+            ),
           ),
         ],
       ),
@@ -885,84 +888,86 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 }
 
-class _HabitTrendCard extends StatefulWidget {
+class _HabitTrendCard extends StatelessWidget {
   final Habit habit;
+  final HabitTrendWindow window;
+  final ValueChanged<HabitTrendWindow> onWindowChanged;
 
-  const _HabitTrendCard({required this.habit});
-
-  @override
-  State<_HabitTrendCard> createState() => _HabitTrendCardState();
-}
-
-class _HabitTrendCardState extends State<_HabitTrendCard> {
-  HabitTrendWindow _window = HabitTrendWindow.days30;
+  const _HabitTrendCard({
+    super.key,
+    required this.habit,
+    required this.window,
+    required this.onWindowChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final summary = buildHabitTrendSummary(widget.habit, window: _window);
+    final summary = buildHabitTrendSummary(habit, window: window);
     final cs = Theme.of(context).colorScheme;
-    final color = Color(widget.habit.colorValue);
-    final unit = habitUnit(widget.habit);
+    final color = Color(habit.colorValue);
+    final unit = habitUnit(habit);
     final trendColor = _directionColor(summary.direction, cs);
     final delta = (summary.completionRateDelta * 100).round();
 
     return AppSurfaceCard(
-      padding: const EdgeInsets.all(14),
+      // 不传 color/gradient：保留用户选择的 cardSkin / 明暗玻璃皮肤。
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.trending_up, size: 18, color: color),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spaceSm),
               Expanded(
                 child: Text(
                   I18n.tr('habit.trend.title'),
                   style: const TextStyle(
                     fontWeight: DesignTokens.fontWeightStrong,
-                    fontSize: 14,
+                    fontSize: DesignTokens.fontSizeSecondary,
                   ),
                 ),
               ),
               Text(
                 '${(summary.completionRate * 100).round()}%',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: DesignTokens.fontSizeSecondary,
                   color: color,
                   fontWeight: DesignTokens.fontWeightStrong,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          SegmentedButton<HabitTrendWindow>(
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: WidgetStateProperty.all(
-                const TextStyle(
-                  fontSize: 12,
-                  fontWeight: DesignTokens.fontWeightStrong,
+          const SizedBox(height: DesignTokens.spaceMd),
+          // 2x 字体 / 320px 下四段放不进一行时横向滚动，不压缩字号也不溢出。
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<HabitTrendWindow>(
+              key: habitTrendWindowSelectorKey,
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: WidgetStateProperty.all(
+                  const TextStyle(
+                    fontSize: DesignTokens.fontSizeCaption,
+                    fontWeight: DesignTokens.fontWeightMedium,
+                  ),
                 ),
               ),
+              segments: [
+                for (final window in HabitTrendWindow.values)
+                  ButtonSegment(
+                    value: window,
+                    label: Text(localizedHabitTrendWindowLabel(window)),
+                  ),
+              ],
+              selected: {window},
+              onSelectionChanged: (value) => onWindowChanged(value.first),
             ),
-            segments: [
-              for (final window in HabitTrendWindow.values)
-                ButtonSegment(
-                  value: window,
-                  label: Text(localizedHabitTrendWindowLabel(window)),
-                ),
-            ],
-            selected: {_window},
-            onSelectionChanged: (value) {
-              setState(() => _window = value.first);
-            },
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: DesignTokens.spaceMd),
+          _HabitTrendMetrics(
             children: [
               _HabitTrendMetric(
                 label: I18n.tr('habit.trend.completed'),
@@ -987,28 +992,92 @@ class _HabitTrendCardState extends State<_HabitTrendCard> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spaceMd),
           Text(
             I18n.tr('habit.trend.bucket_details'),
             style: TextStyle(
-              fontSize: 12,
-              color: cs.onSurface.withValues(alpha: 0.62),
+              fontSize: DesignTokens.fontSizeCaption,
+              color: cs.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 8),
-          for (final bucket in summary.buckets)
-            _HabitTrendBucketRow(
-              bucket: bucket,
-              color: color,
-              errorColor: cs.error,
-              unit: unit,
-            ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          _HabitTrendBreakdown(summary: summary, habit: habit, unit: unit),
         ],
       ),
     );
   }
 }
 
+/// 区间明细：14 天每日明细、30 天日期格、90/365 天周/月聚合。
+///
+/// 展示层统一倒序（最近日期在最前），不改 core 聚合的早到晚顺序。
+class _HabitTrendBreakdown extends StatelessWidget {
+  final HabitTrendSummary summary;
+  final Habit habit;
+  final String unit;
+
+  const _HabitTrendBreakdown({
+    required this.summary,
+    required this.habit,
+    required this.unit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Color(habit.colorValue);
+    final points = summary.points.reversed.toList(growable: false);
+    switch (summary.window) {
+      case HabitTrendWindow.days14:
+        return Column(
+          children: [
+            for (final point in points)
+              _HabitTrendDayRow(habit: habit, point: point, color: color),
+          ],
+        );
+      case HabitTrendWindow.days30:
+        return _HabitTrendDayGrid(habit: habit, points: points);
+      case HabitTrendWindow.days90:
+      case HabitTrendWindow.days365:
+        return Column(
+          children: [
+            for (final bucket in summary.buckets.reversed)
+              _HabitTrendBucketRow(bucket: bucket, color: color, unit: unit),
+          ],
+        );
+    }
+  }
+}
+
+/// 指标区：手机 2×2、宽屏 4 列，用留白而不是四层嵌套描边卡片区分。
+class _HabitTrendMetrics extends StatelessWidget {
+  final List<Widget> children;
+
+  const _HabitTrendMetrics({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 480.0;
+        final columns = width >= 520 ? 4 : 2;
+        const gap = DesignTokens.spaceSm;
+        final itemWidth = (width - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final child in children)
+              SizedBox(width: itemWidth, child: child),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 单个指标：12 号标签 + 16 号数值，文字自然换行，不加独立描边。
 class _HabitTrendMetric extends StatelessWidget {
   final String label;
   final String value;
@@ -1027,10 +1096,12 @@ class _HabitTrendMetric extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final effectiveColor = color ?? cs.onSurface;
     return Container(
-      constraints: const BoxConstraints(minWidth: 88),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceSm,
+        vertical: DesignTokens.spaceSm,
+      ),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.48),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1039,22 +1110,27 @@ class _HabitTrendMetric extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+            style: TextStyle(
+              fontSize: DesignTokens.fontSizeCaption,
+              color: cs.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: DesignTokens.spaceXxs + 1),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 13, color: effectiveColor),
-                const SizedBox(width: 3),
+                Icon(icon, size: 16, color: effectiveColor),
+                const SizedBox(width: DesignTokens.spaceXxs + 1),
               ],
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: effectiveColor,
-                  fontWeight: DesignTokens.fontWeightStrong,
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: DesignTokens.fontSizeBase,
+                    color: effectiveColor,
+                    fontWeight: DesignTokens.fontWeightStrong,
+                  ),
                 ),
               ),
             ],
@@ -1065,16 +1141,297 @@ class _HabitTrendMetric extends StatelessWidget {
   }
 }
 
+/// 14 天视图的一天：主题色日期徽标 + 细进度 + 已有本地化数值。
+class _HabitTrendDayRow extends StatelessWidget {
+  final Habit habit;
+  final HabitTrendPoint point;
+  final Color color;
+
+  const _HabitTrendDayRow({
+    required this.habit,
+    required this.point,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = point.active;
+    final progress = active ? point.progress.clamp(0.0, 1.0) : 0.0;
+    final accent = !active
+        ? cs.onSurfaceVariant
+        : point.completed
+        ? color
+        : cs.primary;
+    final label = active
+        ? localizedHabitCountForDate(habit, point.date)
+        : I18n.tr('habit.records.inactive');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.spaceSm),
+      child: Row(
+        children: [
+          _HabitDateBadge(date: point.date, color: color, muted: !active),
+          const SizedBox(width: DesignTokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: DesignTokens.fontSizeCaption,
+                    color: active ? cs.onSurface : cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.spaceXxs + 2),
+                _HabitTrendProgressBar(
+                  progress: progress,
+                  color: accent,
+                  trackColor: (active ? color : cs.outlineVariant).withValues(
+                    alpha: 0.16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: DesignTokens.spaceSm),
+          Text(
+            '${(progress * 100).round()}%',
+            style: TextStyle(
+              fontSize: DesignTokens.fontSizeCaption,
+              fontWeight: DesignTokens.fontWeightMedium,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 30 天视图：响应式日期格，宽度随文字缩放增长，最少 44 触控格。
+/// 30 天日期格的两行文本行高：日期一行 + 数量一行，全部格子共用。
+const double _habitTrendCellLineHeight = 1.25;
+
+Size _measureTrendDayText(
+  BuildContext context,
+  String text,
+  FontWeight weight,
+) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: DefaultTextStyle.of(context).style.copyWith(
+        fontSize: DesignTokens.fontSizeCaption,
+        height: _habitTrendCellLineHeight,
+        fontWeight: weight,
+      ),
+    ),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final size = painter.size;
+  painter.dispose();
+  return size;
+}
+
+/// 30 天视图：30 个等宽等高的日期格，最近日期在最前（points 已倒序）。
+class _HabitTrendDayGrid extends StatelessWidget {
+  final Habit habit;
+  final List<HabitTrendPoint> points;
+
+  const _HabitTrendDayGrid({required this.habit, required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    final today = AppClock.today();
+    const gap = DesignTokens.spaceXs + 2;
+    var minCellWidth = DesignTokens.controlMinHeight;
+    var cellHeight = DesignTokens.controlMinHeight;
+    for (final point in points) {
+      final date = _measureTrendDayText(
+        context,
+        '${point.date.month}/${point.date.day}',
+        DesignTokens.fontWeightMedium,
+      );
+      final count = _measureTrendDayText(
+        context,
+        point.active ? '${point.count}' : '–',
+        DesignTokens.fontWeightStrong,
+      );
+      minCellWidth = math.max(
+        minCellWidth,
+        math.max(date.width, count.width) + DesignTokens.spaceXs * 2 + 2,
+      );
+      cellHeight = math.max(
+        cellHeight,
+        date.height +
+            count.height +
+            DesignTokens.spaceXxs +
+            DesignTokens.spaceXs * 2 +
+            1,
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : minCellWidth * 7;
+        final columns = ((maxWidth + gap) / (minCellWidth + gap))
+            .floor()
+            .clamp(1, 10)
+            .toInt();
+        final cellWidth = (maxWidth - gap * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final point in points)
+              _HabitTrendDayCell(
+                key: ValueKey<String>(
+                  '$habitTrendDayKeyPrefix${habit.dateKey(point.date)}',
+                ),
+                habit: habit,
+                point: point,
+                width: cellWidth,
+                height: cellHeight,
+                isToday:
+                    point.date.year == today.year &&
+                    point.date.month == today.month &&
+                    point.date.day == today.day,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 单个日期格：上「M/d」下「count 或 –」，两行都是同字号 [Text]。
+class _HabitTrendDayCell extends StatelessWidget {
+  final Habit habit;
+  final HabitTrendPoint point;
+  final bool isToday;
+  final double width;
+  final double height;
+
+  const _HabitTrendDayCell({
+    super.key,
+    required this.habit,
+    required this.point,
+    required this.isToday,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = point.active;
+    final completed = point.completed;
+    final recordedOccurrence =
+        active && habit.kind == HabitKind.negative && point.count > 0;
+    final accent = !active
+        ? cs.onSurfaceVariant
+        : recordedOccurrence
+        ? cs.error
+        : completed
+        ? _habitCompletedColor(context)
+        : cs.onSurfaceVariant;
+    final description = _habitTrendPointDescription(habit, point);
+    // 趋势区只读：写入入口在下方补卡日历里。
+    void openDetails() => _showHabitDayDetails(
+      context,
+      habitId: habit.id,
+      date: point.date,
+      allowRecordActions: false,
+    );
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Semantics(
+        container: true,
+        label: description,
+        button: true,
+        excludeSemantics: true,
+        onTap: openDetails,
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              color:
+                  (completed || recordedOccurrence
+                          ? accent
+                          : DesignTokens.habitPendingTint)
+                      .withValues(alpha: active ? 0.15 : 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isToday
+                    ? cs.primary.withValues(alpha: 0.72)
+                    : cs.outlineVariant.withValues(alpha: 0.24),
+                width: isToday ? 1 : 0.5,
+              ),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: openDetails,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spaceXs,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${point.date.month}/${point.date.day}',
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: DesignTokens.fontSizeCaption,
+                        height: _habitTrendCellLineHeight,
+                        fontWeight: DesignTokens.fontWeightMedium,
+                        color: active ? cs.onSurface : cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.spaceXxs),
+                    Text(
+                      active ? '${point.count}' : '–',
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: DesignTokens.fontSizeCaption,
+                        height: _habitTrendCellLineHeight,
+                        fontWeight: DesignTokens.fontWeightStrong,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 90 天 / 一年：周、月聚合，主题色日期徽章 + 淡底容器 + 进度。
 class _HabitTrendBucketRow extends StatelessWidget {
   final HabitTrendBucket bucket;
   final Color color;
-  final Color errorColor;
   final String unit;
 
   const _HabitTrendBucketRow({
     required this.bucket,
     required this.color,
-    required this.errorColor,
     required this.unit,
   });
 
@@ -1082,72 +1439,917 @@ class _HabitTrendBucketRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final rate = bucket.completionRate;
-    final rowColor = rate >= 0.5 ? color : errorColor;
+    final hasActiveDays = bucket.activeDays > 0;
+    final accent = !hasActiveDays
+        ? cs.onSurfaceVariant
+        : rate >= 0.5
+        ? color
+        : cs.primary;
+    final stats =
+        '${bucket.completedDays}/${bucket.activeDays} · ${bucket.totalCount} $unit';
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 330;
-          final labelWidth = compact ? 58.0 : 76.0;
-          final valueWidth = compact ? 86.0 : 100.0;
-          return Row(
-            children: [
-              SizedBox(
-                width: labelWidth,
-                child: Text(
-                  bucket.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11),
-                ),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        children: [
-                          Container(
-                            height: 8,
-                            color: color.withValues(alpha: 0.10),
-                          ),
-                          AnimatedContainer(
-                            duration: AppMotion.feedback(context),
-                            curve: AppMotion.enterCurve,
-                            height: 8,
-                            width: constraints.maxWidth * rate,
-                            color: rowColor,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: valueWidth,
-                child: Text(
-                  '${bucket.completedDays}/${bucket.activeDays} · ${bucket.totalCount} $unit',
-                  maxLines: 1,
+    return Semantics(
+      label: '${bucket.label} · $stats',
+      excludeSemantics: true,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: DesignTokens.spaceSm),
+        padding: const EdgeInsets.all(DesignTokens.spaceSm + 2),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.24),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: DesignTokens.spaceSm,
+              runSpacing: DesignTokens.spaceXs,
+              children: [
+                _HabitTrendRangeBadge(label: bucket.label, color: accent),
+                Text(
+                  stats,
                   textAlign: TextAlign.end,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: bucket.completedDays > 0
-                        ? rowColor
-                        : cs.onSurfaceVariant,
+                    fontSize: DesignTokens.fontSizeCaption,
+                    color: hasActiveDays ? accent : cs.onSurfaceVariant,
+                    fontWeight: DesignTokens.fontWeightMedium,
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+            const SizedBox(height: DesignTokens.spaceSm),
+            _HabitTrendProgressBar(
+              progress: rate,
+              color: accent,
+              trackColor: color.withValues(alpha: 0.12),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _HabitTrendRangeBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _HabitTrendRangeBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceSm,
+        vertical: DesignTokens.spaceXxs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        maxLines: 2,
+        style: TextStyle(
+          fontSize: DesignTokens.fontSizeCaption,
+          fontWeight: DesignTokens.fontWeightMedium,
+          color: cs.onSurface,
+        ),
+      ),
+    );
+  }
+}
+
+class _HabitTrendProgressBar extends StatelessWidget {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+  static const double _height = 5;
+
+  const _HabitTrendProgressBar({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: LinearProgressIndicator(
+        value: progress.clamp(0.0, 1.0),
+        minHeight: _height,
+        color: color,
+        backgroundColor: trackColor,
+      ),
+    );
+  }
+}
+
+class _HabitDateBadge extends StatelessWidget {
+  final DateTime date;
+  final Color color;
+  final bool muted;
+
+  const _HabitDateBadge({
+    required this.date,
+    required this.color,
+    this.muted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      key: ValueKey<String>(
+        'habit_date_badge_${date.year}-${date.month}-${date.day}',
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spaceSm,
+        vertical: DesignTokens.spaceXxs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: muted
+            ? cs.surfaceContainerHighest.withValues(alpha: 0.28)
+            : color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.28),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        '${date.month}/${date.day}',
+        maxLines: 1,
+        style: TextStyle(
+          fontSize: DesignTokens.fontSizeCaption,
+          fontWeight: DesignTokens.fontWeightMedium,
+          color: muted ? cs.onSurfaceVariant : cs.onSurface,
+        ),
+      ),
+    );
+  }
+}
+
+/// 补卡日历：默认收起，展开后按月查看并点选日期补卡。
+///
+/// 它取代了原先 30 条「最近记录 / 补卡」长列表（原 i18n key 'habit.records.title'）：
+/// 那套逐日进度已经在趋势区重复一遍，既拉长页面又没有补卡入口以外的信息。
+class _HabitBackfillCalendarCard extends StatelessWidget {
+  final Habit habit;
+  final bool expanded;
+
+  /// 当前展示月份（该月 1 号），由详情页持有，滚出缓存不会丢。
+  final DateTime month;
+  final ValueChanged<bool> onExpandedChanged;
+  final ValueChanged<DateTime> onMonthChanged;
+
+  const _HabitBackfillCalendarCard({
+    super.key,
+    required this.habit,
+    required this.expanded,
+    required this.month,
+    required this.onExpandedChanged,
+    required this.onMonthChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final color = Color(habit.colorValue);
+
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(DesignTokens.spaceLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            button: true,
+            expanded: expanded,
+            label: expanded
+                ? I18n.tr('habit.calendar.collapse')
+                : I18n.tr('habit.calendar.expand'),
+            child: InkWell(
+              key: habitCalendarToggleKey,
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => onExpandedChanged(!expanded),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: DesignTokens.controlMinHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.spaceXs,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month_outlined,
+                        size: 18,
+                        color: color,
+                      ),
+                      const SizedBox(width: DesignTokens.spaceSm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              I18n.tr('habit.calendar.title'),
+                              style: const TextStyle(
+                                fontWeight: DesignTokens.fontWeightStrong,
+                                fontSize: DesignTokens.fontSizeSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: DesignTokens.spaceXxs + 1),
+                            Text(
+                              expanded
+                                  ? I18n.tr('habit.calendar.expanded_hint')
+                                  : I18n.tr('habit.calendar.hint'),
+                              style: TextStyle(
+                                fontSize: DesignTokens.fontSizeCaption,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: DesignTokens.spaceSm),
+                      Icon(
+                        expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 20,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // 收起时完全不构建月历：详情页不出现 30 行重复的每日进度。
+          AnimatedSize(
+            duration: AppMotion.duration(context, DesignTokens.durationBase),
+            curve: AppMotion.enterCurve,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? _HabitBackfillCalendar(
+                    habit: habit,
+                    month: month,
+                    onMonthChanged: onMonthChanged,
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 月历本体：完整本月日期 + 周一为首列的 leading/trailing 空位。
+///
+/// 月历按正常周历正序排列（趋势区的 30 天格才是倒序），只读的未来日
+/// 不能打开写入入口，但历史月份可以一直往前翻（不截断历史）。
+class _HabitBackfillCalendar extends StatelessWidget {
+  final Habit habit;
+  final DateTime month;
+  final ValueChanged<DateTime> onMonthChanged;
+
+  const _HabitBackfillCalendar({
+    required this.habit,
+    required this.month,
+    required this.onMonthChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final today = AppClock.today();
+    final currentMonth = DateTime(today.year, today.month);
+    final canGoNext = month.isBefore(currentMonth);
+    // 本月天数与首日星期用日历算术，不碰 Duration（避免夏令时漂移）。
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final leadingBlanks =
+        DateTime(month.year, month.month, 1).weekday - DateTime.monday;
+    final lineHeight =
+        MediaQuery.textScalerOf(context).scale(DesignTokens.fontSizeCaption) *
+        _habitCalendarLineHeight;
+    // 日格统一高度：日期一行 + 状态点，且不小于 44 触控尺寸。
+    final dayHeight = math.max(
+      DesignTokens.controlMinHeight,
+      lineHeight +
+          DesignTokens.spaceXxs +
+          _habitCalendarDotSize +
+          DesignTokens.spaceXs * 2 +
+          1,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: DesignTokens.spaceSm),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          color: cs.outlineVariant.withValues(alpha: 0.28),
+        ),
+        Row(
+          children: [
+            IconButton(
+              key: habitCalendarPrevMonthKey,
+              tooltip: I18n.tr('habit.calendar.previous_month'),
+              onPressed: () =>
+                  onMonthChanged(DateTime(month.year, month.month - 1)),
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Expanded(
+              child: Text(
+                MaterialLocalizations.of(context).formatMonthYear(month),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: DesignTokens.fontWeightMedium,
+                  fontSize: DesignTokens.fontSizeSecondary,
+                ),
+              ),
+            ),
+            IconButton(
+              key: habitCalendarNextMonthKey,
+              tooltip: I18n.tr('habit.calendar.next_month'),
+              // 未来月份没有可补卡的日期，最多只能停在当前月。
+              onPressed: canGoNext
+                  ? () => onMonthChanged(DateTime(month.year, month.month + 1))
+                  : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.spaceXxs),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final available = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : DesignTokens.controlMinHeight * 7;
+            // 7 列每列至少 44：放不下时（320dp + 2x 字体）横向滚动而不缩字。
+            final fits = available >= DesignTokens.controlMinHeight * 7;
+            final cellWidth = fits
+                ? available / 7
+                : DesignTokens.controlMinHeight;
+            final cells = <Widget>[
+              for (var i = 0; i < leadingBlanks; i++)
+                SizedBox(width: cellWidth, height: dayHeight),
+              for (var day = 1; day <= daysInMonth; day++)
+                _HabitCalendarDayCell(
+                  key: ValueKey<String>(
+                    '$habitCalendarDayKeyPrefix'
+                    '${habit.dateKey(DateTime(month.year, month.month, day))}',
+                  ),
+                  habit: habit,
+                  date: DateTime(month.year, month.month, day),
+                  today: today,
+                  width: cellWidth,
+                  height: dayHeight,
+                ),
+            ];
+            // 补齐尾部空位，保证每周都是完整 7 列，且不重复其他月份的日号。
+            while (cells.length % 7 != 0) {
+              cells.add(SizedBox(width: cellWidth, height: dayHeight));
+            }
+            final grid = SizedBox(
+              width: cellWidth * 7,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var weekday = 1; weekday <= 7; weekday++)
+                        SizedBox(
+                          width: cellWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: DesignTokens.spaceXxs,
+                            ),
+                            child: Text(
+                              I18n.tr('habit.weekday.$weekday'),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: DesignTokens.fontSizeCaption,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  for (var start = 0; start < cells.length; start += 7)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: cells.sublist(start, start + 7),
+                    ),
+                ],
+              ),
+            );
+            if (fits) return grid;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: grid,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// 月历日格：日期正序、统一宽高，未来日不可点。
+class _HabitCalendarDayCell extends StatelessWidget {
+  final Habit habit;
+  final DateTime date;
+  final DateTime today;
+  final double width;
+  final double height;
+
+  const _HabitCalendarDayCell({
+    super.key,
+    required this.habit,
+    required this.date,
+    required this.today,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final future = date.isAfter(today);
+    final active = habit.activeForDate(date);
+    final completed = active && !future && habit.isCompletedForDate(date);
+    final recordedOccurrence =
+        active &&
+        !future &&
+        habit.kind == HabitKind.negative &&
+        habit.countForDate(date) > 0;
+    final isToday =
+        date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
+    final accent = future
+        ? cs.onSurfaceVariant.withValues(alpha: 0.54)
+        : !active
+        ? cs.onSurfaceVariant
+        : recordedOccurrence
+        ? cs.error
+        : completed
+        ? _habitCompletedColor(context)
+        : cs.onSurfaceVariant;
+    final statusLabel = future
+        ? I18n.tr('habit.day.future')
+        : !active
+        ? I18n.tr('habit.records.inactive')
+        : completed
+        ? I18n.tr('habit.trend.completed')
+        : recordedOccurrence
+        ? I18n.tr('habit.day.recorded')
+        : I18n.tr('habit.day.pending');
+    final semanticsLabel =
+        '${date.year}/${date.month}/${date.day} · $statusLabel';
+    final fill = future
+        ? Colors.transparent
+        : (completed || recordedOccurrence
+                  ? accent
+                  : DesignTokens.habitPendingTint)
+              .withValues(alpha: active ? 0.15 : 0.06);
+    void openDetails() => _showHabitDayDetails(
+      context,
+      habitId: habit.id,
+      date: date,
+      allowRecordActions: true,
+    );
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Semantics(
+          container: true,
+          label: semanticsLabel,
+          button: !future,
+          enabled: !future,
+          excludeSemantics: true,
+          onTap: future ? null : openDetails,
+          child: Material(
+            color: Colors.transparent,
+            child: Ink(
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(8),
+                border: isToday
+                    ? Border.all(color: cs.primary.withValues(alpha: 0.72))
+                    : null,
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: future ? null : openDetails,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${date.day}',
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: DesignTokens.fontSizeCaption,
+                        height: _habitCalendarLineHeight,
+                        fontWeight: DesignTokens.fontWeightMedium,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.spaceXxs),
+                    SizedBox(
+                      width: _habitCalendarDotSize,
+                      height: _habitCalendarDotSize,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: active && !future
+                              ? accent
+                              : Colors.transparent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _habitCompletedColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+    ? DesignTokens.habitCompletedDark
+    : DesignTokens.habitCompletedLight;
+
+/// 统一的当日详情浮层入口：淡入 + 0.96→1 缩放，减少动效时立即完成。
+///
+/// 趋势区传 [allowRecordActions] = false（只读），补卡日历传 true。
+Future<void> _showHabitDayDetails(
+  BuildContext context, {
+  required String habitId,
+  required DateTime date,
+  required bool allowRecordActions,
+}) {
+  final provider = context.read<HabitProvider>();
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: I18n.tr('habit.day.details'),
+    barrierColor: Colors.black.withValues(alpha: 0.16),
+    transitionDuration: AppMotion.duration(context, DesignTokens.durationBase),
+    pageBuilder: (dialogContext, _, _) => InheritedTheme.captureAll(
+      context,
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: _HabitDayDetailsCard(
+          habitId: habitId,
+          date: AppClock.dateOnly(date),
+          allowRecordActions: allowRecordActions,
+        ),
+      ),
+    ),
+    transitionBuilder: (dialogContext, animation, _, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppMotion.enterCurve,
+        reverseCurve: AppMotion.exitCurve,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+enum _HabitDayAction { primary, undo }
+
+/// 当日详情卡：主题 surface + 极淡阴影，短内容不套半屏底部弹层。
+///
+/// 卡片直接从 provider 读取当前习惯（不持有过期快照），异步写入后浮层与
+/// 日历都立即刷新。
+class _HabitDayDetailsCard extends StatefulWidget {
+  final String habitId;
+  final DateTime date;
+  final bool allowRecordActions;
+
+  const _HabitDayDetailsCard({
+    required this.habitId,
+    required this.date,
+    required this.allowRecordActions,
+  });
+
+  @override
+  State<_HabitDayDetailsCard> createState() => _HabitDayDetailsCardState();
+}
+
+class _HabitDayDetailsCardState extends State<_HabitDayDetailsCard> {
+  _HabitDayAction? _pending;
+
+  Future<void> _run(_HabitDayAction action) async {
+    if (_pending != null) return;
+    final provider = context.read<HabitProvider>();
+    final habit = provider.habits
+        .where((habit) => habit.id == widget.habitId)
+        .firstOrNull;
+    if (!widget.allowRecordActions ||
+        habit == null ||
+        _habitDateIsFuture(widget.date) ||
+        !habit.activeForDate(widget.date)) {
+      return;
+    }
+    setState(() => _pending = action);
+    try {
+      if (action == _HabitDayAction.primary) {
+        await provider.incrementHabitForDate(widget.habitId, widget.date);
+      } else {
+        await provider.decrementHabitForDate(widget.habitId, widget.date);
+      }
+    } finally {
+      if (mounted) setState(() => _pending = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final media = MediaQuery.of(context);
+    final matches = context.watch<HabitProvider>().habits.where(
+      (habit) => habit.id == widget.habitId,
+    );
+    if (matches.isEmpty) return const SizedBox.shrink();
+    final habit = matches.first;
+    final date = widget.date;
+    final unit = habitUnit(habit);
+    final positive = habit.kind == HabitKind.positive;
+    final future = _habitDateIsFuture(date);
+    final active = habit.activeForDate(date);
+    final count = habit.countForDate(date);
+    final completed = active && habit.isCompletedForDate(date);
+    final recordedOccurrence = !positive && active && !future && count > 0;
+    final accent = future || !active
+        ? cs.onSurfaceVariant
+        : recordedOccurrence
+        ? cs.error
+        : completed
+        ? _habitCompletedColor(context)
+        : cs.onSurfaceVariant;
+    final statusLabel = future
+        ? I18n.tr('habit.day.future')
+        : !active
+        ? I18n.tr('habit.records.inactive')
+        : completed
+        ? I18n.tr('habit.trend.completed')
+        : recordedOccurrence
+        ? I18n.tr('habit.day.recorded')
+        : I18n.tr('habit.day.pending');
+    final flexLabel = habit.hasFlexRule
+        ? _localizedFlexProgressLabel(habit.flexProgressForDate(date))
+        : null;
+    final canWrite = widget.allowRecordActions && active && !future;
+    final cardWidth = media.size.width >= 400 ? 360.0 : 340.0;
+
+    final card = Container(
+      key: habitDayDetailsCardKey,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatFullDate(date),
+                  style: const TextStyle(
+                    fontWeight: DesignTokens.fontWeightStrong,
+                    fontSize: DesignTokens.fontSizeBase,
+                  ),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.spaceXs),
+              IconButton(
+                key: habitDayDetailsCloseKey,
+                tooltip: I18n.tr('action.close'),
+                autofocus: true,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.close, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.spaceXxs),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spaceSm,
+              vertical: DesignTokens.spaceXxs + 1,
+            ),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              statusLabel,
+              style: TextStyle(
+                fontSize: DesignTokens.fontSizeCaption,
+                fontWeight: DesignTokens.fontWeightMedium,
+                color: accent,
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.spaceMd),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            color: cs.outlineVariant.withValues(alpha: 0.32),
+          ),
+          const SizedBox(height: DesignTokens.spaceMd),
+          _HabitDayDetailRow(
+            label: I18n.tr('habit.day.count'),
+            value: _habitCountWithUnit(count, unit),
+            accent: accent,
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          _HabitDayDetailRow(
+            label: I18n.tr('habit.day.target'),
+            // 负向习惯的“目标”就是当日不发生，因此目标值恒为 0。
+            value: _habitCountWithUnit(positive ? habit.targetCount : 0, unit),
+            accent: cs.onSurface,
+          ),
+          if (flexLabel != null) ...[
+            const SizedBox(height: DesignTokens.spaceSm),
+            _HabitDayDetailRow(
+              label: localizedFlexPeriodGoalLabel(habit),
+              value: flexLabel,
+              accent: cs.onSurface,
+            ),
+          ],
+          if (canWrite) ...[
+            const SizedBox(height: DesignTokens.spaceLg),
+            Wrap(
+              spacing: DesignTokens.spaceSm,
+              runSpacing: DesignTokens.spaceSm,
+              children: [
+                if (count > 0)
+                  TextButton.icon(
+                    key: habitDayDetailsUndoKey,
+                    onPressed: _pending == null
+                        ? () => _run(_HabitDayAction.undo)
+                        : null,
+                    icon: _pending == _HabitDayAction.undo
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.undo, size: 18),
+                    label: Text(I18n.tr('habit.records.undo_once')),
+                  ),
+                FilledButton.icon(
+                  key: habitDayDetailsPrimaryKey,
+                  // 正向已达标日不再可加（provider 同样拒绝超过目标）。
+                  onPressed: _pending == null && !(positive && completed)
+                      ? () => _run(_HabitDayAction.primary)
+                      : null,
+                  icon: _pending == _HabitDayAction.primary
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          positive
+                              ? Icons.add_circle_outline
+                              : Icons.remove_circle_outline,
+                          size: 18,
+                        ),
+                  label: Text(
+                    I18n.tr(
+                      positive
+                          ? 'habit.records.make_up_once'
+                          : 'habit.records.record_once',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: cardWidth),
+            child: Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              label: I18n.tr('habit.day.details'),
+              explicitChildNodes: true,
+              child: Material(
+                type: MaterialType.transparency,
+                child: FocusTraversalGroup(child: card),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 详情卡里的「标签 + 数值」两行块：2x 字体下自然换行，不挤成一条灰条。
+class _HabitDayDetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color accent;
+
+  const _HabitDayDetailRow({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: DesignTokens.fontSizeCaption,
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.spaceXxs),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: DesignTokens.fontSizeBase,
+            fontWeight: DesignTokens.fontWeightStrong,
+            color: accent,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 是否早于/晚于应用墙钟的今天（只比较年月日，避免时区与 Duration 误差）。
+bool _habitDateIsFuture(DateTime date) {
+  final today = AppClock.today();
+  return DateTime(
+    date.year,
+    date.month,
+    date.day,
+  ).isAfter(DateTime(today.year, today.month, today.day));
+}
+
+String _habitTrendPointDescription(Habit habit, HabitTrendPoint point) {
+  final date = '${point.date.year}/${point.date.month}/${point.date.day}';
+  if (!point.active) {
+    return '$date · ${I18n.tr('habit.records.inactive')}';
+  }
+  final details = localizedHabitCountForDate(habit, point.date);
+  final status = point.completed
+      ? I18n.tr('habit.trend.completed')
+      : habit.kind == HabitKind.negative && point.count > 0
+      ? I18n.tr('habit.day.recorded')
+      : I18n.tr('habit.day.pending');
+  return '$date · $status · $details';
 }
 
 Color _directionColor(HabitTrendDirection direction, ColorScheme cs) {

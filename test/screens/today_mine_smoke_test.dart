@@ -333,7 +333,9 @@ void main() {
       _wrap(const TodoScreen(), theme: AppBrands.defaultBrand.theme),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    // 待办页不再有右下角悬浮按钮，创建入口收进 AppBar（tooltip=新建任务）。
+    expect(find.byType(FloatingActionButton), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('todo_create_action')));
     await tester.pumpAndSettle();
     expect(find.text(I18n.tr('quick.todo.title')), findsNothing);
     expect(find.byKey(const ValueKey('todo_create_title')), findsOneWidget);

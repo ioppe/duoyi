@@ -9,6 +9,7 @@ import 'package:duoyi/models/goal.dart';
 import 'package:duoyi/models/habit.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
+import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/screens/habit_screen.dart';
 import 'package:duoyi/widgets/surface_components.dart';
 
@@ -35,6 +36,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> revealHabitItem(
+    WidgetTester tester,
+    Finder target,
+    Key scrollViewKey,
+  ) async {
+    final scrollable = find
+        .descendant(
+          of: find.byKey(scrollViewKey),
+          matching: find.byWidgetPredicate(
+            (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+          ),
+        )
+        .first;
+    if (target.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(target, 180, scrollable: scrollable);
+    } else {
+      await tester.ensureVisible(target);
+    }
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> revealTodayItem(WidgetTester tester, Finder target) =>
+      revealHabitItem(
+        tester,
+        target,
+        const ValueKey('habit_today_scroll_view'),
+      );
+
   testWidgets('习惯子页使用左对齐文字短线切换', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -50,34 +79,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('热度图在内容区居中且占约80%宽度，格子保持正方形', (tester) async {
+  testWidgets('累计热度随视口调整填满卡片内容区，12 周格子保持正方形', (tester) async {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    for (final width in [320.0, 490.0, 800.0, 1440.0]) {
-      for (final theme in [
-        AppBrands.defaultBrand.theme,
-        AppBrands.starRail.theme,
-      ]) {
-        tester.view.physicalSize = Size(width, 1000);
-        SharedPreferences.setMockInitialValues({});
-        await tester.pumpWidget(
-          MultiProvider(
-            providers: [
-              ChangeNotifierProvider(create: (_) => HabitProvider()),
-              ChangeNotifierProvider(create: (_) => ThemeProvider()),
-            ],
-            child: MaterialApp(
-              key: ValueKey('$width-${theme.brightness}'),
-              theme: theme,
-              home: const HabitScreen(),
-            ),
+    for (final theme in [
+      AppBrands.defaultBrand.theme,
+      AppBrands.starRail.theme,
+    ]) {
+      tester.view.physicalSize = const Size(320, 1000);
+      SharedPreferences.setMockInitialValues({});
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => HabitProvider()),
+            ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ],
+          child: MaterialApp(
+            key: ValueKey(theme.brightness),
+            theme: theme,
+            home: const HabitScreen(),
           ),
-        );
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('热度图'));
+      await tester.pumpAndSettle();
+      for (final width in [320.0, 490.0, 800.0, 1440.0, 390.0]) {
+        tester.view.physicalSize = Size(width, 1000);
         await tester.pumpAndSettle();
-        if (find.byType(TabBar).evaluate().isNotEmpty) {
-          await tester.tap(find.text('热度图'));
-          await tester.pumpAndSettle();
-        }
         final card = find.byKey(const ValueKey('habit_heatmap_skin_card'));
         final content = tester.widget<AppSurfaceCard>(card).child;
         final contentRect = tester.getRect(find.byWidget(content));
@@ -86,8 +115,8 @@ void main() {
           matching: find.byType(HabitHeatmap),
         );
         final chartRect = tester.getRect(chart);
-        expect(chartRect.width, closeTo(contentRect.width * 0.8, 1));
-        expect(chartRect.center.dx, closeTo(contentRect.center.dx, 1));
+        expect(chartRect.left, closeTo(contentRect.left, 0.01));
+        expect(chartRect.right, closeTo(contentRect.right, 0.01));
         final cells = find.descendant(
           of: chart,
           matching: find.byWidgetPredicate(
@@ -97,6 +126,10 @@ void main() {
           ),
         );
         expect(cells, findsNWidgets(12 * 7));
+        expect(
+          tester.getRect(cells.last).right,
+          closeTo(contentRect.right - 10, 1),
+        );
         for (final element in cells.evaluate()) {
           final cell = tester.getSize(find.byWidget(element.widget));
           expect(cell.width, closeTo(cell.height, 0.01));
@@ -210,6 +243,7 @@ void main() {
     expect(find.text('进度'), findsOneWidget);
     expect(find.byIcon(Icons.book), findsOneWidget);
 
+    await revealTodayItem(tester, find.text('打卡').first);
     await tester.tap(find.text('打卡').first);
     await tester.pumpAndSettle();
 
@@ -289,59 +323,70 @@ void main() {
     final iconRect = tester.getRect(
       find.byKey(const ValueKey('habit_weekly_overview_icon_box')),
     );
-    expect(iconRect.width, closeTo(30, 0.001));
-    expect(iconRect.height, closeTo(30, 0.001));
+    expect(iconRect.width, closeTo(28, 0.001));
+    expect(iconRect.height, closeTo(28, 0.001));
 
     final progress = tester.widget<LinearProgressIndicator>(
       find.byKey(const ValueKey('habit_weekly_overview_progress_bar')),
     );
     expect(progress.minHeight, 3);
 
+    // 七日格改成连续等宽的实心 tile：同一行、同尺寸、宽度明显大于旧 25px
+    // 圆点，且不再依赖 spaceBetween 撑开。
     final todayIndex = DateTime.now().weekday - 1;
-    final dayRect = tester.getRect(
+    final todayRect = tester.getRect(
       find.byKey(ValueKey('habit_weekly_overview_day_$todayIndex')),
     );
-    expect(dayRect.width, closeTo(25, 0.001));
-    expect(dayRect.height, closeTo(25, 0.001));
-  });
-
-  testWidgets('habit insights render above today check-in list', (
-    tester,
-  ) async {
-    final habitProvider = HabitProvider();
-    final now = DateTime.now();
-    final completions = <String, int>{};
-    for (var i = 0; i < 8; i++) {
-      final day = now.subtract(Duration(days: i));
-      completions[Habit(id: 'tmp', name: 'tmp').dateKey(day)] = 1;
+    expect(todayRect.width, greaterThan(25));
+    expect(todayRect.height, greaterThan(44));
+    for (var i = 0; i < 7; i++) {
+      final rect = tester.getRect(
+        find.byKey(ValueKey('habit_weekly_overview_day_$i')),
+      );
+      expect(rect.width, closeTo(todayRect.width, 0.5), reason: 'day $i');
+      expect(rect.height, closeTo(todayRect.height, 0.5), reason: 'day $i');
+      expect(rect.top, closeTo(todayRect.top, 0.5), reason: 'day $i');
     }
-    await habitProvider.addHabit(
-      Habit(
-        id: 'read',
-        name: '阅读',
-        icon: Icons.book.codePoint.toString(),
-        completions: completions,
-      ),
-    );
-
-    await pumpHabitScreen(tester, habitProvider);
-
-    expect(
-      find.byKey(const ValueKey('habit_insight_before_today_list')),
-      findsOneWidget,
-    );
-    expect(find.text('智能习惯洞察'), findsOneWidget);
-    expect(find.byIcon(Icons.insights_outlined), findsOneWidget);
-    expect(find.textContaining('30天'), findsWidgets);
-
-    final insightTop = tester
-        .getTopLeft(find.byKey(const ValueKey('habit_insight_card')))
-        .dy;
-    final listTop = tester
-        .getTopLeft(find.byKey(const ValueKey('habit_checkin_card_read')))
-        .dy;
-    expect(insightTop, lessThan(listTop));
   });
+
+  testWidgets(
+    'habit check-in precedes insights without losing the insight card',
+    (tester) async {
+      final habitProvider = HabitProvider();
+      final now = DateTime.now();
+      final completions = <String, int>{};
+      for (var i = 0; i < 8; i++) {
+        final day = now.subtract(Duration(days: i));
+        completions[Habit(id: 'tmp', name: 'tmp').dateKey(day)] = 1;
+      }
+      await habitProvider.addHabit(
+        Habit(
+          id: 'read',
+          name: '阅读',
+          icon: Icons.book.codePoint.toString(),
+          completions: completions,
+        ),
+      );
+
+      await pumpHabitScreen(tester, habitProvider);
+
+      expect(
+        find.byKey(const ValueKey('habit_insight_after_today_list')),
+        findsOneWidget,
+      );
+      expect(find.text(I18n.tr('habit.insight.title')), findsOneWidget);
+      expect(find.byIcon(Icons.insights_outlined), findsOneWidget);
+      expect(find.textContaining('30天'), findsWidgets);
+
+      final insightTop = tester
+          .getTopLeft(find.byKey(const ValueKey('habit_insight_card')))
+          .dy;
+      final listTop = tester
+          .getTopLeft(find.byKey(const ValueKey('habit_checkin_card_read')))
+          .dy;
+      expect(listTop, lessThan(insightTop));
+    },
+  );
 
   testWidgets('flex period target text does not repeat target prefix', (
     tester,
@@ -413,9 +458,11 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.widgetWithText(FilledButton, '本周完成'));
     final weeklyButton = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, '本周完成'),
     );
+    await revealTodayItem(tester, find.widgetWithText(FilledButton, '本月完成'));
     final monthlyButton = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, '本月完成'),
     );
@@ -494,6 +541,7 @@ void main() {
       findsNothing,
     );
 
+    await revealTodayItem(tester, find.text('阅读').first);
     await tester.drag(find.text('阅读').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
 
@@ -531,6 +579,7 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.text('阅读').first);
     await tester.drag(find.text('阅读').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('habit_swipe_end_button')));
@@ -561,10 +610,12 @@ void main() {
     await tester.tap(find.text('热度图'));
     await tester.pumpAndSettle();
 
+    await revealHabitItem(
+      tester,
+      find.text('已结束习惯'),
+      const PageStorageKey('habit_history_scroll_view'),
+    );
     expect(find.byKey(const ValueKey('habit_swipe_end_button')), findsNothing);
-
-    await tester.ensureVisible(find.text('已结束习惯').first);
-    await tester.pumpAndSettle();
     await tester.drag(find.text('已结束习惯').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
 
@@ -591,6 +642,11 @@ void main() {
     await tester.tap(find.text('热度图'));
     await tester.pumpAndSettle();
 
+    await revealHabitItem(
+      tester,
+      find.text('专注'),
+      const PageStorageKey('habit_history_scroll_view'),
+    );
     expect(find.text('专注'), findsOneWidget);
     expect(find.byIcon(Icons.timer), findsOneWidget);
     expect(find.byKey(const ValueKey('habit_swipe_edit_button')), findsNothing);
@@ -600,8 +656,6 @@ void main() {
       findsNothing,
     );
 
-    await tester.ensureVisible(find.text('专注').first);
-    await tester.pumpAndSettle();
     await tester.drag(find.text('专注').first, const Offset(160, 0));
     await tester.pumpAndSettle();
 
@@ -643,6 +697,7 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.text('散步').first);
     await tester.drag(find.text('散步').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('habit_swipe_delete_button')));
@@ -666,6 +721,7 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.text('阅读').first);
     await tester.tap(find.text('阅读').first);
     await tester.pumpAndSettle();
 
@@ -682,6 +738,7 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.text('阅读').first);
     await tester.drag(find.text('阅读').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('habit_swipe_end_button')));
@@ -705,6 +762,7 @@ void main() {
 
     await pumpHabitScreen(tester, habitProvider);
 
+    await revealTodayItem(tester, find.text('散步').first);
     await tester.drag(find.text('散步').first, const Offset(-180, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('habit_swipe_delete_button')));

@@ -5,7 +5,6 @@ import '../core/ai_command.dart';
 import '../core/i18n.dart';
 import '../core/design_tokens.dart';
 import '../core/app_motion.dart';
-import '../core/home_page_style.dart';
 import '../models/goal.dart'
     show ReminderKind, ReminderPlan, ReminderRule, ReminderRuleType;
 import '../models/quick_capture_template.dart';
@@ -21,6 +20,7 @@ import '../providers/notification_service.dart';
 import '../services/reminder_scheduler.dart';
 import '../screens/ai_schedule_screen.dart';
 import '../screens/note_screen.dart' show showNoteCreateSheet;
+import 'app_create_fab.dart';
 import 'surface_components.dart';
 import 'todo_create_sheet.dart';
 
@@ -729,13 +729,13 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
             onTap: _quickTodo,
           ),
         ],
-        Tooltip(
-          message: widget.label == null ? '' : I18n.tr('today.capture.tooltip'),
-          triggerMode: TooltipTriggerMode.manual,
-          child: GestureDetector(
-            onLongPress: widget.label == null ? _showTemplateSheet : _toggle,
-            child: widget.label == null
-                ? FloatingActionButton(
+        widget.label == null
+            ? Tooltip(
+                message: '',
+                triggerMode: TooltipTriggerMode.manual,
+                child: GestureDetector(
+                  onLongPress: _showTemplateSheet,
+                  child: FloatingActionButton(
                     heroTag: 'quick_capture',
                     onPressed: _toggle,
                     child: AnimatedRotation(
@@ -744,45 +744,20 @@ class _QuickCaptureFabState extends State<QuickCaptureFab>
                       curve: AppMotion.enterCurve,
                       child: const Icon(Icons.add),
                     ),
-                  )
-                : SizedBox(
-                    height: DesignTokens.controlMinHeight,
-                    child: FloatingActionButton.extended(
-                      key: const ValueKey('home_create_button'),
-                      heroTag: 'quick_capture',
-                      elevation: 0,
-                      backgroundColor: HomePageStyle.of(context).accent,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).floatingActionButtonTheme.foregroundColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.radiusCard,
-                        ),
-                      ),
-                      extendedPadding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.spaceLg,
-                      ),
-                      extendedIconLabelSpacing: DesignTokens.spaceSm,
-                      extendedTextStyle: HomePageStyle.of(context).typography(
-                        Theme.of(context),
-                        size: DesignTokens.fontSizeSm,
-                        color: Theme.of(
-                          context,
-                        ).floatingActionButtonTheme.foregroundColor,
-                      ),
-                      onPressed: _open
-                          ? _toggle
-                          : widget.onCreate ?? _quickTodo,
-                      icon: Icon(
-                        _open ? Icons.close : Icons.add,
-                        size: DesignTokens.controlIconSize,
-                      ),
-                      label: Text(widget.label!),
-                    ),
                   ),
-          ),
-        ),
+                ),
+              )
+            // 带标签入口复用全站创建按钮：[AppCreateFab] 内统一形状/底色/字号，
+            // 长按展开快捷菜单（外层手动 Tooltip + GestureDetector）。
+            : AppCreateFab(
+                key: const ValueKey('home_create_button'),
+                heroTag: 'quick_capture',
+                label: widget.label!,
+                tooltip: I18n.tr('today.capture.tooltip'),
+                onPressed: _open ? _toggle : (widget.onCreate ?? _quickTodo),
+                onLongPress: _toggle,
+                icon: _open ? Icons.close : Icons.add,
+              ),
       ],
     );
   }

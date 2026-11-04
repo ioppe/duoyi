@@ -119,18 +119,12 @@ void main() {
     expect(source, contains('IconButton('));
     expect(source, contains("message: '撤回一次'"));
     expect(source, isNot(contains("label: const Text('还原')")));
-    expect(source, contains('width: _habitUndoButtonWidth'));
-    expect(source, contains('height: 26'));
+    expect(source, contains('DesignTokens.controlMinHeight'));
     expect(
       source,
-      contains('fixedSize: const Size(_habitUndoButtonWidth, 26)'),
+      isNot(contains('fixedSize: const Size(_habitUndoButtonWidth, 26)')),
+      reason: '撤回动作必须保留完整触控区，不能固定为 26px 高。',
     );
-    expect(
-      source,
-      contains('fixedSize: const Size(_habitUndoButtonWidth, 26)'),
-    );
-    expect(source, contains('tapTargetSize: MaterialTapTargetSize.shrinkWrap'));
-    expect(source, isNot(contains('dimension: 48')));
     expect(source, contains('messenger.hideCurrentSnackBar()'));
     expect(source, contains('今日已达标'));
     expect(source, contains("label: habit.hasFlexRule"));
@@ -138,7 +132,7 @@ void main() {
     expect(source, contains("label: '已记录'"));
   });
 
-  test('习惯打卡卡片采用紧凑排版让一屏展示更多任务', () {
+  test('习惯打卡卡片随文字自适应且保留原有打卡和侧滑入口', () {
     final source = File('lib/screens/habit_screen.dart').readAsStringSync();
     final cardStart = source.indexOf('class _HabitCheckinCard');
     final cardEnd = source.indexOf('Future<void> _handleCheckIn', cardStart);
@@ -147,27 +141,18 @@ void main() {
     final cardSource = source.substring(cardStart, cardEnd);
 
     expect(
-      cardSource,
-      contains('margin: const EdgeInsets.fromLTRB(10, 0, 10, 1)'),
+      source,
+      isNot(contains('const double _habitCheckinCardBodyHeight = 38')),
+      reason: '卡片自然增高，避免大字号时标题和目标被裁切。',
     );
     expect(
-      cardSource,
-      contains('padding: const EdgeInsets.fromLTRB(7, 2, 6, 2)'),
+      source,
+      isNot(contains('const double _habitTitleStatusHeight = 15')),
     );
-    expect(source, contains('const double _habitCheckinCardBodyHeight = 38'));
-    expect(source, contains('const double _habitTitleStatusHeight = 15'));
-    expect(source, contains('const double _habitUndoButtonWidth = 28'));
-    expect(source, isNot(contains('const double _habitMenuButtonWidth')));
-    expect(source, contains('const double _habitActionButtonGap = 3'));
-    expect(source, contains('const double _habitActionRailWidth'));
-    expect(cardSource, contains('height: _habitCheckinCardBodyHeight'));
-    expect(cardSource, contains('width: 20'));
-    expect(cardSource, contains('height: 20'));
-    expect(cardSource, contains('height: 2'));
-    expect(cardSource, contains('width: _habitCheckinButtonWidth'));
-    expect(cardSource, contains('height: 25'));
-    expect(cardSource, contains('minimumSize: const Size('));
-    expect(cardSource, contains('_habitCheckinButtonWidth'));
+    expect(cardSource, isNot(contains('height: _habitCheckinCardBodyHeight')));
+    expect(source, contains('DesignTokens.fontSizeBody'));
+    expect(source, contains('DesignTokens.controlMinHeight'));
+    expect(cardSource, contains('AppSurfaceCard('));
     expect(cardSource, contains('_habitDisplayIcon(habit)'));
     expect(source, contains('_HabitSummaryTile'));
     expect(source, contains('_habitDisplayIcon(habit)'));
@@ -206,18 +191,14 @@ void main() {
       source,
       isNot(contains("AppSecondaryMenuText('删除习惯', color: cs.error)")),
     );
-    expect(cardSource, contains('Visibility('));
-    expect(cardSource, contains('maintainSize: true'));
-    expect(
-      cardSource,
-      contains('const SizedBox(width: _habitActionButtonGap)'),
-    );
+    expect(cardSource, contains("'habit-undo-visible'"));
+    expect(cardSource, contains("'habit-undo-hidden'"));
     expect(cardSource, contains("'\$targetText · \$countText'"));
     expect(cardSource, contains('if (habit.currentStreak > 0)'));
     expect(cardSource, contains('overflow: TextOverflow.ellipsis'));
   });
 
-  test('习惯本周概览置顶且保持紧凑', () {
+  test('习惯本周概览置顶并使用自适应七日格', () {
     final screen = File('lib/screens/habit_screen.dart').readAsStringSync();
     final weekly = File(
       'lib/widgets/habit_weekly_card.dart',
@@ -231,7 +212,7 @@ void main() {
     );
     final sliversIndex = screen.indexOf('slivers: [', scrollViewIndex);
     final insightIndex = screen.indexOf(
-      "key: const ValueKey('habit_insight_before_today_list')",
+      "key: const ValueKey('habit_insight_after_today_list')",
     );
     expect(scrollViewIndex, greaterThanOrEqualTo(0));
     expect(sliversIndex, greaterThan(scrollViewIndex));
@@ -257,21 +238,15 @@ void main() {
     );
     expect(weekly, contains('context.watch<HabitProvider>()'));
     expect(weekly, contains('final data = provider.currentWeekProgress();'));
-    expect(weekly, contains('margin: const EdgeInsets.fromLTRB(10, 4, 10, 4)'));
-    expect(weekly, contains('padding: const EdgeInsets.fromLTRB(8, 6, 8, 7)'));
     expect(weekly, contains('currentWeekProgress()'));
-    expect(
-      weekly,
-      contains('borderRadius: BorderRadius.circular(DesignTokens.radiusCard)'),
-    );
-    expect(weekly, contains('fontSize: 13'));
-    expect(weekly, contains('fontSize: DesignTokens.fontSizeCaption'));
-    expect(weekly, contains('minHeight: 3'));
-    expect(weekly, contains('width: 30'));
-    expect(weekly, contains('height: 30'));
-    expect(weekly, contains('width: 25'));
-    expect(weekly, contains('height: 25'));
-    expect(weekly, contains('fontWeight: DesignTokens.fontWeightStrong'));
+    expect(weekly, contains('habit_weekly_overview_day_'));
+    expect(weekly, contains('habit_weekly_overview_value_'));
+    expect(weekly, contains('DesignTokens.fontSizeCaption'));
+    expect(weekly, contains('SingleChildScrollView('));
+    expect(weekly, isNot(contains('width: 25')));
+    expect(weekly, isNot(contains('height: 25')));
+    expect(weekly, isNot(contains('fontSize: 8.5')));
+    expect(weekly, isNot(contains('MainAxisAlignment.spaceBetween')));
   });
 
   test('习惯达标状态与任务名同一行靠右展示', () {
@@ -327,8 +302,10 @@ void main() {
     ).readAsStringSync();
 
     expect(source, contains("import '../core/habit_trend.dart';"));
-    expect(source, contains('buildHabitTrendSummary(widget.habit'));
-    expect(source, contains('HabitTrendWindow.days30'));
+    // 趋势范围由详情页 state 持有（默认 14 天），卡片本身无状态。
+    expect(source, contains('buildHabitTrendSummary(habit, window: window)'));
+    expect(source, contains('HabitTrendWindow _trendWindow'));
+    expect(source, contains('HabitTrendWindow.days14'));
     expect(source, contains('SegmentedButton<HabitTrendWindow>'));
     expect(source, contains('for (final window in HabitTrendWindow.values)'));
     expect(source, contains("I18n.tr('habit.trend.title')"));
@@ -344,7 +321,7 @@ void main() {
       'const SliverToBoxAdapter(child: HabitWeeklyCard())',
     );
     final insightKeyIndex = source.indexOf(
-      "key: const ValueKey('habit_insight_before_today_list')",
+      "key: const ValueKey('habit_insight_after_today_list')",
     );
     final insightIndex = source.indexOf(
       '_HabitInsightSection(habits: provider.habits)',
@@ -363,15 +340,15 @@ void main() {
     expect(source, contains('_HabitInsightSection(habits: provider.habits)'));
     expect(
       source,
-      contains("key: const ValueKey('habit_insight_before_today_list')"),
+      contains("key: const ValueKey('habit_insight_after_today_list')"),
     );
-    expect(source, contains('智能习惯洞察'));
+    expect(source, contains("I18n.tr('habit.insight.title')"));
     expect(weeklyIndex, greaterThanOrEqualTo(0));
     expect(insightKeyIndex, greaterThan(weeklyIndex));
     expect(insightIndex, greaterThan(insightKeyIndex));
-    expect(insightIndex, lessThan(emptyIndex));
-    expect(insightIndex, lessThan(summaryIndex));
-    expect(insightIndex, lessThan(listIndex));
+    expect(insightIndex, greaterThan(emptyIndex));
+    expect(insightIndex, greaterThan(summaryIndex));
+    expect(insightIndex, greaterThan(listIndex));
     expect(source, contains('HabitInsightKind.rising'));
     expect(source, contains('HabitInsightKind.slipping'));
   });
@@ -410,7 +387,11 @@ void main() {
     expect(detail, contains('clearFlexRule: !shouldUseFlex'));
     expect(detail, contains('localizedFlexPeriodGoalLabel(habit)'));
     expect(detail, contains('habit.flexProgressForDate(AppClock.now())'));
-    expect(detail, contains('localizedHabitCountForDate(habit, d)'));
+    expect(detail, contains('localizedHabitCountForDate(habit, point.date)'));
+    expect(
+      detail,
+      contains('_localizedFlexProgressLabel(habit.flexProgressForDate(date))'),
+    );
     expect(detail, contains('_localizedHabitStreakUnit(habit)'));
     expect(detail, contains("'habit.flex.period_target'"));
     expect(detail, contains("I18n.tr('habit.flex.weekly_goal_prefix')"));
@@ -461,9 +442,17 @@ void main() {
       detail,
       contains('habitDateRangeLabel(habit.startDate, habit.endDate)'),
     );
-    expect(detail, contains('final activeForDay = habit.activeForDate(d)'));
+    expect(detail, contains('final active = habit.activeForDate(date)'));
     expect(detail, contains("I18n.tr('habit.records.inactive')"));
-    expect(detail, contains('onPressed: activeForDay'));
+    expect(detail, contains('widget.allowRecordActions && active && !future'));
+    expect(
+      detail,
+      contains('provider.incrementHabitForDate(widget.habitId, widget.date)'),
+    );
+    expect(
+      detail,
+      contains('provider.decrementHabitForDate(widget.habitId, widget.date)'),
+    );
 
     expect(dateFields, contains("I18n.tr('habit.date_range.start')"));
     expect(dateFields, contains("I18n.tr('habit.date_range.end')"));
