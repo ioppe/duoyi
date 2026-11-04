@@ -86,7 +86,7 @@ jobs:
             echo "Using the caller's validated public deployment profile; repository variable overrides are not applied."
           fi
           python3 scripts/project_config.py validate
-          python3 scripts/flutter_with_config.py --dry-run build macos --release
+          python3 scripts/flutter_with_config.py --dry-run build macos --release --dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false
 
       - name: Check Apple toolchain
         run: |
@@ -100,10 +100,11 @@ jobs:
       - name: Analyze and verify timer integration
         run: |
           flutter analyze
-          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/providers/pomodoro_floating_window_size_preference_test.dart test/services/platform_logo_assets_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart test/services/macos_packaging_workflow_test.dart
+          flutter test --no-pub test/services/pomodoro_floating_window_service_test.dart test/widgets/pomodoro_floating_window_host_test.dart test/providers/pomodoro_floating_window_size_preference_test.dart test/services/platform_logo_assets_test.dart test/services/macos_notification_permission_test.dart test/providers/pomodoro_provider_test.dart test/services/macos_packaging_workflow_test.dart test/services/local_ai_config_store_test.dart
+          flutter test --no-pub --dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false test/services/local_ai_config_store_test.dart
 
       - name: Build universal macOS application
-        run: python3 scripts/flutter_with_config.py build macos --release --no-pub
+        run: python3 scripts/flutter_with_config.py build macos --release --no-pub --dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false
 
       - name: Package application and verify architectures
         shell: bash
@@ -119,6 +120,7 @@ jobs:
           )"
           APP_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
           APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+          python3 scripts/macos_adhoc_package.py prepare --app "$APP_PATH"
           lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -archs
           lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch arm64
           lipo "$APP_PATH/Contents/MacOS/$APP_EXECUTABLE" -verify_arch x86_64
@@ -135,6 +137,22 @@ jobs:
           shasum -a 256 ./*.zip ./*.dmg > SHA256SUMS-macos.txt
           ls -lh ./*.dmg ./*.zip SHA256SUMS-macos.txt
           cat SHA256SUMS-macos.txt
+
+      - name: Verify packaged macOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/macos_adhoc_package.py check-packages \
+            --package-dir build/macos/packages \
+            --output "$RUNNER_TEMP/duoyi-macos-validation.json"
+
+      - name: Upload macOS packaging report
+        uses: actions/upload-artifact@v4
+        with:
+          name: duoyi-macos-validation
+          path: ${{ runner.temp }}/duoyi-macos-validation.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Upload macOS packages
         uses: actions/upload-artifact@v4

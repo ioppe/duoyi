@@ -1,6 +1,21 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// macOS keychain backend selection, fixed at compile time.
+///
+/// Developer builds signed with a real Apple team keep the Data Protection
+/// Keychain (the default `true`). The ad-hoc release build in CI has no team
+/// identifier and no `keychain-access-groups`, so macOS rejects Data Protection
+/// keychain writes with `errSecMissingEntitlement (-34018)`; that workflow
+/// passes `--dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false` and
+/// uses the classic login keychain instead. Only that explicitly flagged build
+/// changes where the value lives; no migration or deletion is attempted.
+const bool macOsUseDataProtectionKeychain = bool.fromEnvironment(
+  'DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN',
+  defaultValue: true,
+);
 
 /// Device configuration; intentionally absent from preferences and backups.
 class LocalAiConfig {
@@ -52,7 +67,15 @@ class SecureLocalAiConfigStore implements LocalAiConfigStore {
           storage ??
           const FlutterSecureStorage(
             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            mOptions: MacOsOptions(
+              useDataProtectionKeyChain: macOsUseDataProtectionKeychain,
+            ),
           );
+
+  /// Effective plugin configuration, exposed so tests can assert the compiled
+  /// keychain mode without touching a real keychain.
+  @visibleForTesting
+  FlutterSecureStorage get storage => _storage;
 
   @override
   Future<LocalAiConfig> read() async {
