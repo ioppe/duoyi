@@ -1,0 +1,126 @@
+{
+  "suite": "C3 manual regression - background download (Android, isolated package) - recovered cold boot",
+  "status": "PASS_WITH_ONE_NOT_VERIFIED",
+  "executed_utc": "2026-11-04T13:55Z..2026-11-04T14:02Z",
+  "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+  "candidate": {
+    "branch": "fix/android-focus-updates-notifications",
+    "head": "4f87864c74702685ab0884999494cffe764f333a",
+    "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5",
+    "note": "no product source, test or config file modified by this session"
+  },
+  "apk_modes_and_hashes": {
+    "test_client": {
+      "build_mode": "profile",
+      "sha256": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+      "size_bytes": 105609957,
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "signer_cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "installed_base_apk_sha256_measured_on_device": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+      "installed_base_apk_size": 105609957,
+      "install_result": "Success (adb install -r -d, exit 0, 0.67s)",
+      "firstInstallTime_preserved": "2026-11-04 11:28:29",
+      "lastUpdateTime": "2026-11-04 13:56:10",
+      "profile_mode_confirmed_by": "on-device sha256sum of /data/app/.../base.apk == profile APK sha256 (not inferred from version number)"
+    },
+    "download_payload": {
+      "build_mode": "debug",
+      "sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+      "size_bytes": 160480428,
+      "note": "fixture metadata announces 2.0.1 while file version is 2.0.0; only transfer/restore/install-entry was verified, not a real overwrite upgrade. Payload was NOT installed."
+    }
+  },
+  "device": {
+    "serial": "emulator-5554",
+    "avd": "duoyi_api35_arm64",
+    "api_level": 35,
+    "state_at_start": "boot_completed=1, 295 services, package/activity/window/dropbox registered",
+    "package_scope": "com.duoyi.duoyi.focuscheck only"
+  },
+  "fixture": {
+    "url": "http://127.0.0.1:18763",
+    "mode_during_test": {"mode": "update", "delay": 0.10, "apk_ready": true},
+    "mode_at_end": {"mode": "legacy", "delay": 0.08, "apk_ready": true},
+    "restored": true
+  },
+  "results": [
+    {
+      "id": "C3-preflight-install",
+      "verdict": "PASS",
+      "observed": "adb install -r -d -> 'Success' rc=0; on-device base.apk sha256 == dc20a164...e412; data preserved (firstInstallTime 11:28:29 unchanged, POST_NOTIFICATIONS granted=true); versionName 2.0.0 / versionCode 140023."
+    },
+    {
+      "id": "C3-0-launch-profile-mode",
+      "verdict": "PASS",
+      "observed": "am start -W: LaunchState WARM, TotalTime 2981ms first launch, 530ms on later resume; no ANR dialog, no 'not responding' at any point. Screenshots 01/08 valid."
+    },
+    {
+      "id": "C3-1-download-trigger-and-background-progress",
+      "verdict": "PASS",
+      "observed": "UI path Me -> (scroll) Help & about [33,1842][1047,1983] with 'New 2.0.1' -> Check updates -> dialog (Current 2.0.0 / Latest 2.0.1 / Package fixture.apk / Close / Download and install). Tapped 'Download and install' -> android.providers.downloads notification appeared (tag 1:com.duoyi.duoyi.focuscheck, channel=active). Progress with dialog closed + HOME: 4 -> 10 (P1, +10s) -> 26 (P2, +22s). Two real increments observed."
+    },
+    {
+      "id": "C3-1b-reopen-restores-single-task",
+      "verdict": "PASS",
+      "observed": "After BACK (dialog closed) + HOME, relaunch showed exactly ONE DownloadManager notification (no duplicate). Reopening Check updates showed 'Downloading 47%' + 'Downloading continues after you close the dialog' + 'Cancel download' while the system notification showed 48% - same task restored, no second download started."
+    },
+    {
+      "id": "C3-2-progress-after-normal-process-death",
+      "verdict": "NOT_VERIFIED",
+      "observed": "Not attempted: enabled_accessibility_services=null / accessibility_enabled=0 (pre-existing state after recovery cold boot; this session did NOT modify a11y settings), so am kill could not be exercised as a bound-a11y scenario. Time-boxed out per priority rules. No am force-stop was used anywhere."
+    },
+    {
+      "id": "C3-3-completion-notification-id7307",
+      "verdict": "PASS",
+      "observed": "DownloadManager ongoing notification disappeared (~60s after start, payload 160480428 B). App notification appeared: pkg=com.duoyi.duoyi.focuscheck id=7307 tag=null channel=duoyi_app_update importance=3 flags=AUTO_CANCEL, title 'Duoyi', body '2.0.1 · fixture.apk / Tap to install', contentIntent=startActivity. Real tap on the shade row landed on com.android.settings/.spa.SpaActivity (Install unknown apps, 'Allow from this source'). No toggle was switched; BACK returned to com.duoyi.duoyi.focuscheck/.MainActivity. Payload NOT installed."
+    },
+    {
+      "id": "C3-1c-final-task-state",
+      "verdict": "PASS",
+      "observed": "Post-completion dialog re-dump shows button changed to 'Install downloaded package' (with 'Close'), i.e. this session's download finished; nothing left running to cancel. Dialog then closed via Close; top activity back to com.duoyi.duoyi.focuscheck/.MainActivity."
+    },
+    {
+      "id": "C3-secondary-fail-cancel-retry",
+      "verdict": "NOT_RUN",
+      "observed": "Skipped: out of the 10-minute budget after the primary items; no fabricated coverage claimed."
+    }
+  ],
+  "state_preserved": {
+    "formal_app_com.duoyi.duoyi": "never targeted by any command",
+    "other_apps": "not uninstalled/cleared/overwritten",
+    "isolated_package_data": "preserved (install -r only, no clear/uninstall/downgrade)",
+    "unknown_sources_toggle": "not modified (settings page entered and left without changes)",
+    "a11y_state": "enabled_accessibility_services=null, accessibility_enabled=0 - read at end, NOT changed by this session",
+    "fixture": "restored to legacy/0.08 and read back",
+    "emulator_and_host_services": "left running for main session cleanup"
+  },
+  "artifacts": {
+    "screenshots": [
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/01-launch.png (110534 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/06-update-dialog.png (151109 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/07-home-p1.png (1193946 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/08-reopen.png (77681 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/09-dialog-restored.png (161283 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/11-after-notif-tap.png (118785 B)",
+      "evidence/screenshots/android-focus-updates/e2e-v3-recovered/13-dialog-closed.png (77370 B)"
+    ],
+    "all_png_magic_verified": "89504e470d0a1a0a for all 7 files, all non-zero",
+    "raw": [
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/01-launch.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/02-me.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/03-apps-records.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/04-me-scrolled.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/05-help-about.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/06-update-dialog.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/08-reopen.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/09-dialog-restored.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/10-shade.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/11-after-notif-tap.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/12-after-back.xml",
+      "evidence/android-focus-updates/e2e-v3-recovered/raw/a11y-enabled-services.txt"
+    ],
+    "untouched": ["evidence/android-focus-updates/e2e-v3-recovered/coldboot-recovery.json", "evidence/android-focus-updates/e2e-v3-recovered/service-list-after-coldboot.txt", "evidence/android-focus-updates/e2e-v3-profile/", "evidence/android-focus-updates/e2e-v3/", "README"]
+  },
+  "interpretation_boundary": "Profile-mode PASS says nothing about the debug-build startup/input ANR root cause; the debug ANR finding remains open and unretested here. Progress percentages observed are the SystemUI/DownloadManager reported values, captured while the app UI was closed."
+}

@@ -98,6 +98,102 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @mineUpdateBackgroundDownloading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在后台下载更新包'**
+  String get mineUpdateBackgroundDownloading;
+
+  /// No description provided for @mineUpdateCloseKeepsDownloading.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭此窗口后下载会继续'**
+  String get mineUpdateCloseKeepsDownloading;
+
+  /// No description provided for @mineUpdateCancelDownload.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消下载'**
+  String get mineUpdateCancelDownload;
+
+  /// No description provided for @mineUpdateNotificationTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'多仪更新'**
+  String get mineUpdateNotificationTitle;
+
+  /// No description provided for @mineUpdateNotificationDownloading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在下载更新包，完成后可从通知栏安装'**
+  String get mineUpdateNotificationDownloading;
+
+  /// No description provided for @mineUpdateNotificationInstallAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击安装'**
+  String get mineUpdateNotificationInstallAction;
+
+  /// No description provided for @mineUpdateNotificationChannelName.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用更新'**
+  String get mineUpdateNotificationChannelName;
+
+  /// No description provided for @mineUpdateNotificationChannelDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新包后台下载与安装提醒'**
+  String get mineUpdateNotificationChannelDescription;
+
+  /// No description provided for @focusDistractionStatusAccessibilityActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'辅助功能已启用'**
+  String get focusDistractionStatusAccessibilityActive;
+
+  /// No description provided for @focusDistractionStatusAccessibilityPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'已在设置中开启，等待系统生效'**
+  String get focusDistractionStatusAccessibilityPending;
+
+  /// No description provided for @focusDistractionStatusBlockerUnconfigured.
+  ///
+  /// In zh, this message translates to:
+  /// **'未配置拦截应用'**
+  String get focusDistractionStatusBlockerUnconfigured;
+
+  /// No description provided for @focusDistractionStatusUsageOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'已授权使用情况访问，辅助功能未授权'**
+  String get focusDistractionStatusUsageOnly;
+
+  /// No description provided for @focusDistractionStatusMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要 Android 使用情况访问和辅助功能权限'**
+  String get focusDistractionStatusMissing;
+
+  /// No description provided for @focusTimerNotifChannelName.
+  ///
+  /// In zh, this message translates to:
+  /// **'专注计时'**
+  String get focusTimerNotifChannelName;
+
+  /// No description provided for @focusTimerNotifNoTask.
+  ///
+  /// In zh, this message translates to:
+  /// **'无关联任务'**
+  String get focusTimerNotifNoTask;
+
+  /// No description provided for @focusTimerNotifPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get focusTimerNotifPaused;
+
   /// No description provided for @aiLocalTitle.
   ///
   /// In zh, this message translates to:

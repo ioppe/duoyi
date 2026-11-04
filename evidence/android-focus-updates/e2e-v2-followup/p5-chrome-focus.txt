@@ -1,0 +1,2 @@
+  mCurrentFocus=Window{9ddfd u0 com.android.chrome/org.chromium.chrome.browser.firstrun.FirstRunActivity}
+  mFocusedApp=ActivityRecord{92a8d42 u0 com.android.chrome/org.chromium.chrome.browser.firstrun.FirstRunActivity t48}

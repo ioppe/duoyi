@@ -1,0 +1,33 @@
+{
+  "source_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "branch": "fix/android-focus-updates-notifications",
+  "device": {
+    "serial": "2df52c4c",
+    "model": "24129PN74C",
+    "android": "16",
+    "physical_size": "1200x2670",
+    "density_dpi": 520,
+    "font_scale": 1.25,
+    "api": 36,
+    "production_package": "com.duoyi.duoyi",
+    "version_name": "2.0.0",
+    "version_code": 142023,
+    "last_update_time": "2026-11-04 19:21:34",
+    "enabled_accessibility_component": "com.duoyi.duoyi/.DuoyiFocusBlockerAccessibilityService",
+    "accessibility_service_bound": true,
+    "accessibility_service_crashed": false
+  },
+  "public_update_query": {
+    "url": "https://todo.skydrow.site/api/mobile/apps/duoyi/update?current_version=2.0.0&current_version_code=142023",
+    "observed_fields": {
+      "current_version_name": "2.0.0",
+      "current_version_code": 142023,
+      "latest_version_name": "2.0.0",
+      "latest_version_code": 200000,
+      "available": true,
+      "force_update": false,
+      "minimum_supported_version_code": 140013
+    }
+  },
+  "meaning": "同版本被历史算法推算的 build 200000 误判为更新；无障碍系统服务已启用并绑定，应用文案却显示未授权。此文件仅记录修复前观察，不代表修复后验证通过。"
+}

@@ -10,6 +10,7 @@ import '../models/pomodoro.dart';
 import '../services/focus_distraction_service.dart';
 import '../services/focus_dnd_service.dart';
 import '../services/focus_sound_service.dart';
+import '../services/focus_timer_notification_service.dart';
 import 'cloud_sync_provider.dart';
 import 'notification_service.dart';
 import 'time_audit_provider.dart';
@@ -64,6 +65,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   final FocusSoundService _sound = FocusSoundService.instance;
   final FocusDndService _dnd = FocusDndService.instance;
   final FocusDistractionService _distraction = FocusDistractionService.instance;
+  final FocusTimerNotificationService _focusTimer =
+      FocusTimerNotificationService.instance;
 
   /// 是否监听了 WidgetsBinding 生命周期（保证 `dispose` 时对称移除）。
   bool _lifecycleAttached = false;
@@ -86,6 +89,12 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 白名单模式扫描失败；此时保留旧拦截集合或禁用拦截，不静默放行。
   bool _distractionScanFailed = false;
+
+  /// 已消费的原生拦截事件时间戳（epoch ms），用于与使用情况轮询互相去重。
+  int _lastConsumedNativeBlockAtMs = 0;
+
+  /// 当前写入原生的 blocker 失效时刻（epoch ms）；null 表示未写入。
+  int? _blockerLeaseExpiresAtMs;
 
   int _distractionSyncGeneration = 0;
 
@@ -137,6 +146,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _sound.bindLifecycle(WidgetsBinding.instance);
     _sound.onForegroundStopRequested = handleFocusForegroundStopRequested;
+    _focusTimer.onExpired = _handleNativeFocusTimerExpired;
     _lifecycleAttached = true;
   }
 
@@ -163,11 +173,12 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         refreshFocusDndStatus();
         _syncDndToState();
       }
-      if (_config.monitorDistractingApps) {
-        // ignore: discarded_futures
-        refreshFocusDistractionStatus();
-        _syncDistractionMonitorToState();
-      }
+      // 从系统设置页返回时必须无条件重读授权/连接状态：
+      // 离开应用期间的“提前刷新”只能反映旧状态，不能作为最终判断。
+      // ignore: discarded_futures
+      refreshFocusDistractionStatus();
+      _syncDistractionMonitorToState();
+      _syncFocusTimerNotification();
     }
   }
 
@@ -222,6 +233,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     _persistedRevision++;
     notifyListeners();
+    // 冷启动/热恢复后重新同步原生通知：运行态补上，无运行态清理僵尸通知。
+    _syncFocusTimerNotification();
   }
 
   void resetLocalState() {
@@ -252,9 +265,13 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _effectiveDistractingPackages = const <String>[];
     _installedFocusAppsCache = const <InstalledFocusApp>[];
     _distractionScanFailed = false;
+    _lastConsumedNativeBlockAtMs = 0;
+    _blockerLeaseExpiresAtMs = null;
     _distractionSyncGeneration++;
     // ignore: discarded_futures
     _distraction.setFocusBlocker(enabled: false, packages: const []);
+    _focusTimer.stop();
+    notifyListeners();
     notifyListeners();
   }
 
@@ -639,6 +656,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       unawaited(_syncSoundToState());
       _syncDndToState();
       _syncDistractionMonitorToState();
+      _syncFocusTimerNotification();
       return;
     }
     if (!_state.isRunning) {
@@ -655,6 +673,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_syncSoundToState());
     _syncDndToState();
     _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_state.isCountUp) {
         _state = _state.copyWith(remainingSeconds: _state.remainingSeconds + 1);
@@ -695,6 +714,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     _syncDndToState();
     _syncDistractionMonitorToState();
+    // 暂停：原生冻结通知时间并停止到期调度，不留下继续走的倒计时。
+    _syncFocusTimerNotification();
     // ignore: discarded_futures
     _sound.fadeOut(const Duration(milliseconds: 300));
   }
@@ -829,6 +850,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
           ? PomodoroWidgetTimerState.running
           : PomodoroWidgetTimerState.idle,
     );
+    // 相位已切换：运行态重推通知，非运行态（含正计时结束）清理运行通知。
+    _syncFocusTimerNotification();
     notifyListeners();
     unawaited(
       _persistCompletedSession(
@@ -910,6 +933,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _sound.stop();
     _syncDndToState();
     _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
     notifyListeners();
   }
 
@@ -930,6 +954,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _sound.stop();
     _syncDndToState();
     _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
     notifyListeners();
   }
 
@@ -956,6 +981,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _sound.stop();
     _syncDndToState();
     _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
     notifyListeners();
   }
 
@@ -976,6 +1002,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     _syncDndToState();
     _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
   }
 
   Future<void> setAutoEnableDnd(bool enabled) async {
@@ -1090,6 +1117,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     // 运行中改任务名必须同步快照，否则重启后恢复出旧任务名。
     _persistRunningSnapshot();
+    // 通知里的关联任务名同步跟随。
+    _syncFocusTimerNotification();
   }
 
   /// 待办 / 子任务选择入口：一次性写入父任务 id、父任务名称快照与
@@ -1119,6 +1148,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         );
     notifyListeners();
     // 运行中选择任务需要立刻落盘，保证崩溃重启后恢复出同一关联。
+    _syncFocusTimerNotification();
     _persistRunningSnapshot();
   }
 
@@ -1147,8 +1177,20 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// 重读原生授权/拦截/前台状态，并消费可能错过的原生拦截事件。
+  ///
+  /// 只在原生明确 `supported` 时整体覆盖授权字段；通道失败不同步清空已知授权，
+  /// 避免“从设置页返回时先失败一次”把已授权状态刷成未授权。
   Future<void> refreshFocusDistractionStatus() async {
-    _distractionStatus = await _distraction.getStatus();
+    final latest = await _distraction.getStatus();
+    if (latest.supported) {
+      _distractionStatus = latest;
+    } else if (latest.foregroundPackage != null) {
+      _distractionStatus = _distractionStatus.withForeground(
+        latest.foregroundPackage,
+      );
+    }
+    _consumeNativeBlockEvent();
     notifyListeners();
   }
 
@@ -1283,30 +1325,53 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         _state.type != PomodoroType.focus) {
       return;
     }
+    // 先快照状态：解析应用名是异步的，不能被期间的状态变化污染。
+    final stateSnapshot = _state;
+    final generation = _distractionSyncGeneration;
     final now = DateTime.now();
     final affectedSeconds =
-        (_state.isCountUp
-                ? _state.remainingSeconds.clamp(1, 24 * 60 * 60)
-                : (_state.totalSeconds - _state.remainingSeconds).clamp(
-                    1,
-                    _state.totalSeconds,
-                  ))
+        (stateSnapshot.isCountUp
+                ? stateSnapshot.remainingSeconds.clamp(1, 24 * 60 * 60)
+                : (stateSnapshot.totalSeconds - stateSnapshot.remainingSeconds)
+                      .clamp(1, stateSnapshot.totalSeconds))
             .toInt();
+    final resolvedAppLabel = appPackage == null
+        ? null
+        : await _resolveAppLabel(appPackage);
+    if (reason == FocusPenaltyReason.distractingApp &&
+        (generation != _distractionSyncGeneration || !_state.isRunning)) {
+      return;
+    }
     final penalty = PomodoroFocusPenalty(
       id: '${now.microsecondsSinceEpoch}_${reason.key}',
       occurredAt: now,
       reason: reason,
       affectedSeconds: affectedSeconds,
-      taskName: _state.taskName,
-      tag: _state.tag,
-      focusRoomId: _state.focusRoomId,
+      taskName: stateSnapshot.taskName,
+      tag: stateSnapshot.tag,
+      focusRoomId: stateSnapshot.focusRoomId,
       appPackage: appPackage,
+      appLabel: resolvedAppLabel,
     );
     final nextPenalties = [penalty, ..._penalties].take(100).toList();
     await _savePenaltyList(nextPenalties);
     _penalties = nextPenalties;
     _persistedRevision++;
     notifyListeners();
+  }
+
+  /// 分心应用显示名：优先用已安装应用缓存，缺失时问原生 `getAppLabel`。
+  Future<String?> _resolveAppLabel(String packageName) async {
+    final clean = packageName.trim();
+    if (clean.isEmpty) return null;
+    for (final app in _installedFocusAppsCache) {
+      if (app.packageName != clean) continue;
+      final label = app.label.trim();
+      if (label.isNotEmpty) return label;
+    }
+    final nativeLabel = await _distraction.getAppLabel(clean);
+    if (nativeLabel != null && nativeLabel.isNotEmpty) return nativeLabel;
+    return null;
   }
 
   void _syncDistractionMonitorToState() {
@@ -1369,7 +1434,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       _stopDistractionMonitor();
       return;
     }
-    _distraction.setFocusBlocker(enabled: true, packages: blocked);
+    await _applyBlockerConfig(blocked);
+    if (generation != _distractionSyncGeneration || !_state.isRunning) return;
     _distractionTimer ??= Timer.periodic(
       const Duration(seconds: 20),
       (_) => _checkDistractingForegroundApp(),
@@ -1377,12 +1443,56 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_checkDistractingForegroundApp());
   }
 
+  /// 写入原生拦截配置并带上有限失效时刻：进程被杀后不会永久拦截。
+  ///
+  /// 倒计时用会话结束锚点；正计时给出有限租约，由轮询定期续租。
+  Future<void> _applyBlockerConfig(List<String> packages) async {
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final expiresAtMs = FocusBlockerLease.expiresAtMs(
+      isCountUp: _state.isCountUp,
+      activeAnchorMs: _activeAnchorMs,
+      remainingSeconds: _state.remainingSeconds,
+      nowMs: nowMs,
+    );
+    _blockerLeaseExpiresAtMs = expiresAtMs;
+    await _distraction.setFocusBlocker(
+      enabled: true,
+      packages: packages,
+      expiresAtMs: expiresAtMs,
+    );
+  }
+
+  /// 正计时租约快到期时续租；倒计时锚点即会话结束，无需续租。
+  void _renewBlockerLeaseIfNeeded() {
+    if (!_state.isRunning || _distractionTimer == null) return;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (!FocusBlockerLease.needsRenewal(
+      expiresAtMs: _blockerLeaseExpiresAtMs,
+      nowMs: nowMs,
+    )) {
+      return;
+    }
+    final blocked = _blockedPackagesForDetection();
+    if (blocked.isEmpty) return;
+    unawaited(_applyBlockerConfig(blocked));
+  }
+
   void _stopDistractionMonitor() {
+    _distractionSyncGeneration++;
     _distractionTimer?.cancel();
     _distractionTimer = null;
     _lastDistractingPackage = null;
     _effectiveDistractingPackages = const <String>[];
+    _blockerLeaseExpiresAtMs = null;
+    // ignore: discarded_futures
     _distraction.setFocusBlocker(enabled: false, packages: const []);
+  }
+
+  /// 当前参与前台检测的包集合：白名单模式用换算结果，黑名单模式直接用配置。
+  List<String> _blockedPackagesForDetection() {
+    return _config.isDistractionWhitelistMode
+        ? _effectiveDistractingPackages
+        : _config.distractingAppPackages;
   }
 
   Future<void> _checkDistractingForegroundApp() async {
@@ -1392,16 +1502,29 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         _state.type != PomodoroType.focus) {
       return;
     }
-    final packageName = await _distraction.getForegroundApp();
-    if (packageName == null || packageName.isEmpty) return;
-    _distractionStatus = FocusDistractionStatus(
-      supported: true,
-      accessGranted: true,
-      foregroundPackage: packageName,
-    );
-    final blocked = _config.isDistractionWhitelistMode
-        ? _effectiveDistractingPackages
-        : _config.distractingAppPackages;
+    final generation = _distractionSyncGeneration;
+    final latest = await _distraction.getStatus();
+    if (generation != _distractionSyncGeneration ||
+        !_state.isRunning ||
+        _distractionTimer == null) {
+      return;
+    }
+    // 轮询只更新前台包/最近拦截事件：授权与拦截配置字段绝不能被重新构造丢掉。
+    if (latest.supported) {
+      _distractionStatus = latest;
+    } else if (latest.foregroundPackage != null) {
+      _distractionStatus = _distractionStatus.withForeground(
+        latest.foregroundPackage,
+      );
+    }
+    _consumeNativeBlockEvent();
+    _renewBlockerLeaseIfNeeded();
+    final packageName = latest.foregroundPackage;
+    if (packageName == null || packageName.isEmpty) {
+      notifyListeners();
+      return;
+    }
+    final blocked = _blockedPackagesForDetection();
     if (!blocked.contains(packageName)) {
       _lastDistractingPackage = null;
       notifyListeners();
@@ -1415,6 +1538,62 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         appPackage: packageName,
       ),
     );
+  }
+
+  /// 消费原生无障碍服务“已拦截并拉回”的事件。
+  ///
+  /// 快速弹回时使用情况轮询看不到分心应用的前台记录，必须用它补记真实的
+  /// 分心应用；与轮询共用 [_lastDistractingPackage] 去重，同一包名只记一次。
+  void _consumeNativeBlockEvent() {
+    if (!_state.isRunning ||
+        !_config.strictFocusMode ||
+        !_config.monitorDistractingApps ||
+        _state.type != PomodoroType.focus) {
+      return;
+    }
+    final event = FocusNativeBlockEvent.fromStatus(_distractionStatus);
+    if (event == null) return;
+    final anchor = _activeAnchorMs;
+    final sessionStartedAtMs = anchor == null
+        ? DateTime.now().millisecondsSinceEpoch
+        : _state.isCountUp
+        ? anchor
+        : anchor - _state.totalSeconds * 1000;
+    final shouldRecord = event.shouldRecord(
+      lastConsumedBlockedAtMs: _lastConsumedNativeBlockAtMs,
+      lastRecordedPackage: _lastDistractingPackage,
+      blockedPackages: _blockedPackagesForDetection(),
+      notBeforeMs: sessionStartedAtMs,
+    );
+    if (event.blockedAtMs > _lastConsumedNativeBlockAtMs) {
+      _lastConsumedNativeBlockAtMs = event.blockedAtMs;
+    }
+    if (!shouldRecord) return;
+    _lastDistractingPackage = event.packageName;
+    unawaited(
+      _recordStrictFocusPenalty(
+        FocusPenaltyReason.distractingApp,
+        appPackage: event.packageName,
+      ),
+    );
+  }
+
+  /// 计时状态 → 原生持续通知；非运行且非暂停时清理运行通知。
+  void _syncFocusTimerNotification() {
+    if (_state.isRunning) {
+      unawaited(_focusTimer.sync(_state, paused: false));
+    } else if (_isPaused) {
+      unawaited(_focusTimer.sync(_state, paused: true));
+    } else {
+      unawaited(_focusTimer.stop());
+    }
+  }
+
+  /// 原生通知倒计时先到期：Dart 计时器可能被系统延迟，这里补一次结算。
+  Future<void> _handleNativeFocusTimerExpired() async {
+    if (!_state.isRunning || _state.isCountUp) return;
+    if (_state.remainingSeconds > 1) return;
+    _completeSession();
   }
 
   // --- 桌面小组件控制（绑定 session + revision + state） ---
@@ -1682,6 +1861,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     // ignore: discarded_futures
     _restoreFocusDndIfNeeded(notify: false);
     _distractionTimer?.cancel();
+    _focusTimer.onExpired = null;
+    unawaited(_focusTimer.stop());
+    unawaited(_distraction.setFocusBlocker(enabled: false, packages: const []));
     _timerTicks.dispose();
     super.dispose();
   }

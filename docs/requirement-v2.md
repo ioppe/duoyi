@@ -509,10 +509,11 @@
   - 权限未授权时降级提示，不阻塞专注启动。
 - R13.1a 严格专注模式：专注中暂停、跳过、重置、离开应用或打开分心 App 应记录中断惩罚，并可在 Android 辅助功能授权后拉回分心 App。**[已实现 Android 代码链路，待真机权限回归]**
   - 严格专注开关写入 `PomodoroConfig.strictFocusMode`。
-  - 可开启 Android 分心应用监控，配置包名列表并通过 UsageStats 读取当前前台 App。
-  - 可打开 Android 辅助功能授权，`DuoyiFocusBlockerAccessibilityService` 检测到配置的分心 App 窗口后拉回多仪专注页。
-  - 惩罚记录写入 `pomodoro_focus_penalties`，包含原因、影响时长、任务、标签、自习室归属和分心 App 包名。
-  - 仍需真机验证不同 ROM 的辅助功能保活；VPN/设备管理级封锁和 iOS 同类能力留待后续。
+  - 可开启 Android 分心应用监控，扫描真实图标、应用名和包名，通过 UsageStats 读取当前前台 App；黑白名单选择保留草稿取消与完成后保存。
+  - 可打开 Android 辅助功能授权，组件短名与全名等价识别，打开设置面板与恢复前台重新读取授权；`DuoyiFocusBlockerAccessibilityService` 检测到配置的分心 App 窗口后拉回多仪专注页。
+  - 惩罚记录写入 `pomodoro_focus_penalties`，包含原因、影响时长、任务、标签、自习室归属及分心 App 名称与包名；旧数据兼容，快速拉回后仍能记录应用来源。
+  - 拦截配置有会话期限；暂停、结束或重置停止拦截。不同 ROM 的辅助功能保活仍需分别验证；VPN/设备管理级封锁和 iOS 同类能力留待后续。
+- R13.1b Android 专注开始后在通知栏持续显示阶段、任务、倒计时/正计时和进度；跟随主题及语言，暂停冻结、结束清理。APK 更新支持系统后台下载、通知进度、重入恢复及完成后点击安装；当前已是最新版时不得受历史推算 build 影响而误报更新。详见 [Android 专注与应用更新](android-focus-updates.md)。**[已实现 Android 代码链路，待设备回归]**
 - R13.2 专注会话支持标签/分类（如学习、工作、运动、阅读、其他）。
   - 标签随 PomodoroSession 持久化。
   - 标签列表可自定义。

@@ -66,6 +66,7 @@ Widget _wrap(
   ShareProvider? shareProvider,
   ThemeData? theme,
   double textScale = 1,
+  AppUpdateService? appUpdateService,
 }) {
   return MultiProvider(
     providers: [
@@ -118,12 +119,15 @@ Widget _wrap(
       ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ChangeNotifierProvider(create: (_) => LocationReminderProvider()),
       ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),
-      ChangeNotifierProvider(
-        create: (_) => AppUpdateService(
-          repo: 'dq52099/duoyi',
-          currentVersion: AppVersion.name,
-        ),
-      ),
+      if (appUpdateService == null)
+        ChangeNotifierProvider(
+          create: (_) => AppUpdateService(
+            repo: 'dq52099/duoyi',
+            currentVersion: AppVersion.name,
+          ),
+        )
+      else
+        ChangeNotifierProvider<AppUpdateService>.value(value: appUpdateService),
     ],
     child: MaterialApp(
       theme: theme,
@@ -147,6 +151,108 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
+
+  for (final scenario in [
+    (size: const Size(390, 844), scale: 1.0),
+    (size: const Size(320, 640), scale: 1.5),
+  ]) {
+    testWidgets('更新弹窗安装包可见 ${scenario.size} x${scenario.scale}', (
+      tester,
+    ) async {
+      tester.view.physicalSize = scenario.size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const assetName = 'duoyi-android-universal-release-v2.0.1.apk';
+      final updater = AppUpdateService(
+        repo: '',
+        currentVersion: '2.0.0',
+        currentVersionCode: 140023,
+        backendBaseUrl: 'https://duoyi.test',
+        httpClient: MockClient((request) async {
+          if (request.url.path != '/api/mobile/apps/duoyi/update') {
+            return http.Response('{}', 404);
+          }
+          return http.Response(
+            jsonEncode({
+              'api_contract_version': ApiClient.requiredApiContractVersion,
+              'required_routes_hash': ApiClient.requiredApiContractRoutesHash,
+              'available': true,
+              'latest_version_name': '2.0.1',
+              'minimum_supported_version': '2.0.0',
+              'download_url': 'https://duoyi.test/$assetName',
+              'asset_name': assetName,
+              'release_notes': List.generate(
+                40,
+                (index) => 'Update dialog layout regression ${index + 1}',
+              ).join('\n'),
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      addTearDown(updater.dispose);
+      await tester.pumpWidget(
+        _wrap(
+          const MineScreen(),
+          textScale: scenario.scale,
+          appUpdateService: updater,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final support = find.byKey(const ValueKey('mine_support_entry'));
+      await tester.scrollUntilVisible(
+        support.hitTestable(),
+        200,
+        scrollable: find.byWidgetPredicate(
+          (widget) =>
+              widget is Scrollable &&
+              widget.restorationId == 'mine_screen_list',
+        ),
+      );
+      await tester.tap(support);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(I18n.tr('mine.tile.check_updates')));
+      await tester.pumpAndSettle();
+      expect(updater.hasUpdate, isTrue);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text(I18n.tr('action.close')).hitTestable(), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text(I18n.tr('mine.update.package_label')).hitTestable(),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(I18n.tr('mine.update.package_label')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(
+        find
+            .byWidgetPredicate(
+              (widget) =>
+                  widget is Text &&
+                  widget.data?.replaceAll('\u200B', '') == assetName,
+            )
+            .hitTestable(),
+        findsOneWidget,
+      );
+      final close = find.text(I18n.tr('action.close')).hitTestable();
+      expect(close, findsOneWidget);
+      await tester.tap(close);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    });
+  }
 
   testWidgets('我的不再显示登录按钮，账号信息与管理入口跟随实际角色', (tester) async {
     tester.view.physicalSize = const Size(390, 1000);

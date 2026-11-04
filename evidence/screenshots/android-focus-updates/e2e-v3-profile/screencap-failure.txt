@@ -1,0 +1,8 @@
+No valid screenshot captured for this session.
+
+Attempt: adb -s emulator-5554 exec-out screencap -p > device-state-at-block.png (timeout 25s)
+Result: exit code 124 (timeout), output file 0 bytes -> invalid, NOT stored as PNG evidence.
+Reason: system_server was in a degraded state (services package/activity/dropbox/window unregistered),
+WindowManager/screencap could not complete.
+
+Per instruction: empty / non-PNG-magic files are never recorded as successful evidence.

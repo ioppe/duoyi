@@ -1,0 +1,6 @@
+11-04 12:35:42.616  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-04 12:35:44.745  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-04 12:36:29.813  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-04 12:36:30.996  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-04 12:36:51.470  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-04 12:37:09.574  5284  5284 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets

@@ -1148,6 +1148,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
   }
 
   void _showStrictFocusSheet(BuildContext context) {
+    // 打开面板就重读一次原生状态：设置页往返后不能拿离开前的读数当结论。
+    final provider = context.read<PomodoroProvider>();
+    unawaited(provider.refreshFocusDistractionStatus());
     showAppModalSheet(
       context: context,
       builder: (ctx) => Consumer<PomodoroProvider>(
@@ -1181,13 +1184,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                   contentPadding: EdgeInsets.zero,
                   secondary: const Icon(Icons.app_blocking_outlined),
                   title: const Text('监控分心应用'),
-                  subtitle: Text(
-                    provider.focusDistractionStatus.accessibilityGranted
-                        ? '辅助功能拦截已授权'
-                        : provider.focusDistractionStatus.accessGranted
-                        ? '已授权使用情况访问，辅助功能未授权'
-                        : '需要 Android 使用情况访问和辅助功能权限',
-                  ),
+                  subtitle: Text(_distractionStatusText(provider)),
                   value: provider.config.monitorDistractingApps,
                   onChanged: provider.setMonitorDistractingApps,
                 ),
@@ -1202,10 +1199,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await provider.openFocusUsageAccessSettings();
-                      await provider.refreshFocusDistractionStatus();
-                    },
+                    onPressed: provider.openFocusUsageAccessSettings,
                     icon: const Icon(Icons.settings_outlined),
                     label: const Text('使用情况权限'),
                   ),
@@ -1214,10 +1208,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await provider.openFocusAccessibilitySettings();
-                      await provider.refreshFocusDistractionStatus();
-                    },
+                    onPressed: provider.openFocusAccessibilitySettings,
                     icon: const Icon(Icons.accessibility_new_outlined),
                     label: const Text('辅助功能拦截'),
                   ),
@@ -1262,6 +1253,24 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
         },
       ),
     );
+  }
+
+  /// 辅助功能状态文案：区分“已在设置启用但系统未生效”与“已生效”，
+  /// 不声称已经拦截成功（真正拉回取决于服务是否被系统激活）。
+  String _distractionStatusText(PomodoroProvider provider) {
+    final status = provider.focusDistractionStatus;
+    if (status.accessibilityGranted) {
+      final headline = status.accessibilityActive
+          ? I18n.tr('focus.distraction.status.accessibility_active')
+          : I18n.tr('focus.distraction.status.accessibility_pending');
+      if (status.blockerConfigured) return headline;
+      return '$headline · '
+          '${I18n.tr('focus.distraction.status.blocker_unconfigured')}';
+    }
+    if (status.accessGranted) {
+      return I18n.tr('focus.distraction.status.usage_only');
+    }
+    return I18n.tr('focus.distraction.status.missing');
   }
 
   String _distractingAppsSubtitle(PomodoroProvider provider) {
@@ -2144,6 +2153,13 @@ class _PenaltyListTile extends StatelessWidget {
         '${penalty.occurredAt.hour.toString().padLeft(2, '0')}:'
         '${penalty.occurredAt.minute.toString().padLeft(2, '0')}';
     final minutes = (penalty.affectedSeconds / 60).ceil().clamp(1, 1440);
+    final appName = penalty.displayAppLabel;
+    final appPackage = penalty.displayAppPackage;
+    final appText = appName == null
+        ? null
+        : appPackage != null && appPackage != appName
+        ? '$appName ($appPackage)'
+        : appName;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
@@ -2159,6 +2175,7 @@ class _PenaltyListTile extends StatelessWidget {
       title: Text(penalty.reason.label),
       subtitle: Text(
         [
+          ?appText,
           time,
           '$minutes 分钟',
           if (penalty.taskName?.isNotEmpty == true) penalty.taskName!,

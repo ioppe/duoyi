@@ -203,7 +203,7 @@ void main() {
     expect(forceUpdateGate, contains('管理员已开启强制更新策略'));
     expect(forceUpdateGate, contains('管理员未配置下载地址'));
     expect(forceUpdateGate, contains('当前平台不支持应用内安装'));
-    expect(forceUpdateGate, contains('downloadAndInstallLatest()'));
+    expect(forceUpdateGate, contains('downloadAndInstallLatest('));
     expect(forceUpdateGate, contains('updater.hasDownloadedInstaller'));
     expect(
       mainApp,

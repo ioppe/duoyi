@@ -1,0 +1,25 @@
+{
+  "candidate": {"branch":"fix/android-focus-updates-notifications","commit":"4f87864c74702685ab0884999494cffe764f333a","ancestor_of_origin_main":true,"dirty_worktree":true,"note":"uncommitted feature diff is the candidate itself; source frozen, not modified"},
+  "device": {"serial":"emulator-5554","avd":"duoyi_api35_arm64","coldboot":true,"other_devices":"2df52c4c physically disconnected; not touched"},
+  "apk": {"package":"com.duoyi.duoyi.focuscheck","mainActivity":"com.duoyi.duoyi.MainActivity","versionName":"2.0.0","versionCode":140023,"build":"debug","sha256":"d7e12c658f90c3db7cd7e4a7eb16c331e140c616a4a92692e4f66e6b0959379b"},
+  "setup": {
+    "accessibility_service": "com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService",
+    "accessibility_enabled_secure_setting": 1,
+    "other_a11y_services": "none added (existing services list untouched)",
+    "post_notifications": "pm grant com.duoyi.duoyi.focuscheck -> granted=true",
+    "usage_stats": "NOT granted (intentional, to test a11y-only interception)"
+  },
+  "cases": {
+    "C1a_strict_panel_a11y_enabled_and_poll20s": {"status":"PASS","observed":"card content-desc '监控分心应用 / Accessibility service enabled'; dumpsys accessibility Bound services label=多仪·专注验证; identical after 20s poll","evidence":["screenshots/android-focus-updates/e2e-run/03-strict-panel-a11y-enabled.png","android-focus-updates/e2e-run/strict-panel.xml","android-focus-updates/e2e-run/strict-panel-poll20s.xml","android-focus-updates/e2e-run/a11y-bound-t0.txt","android-focus-updates/e2e-run/a11y-bound-poll20s.txt"]},
+    "C1b_picker_scan_icons_names_packages": {"status":"PASS","observed":"19 launchable apps listed with real icons, 'Name / package · system app'; Chrome=com.android.chrome (verified real installed package)","evidence":["screenshots/android-focus-updates/e2e-run/04-picker-all-apps-icons.png","android-focus-updates/e2e-run/picker.xml"]},
+    "C1c_blacklist_chrome_save": {"status":"BLOCKED","observed":"Chrome checkbox checked=true, header shows 'Selected 1 · available apps 19', but the sheet renders NO cancel/done actions row (screenshot and UIAutomator tree); subtitle says 'changes save only after Done'; swipe/back dismisses and selection is discarded -> strict panel still 'Blacklist: no apps selected'","suspected_product_issue":"AppModalSheet actions row off-screen for this sheet (lib/widgets/focus_distraction_app_picker.dart L154-168 keys focus_distraction_cancel/focus_distraction_done; lib/widgets/surface_components.dart L2011-2018 renders actions after scrollable content)","evidence":["screenshots/android-focus-updates/e2e-run/05-picker-chrome-checked.png","screenshots/android-focus-updates/e2e-run/06-strict-blacklist-not-saved.png","android-focus-updates/e2e-run/picker-chrome-checked.xml","android-focus-updates/e2e-run/strict-after-picker.xml"]},
+    "C1d_pullback_of_chrome_while_focus_running": {"status":"NOT_RUN","reason":"blocked by C1c (no blacklist persisted) and 10-min budget"},
+    "C1e_pause_reset_stops_pullback": {"status":"NOT_RUN","reason":"depends on C1d"},
+    "C1f_a11y_only_interception_without_usage_stats": {"status":"NOT_RUN","reason":"depends on C1d"},
+    "C2_focus_timer_notification_duoyi_focus_timer_v1_id951101": {"status":"NOT_RUN","reason":"10-min budget exhausted after C1c; not started"},
+    "C3_update_fixture_legacy_no_prompt_update_download_background_kill_complete_id7307": {"status":"NOT_RUN","reason":"10-min budget exhausted; adb reverse fixture never started"},
+    "secondary_search_cancel_whitelist_countup_theme_deny_retry": {"status":"NOT_RUN","reason":"budget"}
+  },
+  "leftover_state": {"strict_mode":"OFF","monitor_distractions":"OFF","blacklist":"empty","timer":"never started","download":"never started","a11y_service":"left ENABLED for verification package","notifications":"granted to verification package","emulator":"left running","fixture":"not started"},
+  "duration_stop_reason":"10-minute budget consumed by picker save dead-end plus slow adb dumps"
+}

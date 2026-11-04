@@ -9,6 +9,54 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get mineUpdateBackgroundDownloading => '正在后台下载更新包';
+
+  @override
+  String get mineUpdateCloseKeepsDownloading => '关闭此窗口后下载会继续';
+
+  @override
+  String get mineUpdateCancelDownload => '取消下载';
+
+  @override
+  String get mineUpdateNotificationTitle => '多仪更新';
+
+  @override
+  String get mineUpdateNotificationDownloading => '正在下载更新包，完成后可从通知栏安装';
+
+  @override
+  String get mineUpdateNotificationInstallAction => '点击安装';
+
+  @override
+  String get mineUpdateNotificationChannelName => '应用更新';
+
+  @override
+  String get mineUpdateNotificationChannelDescription => '更新包后台下载与安装提醒';
+
+  @override
+  String get focusDistractionStatusAccessibilityActive => '辅助功能已启用';
+
+  @override
+  String get focusDistractionStatusAccessibilityPending => '已在设置中开启，等待系统生效';
+
+  @override
+  String get focusDistractionStatusBlockerUnconfigured => '未配置拦截应用';
+
+  @override
+  String get focusDistractionStatusUsageOnly => '已授权使用情况访问，辅助功能未授权';
+
+  @override
+  String get focusDistractionStatusMissing => '需要 Android 使用情况访问和辅助功能权限';
+
+  @override
+  String get focusTimerNotifChannelName => '专注计时';
+
+  @override
+  String get focusTimerNotifNoTask => '无关联任务';
+
+  @override
+  String get focusTimerNotifPaused => '已暂停';
+
+  @override
   String get aiLocalTitle => 'AI 服务';
 
   @override

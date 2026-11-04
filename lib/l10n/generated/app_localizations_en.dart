@@ -9,6 +9,63 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get mineUpdateBackgroundDownloading =>
+      'Downloading the update in the background';
+
+  @override
+  String get mineUpdateCloseKeepsDownloading =>
+      'Downloading continues after you close this window';
+
+  @override
+  String get mineUpdateCancelDownload => 'Cancel download';
+
+  @override
+  String get mineUpdateNotificationTitle => 'Duoyi update';
+
+  @override
+  String get mineUpdateNotificationDownloading =>
+      'Downloading the update; install from the notification when it finishes';
+
+  @override
+  String get mineUpdateNotificationInstallAction => 'Tap to install';
+
+  @override
+  String get mineUpdateNotificationChannelName => 'App updates';
+
+  @override
+  String get mineUpdateNotificationChannelDescription =>
+      'Background update downloads and install reminders';
+
+  @override
+  String get focusDistractionStatusAccessibilityActive =>
+      'Accessibility service enabled';
+
+  @override
+  String get focusDistractionStatusAccessibilityPending =>
+      'Enabled in Settings, waiting for the system to activate it';
+
+  @override
+  String get focusDistractionStatusBlockerUnconfigured =>
+      'No blocked apps configured';
+
+  @override
+  String get focusDistractionStatusUsageOnly =>
+      'Usage access granted, accessibility service not enabled';
+
+  @override
+  String get focusDistractionStatusMissing =>
+      'Requires Android usage access and accessibility permissions';
+
+  @override
+  String get focusTimerNotifChannelName => 'Focus timer';
+
+  @override
+  String get focusTimerNotifNoTask => 'No linked task';
+
+  @override
+  String get focusTimerNotifPaused => 'Paused';
+
+  @override
   String get aiLocalTitle => 'AI service';
 
   @override

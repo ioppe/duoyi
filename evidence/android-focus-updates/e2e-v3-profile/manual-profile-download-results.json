@@ -1,0 +1,113 @@
+{
+  "suite": "C3 manual regression - background download (Android, isolated package)",
+  "status": "NOT_RUN",
+  "executed_utc": "2026-11-04T13:44:00Z..2026-11-04T13:48:00Z",
+  "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+  "candidate": {
+    "branch": "fix/android-focus-updates-notifications",
+    "head": "4f87864c74702685ab0884999494cffe764f333a",
+    "worktree_dirty_pre_existing": true,
+    "worktree_note": "v3 frozen source changes already present before this run; this session modified no product source, test or config file",
+    "source_manifest": "evidence/android-focus-updates/source-manifest-v3.json",
+    "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5"
+  },
+  "artifacts": {
+    "test_client_apk": {
+      "kind": "AOT profile build (same frozen source v3)",
+      "path": "$PI_SCRATCH_DIR/android-candidate-v3/build/app/outputs/flutter-apk/app-profile.apk",
+      "size_bytes": 105609957,
+      "sha256_expected": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+      "sha256_measured": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+      "hash_match": true,
+      "build_mode": "profile",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "signer_cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "metadata": "$PI_SCRATCH_DIR/android-update-dialog-fix/isolated-v3-profile-apk.json",
+      "install_attempted": false
+    },
+    "download_payload_apk": {
+      "kind": "debug build served by local fixture (NOT installed this session)",
+      "size_bytes": 160480428,
+      "sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+      "note": "payload metadata announces 2.0.1 while file version is 2.0.0; transfer/restore/install-entry check only, not a real overwrite upgrade"
+    }
+  },
+  "device": {
+    "serial": "emulator-5554",
+    "avd": "duoyi_api35_arm64",
+    "api_level": 35,
+    "abi": "arm64",
+    "package_scope": "com.duoyi.duoyi.focuscheck only",
+    "adb_host_forward": "host-16 tcp:18763 tcp:18763 (present at session start)"
+  },
+  "fixture": {
+    "url": "http://127.0.0.1:18763",
+    "state_at_start": {"mode": "update", "delay": 0.15, "apk_ready": true},
+    "state_at_end": {"mode": "legacy", "delay": 0.08, "apk_ready": true},
+    "restored": true
+  },
+  "results": [
+    {
+      "id": "C3-preflight-hash-and-install",
+      "verdict": "NOT_RUN",
+      "observed": "Profile APK sha256 verified locally (dc20a164...e412, 105609957 B). Install never attempted: Android package service unavailable ('Can't find service: package', adb shell pm path rc=20)."
+    },
+    {
+      "id": "C3-1-download-trigger-and-system-progress",
+      "verdict": "NOT_RUN",
+      "observed": "App could not be installed or launched; UI path Me -> Help & about -> Check updates never reached. No DownloadManager task, no notification progress created by this session."
+    },
+    {
+      "id": "C3-2-progress-after-normal-process-death",
+      "verdict": "NOT_RUN",
+      "observed": "No download existed; nothing to kill. No a11y component was removed or re-added (package could not even be resolved), so no a11y state had to be restored."
+    },
+    {
+      "id": "C3-3-completion-notification-id7307",
+      "verdict": "NOT_RUN",
+      "observed": "No download reached completion."
+    },
+    {
+      "id": "C3-secondary-fail-cancel-retry",
+      "verdict": "NOT_RUN",
+      "observed": "Skipped per priority rules."
+    },
+    {
+      "id": "profile-anr-check",
+      "verdict": "NOT_VERIFIED",
+      "observed": "Profile APK was never launched, so no statement about Profile-mode ANR behaviour can be made. Debug-mode startup ANR remains an open, unretested item."
+    }
+  ],
+  "blocking_condition": {
+    "summary": "Android emulator system_server degraded/restarting; core binder services missing, so no install/launch was possible.",
+    "evidence": [
+      "adb shell service list: 93 services, contains activity_task but NOT package, activity, dropbox, window",
+      "adb shell pm path com.duoyi.duoyi.focuscheck -> 'cmd: Can't find service: package' (rc=20), reproduced 3 times over ~65s",
+      "adb shell dumpsys dropbox --print data_app_anr -> 'Can't find service: dropbox' (no ANR trace obtainable)",
+      "system_server PID 9950 at 13:45:04 -> PID 10478 at 13:46:37 (restart)",
+      "logcat: PackageWatchdog health-check reinit at 13:46:10, 'Watchdog: WAITED_UNTIL_PRE_WATCHDOG' 13:46:25, init 'Sending signal 9 to service apexd' 13:46:30",
+      "load average 13.41 -> 12.39 (1min 4.27 -> 3.35), device not stable",
+      "adb exec-out screencap -p timed out (rc=124, 0 bytes) - no valid PNG captured",
+      "ps -A: no com.duoyi process present (nothing to force-stop or kill)"
+    ],
+    "not_attributed_to_app": "No Flutter/duoyi process was running during the failure window; the missing services are platform-level."
+  },
+  "state_preserved": {
+    "formal_app_com.duoyi.duoyi": "not touched (device-side formal phone disconnected; no command targeted it)",
+    "other_apps": "not uninstalled, not cleared, not overwritten",
+    "isolated_package_data": "not cleared, not uninstalled (package service unavailable; no destructive command issued)",
+    "a11y_and_notification_grants": "not modified by this session",
+    "avd": "not paused, not restarted, not wiped",
+    "fixture_and_image_service": "left running (main session owns cleanup); fixture mode restored to legacy/0.08"
+  },
+  "raw_evidence": [
+    "evidence/android-focus-updates/e2e-v3-profile/raw/logcat-system-server-watchdog.txt",
+    "evidence/android-focus-updates/e2e-v3-profile/raw/service-list-at-block.txt",
+    "evidence/android-focus-updates/e2e-v3-profile/raw/ps-at-block.txt",
+    "evidence/android-focus-updates/e2e-v3-profile/raw/dropbox-data_app_anr.txt",
+    "evidence/screenshots/android-focus-updates/e2e-v3-profile/screencap-failure.txt"
+  ],
+  "note": "Nothing recorded as PASS by inference. Profile mode result, if it is ever executed, must be reported separately from the debug-mode ANR finding."
+}

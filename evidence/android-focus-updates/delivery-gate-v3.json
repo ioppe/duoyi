@@ -1,0 +1,32 @@
+{
+  "scope": "Local commit gate for the v3 update-dialog delta; not merge or release acceptance",
+  "agent_delegation": "595bc3a4-9329-4718-9e32-72d447111fe7",
+  "branch": "fix/android-focus-updates-notifications",
+  "base_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "hard_blockers": 0,
+  "result": "PASS_FOR_LOCAL_COMMIT",
+  "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5",
+  "standard_manifest_sha256": "67664503f2403bc24c2c9a1113992b89c3038c3c920c5c4ba2176842da7a83cd",
+  "independently_checked_source_files": 1266,
+  "source_missing": 0,
+  "source_mismatches": 0,
+  "unchanged_backend_android_files": 209,
+  "verified": [
+    "v2 to v3 product delta is limited to the update dialog, corresponding tests and behavior documentation",
+    "Intrinsic-safe package information and release-note scrolling use the existing shared dialog correctly",
+    "Real navigation, 40 release-note lines, long filename and close actions pass at both screen configurations",
+    "45 personal-page tests and 2845 full Flutter tests pass; formal analysis is clean",
+    "Failed original-directory CMake build and successful same-source standard-copy recovery are separately retained",
+    "APK hashes, identities, debug signing, source manifests and unchanged dependency lock agree",
+    "Documentation and i18n are consistent; static guards were not weakened; no APK or private signing/configuration file is staged"
+  ],
+  "device_status_at_review_time": "v3 download followup pending; debug ANRs unresolved; Profile only a fallback",
+  "release_acceptance": "NOT_PERFORMED",
+  "remaining_release_limits": [
+    "Xiaomi physical device disconnected",
+    "Debug startup/input ANR root cause unresolved",
+    "Production signing and in-place upgrade not verified",
+    "Full multi-platform release gate and production deployment not performed"
+  ],
+  "note": "Subsequent device reports and evidence-only updates do not change the frozen product snapshot. This record does not claim that pending device cases passed."
+}

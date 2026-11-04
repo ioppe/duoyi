@@ -1,0 +1,2 @@
+  mCurrentFocus=Window{b5cd934 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+  mFocusedApp=ActivityRecord{46a9fc5 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t44}

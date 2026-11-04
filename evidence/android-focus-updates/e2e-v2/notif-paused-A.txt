@@ -1,0 +1,3 @@
+                android.title=String (Focus)
+                android.text=String (No linked task · Paused · 24:07)
+                android.progress=Integer (35)

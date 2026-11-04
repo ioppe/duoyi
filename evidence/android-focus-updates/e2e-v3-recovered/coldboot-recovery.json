@@ -1,0 +1,19 @@
+{
+  "recorded_at_utc": "2026-11-04T18:54:57.861339+00:00",
+  "avd": "duoyi_api35_arm64",
+  "serial": "emulator-5554",
+  "renderer": "swiftshader",
+  "headless": true,
+  "crash_report_mode": "disabled",
+  "disk_data_preserved": true,
+  "wipe_data": false,
+  "snapshots_loaded_or_saved": false,
+  "boot_completed": true,
+  "required_services_ready": true,
+  "elapsed_seconds": 0.37,
+  "previous_start_blocker": "Old emulator crash-report prompt; blocked pre-boot process was terminated only after lsof confirmed no open AVD disk images.",
+  "root_cause_claim": "Recovery does not establish the cause of the earlier app ANRs or system-server failure.",
+  "package_path_response": "package:/data/app/~~vkg7zv64rrdsJv-2vyUacQ==/com.duoyi.duoyi.focuscheck-qWt7k4HKlYRnZ3EEp1CJnQ==/base.apk",
+  "avd_name": "duoyi_api35_arm64",
+  "adb_reverse_result": "18763"
+}

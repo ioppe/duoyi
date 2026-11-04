@@ -34,9 +34,22 @@ void main() {
     expect(provider, contains('_syncDistractionMonitorToState'));
     expect(provider, contains('_checkDistractingForegroundApp'));
     expect(provider, contains('todayPenalties'));
+    expect(provider, contains('_consumeNativeBlockEvent'));
+    expect(provider, contains('FocusNativeBlockEvent.fromStatus'));
+    expect(provider, contains('FocusBlockerLease.expiresAtMs'));
+    expect(provider, contains('_resolveAppLabel'));
+    expect(provider, contains('refreshFocusDistractionStatus();'));
 
     expect(screen, contains('_StrictFocusTile'));
     expect(screen, contains('_PenaltyListTile'));
+    expect(screen, contains('_distractionStatusText'));
+    expect(screen, contains('focus.distraction.status.accessibility_active'));
+    expect(screen, contains('displayAppLabel'));
+    expect(screen, contains('displayAppPackage'));
+    expect(
+      screen,
+      isNot(contains('await provider.refreshFocusDistractionStatus();')),
+    );
     expect(screen, contains('_confirmStrictFocusExit'));
     expect(screen, contains('_showStrictFocusSheet'));
     expect(screen, contains('严格专注'));

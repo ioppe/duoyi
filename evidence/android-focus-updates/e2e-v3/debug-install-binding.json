@@ -1,0 +1,9 @@
+{
+  "candidate_apk_sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+  "device": "emulator-5554",
+  "package": "com.duoyi.duoyi.focuscheck",
+  "recorded_at_utc": "2026-11-04T18:41:34.576919+00:00",
+  "archive_sha256": "6725dd1ee76aad1a8c2aa9fe786fedea9a028ac95141d76c70b3a821c94ed186",
+  "installed_apk_sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+  "installed_matches_candidate": true
+}

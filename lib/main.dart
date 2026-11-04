@@ -62,6 +62,7 @@ import 'services/alarm_service.dart';
 import 'services/account_local_data_cleaner.dart';
 import 'services/calendar_sync_service.dart';
 import 'services/deferred_web_font_service.dart';
+import 'services/focus_timer_notification_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
@@ -1775,6 +1776,21 @@ void main() async {
   void pushBrandStringsToNotifiers() {
     reminderScheduler.setStrings(themeProvider.brand.strings);
     notificationService.setStrings(themeProvider.brand.strings);
+    // 专注计时持续通知：品牌文案 + 当前主题主色；切主题或语言都会走到这里，
+    // 运行中的通知立即跟随，不需要等下一次计时事件。
+    final brand = themeProvider.brand;
+    FocusTimerNotificationService.instance.setBrand(
+      FocusTimerNotificationBrand(
+        appTitle: brand.strings.appTitle,
+        focusLabel: brand.strings.focusStateFocus,
+        shortBreakLabel: brand.strings.focusStateShortBreak,
+        longBreakLabel: brand.strings.focusStateLongBreak,
+        pausedLabel: I18n.tr('focus.timer.notif.paused'),
+        noTaskLabel: I18n.tr('focus.timer.notif.no_task'),
+        channelName: I18n.tr('focus.timer.notif.channel_name'),
+        accentColorArgb: brand.theme.colorScheme.primary.toARGB32(),
+      ),
+    );
   }
 
   pushBrandStringsToNotifiers();

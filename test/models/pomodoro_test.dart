@@ -138,4 +138,42 @@ void main() {
     expect(cleared.taskName, '写总结');
     expect(cleared.taskLabel, '写总结');
   });
+
+  test(
+    'focus penalty keeps appPackage and adds optional appLabel compatibly',
+    () {
+      // 旧记录只有包名：展示层必须回退到包名，且不会因为缺少 appLabel 读失败。
+      final legacy = PomodoroFocusPenalty.fromJson(<String, dynamic>{
+        'id': 'penalty-legacy',
+        'occurredAt': DateTime.utc(2026, 1, 1, 9).toIso8601String(),
+        'reason': FocusPenaltyReason.distractingApp.key,
+        'affectedSeconds': 300,
+        'appPackage': 'com.tencent.mm',
+      });
+      expect(legacy.appPackage, 'com.tencent.mm');
+      expect(legacy.appLabel, isNull);
+      expect(legacy.displayAppLabel, 'com.tencent.mm');
+      expect(legacy.displayAppPackage, 'com.tencent.mm');
+
+      final labeled = PomodoroFocusPenalty(
+        id: 'penalty-new',
+        occurredAt: DateTime.utc(2026, 1, 1, 9),
+        reason: FocusPenaltyReason.distractingApp,
+        affectedSeconds: 120,
+        appPackage: 'com.tencent.mm',
+        appLabel: '微信',
+      );
+      final json = labeled.toJson();
+      expect(json['appPackage'], 'com.tencent.mm');
+      expect(json['appLabel'], '微信');
+      // 云同步/历史记录依赖的 reasonLabel 契约不变。
+      expect(json['reasonLabel'], FocusPenaltyReason.distractingApp.label);
+      expect(labeled.displayAppLabel, '微信');
+      expect(labeled.displayAppPackage, 'com.tencent.mm');
+
+      final roundTrip = PomodoroFocusPenalty.fromJson(json);
+      expect(roundTrip.appLabel, '微信');
+      expect(roundTrip.displayAppLabel, '微信');
+    },
+  );
 }

@@ -1,0 +1,125 @@
+{
+  "recorded_at_utc": "2026-11-04T17:16:56.905871+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "base_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "purpose": "Final source snapshot after fixing long-list save-action visibility",
+  "source_manifest": "source-manifest-v2.json",
+  "source_manifest_sha256": "b0acc98a8434f575324935dc4a402302a608dcdff6a84868317c653dbfc49942",
+  "files_checked": 1266,
+  "source_mismatches": [],
+  "delta_from_previous_snapshot": [
+    "docs/android-focus-updates.md",
+    "lib/widgets/focus_distraction_app_picker.dart",
+    "test/widgets/focus_distraction_app_picker_test.dart"
+  ],
+  "checks": [
+    {
+      "log": "green-01-picker-full.log",
+      "exit_code": 0,
+      "passed": 12
+    },
+    {
+      "log": "green-02-analyze.log",
+      "exit_code": 0,
+      "passed": null
+    },
+    {
+      "log": "green-03-v2-build-apk.log",
+      "exit_code": 0,
+      "passed": null
+    },
+    {
+      "log": "green-04-full-flutter-test.log",
+      "exit_code": 0,
+      "passed": 2843
+    },
+    {
+      "log": "green-05-original-build-apk.log",
+      "exit_code": 0,
+      "passed": null
+    }
+  ],
+  "picker_red_regression": {
+    "log": "red.log",
+    "exit_code": 1,
+    "passed": 0,
+    "failed": 3,
+    "reason": "Pre-fix Done button is not hit-testable in each long-list scenario"
+  },
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0
+    },
+    "native_junit": {
+      "passed": 42,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "backend_android_files_compared": 209,
+    "hashes_unchanged": true,
+    "evidence": "build-verification.json and verification-logs.tar.gz",
+    "note": "These checks passed before the picker-only layout delta. Backend and native sources were not changed or retested for that delta."
+  },
+  "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "pubspec_lock_unchanged_after_enforce_lockfile": true,
+  "apks": [
+    {
+      "role": "standard-debug-apk",
+      "source_repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+      "absolute_path": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 332952363,
+      "size_mib": 317.53,
+      "sha256": "951ddabe1706657bef9cdc3c70144274b29eb013af4be04a90598be479b3e107",
+      "aapt_package_name": "com.duoyi.duoyi",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "min_sdk": 24,
+      "target_sdk": 36,
+      "compile_sdk": 36,
+      "native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "build_command": "scripts/flutter_with_config.py build apk --debug --target-platform android-arm64 --no-pub",
+      "fixture_define_present": false,
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-picker-fix/green-05-original-build-apk.log"
+    },
+    {
+      "role": "isolated-e2e-apk",
+      "source_snapshot": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v2",
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v2-source-manifest.json",
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v2/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 160481112,
+      "size_mib": 153.05,
+      "sha256": "3e1a8481f12072982fef8e65b38bf1a32f229aefb8aaf04d98ed1598a4c458d0",
+      "aapt_package_name": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "min_sdk": 24,
+      "target_sdk": 36,
+      "compile_sdk": 36,
+      "native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "build_command": "scripts/flutter_with_config.py build apk --debug --target-platform android-arm64 --no-pub --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "fixture_server_url": "http://127.0.0.1:18763",
+      "fixture_define_verified_in_kernel_blob": true,
+      "toolchain": {
+        "flutter": "3.44.1",
+        "jdk": "17",
+        "gradle_user_home": "/Users/sky/Library/Developer/duoyi/gradle"
+      },
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-picker-fix/green-03-v2-build-apk.log"
+    }
+  ],
+  "logs_archive": "verification-v2-logs.tar.gz",
+  "logs_archive_sha256": "b01f3b44ef374c92f3398c6bc01459c00195fc8cb48c5bd0dad34425da13ca02",
+  "device_claim_boundary": "Actual interactions are recorded separately; these automated checks do not prove strict bounce, notification timing, background transfer or production upgrades."
+}

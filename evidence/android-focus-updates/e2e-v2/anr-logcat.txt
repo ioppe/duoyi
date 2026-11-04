@@ -1,0 +1,12 @@
+11-04 12:09:44.720   571  4451 E ActivityManager: Reason: Process ProcessRecord{ed8a07a 4352:com.duoyi.duoyi.focuscheck/u0a208} failed to complete startup
+11-04 12:10:03.059  4352  4501 D FlutterJNI: Beginning load of flutter...
+11-04 12:10:04.157  4352  4501 D nativeloader: Load /data/app/~~U9AaX1X1ybhpNwzrZ3Bd-w==/com.duoyi.duoyi.focuscheck-OVgDPSs-_UreIFyWEQT65w==/base.apk!/lib/arm64-v8a/libflutter.so using ns clns-7 from class loader (caller=/data/app/~~U9AaX1X1ybhpNwzrZ3Bd-w==/com.duoyi.duoyi.focuscheck-OVgDPSs-_UreIFyWEQT65w==/base.apk!classes20.dex): ok
+11-04 12:10:04.421  4352  4501 D FlutterJNI: flutter (null) was loaded normally!
+11-04 12:10:20.967  4352  4502 I ResourceExtractor: Extracted baseline resource assets/flutter_assets/kernel_blob.bin
+11-04 12:10:20.980  4352  4502 I ResourceExtractor: Extracted baseline resource assets/flutter_assets/vm_snapshot_data
+11-04 12:10:22.383  4352  4502 I ResourceExtractor: Extracted baseline resource assets/flutter_assets/isolate_snapshot_data
+11-04 12:10:24.396  4352  4352 W uoyi.focuscheck: Verification of io.flutter.plugin.common.BinaryMessenger$TaskQueue io.flutter.plugin.common.BinaryMessenger.makeBackgroundTaskQueue() took 103.695ms (96.44 bytecodes/s) (2320B approximate peak alloc)
+11-04 12:10:30.304  4352  4561 I flutter : The Dart VM service is listening on http://127.0.0.1:43985/ZdLURW_vT7I=/
+11-04 12:10:30.315  4352  4555 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+11-04 12:10:35.907  4352  4352 W uoyi.focuscheck: Verification of void com.dexterous.flutterlocalnotifications.FlutterLocalNotificationsPlugin.applyGrouping(com.dexterous.flutterlocalnotifications.models.NotificationDetails, androidx.core.app.NotificationCompat$Builder) took 224.667ms (191.39 bytecodes/s) (3176B approximate peak alloc)
+11-04 12:10:40.128  4352  4352 D FlutterRenderer: Width is zero. 0,0

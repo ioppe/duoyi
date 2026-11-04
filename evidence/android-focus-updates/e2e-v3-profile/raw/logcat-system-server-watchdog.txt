@@ -1,0 +1,45 @@
+11-04 13:46:26.365 10478 10504 I system_server: libdebuggerd_client: done dumping process 472
+11-04 13:46:26.381 10478 10504 I system_server: libdebuggerd_client: started dumping process 409
+11-04 13:46:26.424 10478 10504 I system_server: libdebuggerd_client: done dumping process 409
+11-04 13:46:26.447 10478 10504 I system_server: libdebuggerd_client: started dumping process 473
+11-04 13:46:26.525 10478 10504 I system_server: libdebuggerd_client: done dumping process 473
+11-04 13:46:26.542 10478 10504 I system_server: libdebuggerd_client: started dumping process 410
+11-04 13:46:26.569 10478 10504 I system_server: libdebuggerd_client: done dumping process 410
+11-04 13:46:26.577 10478 10504 I system_server: libdebuggerd_client: started dumping process 411
+11-04 13:46:26.608 10478 10504 I system_server: libdebuggerd_client: done dumping process 411
+11-04 13:46:26.627 10478 10504 I system_server: libdebuggerd_client: started dumping process 155
+11-04 13:46:26.682 10478 10504 I system_server: libdebuggerd_client: done dumping process 155
+11-04 13:46:26.706 10478 10504 I system_server: libdebuggerd_client: started dumping process 478
+11-04 13:46:27.478 10478 10504 I system_server: libdebuggerd_client: done dumping process 478
+11-04 13:46:27.547 10478 10504 I system_server: libdebuggerd_client: started dumping process 418
+11-04 13:46:27.758 10478 10504 I system_server: libdebuggerd_client: done dumping process 418
+11-04 13:46:27.802 10478 10504 I system_server: libdebuggerd_client: started dumping process 174
+11-04 13:46:27.929 10478 10504 I system_server: libdebuggerd_client: done dumping process 174
+11-04 13:46:28.013 10478 10504 I system_server: libdebuggerd_client: started dumping process 431
+11-04 13:46:28.269 10478 10504 I system_server: libdebuggerd_client: done dumping process 431
+11-04 13:46:28.315 10478 10504 I system_server: libdebuggerd_client: started dumping process 10415
+11-04 13:46:28.547 10478 10504 I system_server: libdebuggerd_client: done dumping process 10415
+11-04 13:46:28.614 10478 10504 I system_server: libdebuggerd_client: started dumping process 10416
+11-04 13:46:28.934 10478 10504 I system_server: libdebuggerd_client: done dumping process 10416
+11-04 13:46:28.981 10478 10504 I system_server: libdebuggerd_client: started dumping process 10417
+11-04 13:46:29.031 10478 10504 I system_server: libdebuggerd_client: done dumping process 10417
+11-04 13:46:29.049 10478 10504 I system_server: libdebuggerd_client: started dumping process 10418
+11-04 13:46:29.165 10478 10504 I system_server: libdebuggerd_client: done dumping process 10418
+11-04 13:46:29.214 10478 10504 I system_server: libdebuggerd_client: started dumping process 10420
+11-04 13:46:29.304 10478 10504 I system_server: libdebuggerd_client: done dumping process 10420
+11-04 13:46:29.329 10478 10504 I system_server: libdebuggerd_client: started dumping process 372
+11-04 13:46:29.464 10478 10504 I system_server: libdebuggerd_client: done dumping process 372
+11-04 13:46:29.515 10478 10504 I system_server: libdebuggerd_client: started dumping process 759
+11-04 13:46:30.016   155   155 I servicemanager: Caller(pid=10507,uid=0,sid=u:r:apexd:s0) Unregistering apexservice
+11-04 13:46:30.060 10478 10504 I system_server: libdebuggerd_client: done dumping process 759
+11-04 13:46:30.038     1     1 I init    : Service 'apexd' (pid 10507) exited with status 0 oneshot service took 19.834999 seconds in background
+11-04 13:46:30.038     1     1 I init    : Sending signal 9 to service 'apexd' (pid 10507) process group...
+11-04 13:46:30.197 10478 10504 I system_server: libdebuggerd_client: started dumping process 183
+11-04 13:46:30.611 10478 10504 I system_server: libdebuggerd_client: done dumping process 183
+11-04 13:46:30.870 10478 10504 I system_server: libdebuggerd_client: started dumping process 184
+11-04 13:46:31.056 10478 10504 I system_server: libdebuggerd_client: done dumping process 184
+11-04 13:46:31.128 10478 10504 I system_server: libdebuggerd_client: started dumping process 378
+11-04 13:46:31.239 10478 10504 I system_server: libdebuggerd_client: done dumping process 378
+11-04 13:46:31.363 10478 10504 I system_server: libdebuggerd_client: started dumping process 379
+11-04 13:46:31.470 10478 10504 I system_server: libdebuggerd_client: done dumping process 379
+11-04 13:46:36.990 10715 10715 W cmd     : Can't find service package
