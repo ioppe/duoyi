@@ -987,6 +987,8 @@ class MineScreen extends StatelessWidget {
             capped(
               _TileGroup(
                 columns: tileColumns,
+                // 主分组（应用与记录）卡片：几何验收按此 key 取卡片边界。
+                cardKey: const ValueKey('mine_menu_card'),
                 title: I18n.tr('mine.menu.title'),
                 children: [
                   _Tile(
@@ -2280,11 +2282,23 @@ class _TileGroup extends StatelessWidget {
   /// 瓦片列数：1 = 原单列通栏（窄屏），2 = 宽屏两列网格。
   final int columns;
 
+  /// 分组卡片本体 key：便于按卡片几何验收内容左右边界。
+  final Key? cardKey;
+
   const _TileGroup({
     required this.title,
     required this.children,
     this.columns = 1,
+    this.cardKey,
   });
+
+  /// 卡片内水平留白：图标与尾部控件到卡片边缘至少 16（卡片自身不再叠加
+  /// 水平 padding，避免双层内边距把 320 宽的文字列挤窄）。
+  static const double tileInset = DesignTokens.spaceLg;
+
+  /// 瓦片图标列宽与图标到文字的间距，与 [_Tile] 内部保持一致。
+  static const double tileIconSize = 28;
+  static const double tileIconGap = 10;
 
   @override
   Widget build(BuildContext context) {
@@ -2308,7 +2322,8 @@ class _TileGroup extends StatelessWidget {
             ),
           ),
           AppSurfaceCard(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            key: cardKey,
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.spaceXs),
             child: columns > 1
                 ? LayoutBuilder(
                     builder: (context, constraints) {
@@ -2345,7 +2360,9 @@ class _TileGroup extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.5,
-              indent: 44,
+              // 左侧与标题文字对齐，右侧与卡片内边距对齐，两侧都留白。
+              indent: tileInset + tileIconSize + tileIconGap,
+              endIndent: tileInset,
               color: cs.outlineVariant.withValues(alpha: 0.14),
             ),
           children[i],
@@ -2443,11 +2460,16 @@ class _Tile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(
+            _TileGroup.tileInset,
+            10,
+            _TileGroup.tileInset,
+            10,
+          ),
           child: Row(
             children: [
               SizedBox.square(
-                dimension: 28,
+                dimension: _TileGroup.tileIconSize,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: isDark ? 0.18 : 0.12),
@@ -2456,7 +2478,7 @@ class _Tile extends StatelessWidget {
                   child: Icon(icon, color: color, size: 16),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: _TileGroup.tileIconGap),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

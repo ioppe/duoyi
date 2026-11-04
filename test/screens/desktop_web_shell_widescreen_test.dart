@@ -199,7 +199,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('1280x800 宽屏习惯今日打卡走双列懒构建网格', (tester) async {
+  testWidgets('1280x800 宽屏习惯打卡保持双列懒构建且卡片自然增高', (tester) async {
     final habitProvider = HabitProvider();
     for (final id in ['a', 'b', 'c']) {
       await habitProvider.addHabit(
@@ -221,7 +221,18 @@ void main() {
       find.byKey(const ValueKey('habit_today_checkin_sliver')),
       findsOneWidget,
     );
-    expect(find.byType(SliverGrid), findsOneWidget);
+    final first = tester.getRect(
+      find.byKey(const ValueKey('habit_checkin_card_a')),
+    );
+    final second = tester.getRect(
+      find.byKey(const ValueKey('habit_checkin_card_b')),
+    );
+    expect(second.left, greaterThanOrEqualTo(first.right));
+    expect(second.center.dx, greaterThan(first.center.dx));
+    expect(second.top, closeTo(first.top, 1));
+    expect(second.width, closeTo(first.width, 1));
+    expect(first.height, greaterThanOrEqualTo(44));
+    expect(find.byType(SliverList), findsWidgets);
     expect(find.byKey(const ValueKey('habit_checkin_card_a')), findsOneWidget);
     expect(find.byKey(const ValueKey('habit_checkin_card_c')), findsOneWidget);
     expect(tester.takeException(), isNull);

@@ -1969,6 +1969,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get habitRecordsMakeUpOnce => '补一次';
 
   @override
+  String get habitCalendarTitle => '补卡日历';
+
+  @override
+  String get habitCalendarHint => '展开日历，选择日期补记';
+
+  @override
+  String get habitCalendarExpandedHint => '选择日期查看记录或补卡';
+
+  @override
+  String get habitCalendarExpand => '展开日历';
+
+  @override
+  String get habitCalendarCollapse => '收起日历';
+
+  @override
+  String get habitCalendarPreviousMonth => '上个月';
+
+  @override
+  String get habitCalendarNextMonth => '下个月';
+
+  @override
+  String get habitDayDetails => '当日详情';
+
+  @override
+  String get habitDayPending => '未达标';
+
+  @override
+  String get habitDayRecorded => '已记录';
+
+  @override
+  String get habitDayFuture => '未来日期';
+
+  @override
+  String get habitDayCount => '当日记录';
+
+  @override
+  String get habitDayTarget => '每日目标';
+
+  @override
+  String get habitInsightTitle => '智能习惯洞察';
+
+  @override
   String get habitTrendTitle => '习惯趋势';
 
   @override

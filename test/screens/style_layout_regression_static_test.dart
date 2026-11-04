@@ -1070,9 +1070,12 @@ void main() {
     expect(moreApps, contains('Expanded('));
 
     final habit = File('lib/screens/habit_screen.dart').readAsStringSync();
-    expect(habit, contains('const double _habitCheckinCardBodyHeight = 38'));
+    expect(
+      habit,
+      isNot(contains('const double _habitCheckinCardBodyHeight = 38')),
+    );
     expect(habit, isNot(contains("label: const Text('还原')")));
-    expect(habit, contains('fixedSize: const Size(_habitUndoButtonWidth, 26)'));
+    expect(habit, contains('DesignTokens.controlMinHeight'));
   });
 
   test('小组件页自身有背景且预览不会在宽屏左侧缩成窄列', () {
@@ -1112,14 +1115,17 @@ void main() {
     expect(habit, contains('final visibleHabits = activeHabits'));
     expect(habit, contains('_HabitStatusFilter.pending'));
     expect(habit, contains('_HabitTodaySummaryCard('));
-    expect(habit, contains('const double _habitCheckinCardBodyHeight = 38'));
-    expect(habit, contains('const double _habitTitleStatusHeight = 15'));
-    expect(habit, contains('const double _habitUndoButtonWidth = 28'));
-    expect(habit, contains('const double _habitCheckinButtonWidth = 52'));
-    expect(habit, contains('minimumSize: const Size('));
-    expect(habit, contains('_habitCheckinButtonWidth'));
-    expect(habit, contains('fixedSize: const Size(_habitUndoButtonWidth, 26)'));
-    expect(habit, contains('const double _habitActionRailWidth'));
+    expect(
+      habit,
+      isNot(contains('const double _habitCheckinCardBodyHeight = 38')),
+    );
+    expect(habit, isNot(contains('const double _habitTitleStatusHeight = 15')));
+    expect(habit, contains('DesignTokens.controlMinHeight'));
+    expect(habit, contains('DesignTokens.fontSizeBody'));
+    expect(
+      habit,
+      isNot(contains('fixedSize: const Size(_habitUndoButtonWidth, 26)')),
+    );
     expect(habit, contains("key: const ValueKey('habit-undo-inline-button')"));
     expect(habit, contains('IconButton.styleFrom('));
     expect(habit, isNot(contains("label: const Text('还原')")));

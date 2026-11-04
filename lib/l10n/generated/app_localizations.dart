@@ -3968,6 +3968,90 @@ abstract class AppLocalizations {
   /// **'补一次'**
   String get habitRecordsMakeUpOnce;
 
+  /// No description provided for @habitCalendarTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'补卡日历'**
+  String get habitCalendarTitle;
+
+  /// No description provided for @habitCalendarHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开日历，选择日期补记'**
+  String get habitCalendarHint;
+
+  /// No description provided for @habitCalendarExpandedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择日期查看记录或补卡'**
+  String get habitCalendarExpandedHint;
+
+  /// No description provided for @habitCalendarExpand.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开日历'**
+  String get habitCalendarExpand;
+
+  /// No description provided for @habitCalendarCollapse.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起日历'**
+  String get habitCalendarCollapse;
+
+  /// No description provided for @habitCalendarPreviousMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'上个月'**
+  String get habitCalendarPreviousMonth;
+
+  /// No description provided for @habitCalendarNextMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'下个月'**
+  String get habitCalendarNextMonth;
+
+  /// No description provided for @habitDayDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'当日详情'**
+  String get habitDayDetails;
+
+  /// No description provided for @habitDayPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'未达标'**
+  String get habitDayPending;
+
+  /// No description provided for @habitDayRecorded.
+  ///
+  /// In zh, this message translates to:
+  /// **'已记录'**
+  String get habitDayRecorded;
+
+  /// No description provided for @habitDayFuture.
+  ///
+  /// In zh, this message translates to:
+  /// **'未来日期'**
+  String get habitDayFuture;
+
+  /// No description provided for @habitDayCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'当日记录'**
+  String get habitDayCount;
+
+  /// No description provided for @habitDayTarget.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日目标'**
+  String get habitDayTarget;
+
+  /// No description provided for @habitInsightTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能习惯洞察'**
+  String get habitInsightTitle;
+
   /// No description provided for @habitTrendTitle.
   ///
   /// In zh, this message translates to:

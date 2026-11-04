@@ -164,7 +164,12 @@ void main() {
       expect(mine, contains('class _Tile'));
       expect(mine, contains('AppSurfaceCard('));
       expect(mine, contains('Divider('));
-      expect(mine, contains('indent: 44'));
+      expect(
+        mine,
+        contains('static const double tileInset = DesignTokens.spaceLg;'),
+      );
+      expect(mine, contains('indent: tileInset + tileIconSize + tileIconGap'));
+      expect(mine, contains('endIndent: tileInset'));
       expect(
         mine,
         contains(
