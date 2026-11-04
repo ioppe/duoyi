@@ -234,7 +234,7 @@ def signed_entitlements(app: Path) -> dict:
     explicitly instead of being ignored, and a real signing error is surfaced.
     """
     result = run(
-        [CODESIGN, "-d", "--entitlements", ":-", str(app)],
+        [CODESIGN, "-d", "--entitlements", ":-", str(app.resolve())],
         cwd=tempfile.gettempdir(),
     )
     parsed = _plist_from_output(result.stdout)

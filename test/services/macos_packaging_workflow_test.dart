@@ -275,6 +275,33 @@ void main() {
   );
 
   test(
+    'ad-hoc prepare and verification accept a relative application path',
+    () async {
+      final app = await _buildAppFixture(['arm64', 'x86_64']);
+      final relative = await Process.run('python3', <String>[
+        '-B',
+        '-c',
+        'import os, sys; print(os.path.relpath(sys.argv[1]))',
+        app.path,
+      ]).timeout(const Duration(seconds: 30));
+      expect(relative.exitCode, 0, reason: '${relative.stderr}');
+      final path = (relative.stdout as String).trim();
+      expect(path, isNot(startsWith('/')));
+      for (final command in <String>['prepare', 'verify']) {
+        final result = await _runAdhocPackage(<String>[command, '--app', path]);
+        expect(
+          result.exitCode,
+          0,
+          reason:
+              '$command must retain relative path resolution when codesign '
+              'runs from a temporary directory: ${result.stdout}\n${result.stderr}',
+        );
+      }
+    },
+    skip: !Platform.isMacOS,
+  );
+
+  test(
     'packaging rejects team downgrade and surfaces cleanup failures',
     () async {
       final result = await Process.run(
