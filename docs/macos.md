@@ -80,6 +80,65 @@ macOS 作业在分析与回归通过后运行，使用完整 Xcode 的 `macos-15
 下载入口：日常构建进入 **Actions → build → 对应运行 → Artifacts → duoyi-macos-universal-unsigned**；单独 macOS 流程也上传相同产物名。正式标签构建成功后，可从对应 **Releases** 页面直接下载 `.dmg`。DMG 内包含多仪应用与 Applications 快捷入口，拖入 Applications 即可安装。
 - macOS 主窗口顶部标题栏也跟随当前 Flutter 主题背景色和文字色更新；切换默认、re0、深色等主题时不需要重启窗口，交通灯按钮与窗口拖动仍由 AppKit 原生管理。
 
+## ad-hoc 发行签名与钥匙串模式
+
+未配置 Apple 开发者团队时，Xcode 以 ad-hoc（`-`，无 TeamIdentifier）签名 `.app`。若同时保留
+`keychain-access-groups`（含 `$(AppIdentifierPrefix)`）等仅团队签名可用的受限 entitlement，
+macOS 27 的 amfid 会在启动阶段以 Code=-424 拒绝执行；`codesign --verify --deep --strict`
+却仍能通过，因此「签名校验通过」不能当作「应用可启动」。最初的本机诊断只移除了该 group，
+仍保留 `get-task-allow`，确认完整 Flutter 应用可启动、建窗并保持存活；修复后的封装检查
+进一步要求恰好 3 项发行权限，验证实际 ZIP 应用启动以及 DMG 的签名与身份。同一 ad-hoc
+无团队环境里，Data Protection Keychain 写入返回 `errSecMissingEntitlement (-34018)`，
+classic login keychain 的 write/read/delete 均返回 0。
+
+因此存在两种签名与钥匙串模式，互不改写：
+
+- **现有开发者签名配置**：仓库未固定 `DEVELOPMENT_TEAM`，只有开发者自行配置团队时
+  才会产生团队签名。`macos/Runner/Release.entitlements`、`DebugProfile.entitlements`、
+  `macos/Runner.xcodeproj/project.pbxproj` 与 Data Protection Keychain 默认值
+  （`useDataProtectionKeyChain: true`）保持原样；已配置团队的构建继续使用原有数据路径。
+- **ad-hoc 发行构建（CI）**：只使用 `macos/Runner/AdHocRelease.entitlements` 的 3 个 true
+  键，且构建时显式传入
+  `--dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false`。该开关编译期决定
+  `MacOsOptions(useDataProtectionKeyChain: …)`，让设备本机 AI 配置写入 classic login
+  keychain；配置仍只存 `flutter_secure_storage`，不进入 SharedPreferences、文件或备份，
+  也不做旧库迁移或删除。未传该参数时默认值为 `true`，行为与团队签名构建一致。
+
+发行包只重签外层 app（`codesign --force --sign - --timestamp=none --entitlements`），不使用
+`--deep`，不改动任何嵌套 framework、bundle 标识或容器。常用命令：
+
+```bash
+python3 scripts/macos_adhoc_package.py prepare --app "build/macos/Build/Products/Release/Duoyi.app"
+python3 scripts/macos_adhoc_package.py verify --app "build/macos/Build/Products/Release/Duoyi.app"
+python3 scripts/macos_adhoc_package.py check-packages \
+  --package-dir build/macos/packages --output "$RUNNER_TEMP/duoyi-macos-validation.json"
+```
+
+`verify` 在 `codesign --verify --deep --strict` 之后继续强制：ad-hoc 且无 TeamIdentifier、
+主程序同时含 `arm64` 与 `x86_64`、CFBundleIdentifier 仍为 `com.duoyi.duoyi`、可执行位存在、
+实际签名 entitlements 恰好是那 3 个 true 键（用 `codesign -d --entitlements :-` 读取 stdout XML，
+stderr 的提示不算错误；若某版本打印人类可读 `[Dict]` 则显式解析。不要用 `--xml`：macOS 15/27 会把它
+当成输出路径，在工作目录写出名为 `--xml` 的文件）。它也会拒绝「codesign 校验能过但带
+受限 group」的历史包。`prepare` 拒绝把带真实 TeamIdentifier 的应用降级为 ad-hoc。
+
+`check-packages` 在 `RUNNER_TEMP`（或 `--work-dir`）下的临时目录里用 `ditto` 解压真实 ZIP，
+校验其 app、用 `open -n -g` 启动并轮询
+`test/native/macos_application_smoke.swift`（`inspect`）确认 pid、`finishedLaunching`、至少
+1 个窗口与 ≥3 秒存活，结束时只按本次记录的精确 pid 结束该进程；随后 `hdiutil` 以
+`-readonly -nobrowse` 只读挂载自家 DMG，校验其中 app，并比对 ZIP/DMG 的标识、版本、架构与
+实际 3 个 entitlements 完全一致，最后只 detach 本次挂载；DMG 内副本按安装器习惯重命名为
+`多仪.app`，所以比对的是标识/版本/架构/entitlements，而不是目录名。它还会编译同一 Swift 程序，用全新
+UUID 的 bundle identifier 生成 sandbox fixture app，在 3 个独立进程里对 classic login
+keychain 执行 write/read/delete，验证跨进程持久化，并在 finally 删除本次临时 item；不读取
+或覆盖真实 AI 配置与用户钥匙串条目，输出只含状态码与 `roundTripMatched`。
+
+以上都是「能否启动 + 窗口 + 计时存活 + ad-hoc 存储可用」的打包守卫，**不是**全功能回归，
+也不代表 Gatekeeper/公证通过。Developer ID 签名与 Apple 公证仍未配置；首次写入 classic
+keychain 或系统首次运行未公证应用时，macOS 可能显示授权/「无法验证开发者」提示，需由用户
+自行确认。`.github/workflows/build-macos.yml` 在上传安装包前执行 `check-packages`，smoke 或
+keychain 失败会让作业失败，验证报告以独立 artifact `duoyi-macos-validation` 上传，不混入
+`duoyi-macos-universal-unsigned` 安装包。
+
 ## 实现边界
 
 - `lib/services/pomodoro_floating_window_service.dart` 同时订阅 Provider 状态和 `timerTicks`。普通每秒 tick 不触发 Provider 的常规通知，因此两种监听均不可省略。
