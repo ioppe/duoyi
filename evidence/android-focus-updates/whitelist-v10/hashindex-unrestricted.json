@@ -1,0 +1,46 @@
+{
+  "evidence_dir": "evidence/android-focus-updates/whitelist-v10",
+  "run": "battery-unrestricted control",
+  "privacy_revision": {
+    "scope": "Only unrelated pre-run metadata removed and one generated action-summary trailing space normalized; all measured outcomes unchanged.",
+    "original_report_sha256": "8edbd59c401efa310ca0c89b55cff38b3230df9edf22fe599dac98f2a5ffdabc",
+    "original_timeline_sha256": "0a75a23d2edf759c7d25f524605e8d2f9b3acfb29eb2fcc872ef2ebec43684c1",
+    "original_index_sha256": "328b13897d50860c275086caa5888518fd00983307195552683a12a777c1af2b",
+    "originals_storage": "Private session scratch focus-v10-evidence-originals"
+  },
+  "files": [
+    {
+      "path": "battery-unrestricted.json",
+      "sha256": "59b14ab7a40547de98cfa1ccb9e8648ce61f3912cf8bd674352f8fc2801d8e38",
+      "bytes": 17358
+    },
+    {
+      "path": "own-service-timeline-unrestricted.txt",
+      "sha256": "069cb441eead7071a8ea1c47e61d2425d757ec373dffcee1cdb8949a4dd0e2bf",
+      "bytes": 6797
+    }
+  ],
+  "apk": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "size_bytes": 105708301,
+    "versionCode": 140023
+  },
+  "previous_evidence_files_untouched": [
+    "active-first.json",
+    "own-timeline.txt",
+    "validhashindex.json"
+  ],
+  "kernel_summary": {
+    "old": {
+      "cgroup_freeze": "1",
+      "events": "frozen 1"
+    },
+    "new": {
+      "cgroup_freeze": "0",
+      "events": "frozen 0"
+    }
+  },
+  "raw_private_copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-device/battery-unrestricted/raw.json",
+  "verdict": "PASS (A,B,C,F blocked; D QQ and E WeChat allowed)"
+}

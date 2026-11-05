@@ -1,0 +1,127 @@
+{
+  "evidence": "whitelist-v10 PAUSED control (same APK, no install/build/code/git)",
+  "device": {
+    "serial": "2df52c4c"
+  },
+  "apk": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "unchanged": true
+  },
+  "preconditions": {
+    "keyguard_showing": false,
+    "wakefulness": "Awake",
+    "keyguard_read_at": "2026-11-05T21:16:46.852+08:00"
+  },
+  "paused_gate": {
+    "whitelist_qq_wechat": true,
+    "selection_whitelist": true,
+    "strict_true": true,
+    "monitor_true": true,
+    "timer_not_running": true,
+    "widget_control_not_running": true,
+    "native_enabled_false": true
+  },
+  "own_prefs_summary": {
+    "strictFocusMode": true,
+    "monitorDistractingApps": true,
+    "distractingAppPackages": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "distractingAppSelectionMode": "whitelist",
+    "config_updatedAt": "2026-11-05T21:00:05.927592",
+    "running_snapshot_present": false,
+    "native_enabled": "false",
+    "native_expires_at": "0",
+    "native_last_blocked": {
+      "package": "com.eg.android.AlipayGphone",
+      "at": "2026-11-05T21:13:49.460+08:00"
+    }
+  },
+  "session_identity": {
+    "sessionId": "focus-1793880540394302",
+    "revision": 2,
+    "state": "paused",
+    "paused_remainingSeconds": 1018,
+    "paused_totalSeconds": 1500,
+    "account_task": null
+  },
+  "case": {
+    "purpose": "paused control — a non-whitelisted app must NOT be pulled back",
+    "component": "com.eg.android.AlipayGphone/.AlipayLogin",
+    "am_start": {
+      "cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.eg.android.AlipayGphone/.AlipayLogin",
+      "exit": 0,
+      "phone_wall": "2026-11-05T21:16:47.364+08:00",
+      "stderr": "Warning: Activity not started, its current task has been brought to the front"
+    },
+    "t0_phone_wall": "2026-11-05T21:16:47.214+08:00",
+    "case_end_phone_wall": "2026-11-05T21:16:52.514+08:00",
+    "obs_plus2": {
+      "offset_s": 2.198,
+      "phone_wall": "2026-11-05T21:16:49.276+08:00",
+      "top_resumed": "com.eg.android.AlipayGphone/.AlipayLogin"
+    },
+    "obs_plus5": {
+      "offset_s": 5.246,
+      "phone_wall": "2026-11-05T21:16:52.300+08:00",
+      "top_resumed": "com.eg.android.AlipayGphone/.AlipayLogin",
+      "window_focus": [
+        "mCurrentFocus=Window{14a3ce6 u0 com.eg.android.AlipayGphone/com.eg.android.AlipayGphone.AlipayLogin}",
+        "mFocusedApp=ActivityRecord{55586187 u0 com.eg.android.AlipayGphone/.AlipayLogin t11127}"
+      ]
+    },
+    "app_still_foreground_at_plus5": true,
+    "expected_foreground": "com.eg.android.AlipayGphone/.AlipayLogin",
+    "matches_expected": true
+  },
+  "own_request_log_in_window": {
+    "count": 0,
+    "lines": [],
+    "note": "zero DuoyiFocusBlocker lines inside the launch window => no block attempt/request while paused"
+  },
+  "focus_status_query_timing": {
+    "lines_found": 0
+  },
+  "kernel_cgroup": {
+    "path": "0::/apps/uid_10565/pid_11828",
+    "before": {
+      "freeze": "0",
+      "events": "populated 1 / frozen 0",
+      "schedstat": "85628547459 22859353264 2890189"
+    },
+    "after": {
+      "freeze": "0",
+      "events": "populated 1 / frozen 0",
+      "schedstat": "85661789034 22919864717 2890392"
+    },
+    "not_frozen_throughout": true
+  },
+  "return_navigation": {
+    "cmd": "am start MAIN/LAUNCHER -n com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity",
+    "navigation_only_not_acceptance": true,
+    "phone_wall": "2026-11-05T21:16:54.512+08:00",
+    "verified_top_resumed": "com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity",
+    "window_focus": [
+      "mCurrentFocus=Window{1d1617f u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}",
+      "mFocusedApp=ActivityRecord{185352628 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t11129}"
+    ]
+  },
+  "left_state": {
+    "timer": "PAUSED (isRunning false / widget_control state=paused, remainingSeconds 1018)",
+    "native_blocker": "enabled=false",
+    "whitelist": "[com.tencent.mm, com.tencent.mobileqq] preserved",
+    "grants": "unchanged (GET_USAGE_STATS=allow, SYSTEM_ALERT_WINDOW=default; no new permission reads/writes)",
+    "reset_or_off": "none — left for user CONTINUE"
+  },
+  "verdict": {
+    "paused_phase": "PASS",
+    "scope_note": "pause validated only; does not claim pause/continue is complete — resume phase follows"
+  },
+  "untouched": {
+    "protectformal142023": "untouched",
+    "layout140023": "untouched",
+    "globals": "untouched"
+  }
+}

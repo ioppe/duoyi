@@ -1,0 +1,151 @@
+{
+  "source_head": "5473be8de89459b603c92a970cbbc42d2b1a5361",
+  "source_manifest": "source-manifest.json",
+  "source_manifest_sha256": "0be080071164d7ccf6e37765295fc32515885f0188c1db9e237916dae45a5b12",
+  "source_files": 1274,
+  "executable_source_drift": [],
+  "post_snapshot_documentation_changes": [
+    {
+      "path": "docs/android-focus-updates.md",
+      "snapshot_sha256": "dcaba71fc0ed88e0560f01a3ce3eb8b2fef63a1b72daa6d3ea85f9ca12571353",
+      "current_sha256": "dd5471e447c812c36946eb1a42f3c5f0858bf7ecaf1f133508963b5170aca87c",
+      "reason": "Post-build documentation of directly observed OEM kernel freezing and user-controlled unrestricted battery policy; executable source unchanged."
+    }
+  ],
+  "copy_identity_differences": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/AndroidManifest.xml",
+    "android/app/src/main/res/values/strings.xml"
+  ],
+  "checks": {
+    "generated_utc": "2026-11-05T12:58:46Z",
+    "candidate_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v10",
+    "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+    "source_head": "5473be8de89459b603c92a970cbbc42d2b1a5361",
+    "logdir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks",
+    "lock": {
+      "expected": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "actual": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "unchanged": true
+    },
+    "wrapper_scaffold": {
+      "copied": [
+        "android/gradlew",
+        "android/gradle/wrapper/gradle-wrapper.jar"
+      ],
+      "gradlew_sha256": "ec56c02543666d92d9ac5ae7fcc48f88ce4de0deb8b7f9b39928ca46f68c1b2b",
+      "jar_sha256": "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da",
+      "properties_sha256": "297c9e63b6fa6e7e8b221900fa1787c1a0e38869d8957da66389fd0f6b00f78e",
+      "properties_unchanged": true
+    },
+    "source_manifest_drift": {
+      "manifest_entries": 1274,
+      "copy_ok": 1271,
+      "copy_mismatch": 3,
+      "copy_mismatch_files": [
+        "android/app/build.gradle.kts",
+        "android/app/src/main/AndroidManifest.xml",
+        "android/app/src/main/res/values/strings.xml"
+      ],
+      "repo_drift": 0,
+      "repo_missing": 0,
+      "note": "3 mismatches are the declared identity_only_changes; lock identical in manifest/copy/repo"
+    },
+    "commands": [
+      {
+        "name": "flutter pub get --enforce-lockfile",
+        "exit": 0,
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks/01-pub-get.log",
+        "lock_after": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b"
+      },
+      {
+        "name": "flutter test --no-pub (4 files)",
+        "exit": 0,
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks/02-flutter-test.log",
+        "passed": 41,
+        "failed": 0,
+        "note": "MissingPluginException lines are expected test-host MethodChannel noise"
+      },
+      {
+        "name": "gradlew :app:testDebugUnitTest --console=plain --no-daemon",
+        "exit": 0,
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks/03-native-test.log",
+        "suites": 7,
+        "tests": 100,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "results_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v10/build/app/test-results/testDebugUnitTest"
+      },
+      {
+        "name": "flutter_with_config.py build apk --profile",
+        "exit": 0,
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks/04-profile-build.log",
+        "apk_sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+        "apk_size_bytes": 105708301
+      },
+      {
+        "name": "apksigner verify --print-certs (JDK17)",
+        "exit": 0,
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-checks/05-apk-verify.log",
+        "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3"
+      }
+    ],
+    "device_fixed": false,
+    "notes": [
+      "no source edits, no ADB, no git, no global settings",
+      "old snapshots/review APKs untouched"
+    ]
+  },
+  "native_actual": {
+    "tests": 100,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_xml_count": 7,
+  "flutter_targeted_passed": 41,
+  "apk": {
+    "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v10/build/app/outputs/flutter-apk/app-profile.apk",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "size_bytes": 105708301,
+    "package": "com.duoyi.duoyi.focuscheck",
+    "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "build_cmd": "python3 scripts/flutter_with_config.py build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+    "build_exit": 0,
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "apksigner": "JDK17 apksigner.jar verify --print-certs: OK, single signer (Android Debug)",
+    "manifest": {
+      "schemes": [
+        "duoyi-focus-check"
+      ],
+      "queries_intents": [
+        "MAIN/LAUNCHER",
+        "PROCESS_TEXT text/plain"
+      ],
+      "exported_false_components": 33,
+      "debuggable": true,
+      "exported_true_components": 40
+    }
+  },
+  "aa_actual": {
+    "eventTypes": "0x400020",
+    "canRetrieveWindowContent": false,
+    "evidence": "checks/aa-service-actual.txt"
+  },
+  "archive": "checks-logs.tar.gz",
+  "archive_sha256": "7abd2b16060ce02e71571a8aee77cde4436b6a9012af9245742da8e78b5838e3",
+  "review_apk": {
+    "path": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-focuscheck-v10-profile.apk",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "size_bytes": 105708301,
+    "note": "Independent validation profile APK only; generic v9 outputs retained unchanged. Not a production signed upgrade."
+  },
+  "verification_boundary": "Fresh relevant tests and one isolated profile build only. No full Flutter/analyze/backend/standard debug rerun. Actual device phases are separate records; battery policy control used this exact APK."
+}

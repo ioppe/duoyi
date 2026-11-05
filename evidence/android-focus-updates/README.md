@@ -4,7 +4,21 @@
 
 手机正式版为 `2.0.0 / 142023`，与本地源码及验证包 `2.0.0 / 140023` 是不同产物。设备写入仅限独立包 `com.duoyi.duoyi.focuscheck`；未用低 build 或不同签名覆盖正式应用，未卸载或清除其数据。标准 APK 使用 debug 签名，不能作为正式覆盖升级包。
 
-## 白名单拉回修复（v9 检查通过，真机未验收）
+## 当前 v10：支付宝与暂停后继续真机通过
+
+前次未验收检查点已保存为 `5473be8`。本次在同一小米设备、白名单仅 QQ/微信的独立验证包上完成所要求的两项修复验收，**以用户将该包省电策略设为“无限制”为必要条件**，不表示能绕过系统冻结或覆盖所有设备/长期省电场景。
+
+- [直接内核证据与用户设置记录](whitelist-v10/kernel-freeze-and-authorization.json)：失败时 ActivityManager 显示 `isFrozen=false`，但实际 `/sys/fs/cgroup/apps/uid_10565/pid_11828/cgroup.freeze=1`、`cgroup.events` 为 `frozen 1`，主线程运行计数不变，通知冻结在22:00。因此不能仅凭服务绑定和 ActivityManager 标志认定后台仍执行。
+- [同 APK 省电策略对照](whitelist-v10/battery-unrestricted.json)：不换 APK，用户通过真实系统 UI 将验证包设为无限制后，内核持续 `frozen 0`、计时递减；支付宝首次、重开、QQ后台停留后再开及微博全部在 +2s/+5s 返回多仪，QQ/微信放行。此前 [冻结时失败](whitelist-v10/active-first.json) 仍完整保留。
+- [暂停验收](whitelist-v10/paused.json)：真实按钮暂停后原生拦截停用，支付宝在 +2s/+5s 保持前台，没有拉回请求。
+- [继续验收](whitelist-v10/resumed.json)：真实按钮继续同一会话，session ID 不变、revision 2→3，恢复暂停剩余时间而非新建25分钟；支付宝首次/重开/QQ停留后再开和微博均拉回，QQ放行，通知持续递减且内核未冻结。
+- 代码修复另消除同步主线程系统查询风险：`getStatus/getForegroundApp` 使用独立后台快照、单查询合并、最多32等待者、销毁结束等待和丢弃迟到结果。它不改变名单语义、不以记录快照作为拉回依据；不能把省电对照的效果单独归因于这项代码改动。
+
+[v10 构建与来源](whitelist-v10/build.json)、[原始检查日志](whitelist-v10/checks-logs.tar.gz)：本次相关 Flutter **41通过**、原生 **100通过**（新增异步查询10项）、独立 Profile 构建及验签通过。1274项源码绑定，未重跑全量 Flutter/analyze/backend/标准 debug。构建后只补充了省电冻结文档，执行源码未变，差异已明确记录。旧 v9 两份通用输出仍保留，最新独立包另存为 [v10 验证 APK](../../build/app/outputs/flutter-apk/app-focuscheck-v10-profile.apk)，SHA256 `f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9`，105,708,301字节；这不是正式签名覆盖升级包。
+
+[最终收尾](whitelist-v10/cleanup.json)：用户重置本次测试并关闭严格/监控后，读回无运行快照、原生OFF、951101和计时FGS均为0；QQ/微信白名单完整保留，已授权许可和省电无限制保留。正式包/布局包版本和安装时间未变。旧通知动作行可达性不在本次验收范围内，仍是独立未完成项。
+
+## 历史 v9 白名单检查点（当时真机未验收）
 
 [原小米复现](physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/manual-whitelist-repro.json) 确认微博已命中原生拦截集合，但旧日志记为“已拉回”后，实际前台仍是微博。复现时的原生集合实际有 202 项，微博、支付宝在集合内，QQ、微信不在；曾把 XML `<set>` 的空文本误读成空集合，已按子 `<string>` 纠正并保留原始派生记录，不再把名单同步错误当作根因。
 
@@ -77,7 +91,7 @@ QQ/微信放行及分心→允许应用快切不被旧任务抢回，暂停/重�
 
 原中文路径曾触发 Flutter LSP 初始化异常及 JNI/CMake 生成输出读取失败；最终分析和构建在真实 ASCII 副本完成。未修改 SDK、全局配置、依赖锁或签名规则来绕过这些问题。旧失败记录保留在历史日志中。
 
-## 当前本地 APK
+## 历史 v9 本地 APK（当前 v10 见顶部）
 
 | 本地产物 | 身份 / 大小 | SHA256 |
 | --- | --- | --- |

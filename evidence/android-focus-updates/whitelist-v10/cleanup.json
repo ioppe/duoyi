@@ -1,0 +1,22 @@
+{
+  "user_confirmed_cleanup": true,
+  "verified_by": "Main session read-only own preference, notification and service inspection",
+  "preferences": {
+    "strictFocusMode": false,
+    "monitorDistractingApps": false,
+    "distractingAppSelectionMode": "whitelist",
+    "distractingAppPackages": ["com.tencent.mm", "com.tencent.mobileqq"]
+  },
+  "running_snapshot_present": false,
+  "native_blocker_enabled": false,
+  "notification_951101": 0,
+  "timer_fgs_present": false,
+  "package_versions": {
+    "com.duoyi.duoyi": {"versionCode": 142023, "firstInstallTime": "2026-10-23 14:39:35", "lastUpdateTime": "2026-11-04 19:21:34"},
+    "com.duoyi.duoyi.layoutcheck": {"versionCode": 140023, "firstInstallTime": "2026-11-04 15:07:43", "lastUpdateTime": "2026-11-04 19:59:06"},
+    "com.duoyi.duoyi.focuscheck": {"versionCode": 140023, "firstInstallTime": "2026-11-05 10:30:45", "lastUpdateTime": "2026-11-05 20:59:28"}
+  },
+  "permissions_policy": "Existing accessibility, popup, usage-access and user-selected unrestricted battery policy retained; no settings or cgroup writes by assistant.",
+  "private_evidence": "Session scratch focus-v10-device/cleanup; full preferences, package, notification and service dumps are not public.",
+  "device_inputs": "Read-only final verification; no UIAutomator, gestures, signals or lock bypass. User performed real reset and disabled both switches."
+}

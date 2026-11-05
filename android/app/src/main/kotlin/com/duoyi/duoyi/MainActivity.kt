@@ -67,6 +67,24 @@ class MainActivity : FlutterActivity() {
     private val widgetRestoreExecutor = Executors.newSingleThreadExecutor()
     // 应用列表/图标渲染是重 IO + 位图操作，必须离开主线程。
     private val focusAppsExecutor = Executors.newSingleThreadExecutor()
+    // 焦点状态快照（AppOps/UsageStats/无障碍）会走 Binder，耗时不可控：
+    // 独立单线程 + 单飞合并，与图标执行器互不占用；结果统一投回主线程。
+    private val focusStatusExecutor = Executors.newSingleThreadExecutor()
+    private val focusStatusHandler = Handler(Looper.getMainLooper())
+    private val focusStatusQueryHolder = lazy {
+        val appContext = applicationContext
+        val ownerHandler = focusStatusHandler
+        val queryLogTag = focusTag
+        FocusStatusQuery<Map<String, Any?>>(
+            worker = focusStatusExecutor,
+            postToOwner = { runnable -> ownerHandler.post(runnable) },
+            // 只捕获 applicationContext：worker 不持有 Activity。
+            readSnapshot = { readFocusStatusSnapshot(appContext) },
+            onSlowQuery = { elapsedMillis ->
+                Log.w(queryLogTag, "focus status query took ${elapsedMillis}ms")
+            },
+        )
+    }
     private var widgetRestoreScheduled = false
     private var lastWidgetRestoreAtMillis = 0L
 
@@ -115,6 +133,13 @@ class MainActivity : FlutterActivity() {
         widgetRestoreHandler.removeCallbacksAndMessages(null)
         widgetRestoreExecutor.shutdownNow()
         focusAppsExecutor.shutdownNow()
+        // 焦点状态：先在主线程按“已销毁”回复未完成请求，再拒绝新任务、关闭专用线程，
+        // 迟到的 worker 结果由 generation 判定丢弃，不会二次回复。
+        if (focusStatusQueryHolder.isInitialized()) {
+            focusStatusQueryHolder.value.dispose()
+        }
+        focusStatusExecutor.shutdownNow()
+        focusStatusHandler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
@@ -454,22 +479,13 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, focusDistractionChannel)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "getStatus" -> {
-                        result.success(
-                            mapOf(
-                                "supported" to (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP),
-                                "accessGranted" to hasUsageStatsAccess(),
-                                "accessibilityGranted" to hasFocusBlockerAccessibilityAccess(),
-                                "accessibilityActive" to isFocusBlockerAccessibilityActive(),
-                                "blockerConfigured" to FocusBlockerStore.isConfigured(this),
-                                "blockerExpiresAt" to FocusBlockerStore.expiresAt(this),
-                                "lastBlockedPackage" to FocusBlockerStore.lastBlockedPackage(this),
-                                "lastBlockedAt" to FocusBlockerStore.lastBlockedAt(this),
-                                "foregroundPackage" to foregroundPackageName(),
-                            ),
-                        )
+                    // 状态读取整体下沉到专用后台线程：主线程只入队，绝不 queryUsageStats。
+                    "getStatus" -> requestFocusStatus(result) { snapshot ->
+                        result.success(snapshot)
                     }
-                    "getForegroundApp" -> result.success(foregroundPackageName())
+                    "getForegroundApp" -> requestFocusStatus(result) { snapshot ->
+                        result.success(snapshot["foregroundPackage"] as? String)
+                    }
                     "openUsageAccessSettings" -> result.success(openUsageAccessSettings())
                     "openAccessibilitySettings" -> result.success(openAccessibilitySettings())
                     "getInstalledApps" -> {
@@ -1029,39 +1045,6 @@ class MainActivity : FlutterActivity() {
         return true
     }
 
-    private fun hasUsageStatsAccess(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
-        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
-
-    private fun foregroundPackageName(): String? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
-        if (!hasUsageStatsAccess()) return null
-        val manager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val end = System.currentTimeMillis()
-        val start = end - 10 * 60 * 1000L
-        val stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end)
-        return stats
-            ?.filter { it.lastTimeUsed > 0 }
-            ?.maxByOrNull { it.lastTimeUsed }
-            ?.packageName
-    }
-
     private fun openUsageAccessSettings(): Boolean {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1179,45 +1162,37 @@ class MainActivity : FlutterActivity() {
     }
 
     /**
-     * 辅助功能拦截服务是否已在系统设置里启用。
+     * 把焦点状态快照读取排到专用后台线程；结果（成功/失败/超限/已销毁）回到主线程后才回复。
      *
-     * 系统保存的条目可能是全名也可能是 `.Cls` 短名（小米等 ROM 实测如此），
-     * 因此先用 ComponentName 规范化，再用纯字符串比较兜住 unflatten 解析失败的情况。
+     * 主线程只入队：这里不做任何 AppOps/UsageStats/无障碍读取，也不阻塞等待结果。
      */
-    private fun hasFocusBlockerAccessibilityAccess(): Boolean {
-        val accessibilityEnabled = Settings.Secure.getInt(
-            contentResolver,
-            Settings.Secure.ACCESSIBILITY_ENABLED,
-            0,
-        ) == 1
-        if (!accessibilityEnabled) return false
-        val expected = ComponentName(this, DuoyiFocusBlockerAccessibilityService::class.java)
-        val raw = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        ) ?: return false
-        if (FocusBlockerComponents.matches(raw, expected.packageName, expected.className)) {
-            return true
-        }
-        return FocusBlockerComponents.settingEntries(raw).any { entry ->
-            ComponentName.unflattenFromString(entry)?.equals(expected) == true
-        }
+    private fun requestFocusStatus(
+        result: MethodChannel.Result,
+        deliver: (Map<String, Any?>) -> Unit,
+    ) {
+        focusStatusQueryHolder.value.request(
+            onSnapshot = { snapshot -> deliver(snapshot) },
+            onFailure = { cause ->
+                Log.w(focusTag, "focus status query failed", cause)
+                result.error("focus_status_failed", "focus status query failed", null)
+            },
+            onUnavailable = { reason ->
+                when (reason) {
+                    FocusStatusUnavailable.BUSY -> result.error(
+                        "focus_status_busy",
+                        "too many pending focus status requests",
+                        null,
+                    )
+                    FocusStatusUnavailable.DISPOSED -> result.error(
+                        "focus_status_unavailable",
+                        "focus status query unavailable",
+                        null,
+                    )
+                }
+            },
+        )
     }
 
-    /** 系统 AccessibilityManager 是否已实际加载该服务（启用但未生效时为 false）。 */
-    private fun isFocusBlockerAccessibilityActive(): Boolean {
-        val manager = getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
-            ?: return false
-        if (!manager.isEnabled) return false
-        val expected = ComponentName(this, DuoyiFocusBlockerAccessibilityService::class.java)
-        return manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-            .orEmpty()
-            .any { info ->
-                val serviceInfo = info.resolveInfo?.serviceInfo ?: return@any false
-                serviceInfo.packageName == expected.packageName &&
-                    serviceInfo.name == expected.className
-            }
-    }
     private fun startSettingsActivity(intent: Intent): Boolean {
         return try {
             startActivity(intent)
@@ -1250,4 +1225,105 @@ class MainActivity : FlutterActivity() {
         }
         return targetCanonical
     }
+}
+
+/**
+ * 焦点状态完整快照：字段与旧同步实现一一对应，整体搬到后台线程执行。
+ *
+ * 只吃 Context（主线程传入 applicationContext），不持有 Activity；读取抛异常由调用方回错误，
+ * 不做缓存前台包名或授权兜底。
+ */
+private fun readFocusStatusSnapshot(context: Context): Map<String, Any?> {
+    val accessGranted = hasUsageStatsAccess(context)
+    return mapOf(
+        "supported" to (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP),
+        "accessGranted" to accessGranted,
+        "accessibilityGranted" to hasFocusBlockerAccessibilityAccess(context),
+        "accessibilityActive" to isFocusBlockerAccessibilityActive(context),
+        "blockerConfigured" to FocusBlockerStore.isConfigured(context),
+        "blockerExpiresAt" to FocusBlockerStore.expiresAt(context),
+        "lastBlockedPackage" to FocusBlockerStore.lastBlockedPackage(context),
+        "lastBlockedAt" to FocusBlockerStore.lastBlockedAt(context),
+        "foregroundPackage" to foregroundPackageName(context, accessGranted),
+    )
+}
+
+/** 使用情况访问权限（AppOps）：会在后台线程走 Binder，禁止在 owner 线程调用。 */
+private fun hasUsageStatsAccess(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+    val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        appOps.unsafeCheckOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName,
+        )
+    } else {
+        @Suppress("DEPRECATION")
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName,
+        )
+    }
+    return mode == AppOpsManager.MODE_ALLOWED
+}
+
+/**
+ * 最近 10 分钟内 lastTimeUsed 最大的包名（沿用旧的记录口径）。
+ *
+ * queryUsageStats 走 Binder、耗时不可控，只允许在后台线程调用。
+ */
+private fun foregroundPackageName(context: Context, accessGranted: Boolean): String? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
+    if (!accessGranted) return null
+    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val end = System.currentTimeMillis()
+    val start = end - 10 * 60 * 1000L
+    val stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end)
+    return stats
+        ?.filter { it.lastTimeUsed > 0 }
+        ?.maxByOrNull { it.lastTimeUsed }
+        ?.packageName
+}
+
+/**
+ * 辅助功能拦截服务是否已在系统设置里启用。
+ *
+ * 系统保存的条目可能是全名也可能是 `.Cls` 短名（小米等 ROM 实测如此），
+ * 因此先用 ComponentName 规范化，再用纯字符串比较兜住 unflatten 解析失败的情况。
+ */
+private fun hasFocusBlockerAccessibilityAccess(context: Context): Boolean {
+    val accessibilityEnabled = Settings.Secure.getInt(
+        context.contentResolver,
+        Settings.Secure.ACCESSIBILITY_ENABLED,
+        0,
+    ) == 1
+    if (!accessibilityEnabled) return false
+    val expected = ComponentName(context, DuoyiFocusBlockerAccessibilityService::class.java)
+    val raw = Settings.Secure.getString(
+        context.contentResolver,
+        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+    ) ?: return false
+    if (FocusBlockerComponents.matches(raw, expected.packageName, expected.className)) {
+        return true
+    }
+    return FocusBlockerComponents.settingEntries(raw).any { entry ->
+        ComponentName.unflattenFromString(entry)?.equals(expected) == true
+    }
+}
+
+/** 系统 AccessibilityManager 是否已实际加载该服务（启用但未生效时为 false）。 */
+private fun isFocusBlockerAccessibilityActive(context: Context): Boolean {
+    val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+        ?: return false
+    if (!manager.isEnabled) return false
+    val expected = ComponentName(context, DuoyiFocusBlockerAccessibilityService::class.java)
+    return manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+        .orEmpty()
+        .any { info ->
+            val serviceInfo = info.resolveInfo?.serviceInfo ?: return@any false
+            serviceInfo.packageName == expected.packageName &&
+                serviceInfo.name == expected.className
+        }
 }

@@ -1,0 +1,29 @@
+{
+  "apk_sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+  "package": "com.duoyi.duoyi.focuscheck",
+  "pid_at_failure": 11828,
+  "uid_at_failure": 10565,
+  "failure": "Alipay initial return passed; repeat Alipay and subsequent Weibo failed while QQ/WeChat remained allowed.",
+  "direct_read_only_observations": {
+    "activity_manager": {"curProcState": 4, "isFrozen": false},
+    "proc_cgroup_v2": "/apps/uid_10565/pid_11828",
+    "actual_cgroup_freeze": "1",
+    "actual_cgroup_events": "populated 1\nfrozen 1",
+    "uid_parent_cgroup_freeze": "0",
+    "main_schedstat_first": "67451986436 18681235507 2345831",
+    "main_schedstat_second": "67451986436 18681235507 2345831",
+    "notification_time_first": "剩余 22:00",
+    "notification_time_second": "剩余 22:00",
+    "notification_samples_host_epoch_seconds": [1793883957.4129002, 1793883960.6052039]
+  },
+  "interpretation": "The kernel reported the app process frozen even though ActivityManager's isFrozen flag was false. Timer and main-thread scheduling stopped. This establishes process freezing during the failed measurement; it does not attribute every historical failure to this cause.",
+  "user_action": {
+    "question": "请在系统「应用信息 → 多仪·专注验证 → 省电策略/电量管理」将该验证包设为无限制（仅此包，可能增加专注期间后台耗电）。原有后台弹出和使用情况权限保留，正式版不改。",
+    "answer": "已把验证包省电策略设为无限制，可继续验证",
+    "execution": "User reports completing the change manually in real system UI. Assistant did not write AppOps, settings or cgroup files.",
+    "scope": "Only independent validation package; no formal app or global battery policy changes",
+    "control": "Same installed v10 APK used before and after; post-change actual foreground and kernel states are recorded separately."
+  },
+  "private_raw_evidence": "Session scratch focus-v10-device/failed-state; full notification/process/input dumps remain private.",
+  "failed_probe_retained": "Initial cgroup reads without the observed /apps prefix returned No such file or directory; subsequent reads used the actual /proc/PID/cgroup path."
+}

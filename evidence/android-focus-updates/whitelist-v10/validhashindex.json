@@ -1,0 +1,27 @@
+{
+  "evidence_dir": "evidence/android-focus-updates/whitelist-v10",
+  "files": [
+    {
+      "path": "active-first.json",
+      "sha256": "967eb52e20534d664959249a81bac3918c8bd91295beaee6a2416d6f244cad1c",
+      "bytes": 13387
+    },
+    {
+      "path": "own-timeline.txt",
+      "sha256": "6089db652aa4b06ab84d892339b2a8e90f018265788064608c8440f8d34744de",
+      "bytes": 5297
+    }
+  ],
+  "apk": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "size_bytes": 105708301,
+    "versionCode": 140023
+  },
+  "candidate": {
+    "git_head": "5473be8de89459b603c92a970cbbc42d2b1a5361",
+    "origin_main": "4f87864c74702685ab0884999494cffe764f333a"
+  },
+  "raw_private_copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-device/active-first/measure-raw.json",
+  "verdict": "FAIL (A blocked; B/C not blocked; D/E whitelisted allowed)"
+}

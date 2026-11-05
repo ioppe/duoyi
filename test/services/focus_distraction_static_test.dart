@@ -464,4 +464,123 @@ void main() {
       ),
     );
   });
+
+  test('焦点状态快照离开主线程：单飞异步 + 有界等待 + 销毁回收', () {
+    final mainActivity = File(
+      'android/app/src/main/kotlin/com/duoyi/duoyi/MainActivity.kt',
+    ).readAsStringSync();
+    final query = File(
+      'android/app/src/main/kotlin/com/duoyi/duoyi/FocusStatusQuery.kt',
+    ).readAsStringSync();
+    final queryTest = File(
+      'android/app/src/test/kotlin/com/duoyi/duoyi/FocusStatusQueryTest.kt',
+    );
+
+    // 主线程只入队：两个入口都换成异步快照，不再同步回 map / 前台包名。
+    expect(mainActivity, contains('"getStatus" -> requestFocusStatus(result)'));
+    expect(
+      mainActivity,
+      contains('"getForegroundApp" -> requestFocusStatus(result)'),
+    );
+    expect(
+      mainActivity,
+      isNot(contains('"foregroundPackage" to foregroundPackageName(),')),
+    );
+    expect(
+      mainActivity,
+      isNot(
+        contains(
+          '"getForegroundApp" -> result.success(foregroundPackageName())',
+        ),
+      ),
+    );
+    expect(
+      mainActivity,
+      contains(
+        'private val focusStatusExecutor = Executors.newSingleThreadExecutor()',
+      ),
+    );
+    expect(
+      mainActivity,
+      contains('postToOwner = { runnable -> ownerHandler.post(runnable) }'),
+    );
+    expect(
+      mainActivity,
+      contains('readSnapshot = { readFocusStatusSnapshot(appContext) }'),
+    );
+    expect(mainActivity, contains('val appContext = applicationContext'));
+    expect(mainActivity, contains('focusStatusExecutor.shutdownNow()'));
+    expect(mainActivity, contains('focusStatusQueryHolder.value.dispose()'));
+    // 诊断只保留耗时，不带包名等应用信息。
+    expect(
+      mainActivity,
+      contains(
+        r'Log.w(queryLogTag, "focus status query took ${elapsedMillis}ms")',
+      ),
+    );
+
+    // 快照字段沿用旧契约，读取整体收在 Context 参数的后台函数里。
+    expect(
+      mainActivity,
+      contains('private fun readFocusStatusSnapshot(context: Context)'),
+    );
+    expect(
+      mainActivity,
+      contains(
+        '"foregroundPackage" to foregroundPackageName(context, accessGranted)',
+      ),
+    );
+    expect(
+      mainActivity,
+      contains(
+        'private fun foregroundPackageName(context: Context, accessGranted: Boolean)',
+      ),
+    );
+    expect(
+      mainActivity,
+      contains(
+        '"accessibilityActive" to isFocusBlockerAccessibilityActive(context)',
+      ),
+    );
+
+    // 纯 Kotlin 查询器：无 Android 依赖、单飞、有界、owner 线程、销毁 generation。
+    expect(query, isNot(contains('import android.')));
+    expect(query, contains('class FocusStatusQuery<S : Any>('));
+    expect(query, contains('const val defaultPendingRequestLimit = 32'));
+    expect(query, contains('const val defaultSlowQueryWarnMillis = 500L'));
+    expect(query, contains('FocusStatusUnavailable.BUSY'));
+    expect(query, contains('FocusStatusUnavailable.DISPOSED'));
+    expect(query, contains('if (token != generation) return'));
+    expect(query, contains('must be used on its owner thread'));
+
+    // 单元测试覆盖合并、上限、owner 队列不被阻塞、销毁后迟到结果丢弃。
+    expect(queryTest.existsSync(), isTrue);
+    final queryTestSource = queryTest.readAsStringSync();
+    expect(
+      queryTestSource,
+      contains('readRunsOnWorkerAndNeverOnTheOwnerQueue'),
+    );
+    expect(
+      queryTestSource,
+      contains('ownerQueueKeepsRunningControlActionsWhileSnapshotIsBlocked'),
+    );
+    expect(
+      queryTestSource,
+      contains('concurrentRequestsShareOneInFlightSnapshot'),
+    );
+    expect(
+      queryTestSource,
+      contains('waitingCallbacksAreBoundedWithExplicitBusy'),
+    );
+    expect(
+      queryTestSource,
+      contains('disposeRepliesDisposedOnceAndDropsLateSuccess'),
+    );
+    expect(
+      queryTestSource,
+      contains('completionPostedBeforeDisposeIsDroppedToo'),
+    );
+    expect(queryTestSource, contains('requestMustBeMadeFromTheOwnerThread'));
+    expect(queryTestSource, contains('slowSnapshotWarnsOnceWithDurationOnly'));
+  });
 }
