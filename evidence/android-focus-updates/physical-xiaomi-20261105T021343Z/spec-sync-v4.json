@@ -1,0 +1,15 @@
+{
+  "delegation_id": "1161e274-8aff-47a3-94be-e518e112158c",
+  "scope": "V4 MainActivity routing flag, four regressions and related behavior/device documentation",
+  "conclusion": "No contract, ADR, changelog or i18n blocker. Missing device checklist scenario was added before delivery gate.",
+  "mapping": {
+    "behavior_spec": "docs/android-focus-updates.md:27",
+    "regression_tests": "test/services/android_deep_link_routing_test.dart",
+    "manual_e2e": "docs/manual-regression-checklist.md:161 (unchecked; no blanket OAuth/share device pass)",
+    "adr": "No repository ADR system; implementation defect fix preserves existing channel ownership.",
+    "changelog": "No version or release in this task.",
+    "i18n": "No new user-facing text."
+  },
+  "post_build_documentation": "post-build-documentation-v4.json",
+  "device_verdict": "See separate V4 physical report; spec-sync did not operate the device or run tests."
+}

@@ -62,6 +62,7 @@ import 'services/alarm_service.dart';
 import 'services/account_local_data_cleaner.dart';
 import 'services/calendar_sync_service.dart';
 import 'services/deferred_web_font_service.dart';
+import 'services/focus_timer_notification_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
@@ -1775,6 +1776,27 @@ void main() async {
   void pushBrandStringsToNotifiers() {
     reminderScheduler.setStrings(themeProvider.brand.strings);
     notificationService.setStrings(themeProvider.brand.strings);
+    // 专注计时持续通知：品牌文案 + 当前主题主色；切主题或语言都会走到这里，
+    // 运行中的通知立即跟随，不需要等下一次计时事件。
+    final brand = themeProvider.brand;
+    FocusTimerNotificationService.instance.setBrand(
+      FocusTimerNotificationBrand(
+        appTitle: brand.strings.appTitle,
+        focusLabel: brand.strings.focusStateFocus,
+        shortBreakLabel: brand.strings.focusStateShortBreak,
+        longBreakLabel: brand.strings.focusStateLongBreak,
+        pausedLabel: I18n.tr('focus.timer.notif.paused'),
+        noTaskLabel: I18n.tr('focus.timer.notif.no_task'),
+        channelName: I18n.tr('focus.timer.notif.channel_name'),
+        // 紧凑正文的时间前缀与通知按钮文案同样本地化；原生不得硬编码。
+        remainingLabel: I18n.tr('focus.timer.notif.remaining'),
+        elapsedLabel: I18n.tr('focus.timer.notif.elapsed'),
+        startActionLabel: I18n.tr('focus.timer.notif.action.start'),
+        pauseActionLabel: I18n.tr('focus.timer.notif.action.pause'),
+        resetActionLabel: I18n.tr('focus.timer.notif.action.reset'),
+        accentColorArgb: brand.theme.colorScheme.primary.toARGB32(),
+      ),
+    );
   }
 
   pushBrandStringsToNotifiers();
@@ -3141,6 +3163,24 @@ void _handleWidgetUri(
     final ns = Provider.of<NotificationService>(ctx, listen: false);
     // ignore: discarded_futures
     ns.handleSnoozeDeepLink(uri);
+  } else if (uri.host == FocusTimerNotificationControl.host) {
+    // 专注计时通知按钮：duoyi://focus-timer/<pause|start|reset>?session=&revision=&state=
+    // 严格校验后回到专注页，并复用小组件的 session+revision+state 校验；
+    // 畸形/跨会话/旧 revision 一律静默拒绝，不走 legacy start、不重复 dispatch。
+    final control = FocusTimerNotificationControl.parse(uri);
+    if (control == null) {
+      debugPrint('[DeepLink] rejected focus timer control: $uri');
+      return;
+    }
+    state.navigateTo(4, allowHidden: true);
+    unawaited(
+      pomodoro.applyWidgetControl(
+        action: control.action,
+        sessionId: control.sessionId,
+        revision: control.revision,
+        expectedState: control.expectedState,
+      ),
+    );
   } else if (uri.host == 'action') {
     final action = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
     if (action == 'start_pomodoro' ||

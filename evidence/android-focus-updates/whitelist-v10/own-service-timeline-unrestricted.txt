@@ -1,0 +1,67 @@
+whitelist-v10 own-service timeline — battery strategy UNRESTRICTED (same APK f9c71d08…eb8a9, device 2df52c4c)
+kernel path /proc/11828/cgroup = 0::/apps/uid_10565/pid_11828  (identical to the frozen run; only policy differs)
+OLD (frozen run): cgroup.freeze=1, events frozen 1, schedstat 67451986436 18681235507 2345831, 951101 text stuck 22:00, own logs stopped 21:03:10
+NEW (this run): cgroup.freeze=0, events populated 1 / frozen 0, schedstat 83602457903 22518326301 2884480 -> 84342720603 22789170489 2887749, 951101 text advancing, own logs continuous (537 lines)
+config: strictFocusMode=true monitorDistractingApps=true whitelist=[com.tencent.mm, com.tencent.mobileqq] mode=whitelist ; timer isRunning=true endsAt=2026-11-05T21:25:10.737+08:00
+Pre-run unrelated metadata omitted; original report/timeline retained privately with SHA256 provenance.
+t0 2026-11-05T21:13:11.269+08:00 ; case_end 2026-11-05T21:14:01.258+08:00 ; window 49.983s
+
+[A] Alipay initial (com.eg.android.AlipayGphone)  com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:13:13.165+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.437s @ 2026-11-05T21:13:15.337+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.201s @ 2026-11-05T21:13:18.104+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page at +2/+5)
+
+[B] Alipay reopen (com.eg.android.AlipayGphone)  com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:13:19.691+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.180s @ 2026-11-05T21:13:21.617+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.197s @ 2026-11-05T21:13:24.620+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page at +2/+5)
+
+[C] Weibo (not whitelisted) (com.sina.weibo)  com.sina.weibo/.SplashActivity
+  am start @ 2026-11-05T21:13:26.303+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.238s @ 2026-11-05T21:13:28.249+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.214s @ 2026-11-05T21:13:31.248+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page at +2/+5)
+
+[D] QQ whitelisted + 10s hold (com.tencent.mobileqq)  com.tencent.mobileqq/.activity.SplashActivity
+  am start @ 2026-11-05T21:13:32.933+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.267s @ 2026-11-05T21:13:34.838+08:00 top=com.tencent.mobileqq/.activity.SplashActivity
+  +5.221s @ 2026-11-05T21:13:37.785+08:00 top=com.tencent.mobileqq/.activity.SplashActivity
+  outcome=ALLOWED whitelisted (QQ top at +2/+5, held 10.03s)
+  10s hold (no input): s1 2026-11-05T21:13:40.991+08:00 951101 when=1793885110742 android.text=String (剩余 11:31) freeze=0
+                      s2 2026-11-05T21:13:46.001+08:00 951101 when=1793885110745 android.text=String (剩余 11:26) freeze=0 events=[populated 1 / frozen 0]
+  notif_when_changed=True notif_text_changed=True schedstat_changed=True
+
+[F] Alipay third (com.eg.android.AlipayGphone)  com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:13:49.399+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.196s @ 2026-11-05T21:13:51.331+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.373s @ 2026-11-05T21:13:54.330+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page at +2/+5)
+
+[E] WeChat whitelisted (optional) (com.tencent.mm)  com.tencent.mm/.ui.LauncherUI
+  am start @ 2026-11-05T21:13:56.087+08:00 exit=0
+  +2.199s @ 2026-11-05T21:13:58.026+08:00 top=com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI
+  +5.239s @ 2026-11-05T21:14:01.069+08:00 top=com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI
+  outcome=ALLOWED whitelisted (WeChat top at +2/+5)
+
+Own blocker log (pid 11828): 15 measurement lines; two unrelated pre-run lines omitted from the original 17-line excerpt.
+  21:13:13.412 11828 11828 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793884393102
+  21:13:13.419 11828 11828 I DuoyiFocusBlocker: focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  21:13:13.669 11828 11828 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  21:13:13.669 11828 11828 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=com.eg.android.AlipayGphone
+  21:13:19.912 11828 11828 I DuoyiFocusBlocker: focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/2), awaiting confirmation
+  21:13:20.167 11828 11828 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  21:13:20.167 11828 11828 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=none
+  21:13:26.423 11828 11828 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.sina.weibo eventAt=1793884406243
+  21:13:26.428 11828 11828 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/1), awaiting confirmation
+  21:13:26.615 11828 11828 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+  21:13:26.615 11828 11828 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+  21:13:49.460 11828 11828 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793884429337
+  21:13:49.465 11828 11828 I DuoyiFocusBlocker: focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  21:13:49.671 11828 11828 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  21:13:49.671 11828 11828 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=none
+'focus status query took Nms' lines: 0
+
+final nav: am start MAIN/LAUNCHER own MainActivity @ 21:14:27.640 -> topResumed=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (navigation only, not acceptance)
+state: pid 11828 alive curProcState=4 not frozen; 951101 when=1793885110743 android.text=String (剩余 11:09); cgroup.freeze=0 frozen 0; timer RUNNING; left for user PAUSE, nothing paused/reset/cleaned

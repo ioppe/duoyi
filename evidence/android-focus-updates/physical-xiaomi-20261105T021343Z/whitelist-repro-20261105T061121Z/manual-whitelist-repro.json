@@ -1,0 +1,108 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-repro-20261105T061121Z",
+  "phase": "whitelist pull-back bug: bounded functional repro (no product edits/builds/commits)",
+  "host_utc": {
+    "start": "2026-11-05T06:11:21Z",
+    "last_readonly": "2026-11-05T06:20:45Z"
+  },
+  "phone_local": "2026-11-05 14:11–14:21 +0800 (device wall clock; never merged with host UTC)",
+  "serial": "2df52c4c",
+  "device": "Xiaomi 24129PN74C / Android16 API36 / 1200x2670 / 520dpi / font_scale 1.25 / screen_off_timeout 600000 (observed, unchanged by me)",
+  "which_app_user_uses": "com.duoyi.duoyi.focuscheck (validation) — was the foreground activity when I attached; formal app not in use",
+  "builds": {
+    "validation": {
+      "package": "com.duoyi.duoyi.focuscheck",
+      "versionName": "2.0.0",
+      "versionCode": 140023,
+      "apk_sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+      "debuggable": true
+    },
+    "formal_untouched": {
+      "package": "com.duoyi.duoyi",
+      "versionCode": 142023,
+      "versionName": "2.0.0",
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34",
+      "apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b"
+    }
+  },
+  "condition_matrix": {
+    "accessibility_secure_enabled": "focuscheck 与 com.duoyi.duoyi 两个服务都在 secure 字符串中",
+    "accessibility_actually_bound": "仅 多仪·专注验证(focuscheck) 在 Bound services（eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED]）",
+    "accessibility_formal_state": "com.duoyi.duoyi 服务位于 Crashed services（enabled 但已崩溃，未绑定）",
+    "usage_stats_appops": {
+      "focuscheck": "无 GET_USAGE_STATS 记录（未授予）",
+      "com.duoyi.duoyi": "GET_USAGE_STATS allow"
+    },
+    "usage_note": "原生拉回不依赖 UsageStats；本次失败与 UsageStats 无关",
+    "dart_config": {
+      "strictFocusMode": true,
+      "monitorDistractingApps": true,
+      "distractingAppSelectionMode": "whitelist",
+      "distractingAppPackages": [
+        "com.tencent.mm",
+        "com.tencent.mobileqq",
+        "com.xiaomi.scanner"
+      ],
+      "note": "现场快照为微信、QQ、AI扫描三项；微博和支付宝均不在允许列表，预期仍应被拉回。未对三项配置的来源或操作者作推断。"
+    },
+    "timer": {
+      "isRunning": true,
+      "type": 0,
+      "totalSeconds": 1500,
+      "endsAtMs": 1793860310846,
+      "endsAt_local": "2026-11-05 14:31:50"
+    },
+    "native_blocker_prefs": {
+      "file": "shared_prefs/duoyi_focus_blocker.xml",
+      "enabled": true,
+      "expires_at": 1793860310846,
+      "expires_at_local": "2026-11-05 14:31:50",
+      "packages": {"count": 202, "weibo_blocked": true, "alipay_blocked": true, "qq_blocked": false, "wechat_blocked": false, "scanner_blocked": false},
+      "packages_parser_correction": "原派生日志只读取 XML set.text，空白文本不代表空集合；主会话读取 string 子节点后确认 202 项，详见 raw/native-package-membership-corrected.json。",
+      "last_blocked_package": "com.sina.weibo",
+      "last_blocked_at": 1793859222556,
+      "last_blocked_local": "2026-11-05 14:13:42.556"
+    }
+  },
+  "repro_weibo": {
+    "command": "adb -s 2df52c4c shell am start -n com.sina.weibo/.SplashActivity",
+    "launch_local": "14:13:42.168",
+    "host_utc": "06:13:42Z",
+    "bounce_log": "14:13:42.560 15305 I DuoyiFocusBlocker: focus blocker bounced com.sina.weibo to focus tab",
+    "foreground_at_plus2s": "com.sina.weibo/com.sina.weibo.MainTabActivity",
+    "foreground_at_plus5s": "com.sina.weibo/com.sina.weibo.MainTabActivity",
+    "foreground_14_13_58": "com.sina.weibo/com.sina.weibo.MainTabActivity",
+    "foreground_14_14_00": "com.sina.weibo/com.sina.weibo.MainTabActivity",
+    "verdict": "NOT pulled back：检测/记录与 bring-to-front 调用都发生了，但微博最终仍在前台"
+  },
+  "not_executed": {
+    "alipay": "未执行（设备随后息屏锁屏，注入式解锁无效，见 blocking）",
+    "qq_wechat_allow_control": "未执行（同上）"
+  },
+  "blocking": {
+    "what": "设备在 14:14 后进入 Dozing+锁屏；KEYCODE_WAKEUP / 上滑 / KEYCODE_MENU / wm dismiss-keyguard 均未能解锁（screen mean=0.0 黑屏）",
+    "keyguard_nature": "strongAuthRequired=0x0、password quality 0 → 非凭据锁，仅需真人上滑；我未猜测任何 PIN/绕过",
+    "impact": "无法继续在真实运行态启动支付宝/QQ/微信做对照，也无法用 App UI 复位计时",
+    "needs_user": "请在手机上点亮并上滑解锁，保持验证包前台；随后我可立即补做支付宝 + QQ/微信对照"
+  },
+  "candidate_mechanisms_for_code_side": [
+    "已排除名单为空或名单未同步：原生集合实际为 202 项，包含微博和支付宝，不包含 QQ、微信及 AI扫描；空集合判断源于派生日志的 XML 解析错误。",
+    "拉回窗口切换竞态待验证：启动 SplashActivity 后出现一次请求日志，但后续观察到 MainTabActivity 仍在前台；现有去重会在被抑制事件上更新时间，且没有对调用后的真实窗口结果做确认。",
+    "AA 已绑定、配置未到期且名单包含微博；目前证据尚未区分后台启动请求被系统静默拒绝与启动阶段后续窗口重新获得前台。"
+  ],
+  "state_left": "我未修改任何配置：strict/monitor 仍为 ON、白名单仍为 [mm, mobileqq, scanner]、计时仍在跑（用户会话）。因设备锁屏无法执行“reset + strict/monitor OFF”的收尾，未做任何伪造。",
+  "privacy": "公开仅：AA 绑定状态、自有配置字段、自有拦截 prefs 字段、时间戳与前台组件名。未发布任何第三方界面截图；未打开聊天/支付内容；lock-state 黑屏截图仅 scratch",
+  "evidence": [
+    "raw/aa-state-before-trimmed.txt",
+    "raw/aa-state-now.txt",
+    "raw/derived-config.txt.gz",
+    "raw/native-package-membership-corrected.json",
+    "raw/repro-weibo.txt",
+    "raw/blocker-lines-tail.txt",
+    "raw/readonly-appops.txt",
+    "raw/identity-end.txt",
+    "raw/lock-retry.txt"
+  ]
+}

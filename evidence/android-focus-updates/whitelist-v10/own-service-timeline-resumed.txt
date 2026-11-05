@@ -1,0 +1,62 @@
+whitelist-v10 own-service timeline — RESUMED acceptance (same session continued via real UI, APK f9c71d08…eb8a9)
+gate: {"same_session_id": true, "revision_gt_2": true, "widget_state_running": true, "running_snapshot_true": true, "native_enabled_true": true, "expiry_future": true, "same_expiry_running_snapshot": true, "whitelist_qq_wechat": true, "strict_true": true, "monitor_true": true, "selection_whitelist": true}
+sessionId focus-1793880540394302 revision 3 state running ; endsAt 2026-11-05T21:34:46.410+08:00 (= continue + paused 1018 s, not a new 1500 s session)
+native enabled=true expires_at 2026-11-05T21:34:46.410+08:00 ; whitelist [com.tencent.mm, com.tencent.mobileqq] ; strict/monitor true
+kernel 0::/apps/uid_10565/pid_11828 freeze start=0 end=0 ; schedstat 86486819003 23021763930 2892144 -> 87180849774 23288341944 2895072
+t0 2026-11-05T21:18:41.853+08:00 ; case_end 2026-11-05T21:19:24.364+08:00
+
+[A] Alipay first after CONTINUE (com.eg.android.AlipayGphone) com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:18:43.266+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.190s @ 2026-11-05T21:18:45.192+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.203s @ 2026-11-05T21:18:48.223+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page +2/+5)
+
+[B] Alipay reopen (com.eg.android.AlipayGphone) com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:18:49.708+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.217s @ 2026-11-05T21:18:51.695+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.209s @ 2026-11-05T21:18:54.678+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page +2/+5)
+
+[C] Weibo not whitelisted (com.sina.weibo) com.sina.weibo/.SplashActivity
+  am start @ 2026-11-05T21:18:56.203+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.171s @ 2026-11-05T21:18:58.136+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.188s @ 2026-11-05T21:19:01.160+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page +2/+5)
+
+[D] QQ whitelisted + 10s idle hold (com.tencent.mobileqq) com.tencent.mobileqq/.activity.SplashActivity
+  am start @ 2026-11-05T21:19:02.681+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.248s @ 2026-11-05T21:19:04.622+08:00 top=com.tencent.mobileqq/.activity.SplashActivity
+  +5.229s @ 2026-11-05T21:19:07.641+08:00 top=com.tencent.mobileqq/.activity.SplashActivity
+  outcome=ALLOWED whitelisted (QQ +2/+5, 10.04s idle hold)
+  10.04s idle hold: s1 2026-11-05T21:19:10.850+08:00 951101 when=1793885686413 android.text=String (剩余 15:36) freeze=0
+                    s2 2026-11-05T21:19:15.866+08:00 951101 when=1793885686414 android.text=String (剩余 15:31) freeze=0 events=[populated 1 / frozen 0]
+  notif_when_changed=True notif_text_changed=True schedstat_changed=True
+
+[F] Alipay after QQ hold (com.eg.android.AlipayGphone) com.eg.android.AlipayGphone/.AlipayLogin
+  am start @ 2026-11-05T21:19:19.232+08:00 exit=0 Warning: Activity not started, its current task has been brought to the front
+  +2.205s @ 2026-11-05T21:19:21.199+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  +5.214s @ 2026-11-05T21:19:24.198+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity
+  outcome=BLOCKED (focus page +2/+5)
+
+own service log (pid 11828), 17 lines this session:
+  2026-11-05T21:17:48.420+08:00 focus blocker usage monitor started: reason=config-changed, usageAccess=true
+  2026-11-05T21:18:43.313+08:00 focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793884723213
+  2026-11-05T21:18:43.319+08:00 focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  2026-11-05T21:18:43.582+08:00 focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  2026-11-05T21:18:43.582+08:00 focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=none
+  2026-11-05T21:18:49.816+08:00 focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793884729673
+  2026-11-05T21:18:49.823+08:00 focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  2026-11-05T21:18:50.041+08:00 focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  2026-11-05T21:18:50.041+08:00 focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=none
+  2026-11-05T21:18:56.320+08:00 focus blocker usage foreground detected: package=com.sina.weibo eventAt=1793884736158
+  2026-11-05T21:18:56.325+08:00 focus blocker requested com.sina.weibo to focus tab (attempt 1/1), awaiting confirmation
+  2026-11-05T21:18:56.588+08:00 focus blocker confirmed return to duoyi from com.sina.weibo
+  2026-11-05T21:18:56.588+08:00 focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=com.sina.weibo
+  2026-11-05T21:19:19.345+08:00 focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793884759181
+  2026-11-05T21:19:19.355+08:00 focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  2026-11-05T21:19:19.641+08:00 focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  2026-11-05T21:19:19.641+08:00 focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=none
+'focus status query took Nms' lines: 0
+
+return nav: am start MAIN/LAUNCHER own MainActivity @ 2026-11-05T21:19:26.437+08:00 -> verified top com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (navigation only, not acceptance)
+left RUNNING: 951101 when=1793885686414 android.text=String (剩余 15:20) ; native enabled=true expires_at 2026-11-05T21:34:46.410+08:00 ; whitelist intact ; grants unchanged ; cgroup.freeze=0

@@ -1,0 +1,14 @@
+=== CASE2 WEIBO start phone=15:18:00.758678911 host=2026-11-05T07:18:01Z ===
+precheck locked=deviceLocked=0 keyguard=false focus=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+Starting: Intent { cmp=com.sina.weibo/.SplashActivity }
+t+2 focus=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+t+2 resumed=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t11112}
+t+5 focus=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+t+5 resumed=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t11112}
+=== CASE2b repeat open weibo phone=15:18:17.086732082 ===
+t+1 focus=com.sina.weibo/com.sina.weibo.MainTabActivity}
+t+2 focus=com.sina.weibo/com.sina.weibo.MainTabActivity}
+t+5 focus=com.sina.weibo/com.sina.weibo.MainTabActivity} resumed=com.sina.weibo/.MainTabActivity t11086}
+=== CASE2c cross-package 600ms: weibo->alipay phone=15:18:22.668854111 ===
+t+2 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity}
+t+5 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity} resumed=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity t11096}

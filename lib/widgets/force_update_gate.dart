@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/design_tokens.dart';
+import '../core/i18n.dart';
 import '../services/app_update_installer.dart';
 import '../services/app_update_service.dart';
 import 'brand_background.dart';
@@ -195,17 +196,33 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
                             const SizedBox(height: 6),
                             Text(
                               updater.downloadProgress == null
-                                  ? '正在下载更新包'
-                                  : '正在下载 ${(updater.downloadProgress! * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                                  ? I18n.tr(
+                                      'mine.update.background_downloading',
+                                    )
+                                  : '${I18n.tr('mine.update.downloading_progress_prefix')}${(updater.downloadProgress! * 100).clamp(0, 100).toStringAsFixed(0)}%',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              I18n.tr('mine.update.close_keeps_downloading'),
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => updater.cancelDownload(),
+                              child: Text(
+                                I18n.tr('mine.update.cancel_download'),
+                              ),
                             ),
                           ] else if (updater.installing) ...[
                             const SizedBox(height: 16),
                             const LinearProgressIndicator(),
                             const SizedBox(height: 6),
                             Text(
-                              '正在打开安装器',
+                              I18n.tr('mine.update.installing'),
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodySmall,
                             ),
@@ -214,7 +231,30 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
                           FilledButton.icon(
                             onPressed: canInstall && !updater.busy
                                 ? () async {
-                                    await updater.downloadAndInstallLatest();
+                                    if (updater.hasDownloadedInstaller) {
+                                      await updater
+                                          .installDownloadedInstaller();
+                                      return;
+                                    }
+                                    await updater.downloadAndInstallLatest(
+                                      accentColor: colorScheme.primary
+                                          .toARGB32(),
+                                      notificationTitle: I18n.tr(
+                                        'mine.update.notification_title',
+                                      ),
+                                      notificationText: I18n.tr(
+                                        'mine.update.notification_downloading',
+                                      ),
+                                      installActionLabel: I18n.tr(
+                                        'mine.update.notification_install_action',
+                                      ),
+                                      channelName: I18n.tr(
+                                        'mine.update.notification_channel_name',
+                                      ),
+                                      channelDescription: I18n.tr(
+                                        'mine.update.notification_channel_description',
+                                      ),
+                                    );
                                   }
                                 : null,
                             icon: const Icon(
@@ -222,8 +262,8 @@ class _ForceUpdateGateState extends State<ForceUpdateGate> {
                             ),
                             label: Text(
                               updater.hasDownloadedInstaller
-                                  ? '安装已下载包'
-                                  : '下载并安装',
+                                  ? I18n.tr('mine.update.install_downloaded')
+                                  : I18n.tr('mine.update.download_and_install'),
                             ),
                           ),
                         ],

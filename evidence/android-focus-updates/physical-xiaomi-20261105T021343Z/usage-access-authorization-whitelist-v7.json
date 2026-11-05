@@ -1,0 +1,23 @@
+{
+  "authorization_source": "User answer to asktool in this session",
+  "question": "是否允许仅为“多仪·专注验证”通过系统 UI 开启“使用情况访问”并保留授权，以实测支付宝补漏？该系统权限可读取应用使用记录，本实现仅查询最近 5 秒的包名、事件类型和时间。实测时请保持手机已手动解锁。",
+  "selected_answer": "允许为“多仪·专注验证”开启使用情况访问并保留",
+  "package": "com.duoyi.duoyi.focuscheck",
+  "permission_label": "使用情况访问",
+  "authorized_operation": "Use the real system UI to enable usage access for this package only",
+  "retain_after_test": true,
+  "scope": {
+    "formal_app_unchanged": "com.duoyi.duoyi",
+    "layout_check_app_unchanged": "com.duoyi.duoyi.layoutcheck",
+    "other_permissions_unchanged": true,
+    "existing_background_popup_allow_retained": true,
+    "no_appops_or_secure_setting_writes": true,
+    "no_credential_or_lock_screen_bypass": true
+  },
+  "data_scope_explained_to_user": {
+    "system_permission": "Can read application usage records",
+    "implementation": "Only recent 5-second package, event type and timestamp metadata while the strict-focus lease is active; no UI content"
+  },
+  "this_record_does_not_assert_execution": true,
+  "execution_evidence": "Recorded separately by the final real-device test, including the UI state and actual foreground results"
+}

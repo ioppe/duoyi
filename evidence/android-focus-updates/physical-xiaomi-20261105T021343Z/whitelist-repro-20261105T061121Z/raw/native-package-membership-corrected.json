@@ -1,0 +1,21 @@
+{
+  "packages_xml_tag": "set",
+  "package_count": 202,
+  "selected_checks": {
+    "com.sina.weibo": true,
+    "com.eg.android.AlipayGphone": true,
+    "com.tencent.mm": false,
+    "com.tencent.mobileqq": false,
+    "com.xiaomi.scanner": false
+  },
+  "native_fields": {
+    "last_blocked_at": "1793859222556",
+    "last_blocked_package": "com.sina.weibo",
+    "expires_at": "1793860310846",
+    "enabled": "true"
+  },
+  "parser_note": "A SharedPreferences set stores packages in child string nodes; blank node.text does not mean an empty set.",
+  "source_native_prefs_sha256": "923336e7729bd89984ab20e2946276f0f997c03be33ed101112a846310f4d259",
+  "privacy": "Only count and the five relevant package membership checks are public; complete native app inventory remains in scratch.",
+  "supersedes": "raw/derived-config.txt.gz packages(set) blank field is a parser rendering error, not an empty package set."
+}

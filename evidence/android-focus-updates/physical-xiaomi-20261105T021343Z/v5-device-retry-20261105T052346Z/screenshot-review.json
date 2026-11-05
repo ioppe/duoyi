@@ -1,0 +1,55 @@
+{
+  "reviewed_by": "Main agent visually inspected all three derived images in the local browser; viewing native evidence images, not browser application E2E.",
+  "scope": "Privacy-cropped native Xiaomi evidence. Full notification screenshots stay in scratch; unrelated cards excluded.",
+  "screenshots": [
+    {
+      "file": "01-focus-page-idle-after-v5-recheck.png",
+      "source_sha256": "d6b14b52c0dc84a365f7ed9278e493ce71155e5fe17a907f7d2763a07fe8b47a",
+      "public_sha256": "0fd6bbc923ac128a07babdad77f00cd161ea9c17546cf97b1820cdd2ea535a38",
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ],
+      "observed": "Idle 25:00, zero completed sessions visible; own application only."
+    },
+    {
+      "file": "02-focus-notification-remaining-23m40.png",
+      "source_sha256": "9d2e72b0664f2ea7e6bfbdbcf2d90721cb63a66e49a19876d9dbab0d0ad2e75a",
+      "public_sha256": "4b1dc264a763893658d97be7013f427ccae20c8d6bea2a56edad6fddb3608945",
+      "crop_box": [
+        40,
+        1018,
+        1160,
+        1232
+      ],
+      "public_size": [
+        1120,
+        214
+      ],
+      "observed": "Own focus time and progress visible; no action row visible in this captured card state."
+    },
+    {
+      "file": "03-focus-notification-remaining-20m58.png",
+      "source_sha256": "921e93052c3324f2e6f778c1b78956752dfae43b2689d41af96695d42753d4d4",
+      "public_sha256": "b1f19458e0dfdf33bb040dc3c595e4fa84edf473a5c1b5dfee650c41304f281e",
+      "crop_box": [
+        190,
+        445,
+        1155,
+        585
+      ],
+      "public_size": [
+        965,
+        140
+      ],
+      "observed": "Own focus time and progress visible; no action row visible in this captured card state."
+    }
+  ],
+  "device_claim_boundary": "This attempt has three PASS cases and two blocked notification-action cases. Screenshots do not establish successful Pause/Start/Reset taps."
+}

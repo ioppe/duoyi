@@ -1,0 +1,215 @@
+{
+  "recorded_at_utc": "2026-11-04T18:45:59.371872+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "base_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "purpose": "Update dialog intrinsic-layout and nested-scrollbar fixes discovered by v2 device validation",
+  "source_manifest": "source-manifest-v3.json",
+  "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5",
+  "standard_source_manifest": "source-manifest-standard-v3.json",
+  "standard_source_manifest_sha256": "67664503f2403bc24c2c9a1113992b89c3038c3c920c5c4ba2176842da7a83cd",
+  "original_path_build_attempt": {
+    "log": "original-v3-build.log",
+    "exit_code": 1,
+    "failure": "JNI CMake task could not hash an existing metadata output in the original directory",
+    "recovery": "Build the identical standard-identity sources in a fresh physical ASCII copy; see standard-v3-build.log"
+  },
+  "files_checked": 1266,
+  "source_mismatches": [],
+  "delta_from_v2": [
+    "docs/android-focus-updates.md",
+    "lib/screens/mine_screen.dart",
+    "test/screens/today_mine_smoke_test.dart"
+  ],
+  "checks": [
+    {
+      "log": "green-final-file.log",
+      "exit_code": 0,
+      "passed": 45,
+      "failed": 0
+    },
+    {
+      "log": "green-full-flutter.log",
+      "exit_code": 0,
+      "passed": 2845,
+      "failed": 0
+    },
+    {
+      "log": "green-v3-analyze.log",
+      "exit_code": 0
+    },
+    {
+      "log": "standard-v3-build.log",
+      "exit_code": 0
+    },
+    {
+      "log": "isolated-v3-build.log",
+      "exit_code": 0
+    },
+    {
+      "log": "isolated-v3-profile-build.log",
+      "exit_code": 0,
+      "mode": "profile"
+    }
+  ],
+  "dialog_regression_history": {
+    "initial_fixture_failure": {
+      "log": "red.log",
+      "passed": 0,
+      "failed": 2,
+      "meaning": "Invalid API-contract fixture and offscreen navigation; not product-layout evidence"
+    },
+    "valid_intrinsic_failure": {
+      "log": "red-valid.log",
+      "passed": 0,
+      "failed": 2,
+      "meaning": "390px case proves LayoutBuilder intrinsic failure; 320px case still failed navigation"
+    },
+    "intermediate_scrollbar_failure": {
+      "log": "green-file.log",
+      "passed": 43,
+      "failed": 2,
+      "meaning": "Both new cases reached the dialog and failed because visible Scrollbar had no controller"
+    },
+    "final_file": {
+      "log": "green-final-file.log",
+      "passed": 45,
+      "failed": 0,
+      "meaning": "Both widths render and scroll 40 release-note lines, show a long asset name and close successfully"
+    }
+  },
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0
+    },
+    "native_junit": {
+      "passed": 42,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "backend_android_files_compared": 209,
+    "hashes_unchanged": true,
+    "evidence": "build-verification.json and verification-logs.tar.gz",
+    "note": "Backend/native code was unchanged by the picker and update-dialog layout deltas and was not retested for them."
+  },
+  "pubspec_lock": {
+    "before_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+    "after_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+    "exit_code": 0,
+    "copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3",
+    "repo_lock_matches": true
+  },
+  "apks": [
+    {
+      "absolute_path": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 160480812,
+      "sha256": "ef3aa5b6347a225b33512fe3ac4d523dfdd885cd7ad607e32758956c7b5ae7d2",
+      "application_id": "com.duoyi.duoyi",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "signing": "debug",
+      "signer_cert_dn": "C=US, O=Android, CN=Android Debug",
+      "aapt_native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "build_directory": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v3",
+      "build_command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+      "build_exit_code": 0,
+      "build_start_utc": "2026-11-04T18:22:31Z",
+      "build_end_utc": "2026-11-04T18:23:15Z",
+      "gradle_seconds": 42.1,
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-update-dialog-fix/standard-v3-build.log",
+      "recovered_from_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-update-dialog-fix/original-v3-build.log",
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v3-source-manifest.json",
+      "source_manifest_sha256": "67664503f2403bc24c2c9a1113992b89c3038c3c920c5c4ba2176842da7a83cd",
+      "source_head": "4f87864c74702685ab0884999494cffe764f333a",
+      "previous_standard_v2_backup": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-update-dialog-fix/previous-standard-v2.apk",
+      "previous_standard_v2_sha256": "951ddabe1706657bef9cdc3c70144274b29eb013af4be04a90598be479b3e107",
+      "client_defines": {
+        "DUOYI_SERVER_URL": "https://todo.skydrow.site",
+        "DUOYI_UPDATE_REPOSITORY": "ioppe/duoyi"
+      },
+      "copy_sha_match": true
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 160480428,
+      "sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "signing": "debug",
+      "build_variant": "isolated-v3",
+      "build_command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter build apk --debug --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "build_exit_code": 0,
+      "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-update-dialog-fix/isolated-v3-build.log",
+      "aapt": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/aapt",
+      "aapt_native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "signer_cert_dn": "C=US, O=Android, CN=Android Debug",
+      "apksigner_verify_exit": 0,
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3-source-manifest.json",
+      "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5"
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3/build/app/outputs/flutter-apk/app-profile.apk",
+      "size_bytes": 105609957,
+      "sha256": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "signing": "debug",
+      "build_mode": "profile",
+      "signer_cert_dn": "C=US, O=Android, CN=Android Debug",
+      "signer_cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "apksigner_verify_exit": 0,
+      "aapt_native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "aot_payload_abis": [
+        "arm64-v8a"
+      ],
+      "abi_note": "arm64-v8a carries libapp.so+libflutter.so (5 libs); armeabi-v7a/x86_64 carry only 2 plugin .so each",
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3-source-manifest.json",
+      "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5",
+      "build_exit_code": 0,
+      "build_command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "build_start_utc": "2026-11-04T18:27:19Z",
+      "build_end_utc": "2026-11-04T18:28:33Z",
+      "gradle_seconds": 72.8,
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-update-dialog-fix/isolated-v3-profile-build.log",
+      "debug_apk_untouched": {
+        "sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+        "size_bytes": 160480428
+      },
+      "dart_define_verified_in": "lib/arm64-v8a/libapp.so",
+      "note": "Profile build success does not imply the debug startup/input ANR is fixed."
+    }
+  ],
+  "logs_archive": "verification-v3-logs.tar.gz",
+  "logs_archive_sha256": "b67fcf16cea4fbeacf1baac8eaac73785bd1eeaf23da110e96f0cd9693dbe8de",
+  "device_claim_boundary": "See separately version-bound device reports; builds and unit tests do not prove background transfer or production upgrades."
+}

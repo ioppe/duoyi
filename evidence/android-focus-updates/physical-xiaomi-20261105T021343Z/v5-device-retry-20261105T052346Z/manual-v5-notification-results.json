@@ -1,0 +1,154 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "v5-device-retry-20261105T052346Z",
+  "source_commit": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "overall_result": "PARTIAL_PASS",
+  "summary": {"passed": 3, "blocked": 2, "notification_controls_accepted": false},
+  "phase": "v5 physical notification validation (device reconnected; fresh attempt, history preserved)",
+  "host_utc": {
+    "start": "2026-11-05T05:23:46Z",
+    "end_cleanup": null,
+    "end_cleanup_approximate": "2026-11-05T05:35Z",
+    "end_cleanup_note": "Runner supplied an approximate end time; it is not an exact timestamp."
+  },
+  "phone_local": {
+    "start": "2026-11-05 13:23:46 +0800",
+    "note": "device wall clock is +0800; never merged with host UTC"
+  },
+  "serial": "2df52c4c",
+  "candidate_v5": {
+    "apk": "android-candidate-v5-final/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105675533,
+    "host_sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+    "device_base_apk_sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+    "hash_binding": "EQUAL (device base.apk sha256 == host v5 sha256)",
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "label": "多仪·专注验证",
+    "signer": "AndroidDebug b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "install_command": "adb -s 2df52c4c install -r <apk>  (no -d, no -g)",
+    "install_result": "Success",
+    "firstInstallTime_preserved": "2026-11-05 10:30:45",
+    "lastUpdateTime_after": "2026-11-05 13:23:57"
+  },
+  "cases": [
+    {
+      "case": "0 安装绑定与状态快照",
+      "status": "PASS",
+      "observed": "host sha=7c902052… bytes=105675533；install -r Success；设备 base.apk sha 相同；firstInstallTime 保留 2026-11-05 10:30:45（验证包数据保留）；AA secure 同时含 focuscheck 与正式包服务；POST_NOTIFICATIONS granted=true(USER_FIXED)；正式包 142023/2.0.0、firstInstall 2026-10-23 14:39:35、lastUpdate 2026-11-04 19:21:34、APK sha cfcd3d27… 未变；layoutcheck 140023/2026-11-04 15:07:43 未变",
+      "evidence": [
+        "raw/pre-install.txt",
+        "raw/install-v5.txt",
+        "raw/post-install.txt"
+      ]
+    },
+    {
+      "case": "1 原生通知可见剩余时间递减",
+      "status": "PASS",
+      "steps": [
+        "App UI 默认 25 分钟开始（严格/监控 OFF，无指定任务）",
+        "Home",
+        "cmd statusbar expand-notifications",
+        "同一卡片连续截图 + 本地 Vision OCR"
+      ],
+      "observed": "通知 id=951101 channel=duoyi_focus_timer_v1 flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT color=0xffc85656 category=stopwatch actions=2 title=专注中 text=剩余(NN:NN) chronometerCountDown=true progress 递增(2→22/1000)；通知栏 OCR 可见剩余 S1=剩余 24:19（host 05:25:4xZ）→ S2=剩余 23:57（phone 13:26:07 / host 05:26:08Z），间隔约 21s 递减 22s；追加样本 23:40 / 23:25 / 22:25 / 20:58 持续递减",
+      "card_coords_note": "卡片位置随通知栏状态变化：S1 标题中心(307,1096)、剩余中心(1004,1102)；S7 标题中心(307,481)、剩余中心(1000,485)。每次点击前必须重新 OCR",
+      "evidence": [
+        "raw/notif-951101-excerpt.txt",
+        "raw/notif-951101-actions.txt",
+        "raw/ocr-shade-S7.json",
+        "raw/c1-running.xml",
+        "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/02-focus-notification-remaining-23m40.png",
+        "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/03-focus-notification-remaining-20m58.png"
+      ]
+    },
+    {
+      "case": "2 物理点击通知 PAUSE 使 App 暂停",
+      "status": "BLOCKED (UI 不可达)",
+      "observed": "本 ROM 通知栏中本应用卡片始终为收起态（标题+剩余+进度条），无展开箭头、无动作行；本地 Vision OCR 仅识别到“专注中/剩余 NN:NN”，从未出现“暂停/重置/开始”标签",
+      "expansion_attempts": [
+        "swipe 600,1080→1330 (300ms) 未展开",
+        "swipe 600,1100→1200 (500ms) 未展开",
+        "slow swipe 700,1090→1500 (1200ms) 未展开、列表未滚动",
+        "tap 1140,1100（卡片右端）实际触发正文点击并打开 App（等同 case 4 证据）"
+      ],
+      "pixel_maps": "对卡片区域做 10 级灰度 ASCII 图：y445-585 仅见标题字形、右侧“剩余”文本与 y547-562 进度条；y540-700 带状区放大 2x 后 OCR 无任何文字标签，故非按钮行",
+      "not_claimed": "未用 intent/action 广播或 App 内按钮冒充通知动作点击",
+      "candidate_crops_scratch": [
+        "candidate-crops/own-card-only-S7-x190-1155-y445-585.png (42552B, sha256 b1f19458e0dfdf33bb040dc3c595e4fa84edf473a5c1b5dfee650c41304f281e)",
+        "candidate-crops/own-card-collapsed-S7-x180-1170-y420-665.png (99271B, sha256 8e9a21c34c9c3f7b654b1e9954ac26749c8751a5d2e9a80d3d39f9f9f4fa8def)",
+        "candidate-crops/row-y540-700-2x.png"
+      ],
+      "source_screenshot_scratch": "shots/shade-S7.png (1200x2670, sha256 921e93052c3324f2e6f778c1b78956752dfae43b2689d41af96695d42753d4d4) — 含其他应用通知，仅 scratch",
+      "next": "主会话已视觉复核：本次 S3 完整卡片仅显示阶段、剩余时间和进度，未见动作行或展开控件。通知暂停/开始/重置仍未验收通过；尚未确定具体系统渲染原因。"
+    },
+    {
+      "case": "3 物理点击通知 START/RESET",
+      "status": "BLOCKED (UI 不可达，同 case 2)",
+      "observed": "通知动作行不可达，故未能点击通知上的 开始/重置",
+      "app_level_cleanup_not_claimed_as_case": "为收尾在 App 内点了重置：进行中 20:18 → 已暂停 25:00，951101 与 FocusTimerForegroundService 均消失；这是 App UI 操作，不计为通知动作验证",
+      "evidence": [
+        "raw/c-end-before-reset.xml",
+        "raw/c-end-reset.xml",
+        "raw/end-idle.xml",
+        "raw/end-state.txt"
+      ]
+    },
+    {
+      "case": "4 物理点击通知正文回专注页",
+      "status": "PASS",
+      "steps": [
+        "Home + 展开通知栏，OCR 定位本应用卡片",
+        "物理点击卡片正文 (1140,1100)"
+      ],
+      "observed": "App 被拉起并直接停在“番茄专注”页（专注页签选中），计时仍 进行中 21:23；PID 未变 15305；同窗口日志 _onUnknownRoute / Null check operator / Navigator.pushNamed / didPushRouteInformation / Unhandled Exception 计数 = 0",
+      "not_claimed": "未用 am start ACTION_VIEW 作为点击证据；本条是真实触摸点击",
+      "evidence": [
+        "raw/c4-after-bodytap.xml",
+        "raw/logcat-bodytap.txt.gz"
+      ]
+    }
+  ],
+  "end_state": {
+    "timer": "已暂停 25:00（idle）",
+    "strict": "OFF",
+    "monitor": "OFF",
+    "notification_951101": "gone (count=0)",
+    "focus_timer_fgs": "stopped (0)",
+    "grants_kept": {
+      "accessibility": "focuscheck + com.duoyi.duoyi 两条服务仍在 secure 值中",
+      "POST_NOTIFICATIONS": "granted=true"
+    },
+    "formal_package_unchanged": {
+      "versionCode": 142023,
+      "versionName": "2.0.0",
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34",
+      "apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b"
+    },
+    "layoutcheck_unchanged": {
+      "versionCode": 140023,
+      "firstInstallTime": "2026-11-04 15:07:43"
+    },
+    "device_settings_unchanged_by_agent": {
+      "size": "1200x2670",
+      "density": "520",
+      "font_scale": "1.25",
+      "screen_off_timeout": "600000"
+    },
+    "host_resources": "本轮未启动任何 host 服务（未用 fixture/viewer）；未新增或删除 adb reverse 映射"
+  },
+  "unexpected_state_recorded_no_actor_assigned": [
+    "screen_off_timeout=600000（历史文档为 60000），本轮开始即为此值，未修改",
+    "settings secure install_non_market_apps=1（未知来源安装为开启），本轮未修改且未安装任何下载载荷"
+  ],
+  "privacy": {
+    "published": "仅本应用 XML/日志/本包通知字段摘录/OCR 白名单标签 + 1 张裁去状态栏的应用截图 + 2 张主会话已视觉复核的本应用通知裁图；哈希和裁剪框见 screenshot-review.json",
+    "not_published": [
+      "含其他应用通知的整屏通知栏截图（仅 scratch）",
+      "其余未选用的候选裁图（仅 scratch）"
+    ],
+    "deleted_from_scratch": "未过滤的整机通知 dump 已在提取本包字段后删除"
+  }
+}

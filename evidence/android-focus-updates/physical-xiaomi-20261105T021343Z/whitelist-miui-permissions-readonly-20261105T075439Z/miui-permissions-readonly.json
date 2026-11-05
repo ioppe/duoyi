@@ -1,0 +1,62 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "phase": "read-only MIUI permission + system-log check to interpret L2",
+  "serial": "2df52c4c",
+  "host_utc": "2026-11-05T07:54-07:58Z",
+  "phone_local": "15:54-15:58 +0800",
+  "device": {
+    "interactive": true,
+    "deviceLocked": 0,
+    "keyguardShowing": false,
+    "v3_sha256": "6c88b84a1e2d44f4f8fdd750424c0993c122a3dc5d4b40d965587a84a7072726"
+  },
+  "system_log_proof_L2": {
+    "window": "15:48:37.870-15:48:38.5 (device local)",
+    "own_pid": "23292",
+    "own_uid": "10565",
+    "lines": [
+      "15:48:37.870 CamOpt_Service: notifyActivityStart: intent = Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras) }",
+      "15:48:37.872 ActivityStarterImpl: MIUILOG- Permission Denied Activity : Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity }",
+      "15:48:37.872 WindowManager: Collecting in transition 39553: ActivityRecord{... MainActivity t-1} init visibleRequested:false",
+      "15:48:37.873 ActivityTaskManager: } of invisible launch ActivityRecord{... MainActivity t-1}",
+      "15:48:37.873 ActivityTaskManager: Abort TransitionRecord{... id=39553 type=OPEN ...}",
+      "15:48:37.874 ActivityTaskManager: START u0 {dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras)} with LAUNCH_SINGLE",
+      "15:48:38.476 ActivityStarterImpl: MIUILOG- Permission Denied Activity : (same intent)",
+      "15:48:38.478 ActivityTaskManager: START u0 (same intent) with LAUNCH_SINGLE"
+    ],
+    "bal_lines_in_window": 0,
+    "reads": "两次 verification 请求都被 ActivityStarterImpl 以 MIUI『Permission Denied Activity』拒绝，launch 记为 invisible(t-1) 且 OPEN transition 被 abort；窗口内没有任何 BAL 行",
+    "proves": "系统侧确有对该 Activity 启动的权限拒绝（非空 appop 推断），与进程内 verification 读到 foreground=weibo 一致"
+  },
+  "state_unchanged_after": {
+    "v3_install": true,
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "formal_versionCode": 142023,
+    "strict": false,
+    "monitor": false,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "running": "none",
+    "device": "HOME/launcher",
+    "host_services": "none started",
+    "reverse": "unchanged",
+    "log_clear": "none"
+  },
+  "not_done": [
+    "未做任何新启动/复现/全量套件",
+    "未新增 AA 能力",
+    "未调用 AppTask.moveToFront（本轮无此类动作）",
+    "未修改源码/Git"
+  ],
+  "miui_other_permissions_readonly": {
+    "path": "设置→应用详情(com.duoyi.duoyi.focuscheck)→权限管理→其他权限（MIUI ApplicationsDetailsActivity）",
+    "后台弹出界面": "拒绝",
+    "锁屏显示": "拒绝",
+    "no_changes": "未切换任何开关、未确认任何提示、未授权/撤销；仅读取后 Back 退出",
+    "scope": "Only two relevant own-app permission states published; other settings remain private."
+  },
+  "privacy": "Full system logs, preferences and settings UI dumps remain in session scratch. Excerpt regenerated from complete raw lines; earlier truncated scratch excerpt preserved."
+}

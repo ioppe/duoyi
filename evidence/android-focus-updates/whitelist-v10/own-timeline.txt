@@ -1,0 +1,49 @@
+whitelist-v10 active-first own timeline (device 2df52c4c, phone clock +08:00)
+APK com.duoyi.duoyi.focuscheck sha256 f9c71d08...eb8a9 size 105708301 installed 2026-11-05 20:59:28
+config: strictFocusMode=true monitorDistractingApps=true whitelist=[com.tencent.mm, com.tencent.mobileqq] selectionMode=whitelist
+timer: isRunning=true totalSeconds=1500 endsAt=2026-11-05T21:25:10.737+08:00 ; native enabled=true expires_at same
+AA: bound to com.duoyi.duoyi.focuscheck (label 多仪·专注验证), legacy com.duoyi.duoyi service in Crashed list
+grants: GET_USAGE_STATS=allow ; SYSTEM_ALERT_WINDOW=default ; POST_NOTIFICATIONS=granted ; keyguard=false wakefulness=Awake
+t0 phone_wall=2026-11-05T21:03:04.485+08:00 host_epoch_ms=1793883785154
+
+[case A] Alipay initial  start_cmd=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.eg.android.AlipayGphone/.AlipayLogin (resolved)
+  am start @ 2026-11-05T21:03:04.673+08:00 exit=0 stderr=Warning: Activity not started, its current task has been brought to the front
+  +2.283s @ 2026-11-05T21:03:06.638+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity focus=Window{1d1617f u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+  +5.213s @ 2026-11-05T21:03:09.574+08:00 top=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity focus=Window{1d1617f u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}
+  outcome=BLOCKED (focus page top at +2 and +5)
+
+[case B] Alipay reopen  start_cmd=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.eg.android.AlipayGphone/.AlipayLogin (resolved)
+  am start @ 2026-11-05T21:03:11.188+08:00 exit=0 stderr=Warning: Activity not started, its current task has been brought to the front
+  +2.375s @ 2026-11-05T21:03:13.171+08:00 top=com.eg.android.AlipayGphone/.AlipayLogin focus=Window{14a3ce6 u0 com.eg.android.AlipayGphone/com.eg.android.AlipayGphone.AlipayLogin}
+  +5.326s @ 2026-11-05T21:03:16.148+08:00 top=com.eg.android.AlipayGphone/.AlipayLogin focus=Window{14a3ce6 u0 com.eg.android.AlipayGphone/com.eg.android.AlipayGphone.AlipayLogin}
+  outcome=NOT BLOCKED (Alipay top at +2 and +5)
+
+[case C] Weibo  start_cmd=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.sina.weibo/.SplashActivity (resolved)
+  am start @ 2026-11-05T21:03:17.882+08:00 exit=0 stderr=Warning: Activity not started, its current task has been brought to the front
+  +2.372s @ 2026-11-05T21:03:19.878+08:00 top=com.sina.weibo/.MainTabActivity focus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}
+  +5.350s @ 2026-11-05T21:03:22.864+08:00 top=com.sina.weibo/.MainTabActivity focus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}
+  outcome=NOT BLOCKED (Weibo top at +2 and +5)
+
+[case D] QQ (whitelisted)  start_cmd=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.tencent.mobileqq/.activity.SplashActivity (resolved)
+  am start @ 2026-11-05T21:03:24.608+08:00 exit=0 stderr=Warning: Activity not started, its current task has been brought to the front
+  +2.345s @ 2026-11-05T21:03:26.598+08:00 top=com.tencent.mobileqq/.activity.SplashActivity focus=Window{d7d5282 u0 com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity}
+  +5.363s @ 2026-11-05T21:03:29.602+08:00 top=com.tencent.mobileqq/.activity.SplashActivity focus=Window{d7d5282 u0 com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity}
+  outcome=ALLOWED as whitelisted (QQ top at +2 and +5)
+
+[case E] WeChat (whitelisted)  start_cmd=am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.tencent.mm/.ui.LauncherUI (resolved)
+  am start @ 2026-11-05T21:03:31.346+08:00 exit=0 stderr=-
+  +2.526s @ 2026-11-05T21:03:33.374+08:00 top=com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI focus=Window{a9c36af u0 com.tencent.mm/com.tencent.mm.plugin.webview.ui.tools.MMWebViewUI}
+  +5.406s @ 2026-11-05T21:03:36.356+08:00 top=com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI focus=Window{a9c36af u0 com.tencent.mm/com.tencent.mm.plugin.webview.ui.tools.MMWebViewUI}
+  outcome=ALLOWED as whitelisted (WeChat top at +2 and +5)
+
+case_end phone_wall=2026-11-05T21:03:36.679+08:00 host_epoch_ms=1793883817353 (measurement window 32.199s)
+
+own blocker log (pid 11828), all lines this session:
+  21:03:04.837 11828 11828 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793883784605
+  21:03:04.863 11828 11828 I DuoyiFocusBlocker: focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation
+  21:03:05.181 11828 11828 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.eg.android.AlipayGphone
+  21:03:05.181 11828 11828 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=com.eg.android.AlipayGphone
+'focus status query took Nms' lines in own-pid logcat: 0
+
+post: own pid 11828 alive curProcState=4 (fg service, not frozen); timer notification id=951101 channel=duoyi_focus_timer_v1 present
+timer still RUNNING (endsAtMs unchanged 1793885110737); native enabled=true; AA still bound; left for user PAUSE, not paused/reset by runner

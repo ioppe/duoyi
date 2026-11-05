@@ -1,0 +1,44 @@
+{
+  "recorded_at_utc": "2026-11-05T04:44:24.718367+00:00",
+  "reason": "Preserve raw logcat trailing whitespace verbatim in gzip so staged whitespace checks pass. No log contents or device observations changed.",
+  "files": [
+    {
+      "original_relative_path": "raw/logcat-bounce.txt",
+      "gzip_relative_path": "raw/logcat-bounce.txt.gz",
+      "original_sha256": "797fe2594a6ce5dcf25872c0a783478b97b2a35fe9bfb9030269d0cb9bc5d58a",
+      "original_bytes": 9369,
+      "gzip_sha256": "64743216e9752a66d394bc5ba3e8010d9909ce12375870a3096c7c02bd3be76f",
+      "gzip_bytes": 2296,
+      "decompressed_equals_original": true
+    },
+    {
+      "original_relative_path": "v4-recheck/raw/logcat-bounce-v4.txt",
+      "gzip_relative_path": "v4-recheck/raw/logcat-bounce-v4.txt.gz",
+      "original_sha256": "147b7466024949c2df9ed44f36efc31950fee86a6dc5a377466712cbed40fa99",
+      "original_bytes": 114253,
+      "gzip_sha256": "6380e3b7b19a7f67851afd18041a277b444dc5d7a7f49aa44e880d9fd08f9c5f",
+      "gzip_bytes": 15397,
+      "decompressed_equals_original": true
+    },
+    {
+      "original_relative_path": "v4-recheck/raw/logcat-cold2.txt",
+      "gzip_relative_path": "v4-recheck/raw/logcat-cold2.txt.gz",
+      "original_sha256": "681e29c6dcf97e3e9ba2628177645d659a85147f0a66435ddcd5ea82f87b38b3",
+      "original_bytes": 80731,
+      "gzip_sha256": "ad409d94907c0d85d0e6e688973e3bc49a59e66bcb1cc1c79765d9307b701240",
+      "gzip_bytes": 8346,
+      "decompressed_equals_original": true
+    },
+    {
+      "original_relative_path": "v4-recheck/raw/logcat-warm2.txt",
+      "gzip_relative_path": "v4-recheck/raw/logcat-warm2.txt.gz",
+      "original_sha256": "1c72af60f35feff707ecf59a2a734bb567da2790ef3b6a20aaf15620afdf2e1e",
+      "original_bytes": 69156,
+      "gzip_sha256": "7a497dbcd84810a43472713dd9f899818dd3996c42a89df8bb9561e9fbcd0906",
+      "gzip_bytes": 7259,
+      "decompressed_equals_original": true
+    }
+  ],
+  "report_update": "Only current evidence references changed from .txt to .txt.gz.",
+  "historical_v4_index_boundary": "The historical V4 index retains its original raw-text hash; raw/logcat-bounce.txt can be reconstructed byte-for-byte from its .gz file. Final V5 index records the gzip paths and hashes."
+}

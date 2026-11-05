@@ -1,0 +1,155 @@
+{
+  "recorded_at_utc": "2026-11-05T08:30:47.312038+00:00",
+  "purpose": "Diagnostic only: subscribe view-focus and content-change event metadata without reading content or changing return behavior",
+  "source_manifest": "source-manifest-whitelist-v5-events-only.json",
+  "source_manifest_sha256": "68bb1c42ba65048c0093919c32a7985c005a7e75f7d81cf15f144db6d6312677",
+  "source_files": 1270,
+  "actual_build_metadata": {
+    "build": {
+      "command": "python3 scripts/flutter_with_config.py build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "workdir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v5-events-only",
+      "exit_code": 0,
+      "pub_get": {
+        "command": "flutter pub get --enforce-lockfile",
+        "exit_code": 0,
+        "lock_sha256_before": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+        "lock_sha256_after": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+        "lock_unchanged": true
+      },
+      "env_note": "PUB_HOSTED_URL must stay unset (lockfile pins https://pub.dev); setting it to a mirror fails --enforce-lockfile (exit 65). FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn kept."
+    },
+    "apk": {
+      "path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v5-events-only/build/app/outputs/flutter-apk/app-profile.apk",
+      "sha256": "51b8c6209a213d8ea2113af82990c97fbed2c8e6f0ff726b5e7a4d503ebb4620",
+      "size_bytes": 105691917,
+      "package": "com.duoyi.duoyi.focuscheck",
+      "versionName": "2.0.0",
+      "versionCode": "140023",
+      "application_label": "多仪·专注验证",
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "native_code": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "min_sdk": 24,
+      "target_sdk": 36,
+      "signature": {
+        "scheme": "v2",
+        "apksigner_exit": 0,
+        "dn": "C=US, O=Android, CN=Android Debug",
+        "cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3"
+      }
+    },
+    "accessibility_service_xml_actual": {
+      "source": "aapt dump xmltree APK res/xml/duoyi_focus_blocker_accessibility_service.xml",
+      "accessibilityEventTypes_hex": "0x400828",
+      "decoded": [
+        "typeViewFocused (0x8)",
+        "typeWindowStateChanged (0x20)",
+        "typeWindowContentChanged (0x800)",
+        "typeWindowsChanged (0x400000)"
+      ],
+      "extra_vs_v3": [
+        "typeViewFocused",
+        "typeWindowContentChanged"
+      ],
+      "canRetrieveWindowContent_hex": "0x0",
+      "canRetrieveWindowContent": false,
+      "accessibilityFlags_hex": "0x10",
+      "notificationTimeout": "0x64 (100ms)"
+    },
+    "metadata_actual": {
+      "flutter_deeplinking_enabled": {
+        "type": "0x12 bool",
+        "value_hex": "0x0",
+        "value": false
+      }
+    },
+    "source_drift": {
+      "manifest_files": 1270,
+      "pre_build": {
+        "missing": 0,
+        "mismatch": 3,
+        "mismatch_files": [
+          "android/app/build.gradle.kts",
+          "android/app/src/main/AndroidManifest.xml",
+          "android/app/src/main/res/values/strings.xml"
+        ],
+        "extra": 0
+      },
+      "post_build": {
+        "missing": 0,
+        "mismatch_files": [
+          "android/app/build.gradle.kts",
+          "android/app/src/main/AndroidManifest.xml",
+          "android/app/src/main/res/values/strings.xml",
+          "lib/l10n/generated/app_localizations_en.dart"
+        ],
+        "extra_build_generated": true,
+        "regenerated_during_build": [
+          "lib/l10n/generated/app_localizations_en.dart"
+        ],
+        "regenerated_diff": "only quote escaping: repo has bare \" inside the identical English string, regenerated file escapes it as \\\" (semantically identical)"
+      },
+      "identity_only_diff": {
+        "android/app/build.gradle.kts": "applicationId com.duoyi.duoyi -> com.duoyi.duoyi.focuscheck",
+        "android/app/src/main/res/values/strings.xml": "app_name 多仪 -> 多仪·专注验证",
+        "android/app/src/main/AndroidManifest.xml": "deep-link scheme duoyi -> duoyi-focus-check"
+      }
+    },
+    "apptask_experiment_absence": {
+      "source": "grep ActivityManager|AppTask|moveToFront over lib/ + android/app/src in the copy: 0 hits; service sha256 equals v3 diagnostic",
+      "service_sha256": "ba7f8483e3a0d4047d53ea83bdb1b2f846b4c0995032162d5bf8c94ca5924d63",
+      "control_v3_apk": {
+        "moveToFront": 1,
+        "getAppTasks": 0,
+        "marker": 0
+      },
+      "control_v4_apk": {
+        "moveToFront": 2,
+        "getAppTasks": 1,
+        "marker": 1
+      },
+      "v5_apk": {
+        "moveToFront": 1,
+        "getAppTasks": 0,
+        "marker": 0
+      },
+      "reading": "v5 dex matches the no-experiment v3 baseline (the single moveToFront string is library/desugar text in classes19.dex, no ActivityManager/TaskInfo refs); v4's own-task experiment string and getAppTasks reference are absent"
+    },
+    "wrapper_copy": {
+      "note": "copy lacked git-ignored gradlew/gradlew.bat/gradle-wrapper.jar; copied from live repo android/ byte-identical, hashes in wrapper-copy.shasum.txt",
+      "gradlew_sha256": "ec56c02543666d92d9ac5ae7fcc48f88ce4de0deb8b7f9b39928ca46f68c1b2b",
+      "gradlew_bat_sha256": "c13c6e91b9a517783976de213d46398c661ea9e17651376d7301e839eaedcc62",
+      "wrapper_jar_sha256": "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da"
+    },
+    "not_run": [
+      "flutter analyze",
+      "full flutter test suite",
+      "native gradle unit tests",
+      "device install / ADB install",
+      "fixture backend start",
+      "release signing"
+    ]
+  },
+  "build_generated_source": {
+    "path": "lib/l10n/generated/app_localizations_en.dart",
+    "snapshot_sha256": "c4e158e1ebf3422344fd3998a36290b23d9f1f924eda4f385cd55010b08c2ae9",
+    "compiled_copy_sha256": "2494918f62607881d815a1a68df9be0dbebba3d5799e46046c147006e154c048",
+    "change": "gen_l10n only escaped two double quotes in the same English sentence; explicitly not a zero-source-drift diagnostic build"
+  },
+  "recoverable_setup_failures": [
+    {
+      "exit_code": 69,
+      "reason": "PUB_HOSTED_URL was incorrectly set to the storage mirror; no product-source change"
+    },
+    {
+      "exit_code": 65,
+      "reason": "Changing the pub host conflicts with the enforced lockfile; final successful run left PUB_HOSTED_URL unset"
+    }
+  ],
+  "logs_archive": "verification-whitelist-v5-events-only-logs.tar.gz",
+  "logs_archive_sha256": "d10c9a1444618c3b180b94ea624c41a2ac5f6d83a1dc6c91aa7e03bb6a07a9f6",
+  "claim_boundary": "Diagnostic APK only. No fresh Flutter/native test result or product-device acceptance is claimed. Actual event delivery is in the separate device report."
+}

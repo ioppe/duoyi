@@ -1,0 +1,8 @@
+            when=1793814300427/1793814300427
+                android.title=String (Focus)
+                android.chronometerCountDown=Boolean (true)
+                android.subText=null
+                android.text=String (No linked task)
+                android.progress=Integer (20)
+                android.progressMax=Integer (1000)
+                android.progressIndeterminate=Boolean (false)

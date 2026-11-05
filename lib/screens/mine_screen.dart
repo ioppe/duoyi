@@ -1404,6 +1404,8 @@ class MineScreen extends StatelessWidget {
 
   void _showUpdateDialog(BuildContext context, AppUpdateService u) async {
     if (!u.checking) await u.checkNow();
+    // 重新读取系统后台下载任务，弹窗重开也能恢复真实进度。
+    await u.refreshDownloadState();
     if (!context.mounted) return;
     showDialog(
       context: context,
@@ -1411,8 +1413,11 @@ class MineScreen extends StatelessWidget {
       builder: (ctx) => Consumer<AppUpdateService>(
         builder: (context, updater, _) {
           final notes = updater.latestNotesForDisplay;
+          final brandTitle = context.select<ThemeProvider, String>(
+            (provider) => provider.brand.strings.appTitle,
+          );
           return PopScope(
-            canPop: !updater.mustUpdate && !updater.busy,
+            canPop: !updater.mustUpdate,
             child: AppDialog(
               title: Text(
                 I18n.tr(
@@ -1475,17 +1480,9 @@ class MineScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      child: Scrollbar(
-                        thumbVisibility: true,
-                        child: SingleChildScrollView(
-                          child: SelectableText(
-                            notes,
-                            style: const TextStyle(fontSize: 12, height: 1.45),
-                          ),
-                        ),
-                      ),
+                    SelectableText(
+                      notes,
+                      style: const TextStyle(fontSize: 12, height: 1.45),
                     ),
                   ],
                   if (updater.hasUpdate && updater.latestAssetName != null) ...[
@@ -1512,9 +1509,21 @@ class MineScreen extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       updater.downloadProgress == null
-                          ? I18n.tr('mine.update.downloading')
+                          ? I18n.tr('mine.update.background_downloading')
                           : "${I18n.tr('mine.update.downloading_progress_prefix')}${(updater.downloadProgress! * 100).clamp(0, 100).toStringAsFixed(0)}%",
                       style: const TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      I18n.tr('mine.update.close_keeps_downloading'),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () => updater.cancelDownload(),
+                        child: Text(I18n.tr('mine.update.cancel_download')),
+                      ),
                     ),
                   ] else if (updater.hasUpdate && updater.installing) ...[
                     const SizedBox(height: 12),
@@ -1527,7 +1536,7 @@ class MineScreen extends StatelessWidget {
               actions: [
                 if (!updater.mustUpdate)
                   TextButton(
-                    onPressed: updater.busy ? null : () => Navigator.pop(ctx),
+                    onPressed: () => Navigator.pop(ctx),
                     child: Text(I18n.tr('action.close')),
                   ),
                 if (updater.hasUpdate &&
@@ -1538,7 +1547,29 @@ class MineScreen extends StatelessWidget {
                     onPressed: updater.busy
                         ? null
                         : () async {
-                            await updater.downloadAndInstallLatest();
+                            if (updater.hasDownloadedInstaller) {
+                              await updater.installDownloadedInstaller();
+                            } else {
+                              await updater.downloadAndInstallLatest(
+                                accentColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary.toARGB32(),
+                                appName: brandTitle,
+                                notificationTitle: brandTitle,
+                                notificationText: I18n.tr(
+                                  'mine.update.notification_downloading',
+                                ),
+                                installActionLabel: I18n.tr(
+                                  'mine.update.notification_install_action',
+                                ),
+                                channelName: I18n.tr(
+                                  'mine.update.notification_channel_name',
+                                ),
+                                channelDescription: I18n.tr(
+                                  'mine.update.notification_channel_description',
+                                ),
+                              );
+                            }
                             if (!context.mounted) return;
                             if (updater.error != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1664,33 +1695,18 @@ class _UpdatePackageInfo extends StatelessWidget {
         color: cs.outlineVariant.withValues(alpha: 0.16),
         width: 0.45,
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final label = Text(
-            I18n.tr('mine.update.package_label'),
-            style: labelStyle,
-          );
-          final value = Text(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(I18n.tr('mine.update.package_label'), style: labelStyle),
+          const SizedBox(height: 3),
+          Text(
             _breakableUpdateAssetName(assetName),
             softWrap: true,
             style: valueStyle,
-          );
-          if (constraints.maxWidth < 260) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [label, const SizedBox(height: 3), value],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 52, child: label),
-              const SizedBox(width: 8),
-              Expanded(child: value),
-            ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

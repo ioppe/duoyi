@@ -1,0 +1,12 @@
+{
+  "files": {
+    "diagnostic.json": {
+      "sha256": "1b82df0dedc08a47b85727814daea0433bbc10ed545de6e9412be13c99727c0d",
+      "bytes": 8085
+    },
+    "own-service-timeline.txt": {
+      "sha256": "92a68c6f810dcc4768aee4e6a6d3071c645cd20e9d197b0e5d00034fd8567600",
+      "bytes": 4361
+    }
+  }
+}

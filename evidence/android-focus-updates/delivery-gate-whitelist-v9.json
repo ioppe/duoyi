@@ -1,0 +1,52 @@
+{
+  "scope": "Authorized local checkpoint of incomplete Android strict-focus whitelist repair; not release acceptance",
+  "review_delegation_id": "bfa4fc6b-2e9d-4ad6-bfa8-4e7c6819fa62",
+  "review_role": "delivery-gate",
+  "source_head_before_commit": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "branch": "fix/android-focus-updates-notifications",
+  "local_commit_ready": true,
+  "product_device_acceptance": false,
+  "local_save_blockers": [],
+  "staged_before_this_gate": {
+    "paths": 128,
+    "source_and_docs": 19,
+    "public_evidence": 109,
+    "cached_diff_check_exit": 0,
+    "apk_database_key_payloads": 0,
+    "unstaged_or_untracked_remaining": 0
+  },
+  "verification": {
+    "source_files_each_manifest": 1272,
+    "source_hash_mismatches": 0,
+    "candidate_identity_files": 3,
+    "standard_identity_files": 0,
+    "fresh_static_contract_tests_passed": 5,
+    "fresh_native_tests": {"tests": 90, "failures": 0, "errors": 0, "skipped": 0},
+    "debug_and_profile_builds": "passed with actual signatures and APK metadata",
+    "inherited_flutter": {
+      "source": "build-verification-whitelist-v7-final.json",
+      "identical_inputs": 790,
+      "targeted_passed": 55,
+      "full_passed": 2871,
+      "analysis": "No issues found",
+      "format": "7 files, 0 changes",
+      "not_rerun_in_v9": true
+    },
+    "backend": "14 unchanged files; prior 317 passed, not rerun",
+    "consistency_report": "whitelist-v9-verification.json",
+    "consistency_errors": [],
+    "archive_sha256": "4235f3b94464fbd05f98cfa1d831c473ff68adb1d724f360aa38763410bba87f",
+    "evidence_index_sha256": "03cabe732dcde5e55c4050f5ccc7e5e6ad464c5e17ac8a76b689988b674ce0ed"
+  },
+  "device_limits": [
+    "v7 Weibo initial/reopen, QQ/WeChat release and pause/reset release passed, but Alipay three cases failed and continue after pause was not accepted.",
+    "v8 diagnostic plus5 sampling overlapped later actions; its late request/cancellation does not prove the initial failure cause.",
+    "v8 controlled setup could not restore QQ/WeChat selection; all measurement cases NOT_RUN.",
+    "v9 was built but not installed or device-tested. Device remains the v8 diagnostic APK.",
+    "Repeated phone trials stopped. Validation strict/monitor OFF, no running timer snapshot, notification 951101 and timer FGS absent; validation whitelist remains empty.",
+    "Previously authorized background-popup and usage-access grants retained. Formal and layout packages were not overwritten, cleared or reconfigured.",
+    "Earlier notification action-row reachability remains a separate BLOCKED item."
+  ],
+  "no_remote_actions": "No push, tag, release, production deployment, or merge authorized or performed by this gate",
+  "index_boundary": "This gate and final verification/index intentionally excluded from the evidence index to avoid circular hashes."
+}

@@ -1,0 +1,168 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "host_utc_recorded": null,
+  "host_utc_recorded_note": "首轮未保存精确的 UTC 完成时间，已移除原近似值；按 baseline UTC 与原始截图、日志中的设备本地时间定位步骤。",
+  "device_local_time_note": "device screenshots/logs show local wall clock (e.g. 10:43) = Xiaomi 24129PN74C local zone; not UTC",
+  "serial": "2df52c4c",
+  "device": {
+    "model": "Xiaomi 24129PN74C",
+    "android": "16/API36",
+    "abi": "arm64-v8a",
+    "screen": "1200x2670",
+    "density": 520,
+    "font_scale": "1.25",
+    "screen_off_timeout": "60000"
+  },
+  "candidate": {
+    "commit": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+    "branch": "fix/android-focus-updates-notifications",
+    "apk": "android-candidate-v3/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105609957,
+    "host_sha256": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+    "device_base_apk_sha256": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "label": "多仪·专注验证",
+    "activity": "com.duoyi.duoyi.MainActivity",
+    "build": "AOT Profile",
+    "signer_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3"
+  },
+  "formal_package_after": {
+    "package": "com.duoyi.duoyi",
+    "versionName": "2.0.0",
+    "versionCode": 142023,
+    "lastUpdateTime": "2026-11-04 19:21:34",
+    "firstInstallTime": "2026-10-23 14:39:35",
+    "device_base_apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+    "unmodified": true
+  },
+  "items": [
+    {
+      "checklist": "manual-regression-checklist.md:15 (更新误报)",
+      "status": "PASS",
+      "steps": [
+        "fixture mode=legacy delay=0.08",
+        "Me->帮助与关于->检查更新"
+      ],
+      "observed": "当前版本 2.0.0 / 远端版本 2.0.0 / 最低支持版本 2.0.0 / 已是最新版本；服务端下发 latest_version_code=200000 且 latest_version_code_source=null（历史推算值）",
+      "evidence": [
+        "raw/E06-legacy-check.xml",
+        "raw/E07-legacy-response.json",
+        "update-fixture.log"
+      ]
+    },
+    {
+      "checklist": "manual-regression-checklist.md:16 (后台下载/安装入口)",
+      "status": "PARTIAL_PASS",
+      "steps": [
+        "fixture mode=update delay=0.12 -> 远端版本 2.0.1",
+        "下载并安装",
+        "关闭弹窗",
+        "Home"
+      ],
+      "observed": "弹窗显示 2.0.1 与“关闭此窗口后下载会继续”，进度 14%；返回桌面后系统 DownloadManager 通知 tag=1:com.duoyi.duoyi.focuscheck id=1089 progress 69/100（真实系统进度）；下载完成后应用通知 id=7307 channel=duoyi_app_update 正文“2.0.1 · fixture.apk”，contentIntent=本应用 startActivity",
+      "not_verified": [
+        "点击完成通知进入安装器/未知来源页：系统通知栏无法被 uiautomator 导出卡片坐标（导出到的是应用/AOD 窗口），为避免误触其他应用私密通知未盲点",
+        "进程退出续传（am kill）：下载约 13 秒完成，未再起新任务",
+        "失败/取消/重试：余力不足未执行"
+      ],
+      "evidence": [
+        "raw/E09-update-dialog.xml",
+        "raw/E10-downloading.xml",
+        "raw/dl-notif-1-focuscheck-excerpt.txt",
+        "raw/dl-notif-2-focuscheck-excerpt.txt",
+        "update-fixture.log"
+      ]
+    },
+    {
+      "checklist": "manual-regression-checklist.md:74 (独立计时通知)",
+      "status": "PASS",
+      "steps": [
+        "无白噪音 25 分钟开始",
+        "等待 16 秒",
+        "暂停 12 秒",
+        "继续",
+        "长时间后台",
+        "重置"
+      ],
+      "observed": "id=951101 importance=2 flags=ONGOING|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT icon=RESOURCE 0x7f070093 color=0xffc85656 title=专注中 text=无关联任务 chronometerCountDown=true progress 10->20（16s）；暂停 text=“无关联任务 · 已暂停 · 22:53” progress=84，12 秒后完全一致；继续后后台期间 progress 84->278；重置后 id=951101 记录数 0，计时回到 25:00，仅剩无障碍服务",
+      "not_verified": [
+        "通知正文物理点击回专注页：同上的通知栏定位限制；仅确认 contentIntent=com.duoyi.duoyi.focuscheck startActivity"
+      ],
+      "evidence": [
+        "raw/notif-paused1-focuscheck-excerpt.txt",
+        "raw/notif-paused2-focuscheck-excerpt.txt",
+        "raw/notif-t2-focuscheck-excerpt.txt"
+      ]
+    },
+    {
+      "checklist": "manual-regression-checklist.md:158 (分心应用选择器)",
+      "status": "PASS_WITH_GAPS",
+      "observed": "扫描 205 个可启动应用；每行显示应用名+包名（如 com.miui.weather2 / com.duoyi.duoyi.layoutcheck / com.tencent.mm），图标区域像素方差 48–119、采样出 81–195 种颜色（真实图标位图非空白）；列表独立滚动时“取消/完成”按钮始终固定在 y=2455–2612；黑名单/白名单页签与“已选 N”计数可用；取消后严格面板仍显示“未选择应用”（草稿不落库），完成后显示“黑名单 · 已选 1”",
+      "not_verified": [
+        "搜索输入：EditText 可获得焦点且 IME 已连接 FlutterView，但 adb input text / input keyevent 字符均未进入文本框；该 ROM 无 cmd clipboard，无法粘贴；故改用滚动选择",
+        "320px 窄屏与 2 倍字号：未改动设备字体/密度，未执行"
+      ],
+      "evidence": [
+        "01-distractor-picker-real-icons.png",
+        "raw/A04-picker.xml",
+        "raw/A12-selected.xml",
+        "raw/A13-after-cancel.xml",
+        "raw/A15-saved.xml"
+      ]
+    },
+    {
+      "checklist": "manual-regression-checklist.md:159 (无障碍授权状态)",
+      "status": "PASS",
+      "observed": "经系统 UI（MIUI 高危权限确认页，勾选知情->确定）启用；返回应用后“监控分心应用 辅助功能已启用”立即更新，并在 >20 秒（22s）及后续多次进出后仍保持；secure 值为短名 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService 被正确识别；正式包服务仍在同一 secure 值中未被替换；UsageStats 未授予而 AA 已启用时面板同时显示“已启用”和“使用情况权限”按钮，未互相覆盖",
+      "evidence": [
+        "02-system-a11y-consent.png",
+        "raw/B05-a11y-detail.xml",
+        "raw/B13-back-app.xml"
+      ]
+    },
+    {
+      "checklist": "manual-regression-checklist.md:160 (拉回/记录/解除)",
+      "status": "PASS_WITH_GAPS",
+      "observed": "黑名单=AI扫描(com.xiaomi.scanner)，监控 ON，严格 ON，计时运行中启动 scanner：焦点立即回到 com.duoyi.duoyi.focuscheck/MainActivity，日志 DuoyiFocusBlocker: focus blocker bounced com.xiaomi.scanner to focus tab（10:43:41.811），scanner 进程 21693 确已启动；最近惩罚记录：“打开分心应用 AI扫描 (com.xiaomi.scanner) · 11/5 10:43 · 1 分钟”，名称与包名俱在；重置并关闭严格/监控后再启动 scanner，停留前台且日志 bounced 计数 0",
+      "not_verified": [
+        "暂停期间打开分心应用不拉回：未执行（本轮在应用选择器搜索受限与锁屏中断后时间预算耗尽；且选择器内未定位到计算器）",
+        "仅 AA 无 UsageStats 的拦截对照：AA 授权时 UsageStats 本就未授予，但未单独做“无 UsageStats 仍拦截”的隔离对照记录"
+      ],
+      "evidence": [
+        "raw/logcat-bounce.txt.gz",
+        "raw/C07-penalty.xml",
+        "03-focus-page-after-reset.png"
+      ]
+    },
+    {
+      "checklist": "授权-通知权限",
+      "status": "PASS",
+      "observed": "经系统 UI 开启“允许通知”后 android.permission.POST_NOTIFICATIONS granted=true flags=[USER_FIXED]；本轮保留该授权",
+      "evidence": [
+        "raw/B12-notif-on.xml"
+      ]
+    }
+  ],
+  "cleanup": {
+    "timer_reset": true,
+    "strict_off": true,
+    "monitor_off": true,
+    "interception_stopped_verified": true,
+    "fixture_restored": "mode=legacy delay=0.08",
+    "accessibility": "focuscheck 服务保持启用（本轮新增，已记录）；com.duoyi.duoyi 正式服务仍在 secure 列表中",
+    "focuscheck_package": "保留安装（未卸载/未清数据）",
+    "download": "本轮任务已完成；无我创建的未完成任务残留；7307 完成通知仍在本应用通知通道",
+    "global_settings_untouched": [
+      "font_scale 1.25",
+      "density 520",
+      "screen_off_timeout 60000"
+    ]
+  },
+  "observations": [
+    "系统辅助功能列表中正式包 com.duoyi.duoyi 条目显示“无法运行。点按即可查看相关信息。”，而 secure 设置仍包含其服务；本轮未修改该条目",
+    "严格专注面板“监控分心应用”副标题在已有 1 个黑名单应用时曾显示“未配置拦截应用”，配置生效后变为“辅助功能已启用”（措辞观察，未判定为失败）",
+    "重置/离开应用各产生独立中断记录（本轮 12 次，含息屏与 Home 操作）"
+  ]
+}

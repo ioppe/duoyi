@@ -1,0 +1,5 @@
+=== CASE3 ALIPAY start phone=15:19:07.242046906 host=2026-11-05T07:19:07Z ===
+precheck locked=deviceLocked=0 keyguard=false focus=com.miui.home/com.miui.home.launcher.Launcher}
+Starting: Intent { cmp=com.eg.android.AlipayGphone/.AlipayLogin }
+t+2 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity} resumed=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity t11096}
+t+5 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity} resumed=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity t11096}

@@ -1,0 +1,231 @@
+{
+  "recorded_at_utc": "2026-11-05T03:31:40.564862+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "source_head_at_snapshot": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+  "purpose": "Fix duplicate Flutter named-route dispatch discovered during Xiaomi physical strict-focus return",
+  "source_manifest": "source-manifest-v4.json",
+  "source_manifest_sha256": "636e41d0948d266ba2aa646965c64dd645a1d8d3d9be0d05f6c775e44d538a11",
+  "standard_source_manifest": "source-manifest-standard-v4.json",
+  "standard_source_manifest_sha256": "4fbb7f9874dcc03f4a2235d575d93b4258de002734dd65f014c8e21a4959237f",
+  "files_checked": 1267,
+  "source_mismatches": [],
+  "delta_from_v3": [
+    "android/app/src/main/AndroidManifest.xml",
+    "docs/android-focus-updates.md",
+    "test/services/android_deep_link_routing_test.dart"
+  ],
+  "route_regression_red": {
+    "log": "red.log",
+    "passed": 3,
+    "failed": 1,
+    "failure": "MainActivity flutter_deeplinking_enabled metadata missing; Expected not null, Actual null",
+    "meaning": "The other three custom-channel behavior regressions passed before the manifest fix."
+  },
+  "checks": [
+    {
+      "log": "green-targeted.log",
+      "exit_code": 0,
+      "passed": 4,
+      "failed": 0
+    },
+    {
+      "log": "green-full-flutter.log",
+      "exit_code": 0,
+      "passed": 2849,
+      "failed": 0
+    },
+    {
+      "log": "green-v4-analyze.log",
+      "exit_code": 0,
+      "result": "No issues found!"
+    },
+    {
+      "log": "native-v4-junit.log",
+      "exit_code": 0,
+      "tests": 42,
+      "passed": 42,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "details": "native-v4-junit-summary.json"
+    },
+    {
+      "log": "isolated-v4-profile-build.log",
+      "exit_code": 0,
+      "mode": "profile"
+    },
+    {
+      "log": "standard-v4-debug-build.log",
+      "exit_code": 0,
+      "mode": "debug"
+    }
+  ],
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0,
+      "backend_files_compared": 14,
+      "hashes_unchanged": true,
+      "evidence": "build-verification.json and verification-logs.tar.gz",
+      "note": "Backend sources were unchanged by the physical-device routing fix; not rerun."
+    }
+  },
+  "pubspec_lock": {
+    "sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+    "copies": [
+      {
+        "copy": "android-candidate-v4",
+        "source_files": 1267,
+        "manifest_sha256": "636e41d0948d266ba2aa646965c64dd645a1d8d3d9be0d05f6c775e44d538a11",
+        "identity_only_changes": [
+          "android/app/build.gradle.kts",
+          "android/app/src/main/res/values/strings.xml",
+          "android/app/src/main/AndroidManifest.xml"
+        ],
+        "pubget_exit": 0,
+        "lock_before": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+        "lock_after": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b"
+      },
+      {
+        "copy": "android-standard-v4",
+        "source_files": 1267,
+        "manifest_sha256": "4fbb7f9874dcc03f4a2235d575d93b4258de002734dd65f014c8e21a4959237f",
+        "identity_only_changes": [],
+        "pubget_exit": 0,
+        "lock_before": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+        "lock_after": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b"
+      }
+    ]
+  },
+  "apks": [
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v4/build/app/outputs/flutter-apk/app-profile.apk",
+      "size_bytes": 105609997,
+      "sha256": "389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "abis": {
+        "declared_native_code": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86_64"
+        ],
+        "flutter_aot_payload": [
+          "arm64-v8a"
+        ],
+        "libapp_so_entries": [
+          "lib/arm64-v8a/libapp.so"
+        ],
+        "plugin_only_libs": [
+          "libarmeabi-v7a/libdartjni.so",
+          "libarmeabi-v7a/libdatastore_shared_counter.so",
+          "libx86_64/libdartjni.so",
+          "libx86_64/libdatastore_shared_counter.so"
+        ],
+        "note": "aapt badging native-code 列出三架构，但 Flutter AOT 快照 libapp.so 仅 arm64-v8a；v7a/x86_64 只含插件 .so，不得报告为全架构包"
+      },
+      "signing": {
+        "scheme": "AndroidDebug",
+        "certificate_dn": "C=US, O=Android, CN=Android Debug",
+        "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+        "certificate_sha1": "7fc1309624dd34dc67a2074c64bfd6436d3830a8",
+        "apksigner_verify_exit": 0
+      },
+      "build_mode": "profile",
+      "build_exit_code": 0,
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/deep-link-fix/isolated-v4-profile-build.log",
+      "build_command": "$FLUTTER_BIN build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "build_cwd": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v4",
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v4-source-manifest.json",
+      "source_manifest_sha256": "636e41d0948d266ba2aa646965c64dd645a1d8d3d9be0d05f6c775e44d538a11",
+      "source_manifest_entries": 1267,
+      "source_android_manifest_sha256": "e1c1f032900512aa46668c66b5cd4a79aae7995b576e12cf4c69d26fbfe65981",
+      "main_activity": "com.duoyi.duoyi.MainActivity",
+      "main_activity_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "aapt_xmltree_encoding": "A: android:value(0x01010024)=(type 0x12)0x0",
+          "type": "boolean(0x12)",
+          "scope": "inside E: activity com.duoyi.duoyi.MainActivity (xmltree line=66 block, meta-data at line=77/81)",
+          "source": "aapt dump xmltree APK AndroidManifest.xml",
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/deep-link-fix/manifest-v4-profile.txt"
+        }
+      },
+      "verified_with": "aapt 36.0.0 dump badging/xmltree, apksigner 36.0.0",
+      "finished_at_utc": "2026-11-05T03:21:55Z",
+      "verified_payload_entries": [
+        "lib/arm64-v8a/libapp.so",
+        "lib/arm64-v8a/libflutter.so"
+      ],
+      "raw_metadata_archive_member": "isolated-v4-profile-apk.json"
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v4/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 160480848,
+      "sha256": "b0c8bf26e1581dcf4f8867971e3714b11bd6e9760d9816e219458f5c31881704",
+      "application_id": "com.duoyi.duoyi",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "abis": {
+        "declared_native_code": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86_64"
+        ],
+        "note": "Debug runtime target ARM64; plugin ABI directories do not prove other Flutter runtime architectures.",
+        "flutter_runtime_target": [
+          "arm64-v8a"
+        ]
+      },
+      "signing": {
+        "scheme": "AndroidDebug",
+        "certificate_dn": "C=US, O=Android, CN=Android Debug",
+        "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+        "certificate_sha1": "7fc1309624dd34dc67a2074c64bfd6436d3830a8",
+        "apksigner_verify_exit": 0
+      },
+      "build_mode": "debug",
+      "build_exit_code": 0,
+      "build_command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+      "build_directory": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v4",
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/deep-link-fix/standard-v4-debug-build.log",
+      "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v4-source-manifest.json",
+      "source_manifest_sha256": "4fbb7f9874dcc03f4a2235d575d93b4258de002734dd65f014c8e21a4959237f",
+      "source_manifest_entries": 1267,
+      "source_android_manifest_sha256": "ecec8824eeb5d44b4129b5ec9fcff7e7d13d43fa75c779c8120d304921ac58ca",
+      "main_activity": "com.duoyi.duoyi.MainActivity",
+      "merged_manifest_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "aapt_xmltree_encoding": "A: android:value(0x01010024)=(type 0x12)0x0",
+          "scope": "E: activity com.duoyi.duoyi.MainActivity (xmltree line=75 block, meta-data value at line 90/91)",
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/deep-link-fix/manifest-v4-standard.txt"
+        }
+      },
+      "copied_to_repo_path": {
+        "path": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-debug.apk",
+        "size_bytes": 160480848,
+        "sha256": "b0c8bf26e1581dcf4f8867971e3714b11bd6e9760d9816e219458f5c31881704",
+        "sha256_matches_source": true
+      },
+      "previous_standard_v3_backup": {
+        "path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/deep-link-fix/previous-standard-v3.apk",
+        "size_bytes": 160480812,
+        "sha256": "ef3aa5b6347a225b33512fe3ac4d523dfdd885cd7ad607e32758956c7b5ae7d2",
+        "note": "与任务给定旧包 SHA ef3aa5b6… 一致；未被本轮新包覆盖"
+      },
+      "install_allowed": false,
+      "install_note": "禁止安装标准包；手机上的正式包 142023 签名与此 debug 不同，必须保留",
+      "verified_with": "aapt 36.0.0 dump badging/xmltree, apksigner 36.0.0",
+      "verified_payload_entries": [
+        "lib/arm64-v8a/libflutter.so",
+        "assets/flutter_assets/kernel_blob.bin"
+      ],
+      "raw_metadata_archive_member": "standard-v4-debug-apk.json"
+    }
+  ],
+  "logs_archive": "verification-v4-logs.tar.gz",
+  "logs_archive_sha256": "83718b316415897c7159b63a329853fd6f8ff901192c017a3ae21fc2a57a3603",
+  "device_claim_boundary": "Physical V3 first-pass and V4 recheck are recorded separately; automatic checks do not establish notification clicks or production upgrades."
+}

@@ -1,0 +1,6 @@
+NotificationRecord(0x097c19d8: pkg=com.duoyi.duoyi.focuscheck user=UserHandle{0} id=951101 tag=null importance=2 key=0|com.duoyi.duoyi.focuscheck|951101|null|10
+actions={
+android.title=String (专注中)
+android.chronometerCountDown=Boolean (true)
+android.text=String (剩余 24:27)
+android.progress=Integer (22)

@@ -1,0 +1,12 @@
+{
+  "recorded_at_utc": "2026-11-05T04:33:42.754619+00:00",
+  "path": "build/app/outputs/flutter-apk/app-focuscheck-profile.apk",
+  "size_bytes": 105675533,
+  "sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+  "source_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v5-final/build/app/outputs/flutter-apk/app-profile.apk",
+  "application_id": "com.duoyi.duoyi.focuscheck",
+  "build_mode": "profile",
+  "previous_v4_copy_backup_scratch": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/previous-candidate-v4-profile.apk",
+  "previous_v4_sha256": "389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9",
+  "scope": "Generated ignored review APK; not staged. Device install is recorded separately by sole e2e-runner."
+}

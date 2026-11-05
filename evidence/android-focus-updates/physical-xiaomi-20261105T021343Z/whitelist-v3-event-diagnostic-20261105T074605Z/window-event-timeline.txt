@@ -1,0 +1,21 @@
+# Exact own-service lines; device local +0800; raw log bytes remain in scratch.
+# Includes package/type/reason/uptime only; no third-party UI text.
+
+11-05 15:48:32.524 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.sina.weibo type=32 eventAt=1464246030 now=1464246134 tracked=com.duoyi.duoyi.focuscheck trackedAt=1464221656
+11-05 15:48:32.524 23292 23292 I DuoyiFocusBlocker: focus blocker cooldown: target=com.sina.weibo now=1464246134 remaining=0 generation=1
+11-05 15:48:32.530 23292 23292 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 15:48:32.530 23292 23292 I DuoyiFocusBlocker: focus blocker verification scheduled: target=com.sina.weibo generation=2 attempt=1 delay=600
+11-05 15:48:32.729 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.duoyi.duoyi.focuscheck type=32 eventAt=1464246235 now=1464246339 tracked=com.duoyi.duoyi.focuscheck trackedAt=1464246215
+11-05 15:48:32.729 23292 23292 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+11-05 15:48:32.729 23292 23292 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+11-05 15:48:37.870 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.sina.weibo type=32 eventAt=1464251376 now=1464251480 tracked=com.duoyi.duoyi.focuscheck trackedAt=1464246235
+11-05 15:48:37.870 23292 23292 I DuoyiFocusBlocker: focus blocker cooldown: target=com.sina.weibo now=1464251480 remaining=0 generation=3
+11-05 15:48:37.874 23292 23292 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 15:48:37.874 23292 23292 I DuoyiFocusBlocker: focus blocker verification scheduled: target=com.sina.weibo generation=4 attempt=1 delay=600
+11-05 15:48:38.474 23292 23292 I DuoyiFocusBlocker: focus blocker verification fired: pending=com.sina.weibo generation=4 attempt=1 foreground=com.sina.weibo
+11-05 15:48:38.479 23292 23292 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 2/2), awaiting confirmation
+11-05 15:48:38.479 23292 23292 I DuoyiFocusBlocker: focus blocker verification scheduled: target=com.sina.weibo generation=4 attempt=2 delay=600
+11-05 15:48:39.080 23292 23292 I DuoyiFocusBlocker: focus blocker verification fired: pending=com.sina.weibo generation=4 attempt=2 foreground=com.sina.weibo
+11-05 15:48:39.080 23292 23292 W DuoyiFocusBlocker: focus blocker return unconfirmed for com.sina.weibo (foreground=com.sina.weibo, attempts=2)
+11-05 15:48:39.080 23292 23292 I DuoyiFocusBlocker: focus blocker verification finished: reason=unconfirmed, deferred=none
+11-05 15:49:13.436 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.miui.home type=32 eventAt=1464286944 now=1464287046 tracked=com.sina.weibo trackedAt=1464251376

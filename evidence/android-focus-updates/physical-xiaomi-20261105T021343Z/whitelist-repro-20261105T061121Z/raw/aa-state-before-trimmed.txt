@@ -1,0 +1,4 @@
+     Bound services:{Service[label=多仪·专注验证, feedbackType[FEEDBACK_GENERIC], capabilities=0, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED], notificationTimeout=100, requestA11yBtn=false]}
+     Enabled services:{{com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService}, {com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService}}
+     Binding services:{}
+     Crashed services:{{com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService}}

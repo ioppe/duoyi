@@ -1,5 +1,6 @@
 package com.duoyi.duoyi
 
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.appwidget.AppWidgetManager
 import android.app.Activity
 import android.app.AppOpsManager
@@ -11,6 +12,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ApplicationInfo
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
@@ -18,12 +21,16 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
 import android.provider.CalendarContract
 import android.provider.Settings
 import android.provider.OpenableColumns
 import android.util.Log
+import android.view.accessibility.AccessibilityManager
 import androidx.core.content.FileProvider
 import com.duoyi.duoyi.services.FocusSoundForegroundService
+import com.duoyi.duoyi.services.FocusTimerForegroundService
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.util.TimeZone
@@ -41,6 +48,8 @@ class MainActivity : FlutterActivity() {
     private val focusSoundForegroundChannel = "duoyi/focus_sound_foreground"
     private val focusDndChannel = "duoyi/focus_dnd"
     private val focusDistractionChannel = "duoyi/focus_distraction"
+    private val focusTimerChannel = "duoyi/focus_timer"
+    private val focusTag = "DuoyiFocusDistraction"
     private val widgetsChannel = "duoyi/widgets"
     private val locationGeofenceChannel = "duoyi/location_geofence"
     private val noteAttachmentPickerChannel = "duoyi/note_attachment_picker"
@@ -53,33 +62,91 @@ class MainActivity : FlutterActivity() {
     private var pendingInitialOAuthLink: String? = null
     private var pendingInitialSharedText: String? = null
     private var focusSoundForegroundMethodChannel: MethodChannel? = null
+    private var focusTimerMethodChannel: MethodChannel? = null
     private val widgetRestoreHandler = Handler(Looper.getMainLooper())
     private val widgetRestoreExecutor = Executors.newSingleThreadExecutor()
+    // 应用列表/图标渲染是重 IO + 位图操作，必须离开主线程。
+    private val focusAppsExecutor = Executors.newSingleThreadExecutor()
+    // 焦点状态快照（AppOps/UsageStats/无障碍）会走 Binder，耗时不可控：
+    // 独立单线程 + 单飞合并，与图标执行器互不占用；结果统一投回主线程。
+    private val focusStatusExecutor = Executors.newSingleThreadExecutor()
+    private val focusStatusHandler = Handler(Looper.getMainLooper())
+    private val focusStatusQueryHolder = lazy {
+        val appContext = applicationContext
+        val ownerHandler = focusStatusHandler
+        val queryLogTag = focusTag
+        FocusStatusQuery<Map<String, Any?>>(
+            worker = focusStatusExecutor,
+            postToOwner = { runnable -> ownerHandler.post(runnable) },
+            // 只捕获 applicationContext：worker 不持有 Activity。
+            readSnapshot = { readFocusStatusSnapshot(appContext) },
+            onSlowQuery = { elapsedMillis ->
+                Log.w(queryLogTag, "focus status query took ${elapsedMillis}ms")
+            },
+        )
+    }
     private var widgetRestoreScheduled = false
     private var lastWidgetRestoreAtMillis = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         stopReminderRingtoneIfRequested(intent)
+        AndroidUpdateDownloads.handleInstallIntent(this, intent)
         pendingInitialDeepLink = duoyiDeepLinkFrom(intent)
         pendingInitialOAuthLink = oauthDeepLinkFrom(intent)
         pendingInitialSharedText = sharedTextFrom(intent)
+        // 冷启动清理进程死前遗留的过期拦截配置，避免永久拦截。
+        runCatching { FocusBlockerStore.clearIfExpired(this) }
+            .onFailure { error -> Log.w(focusTag, "blocker expiry cleanup failed", error) }
     }
 
     override fun onResume() {
         super.onResume()
+        // API 29+ 由 onTopResumedActivityChanged 提供真实前台确认；更低版本没有该回调，
+        // 在这里用同一 uptime 时钟观察自己，保证拦截服务仍能确认“已返回多仪”。
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            observeOwnForegroundConfirmation()
+        }
         scheduleWidgetRestoreAfterResume()
+        AndroidUpdateDownloads.resumePendingInstallIfAllowed(this)
+    }
+
+    override fun onTopResumedActivityChanged(isTopResumed: Boolean) {
+        // 回调本身只在 API 29+ 触发；显式版本判断同时满足 lint 的 NewApi 检查。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            super.onTopResumedActivityChanged(isTopResumed)
+        }
+        if (isTopResumed) observeOwnForegroundConfirmation()
+    }
+
+    /**
+     * 记录本应用已成为前台（进程内共享给无障碍拦截服务）。
+     *
+     * 只写入包名与 uptime，不持有 Activity 引用；更旧的无障碍窗口事件不会覆盖它。
+     */
+    private fun observeOwnForegroundConfirmation() {
+        val now = SystemClock.uptimeMillis()
+        FocusBlockerForegroundState.observeForeground(packageName, now, now)
     }
 
     override fun onDestroy() {
         widgetRestoreHandler.removeCallbacksAndMessages(null)
         widgetRestoreExecutor.shutdownNow()
+        focusAppsExecutor.shutdownNow()
+        // 焦点状态：先在主线程按“已销毁”回复未完成请求，再拒绝新任务、关闭专用线程，
+        // 迟到的 worker 结果由 generation 判定丢弃，不会二次回复。
+        if (focusStatusQueryHolder.isInitialized()) {
+            focusStatusQueryHolder.value.dispose()
+        }
+        focusStatusExecutor.shutdownNow()
+        focusStatusHandler.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        AndroidUpdateDownloads.handleInstallIntent(this, intent)
         stopReminderRingtoneIfRequested(intent)
         val deepLink = duoyiDeepLinkFrom(intent)
         val link = oauthDeepLinkFrom(intent)
@@ -200,7 +267,11 @@ class MainActivity : FlutterActivity() {
                             result.error("install_failed", "打开安装器失败: ${e.message}", null)
                         }
                     }
-                    else -> result.notImplemented()
+                    else -> {
+                        if (!AndroidUpdateDownloads.handleMethod(this, call, result)) {
+                            result.notImplemented()
+                        }
+                    }
                 }
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, systemCalendarChannel)
@@ -408,23 +479,33 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, focusDistractionChannel)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "getStatus" -> {
-                        result.success(
-                            mapOf(
-                                "supported" to (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP),
-                                "accessGranted" to hasUsageStatsAccess(),
-                                "accessibilityGranted" to hasFocusBlockerAccessibilityAccess(),
-                                "blockerConfigured" to FocusBlockerStore.isConfigured(this),
-                                "lastBlockedPackage" to FocusBlockerStore.lastBlockedPackage(this),
-                                "lastBlockedAt" to FocusBlockerStore.lastBlockedAt(this),
-                                "foregroundPackage" to foregroundPackageName(),
-                            ),
-                        )
+                    // 状态读取整体下沉到专用后台线程：主线程只入队，绝不 queryUsageStats。
+                    "getStatus" -> requestFocusStatus(result) { snapshot ->
+                        result.success(snapshot)
                     }
-                    "getForegroundApp" -> result.success(foregroundPackageName())
+                    "getForegroundApp" -> requestFocusStatus(result) { snapshot ->
+                        result.success(snapshot["foregroundPackage"] as? String)
+                    }
                     "openUsageAccessSettings" -> result.success(openUsageAccessSettings())
                     "openAccessibilitySettings" -> result.success(openAccessibilitySettings())
-                    "getInstalledApps" -> result.success(installedLaunchableApps())
+                    "getInstalledApps" -> {
+                        // 查询 Launcher 列表 + 渲染图标是重活：放到单线程执行器，
+                        // 结果回主线程，绝不阻塞 UI。
+                        focusAppsExecutor.execute {
+                            val apps = runCatching { installedLaunchableApps() }
+                                .onFailure { error ->
+                                    Log.w(focusTag, "installed apps query failed", error)
+                                }
+                                .getOrDefault(emptyList())
+                            runOnUiThread {
+                                if (!isFinishing && !isDestroyed) result.success(apps)
+                            }
+                        }
+                    }
+                    "getAppLabel" -> {
+                        val packageName = call.argument<String>("packageName")?.trim()
+                        result.success(appLabelFor(packageName))
+                    }
                     "setFocusBlocker" -> {
                         val enabled = call.argument<Boolean>("enabled") ?: false
                         val packages = call.argument<List<String>>("packages")
@@ -432,8 +513,33 @@ class MainActivity : FlutterActivity() {
                             ?.filter { it.isNotEmpty() }
                             ?.toSet()
                             ?: emptySet()
-                        FocusBlockerStore.setConfig(this, enabled, packages)
+                        // Flutter int 到达 Kotlin 时可能是 Int 或 Long，统一按 Number 取。
+                        val expiresAtMs = (call.argument<Any>("expiresAtMs") as? Number)?.toLong()
+                        FocusBlockerStore.setConfig(this, enabled, packages, expiresAtMs)
                         result.success(FocusBlockerStore.isConfigured(this))
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        val focusTimerMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            focusTimerChannel,
+        )
+        this.focusTimerMethodChannel = focusTimerMethodChannel
+        FocusTimerForegroundService.expiryCallback = {
+            runCatching { focusTimerMethodChannel.invokeMethod("expired", null) }
+                .onFailure { error -> Log.w(focusTag, "timer expiry notify failed", error) }
+        }
+        focusTimerMethodChannel
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "sync" -> {
+                        FocusTimerForegroundService.sync(this, call.arguments as? Map<*, *>)
+                        result.success(null)
+                    }
+                    "stop" -> {
+                        FocusTimerForegroundService.stop(this)
+                        result.success(null)
                     }
                     else -> result.notImplemented()
                 }
@@ -939,39 +1045,6 @@ class MainActivity : FlutterActivity() {
         return true
     }
 
-    private fun hasUsageStatsAccess(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
-        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
-
-    private fun foregroundPackageName(): String? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
-        if (!hasUsageStatsAccess()) return null
-        val manager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val end = System.currentTimeMillis()
-        val start = end - 10 * 60 * 1000L
-        val stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end)
-        return stats
-            ?.filter { it.lastTimeUsed > 0 }
-            ?.maxByOrNull { it.lastTimeUsed }
-            ?.packageName
-    }
-
     private fun openUsageAccessSettings(): Boolean {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -984,6 +1057,12 @@ class MainActivity : FlutterActivity() {
         return startSettingsActivity(intent)
     }
 
+    /**
+     * Launcher 可启动应用列表（包名 + 标签 + PNG 图标字节）。
+     *
+     * 调用方保证本方法跑在 [focusAppsExecutor] 上：图标渲染涉及位图与 PNG 编码，
+     * 必须离开主线程。结果按标签排序，顺序稳定；同一包名只出现一次。
+     */
     private fun installedLaunchableApps(): List<Map<String, Any?>> {
         val intent = Intent(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)
@@ -1002,13 +1081,16 @@ class MainActivity : FlutterActivity() {
             val activityInfo = info.activityInfo ?: continue
             val appPackage = activityInfo.packageName ?: continue
             if (appPackage == packageName || !seen.add(appPackage)) continue
-            val appInfo = activityInfo.applicationInfo
+            val appInfo = activityInfo.applicationInfo ?: applicationInfoOrNull(appPackage)
             val rawLabel = if (appInfo == null) {
                 ""
             } else {
                 runCatching {
                     appInfo.loadLabel(packageManager).toString().trim()
-                }.getOrDefault("")
+                }.getOrElse { error ->
+                    Log.w(focusTag, "loadLabel failed for $appPackage", error)
+                    ""
+                }
             }
             apps.add(
                 mapOf(
@@ -1017,23 +1099,98 @@ class MainActivity : FlutterActivity() {
                     "isSystemApp" to (
                         appInfo != null &&
                             (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                    ),
+                        ),
+                    "iconBytes" to (appInfo?.let { appIconBytes(appPackage, it) }),
                 ),
             )
         }
         return apps.sortedBy { it["label"].toString().lowercase() }
     }
 
-    private fun hasFocusBlockerAccessibilityAccess(): Boolean {
-        val expected = ComponentName(
-            this,
-            DuoyiFocusBlockerAccessibilityService::class.java,
-        ).flattenToString()
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        ) ?: return false
-        return enabledServices.split(':').any { it.equals(expected, ignoreCase = true) }
+    private fun applicationInfoOrNull(appPackage: String): ApplicationInfo? {
+        return runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getApplicationInfo(
+                    appPackage,
+                    PackageManager.ApplicationInfoFlags.of(0L),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getApplicationInfo(appPackage, 0)
+            }
+        }.getOrElse { error ->
+            Log.w(focusTag, "getApplicationInfo failed for $appPackage", error)
+            null
+        }
+    }
+
+    /**
+     * 把自适应图标渲染成有界 PNG 字节（48..192px）。
+     *
+     * 尺寸有界：既避免超大位图占内存，也保证 MethodChannel 传输体积可控。
+     * 渲染失败返回 null，Dart 侧回退占位图标。
+     */
+    private fun appIconBytes(appPackage: String, appInfo: ApplicationInfo): ByteArray? {
+        return runCatching {
+            val drawable = appInfo.loadIcon(packageManager) ?: return null
+            val size = (48 * resources.displayMetrics.density).toInt().coerceIn(48, 192)
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
+            val output = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+            bitmap.recycle()
+            output.toByteArray()
+        }.getOrElse { error ->
+            Log.w(focusTag, "icon render failed for $appPackage", error)
+            null
+        }
+    }
+
+    /** 单个包名的应用显示名；解析失败返回 null（Dart 侧回退包名）。 */
+    private fun appLabelFor(appPackage: String?): String? {
+        val pkg = appPackage?.trim().orEmpty()
+        if (pkg.isEmpty()) return null
+        val appInfo = applicationInfoOrNull(pkg) ?: return null
+        return runCatching { appInfo.loadLabel(packageManager).toString().trim() }
+            .getOrElse { error ->
+                Log.w(focusTag, "app label failed for $pkg", error)
+                null
+            }
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * 把焦点状态快照读取排到专用后台线程；结果（成功/失败/超限/已销毁）回到主线程后才回复。
+     *
+     * 主线程只入队：这里不做任何 AppOps/UsageStats/无障碍读取，也不阻塞等待结果。
+     */
+    private fun requestFocusStatus(
+        result: MethodChannel.Result,
+        deliver: (Map<String, Any?>) -> Unit,
+    ) {
+        focusStatusQueryHolder.value.request(
+            onSnapshot = { snapshot -> deliver(snapshot) },
+            onFailure = { cause ->
+                Log.w(focusTag, "focus status query failed", cause)
+                result.error("focus_status_failed", "focus status query failed", null)
+            },
+            onUnavailable = { reason ->
+                when (reason) {
+                    FocusStatusUnavailable.BUSY -> result.error(
+                        "focus_status_busy",
+                        "too many pending focus status requests",
+                        null,
+                    )
+                    FocusStatusUnavailable.DISPOSED -> result.error(
+                        "focus_status_unavailable",
+                        "focus status query unavailable",
+                        null,
+                    )
+                }
+            },
+        )
     }
 
     private fun startSettingsActivity(intent: Intent): Boolean {
@@ -1068,4 +1225,105 @@ class MainActivity : FlutterActivity() {
         }
         return targetCanonical
     }
+}
+
+/**
+ * 焦点状态完整快照：字段与旧同步实现一一对应，整体搬到后台线程执行。
+ *
+ * 只吃 Context（主线程传入 applicationContext），不持有 Activity；读取抛异常由调用方回错误，
+ * 不做缓存前台包名或授权兜底。
+ */
+private fun readFocusStatusSnapshot(context: Context): Map<String, Any?> {
+    val accessGranted = hasUsageStatsAccess(context)
+    return mapOf(
+        "supported" to (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP),
+        "accessGranted" to accessGranted,
+        "accessibilityGranted" to hasFocusBlockerAccessibilityAccess(context),
+        "accessibilityActive" to isFocusBlockerAccessibilityActive(context),
+        "blockerConfigured" to FocusBlockerStore.isConfigured(context),
+        "blockerExpiresAt" to FocusBlockerStore.expiresAt(context),
+        "lastBlockedPackage" to FocusBlockerStore.lastBlockedPackage(context),
+        "lastBlockedAt" to FocusBlockerStore.lastBlockedAt(context),
+        "foregroundPackage" to foregroundPackageName(context, accessGranted),
+    )
+}
+
+/** 使用情况访问权限（AppOps）：会在后台线程走 Binder，禁止在 owner 线程调用。 */
+private fun hasUsageStatsAccess(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+    val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        appOps.unsafeCheckOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName,
+        )
+    } else {
+        @Suppress("DEPRECATION")
+        appOps.checkOpNoThrow(
+            AppOpsManager.OPSTR_GET_USAGE_STATS,
+            Process.myUid(),
+            context.packageName,
+        )
+    }
+    return mode == AppOpsManager.MODE_ALLOWED
+}
+
+/**
+ * 最近 10 分钟内 lastTimeUsed 最大的包名（沿用旧的记录口径）。
+ *
+ * queryUsageStats 走 Binder、耗时不可控，只允许在后台线程调用。
+ */
+private fun foregroundPackageName(context: Context, accessGranted: Boolean): String? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
+    if (!accessGranted) return null
+    val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val end = System.currentTimeMillis()
+    val start = end - 10 * 60 * 1000L
+    val stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, start, end)
+    return stats
+        ?.filter { it.lastTimeUsed > 0 }
+        ?.maxByOrNull { it.lastTimeUsed }
+        ?.packageName
+}
+
+/**
+ * 辅助功能拦截服务是否已在系统设置里启用。
+ *
+ * 系统保存的条目可能是全名也可能是 `.Cls` 短名（小米等 ROM 实测如此），
+ * 因此先用 ComponentName 规范化，再用纯字符串比较兜住 unflatten 解析失败的情况。
+ */
+private fun hasFocusBlockerAccessibilityAccess(context: Context): Boolean {
+    val accessibilityEnabled = Settings.Secure.getInt(
+        context.contentResolver,
+        Settings.Secure.ACCESSIBILITY_ENABLED,
+        0,
+    ) == 1
+    if (!accessibilityEnabled) return false
+    val expected = ComponentName(context, DuoyiFocusBlockerAccessibilityService::class.java)
+    val raw = Settings.Secure.getString(
+        context.contentResolver,
+        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+    ) ?: return false
+    if (FocusBlockerComponents.matches(raw, expected.packageName, expected.className)) {
+        return true
+    }
+    return FocusBlockerComponents.settingEntries(raw).any { entry ->
+        ComponentName.unflattenFromString(entry)?.equals(expected) == true
+    }
+}
+
+/** 系统 AccessibilityManager 是否已实际加载该服务（启用但未生效时为 false）。 */
+private fun isFocusBlockerAccessibilityActive(context: Context): Boolean {
+    val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+        ?: return false
+    if (!manager.isEnabled) return false
+    val expected = ComponentName(context, DuoyiFocusBlockerAccessibilityService::class.java)
+    return manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+        .orEmpty()
+        .any { info ->
+            val serviceInfo = info.resolveInfo?.serviceInfo ?: return@any false
+            serviceInfo.packageName == expected.packageName &&
+                serviceInfo.name == expected.className
+        }
 }

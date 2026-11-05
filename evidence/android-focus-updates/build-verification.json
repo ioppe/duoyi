@@ -1,0 +1,59 @@
+{
+  "recorded_at_utc": "2026-11-04T16:28:22Z",
+  "branch": "fix/android-focus-updates-notifications",
+  "base_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "purpose": "Android five-issue branch verification, not a release gate",
+  "source_snapshot": {
+    "manifest": "source-manifest.json",
+    "sha256": "ad2a2af4b0a91c25e732ef4ed916c424eb1e7ce839a0b58ab2ff7068b631578c",
+    "files_checked": 1266,
+    "mismatches_at_build_verification": [],
+    "note": "Snapshot includes uncommitted implementation. Later evidence/document-only edits do not alter the tested application sources."
+  },
+  "toolchain": {
+    "flutter": "3.44.1",
+    "dart": "3.12.1",
+    "java": "17",
+    "python": "3.12.14",
+    "android_min_sdk": 24,
+    "android_target_sdk": 36
+  },
+  "checks": [
+    {"command": "flutter test --no-pub --reporter expanded", "location": "original worktree", "exit_code": 0, "passed": 2840, "failed": 0, "log": "A-original-flutter-test.log"},
+    {"command": "python -m unittest discover -s . -v", "location": "original worktree/backend", "exit_code": 0, "passed": 317, "failed": 0, "log": "B-original-backend-unittest.log"},
+    {"command": "flutter pub get --enforce-lockfile", "location": "ASCII verification copy", "exit_code": 0, "lock_bytes_unchanged": true, "lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b"},
+    {"command": "flutter analyze --no-pub", "location": "ASCII verification copy", "exit_code": 0, "result": "No issues found!", "log": "C3-copy-flutter-analyze.log"},
+    {"command": "dart analyze", "location": "original worktree", "exit_code": 0, "result": "No issues found!", "log": "C4-original-dart-analyze.log"},
+    {"command": "scripts/flutter_with_config.py build apk --debug --target-platform android-arm64 --no-pub", "location": "original worktree", "exit_code": 0, "log": "D1-original-build-apk.log"},
+    {"command": "./gradlew :app:testDebugUnitTest", "location": "original worktree/android", "exit_code": 0, "passed": 42, "failed": 0, "errors": 0, "skipped": 0, "log": "D2-original-gradle-unit-tests.log", "junit_classes": {"DuoyiCalendarMonthTest": 16, "FocusBlockerComponentsTest": 8, "FocusBlockerExpiryTest": 5, "FocusTimerNotificationModelTest": 13}},
+    {"command": "scripts/flutter_with_config.py build apk --debug --target-platform android-arm64 --no-pub --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763", "location": "ASCII verification copy", "exit_code": 0, "log": "E-copy-build-apk.log"},
+    {"command": "git diff --check", "location": "original worktree", "exit_code": 0}
+  ],
+  "apks": [
+    {
+      "role": "standard debug build, not installed over production",
+      "path": "build/app/outputs/flutter-apk/app-debug.apk",
+      "package": "com.duoyi.duoyi",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 246642318,
+      "sha256": "f6ce491316bdf4b7dde91a9773feb814892a7f38806b64fb7e84c0db8d72a7f1"
+    },
+    {
+      "role": "isolated device verification build",
+      "path": "$PI_SCRATCH_DIR/android-candidate/build/app/outputs/flutter-apk/app-debug.apk",
+      "package": "com.duoyi.duoyi.focuscheck",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 160480804,
+      "sha256": "d7e12c658f90c3db7cd7e4a7eb16c331e140c616a4a92692e4f66e6b0959379b",
+      "identity_changes": ["applicationId", "display label", "external URI scheme"],
+      "fixture_server": "http://127.0.0.1:18763",
+      "fixture_limit": "Release metadata 2.0.1 points to a 2.0.0 APK; this verifies transport/state/installer entry, not a production version upgrade."
+    }
+  ],
+  "analysis_environment_note": "Original non-ASCII path crashed Flutter LSP framing. Formal flutter analyze ran in a real ASCII copy with byte-verified sources; original worktree dart analyze also passed. SDK/global configuration was not modified.",
+  "raw_log_location": "$PI_SCRATCH_DIR/android-final-checks/",
+  "device_results": "Recorded separately after actual interactions. Unit/build success does not imply device success.",
+  "remaining_scope": ["Xiaomi device-specific behavior pending while device disconnected", "Production backend not deployed", "No release signing, tag, push or publication"]
+}

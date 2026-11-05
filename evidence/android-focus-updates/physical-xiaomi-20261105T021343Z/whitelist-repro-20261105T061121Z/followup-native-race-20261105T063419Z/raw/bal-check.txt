@@ -1,0 +1,3 @@
+=== dumpsys activity BAL-related (bounded) ===
+=== current buffer: own pkg/uid BAL lines ===
+(end BAL)

@@ -1,0 +1,30 @@
+11-05 19:35:58.363 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:36:30.412 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:36:47.197 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:37:11.291 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:37:19.321 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:37:42.577 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:37:58.506 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:38:15.464 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:38:46.554 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:38:51.769 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:38:57.000 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:39:02.552 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:39:33.515 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor started: reason=config-changed, usageAccess=true
+11-05 19:39:47.096 28377 28377 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.sina.weibo eventAt=1793878786971
+11-05 19:39:47.100 28377 28377 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/1), awaiting confirmation
+11-05 19:39:47.264 28377 28377 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=config-changed window=unknown pending=com.sina.weibo deferred=com.sina.weibo
+11-05 19:39:47.264 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor started: reason=config-changed, usageAccess=true
+11-05 19:39:52.508 28377 28377 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 19:39:52.570 28377 28377 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=config-changed window=unknown pending=com.sina.weibo deferred=none
+11-05 19:39:52.570 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor started: reason=config-changed, usageAccess=true
+11-05 19:44:18.425 28377 28377 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=nonblocked-window window=com.android.systemui pending=none deferred=com.sina.weibo
+11-05 19:44:18.425 28377 28377 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=nonblocked-window window=com.miui.home pending=com.sina.weibo deferred=none
+11-05 19:44:18.425 28377 28377 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 19:44:18.545 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor started: reason=config-changed, usageAccess=true
+11-05 19:44:24.820 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor stopped: reason=service-destroyed
+11-05 19:44:25.853 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 19:44:25.853 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor started: reason=service-connected, usageAccess=true
+11-05 19:44:54.714 28377 28377 I DuoyiFocusBlocker: focus blocker usage monitor stopped: reason=config-inactive:config-changed
+11-05 19:45:13.810 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false
+11-05 19:45:19.214 28377 28377 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false

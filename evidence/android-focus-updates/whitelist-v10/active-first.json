@@ -1,0 +1,302 @@
+{
+  "evidence": "whitelist-v10 active-first ACTUAL device measurement",
+  "device": {
+    "serial": "2df52c4c",
+    "model": "24129PN74C (dada)",
+    "android_user": 0
+  },
+  "candidate": {
+    "repo": "duoyi-android-focus-fix",
+    "git_head": "5473be8de89459b603c92a970cbbc42d2b1a5361",
+    "branch": "fix/android-focus-updates-notifications",
+    "origin_main": "4f87864c74702685ab0884999494cffe764f333a",
+    "origin_main_is_ancestor": true,
+    "worktree_clean": false,
+    "worktree_dirty_paths": [
+      "android/app/src/main/kotlin/com/duoyi/duoyi/MainActivity.kt",
+      "docs/android-focus-updates.md",
+      "test/services/focus_distraction_static_test.dart",
+      "android/app/src/main/kotlin/com/duoyi/duoyi/FocusStatusQuery.kt (untracked)",
+      "android/app/src/test/kotlin/com/duoyi/duoyi/FocusStatusQueryTest.kt (untracked)"
+    ],
+    "note": "source tree dirty; measured artifact is the installed APK, whose hash/size match the known v10 build"
+  },
+  "installed_apk": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "size_bytes": 105708301,
+    "versionCode": 140023,
+    "versionName": "2.0.0",
+    "lastUpdateTime": "2026-11-05 20:59:28",
+    "matches_known_v10": true
+  },
+  "preconditions": {
+    "keyguard_showing": false,
+    "wakefulness": "Awake",
+    "config": {
+      "strictFocusMode": true,
+      "monitorDistractingApps": true,
+      "distractingAppPackages": [
+        "com.tencent.mm",
+        "com.tencent.mobileqq"
+      ],
+      "distractingAppSelectionMode": "whitelist",
+      "updatedAt": "2026-11-05T21:00:05.927592"
+    },
+    "running_snapshot": {
+      "isRunning": true,
+      "totalSeconds": 1500,
+      "endsAtMs": 1793885110737,
+      "endsAt": "2026-11-05T21:25:10.737+08:00"
+    },
+    "native_blocker": {
+      "enabled": true,
+      "expires_at": 1793885110737,
+      "expires_at_matches_running_snapshot": true
+    },
+    "aa_resolution": {
+      "bound_service_label": "多仪·专注验证",
+      "bound_service_owner": "com.duoyi.duoyi.focuscheck",
+      "service_record": "com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService (ConnectionRecord live, non-DEAD)",
+      "own_pid": 11828,
+      "legacy_package_service": "com.duoyi.duoyi/...DuoyiFocusBlockerAccessibilityService listed under Crashed services"
+    },
+    "grants": {
+      "GET_USAGE_STATS": "allow",
+      "SYSTEM_ALERT_WINDOW": "default (rejectTime ~32s before case A; not granted at appops layer, package does not request it)",
+      "POST_NOTIFICATIONS": "granted=true",
+      "new_permissions_introduced": false
+    }
+  },
+  "measurement": {
+    "method": "single synchronous python subprocess; am start without -W; dumpsys activity activities + dumpsys window at +2s and +5s per case; no uiautomator/screenshot/input injection/tap/swipe/keyevent",
+    "t0_phone_wall": "2026-11-05T21:03:04.485+08:00",
+    "t0_host_epoch_ms": 1793883785154,
+    "case_end_phone_wall": "2026-11-05T21:03:36.679+08:00",
+    "case_end_host_epoch_ms": 1793883817353,
+    "case_duration_s": 32.199,
+    "home_returns": "am start MAIN/HOME between cases only, never during the +2/+5 observation windows (cases B-E)",
+    "a_plus8_capture": "not triggered: case A was blocked, A_fail_extra path is conditional on A failing"
+  },
+  "blocker_events_logcat": [
+    {
+      "phone_time": "2026-11-05T21:03:04.837+08:00",
+      "pid": 11828,
+      "tag": "DuoyiFocusBlocker",
+      "event": "usage foreground detected: package=com.eg.android.AlipayGphone eventAt=1793883784605"
+    },
+    {
+      "phone_time": "2026-11-05T21:03:04.863+08:00",
+      "pid": 11828,
+      "tag": "DuoyiFocusBlocker",
+      "event": "requested com.eg.android.AlipayGphone to focus tab (attempt 1/1), awaiting confirmation"
+    },
+    {
+      "phone_time": "2026-11-05T21:03:05.181+08:00",
+      "pid": 11828,
+      "tag": "DuoyiFocusBlocker",
+      "event": "confirmed return to duoyi from com.eg.android.AlipayGphone"
+    },
+    {
+      "phone_time": "2026-11-05T21:03:05.181+08:00",
+      "pid": 11828,
+      "tag": "DuoyiFocusBlocker",
+      "event": "cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.eg.android.AlipayGphone deferred=com.eg.android.AlipayGphone"
+    }
+  ],
+  "blocker_events_total_this_session": 4,
+  "usage_foreground_detections_total": 1,
+  "request_confirm_counts": {
+    "requested": 1,
+    "confirmed": 1
+  },
+  "focus_status_query_timing": {
+    "lines_found": 0,
+    "note": "no 'focus status query took Nms' line in own-pid logcat during the whole session window (buffer covered from process start 20:59:29 through 21:03:10)"
+  },
+  "cases": [
+    {
+      "case": "A",
+      "label": "Alipay initial",
+      "package": "com.eg.android.AlipayGphone",
+      "component": "com.eg.android.AlipayGphone/.AlipayLogin",
+      "component_source": "resolved",
+      "start_cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.eg.android.AlipayGphone/.AlipayLogin",
+      "am_start_exit": 0,
+      "am_start_phone_wall": "2026-11-05T21:03:04.673+08:00",
+      "am_start_stderr": "Warning: Activity not started, its current task has been brought to the front",
+      "obs_plus2": {
+        "offset_s": 2.283,
+        "phone_wall": "2026-11-05T21:03:06.638+08:00",
+        "top_resumed": "com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{1d1617f u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}",
+          "mFocusedApp=ActivityRecord{185352628 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t11129}"
+        ]
+      },
+      "obs_plus5": {
+        "offset_s": 5.213,
+        "phone_wall": "2026-11-05T21:03:09.574+08:00",
+        "top_resumed": "com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{1d1617f u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity}",
+          "mFocusedApp=ActivityRecord{185352628 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t11129}"
+        ]
+      },
+      "app_still_foreground_at_plus5": false,
+      "outcome": "BLOCKED (focus page top at +2 and +5)"
+    },
+    {
+      "case": "B",
+      "label": "Alipay reopen",
+      "package": "com.eg.android.AlipayGphone",
+      "component": "com.eg.android.AlipayGphone/.AlipayLogin",
+      "component_source": "resolved",
+      "start_cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.eg.android.AlipayGphone/.AlipayLogin",
+      "am_start_exit": 0,
+      "am_start_phone_wall": "2026-11-05T21:03:11.188+08:00",
+      "am_start_stderr": "Warning: Activity not started, its current task has been brought to the front",
+      "obs_plus2": {
+        "offset_s": 2.375,
+        "phone_wall": "2026-11-05T21:03:13.171+08:00",
+        "top_resumed": "com.eg.android.AlipayGphone/.AlipayLogin",
+        "window_focus": [
+          "mCurrentFocus=Window{14a3ce6 u0 com.eg.android.AlipayGphone/com.eg.android.AlipayGphone.AlipayLogin}",
+          "mFocusedApp=ActivityRecord{55586187 u0 com.eg.android.AlipayGphone/.AlipayLogin t11127}"
+        ]
+      },
+      "obs_plus5": {
+        "offset_s": 5.326,
+        "phone_wall": "2026-11-05T21:03:16.148+08:00",
+        "top_resumed": "com.eg.android.AlipayGphone/.AlipayLogin",
+        "window_focus": [
+          "mCurrentFocus=Window{14a3ce6 u0 com.eg.android.AlipayGphone/com.eg.android.AlipayGphone.AlipayLogin}",
+          "mFocusedApp=ActivityRecord{55586187 u0 com.eg.android.AlipayGphone/.AlipayLogin t11127}"
+        ]
+      },
+      "app_still_foreground_at_plus5": true,
+      "outcome": "NOT BLOCKED (Alipay top at +2 and +5)"
+    },
+    {
+      "case": "C",
+      "label": "Weibo",
+      "package": "com.sina.weibo",
+      "component": "com.sina.weibo/.SplashActivity",
+      "component_source": "resolved",
+      "start_cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.sina.weibo/.SplashActivity",
+      "am_start_exit": 0,
+      "am_start_phone_wall": "2026-11-05T21:03:17.882+08:00",
+      "am_start_stderr": "Warning: Activity not started, its current task has been brought to the front",
+      "obs_plus2": {
+        "offset_s": 2.372,
+        "phone_wall": "2026-11-05T21:03:19.878+08:00",
+        "top_resumed": "com.sina.weibo/.MainTabActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}",
+          "mFocusedApp=ActivityRecord{120440847 u0 com.sina.weibo/.MainTabActivity t11086}"
+        ]
+      },
+      "obs_plus5": {
+        "offset_s": 5.35,
+        "phone_wall": "2026-11-05T21:03:22.864+08:00",
+        "top_resumed": "com.sina.weibo/.MainTabActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}",
+          "mFocusedApp=ActivityRecord{120440847 u0 com.sina.weibo/.MainTabActivity t11086}"
+        ]
+      },
+      "app_still_foreground_at_plus5": true,
+      "outcome": "NOT BLOCKED (Weibo top at +2 and +5)"
+    },
+    {
+      "case": "D",
+      "label": "QQ (whitelisted)",
+      "package": "com.tencent.mobileqq",
+      "component": "com.tencent.mobileqq/.activity.SplashActivity",
+      "component_source": "resolved",
+      "start_cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.tencent.mobileqq/.activity.SplashActivity",
+      "am_start_exit": 0,
+      "am_start_phone_wall": "2026-11-05T21:03:24.608+08:00",
+      "am_start_stderr": "Warning: Activity not started, its current task has been brought to the front",
+      "obs_plus2": {
+        "offset_s": 2.345,
+        "phone_wall": "2026-11-05T21:03:26.598+08:00",
+        "top_resumed": "com.tencent.mobileqq/.activity.SplashActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{d7d5282 u0 com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity}",
+          "mFocusedApp=ActivityRecord{200806970 u0 com.tencent.mobileqq/.activity.SplashActivity t11124}"
+        ]
+      },
+      "obs_plus5": {
+        "offset_s": 5.363,
+        "phone_wall": "2026-11-05T21:03:29.602+08:00",
+        "top_resumed": "com.tencent.mobileqq/.activity.SplashActivity",
+        "window_focus": [
+          "mCurrentFocus=Window{d7d5282 u0 com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity}",
+          "mFocusedApp=ActivityRecord{200806970 u0 com.tencent.mobileqq/.activity.SplashActivity t11124}"
+        ]
+      },
+      "app_still_foreground_at_plus5": true,
+      "outcome": "ALLOWED as whitelisted (QQ top at +2 and +5)"
+    },
+    {
+      "case": "E",
+      "label": "WeChat (whitelisted)",
+      "package": "com.tencent.mm",
+      "component": "com.tencent.mm/.ui.LauncherUI",
+      "component_source": "resolved",
+      "start_cmd": "am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.tencent.mm/.ui.LauncherUI",
+      "am_start_exit": 0,
+      "am_start_phone_wall": "2026-11-05T21:03:31.346+08:00",
+      "am_start_stderr": "",
+      "obs_plus2": {
+        "offset_s": 2.526,
+        "phone_wall": "2026-11-05T21:03:33.374+08:00",
+        "top_resumed": "com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI",
+        "window_focus": [
+          "mCurrentFocus=Window{a9c36af u0 com.tencent.mm/com.tencent.mm.plugin.webview.ui.tools.MMWebViewUI}",
+          "mFocusedApp=ActivityRecord{194002667 u0 com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI t11073}"
+        ]
+      },
+      "obs_plus5": {
+        "offset_s": 5.406,
+        "phone_wall": "2026-11-05T21:03:36.356+08:00",
+        "top_resumed": "com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI",
+        "window_focus": [
+          "mCurrentFocus=Window{a9c36af u0 com.tencent.mm/com.tencent.mm.plugin.webview.ui.tools.MMWebViewUI}",
+          "mFocusedApp=ActivityRecord{194002667 u0 com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI t11073}"
+        ]
+      },
+      "app_still_foreground_at_plus5": true,
+      "outcome": "ALLOWED as whitelisted (WeChat top at +2 and +5)"
+    }
+  ],
+  "post_state": {
+    "own_pid_unchanged": true,
+    "process_state": "curProcState=4 (foreground service), not frozen",
+    "foreground_timer_notification": {
+      "id": 951101,
+      "channel": "duoyi_focus_timer_v1",
+      "flags": "ONGOING_EVENT|NO_CLEAR|FOREGROUND_SERVICE|SILENT",
+      "present": true
+    },
+    "running_snapshot": "isRunning=true, endsAtMs unchanged (1793885110737)",
+    "native_blocker_expires_at_unchanged": true,
+    "last_blocked_at_updated_to": "2026-11-05T21:03:04.837+08:00 (case A only; no later block recorded)",
+    "aa_bound_unchanged": true,
+    "left_state": "timer RUNNING, protection ENABLED, awaiting user PAUSE (not paused/reset by runner)",
+    "top_activity_at_end": "com.tencent.mm/.plugin.webview.ui.tools.MMWebViewUI (case E whitelisted app, not the focus page)",
+    "phone_time_at_end": "2026-11-05T21:03:37+08:00"
+  },
+  "verdict": {
+    "overall": "FAIL",
+    "A": "PASS (blocked)",
+    "B": "FAIL (reopen not blocked)",
+    "C": "FAIL (Weibo not blocked)",
+    "D": "PASS (whitelisted allowed)",
+    "E": "PASS (whitelisted allowed)"
+  },
+  "contamination": {
+    "note": "no unplanned app switches observed; cases proceeded strictly A→E with HOME returns only between cases"
+  }
+}

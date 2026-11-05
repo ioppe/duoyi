@@ -1,0 +1,46 @@
+{
+  "candidate_branch": "fix/android-focus-updates-notifications",
+  "base_commit": "4f87864c74702685ab0884999494cffe764f333a",
+  "source_manifest": "android-focus-updates/source-manifest-v3.json",
+  "source_manifest_sha256": "8b127c56b35002a1f76d208bb9b960640e9fa5b0d2ca3b3be7bc4665e98de6e5",
+  "device": "emulator-5554 / duoyi_api35_arm64 / API 35",
+  "package": "com.duoyi.duoyi.focuscheck",
+  "build_mode": "debug",
+  "apk_sha256": "07ea1fb5cc07dccbc44601d923d698f66b7154e0d39289ade963cabde32eb825",
+  "installed_apk_hash_confirmed": true,
+  "install_binding_evidence": "debug-install-binding.json",
+  "attempt_status": "STOPPED_AFTER_DEVICE_INSTABILITY_AND_INCOMPLETE_CAPTURE",
+  "execution_note": "The e2e delegate exceeded 25 minutes without a settled report. It was stopped before any other actor used the device. Raw capture files are preserved; empty captures are not treated as successful observations.",
+  "cases": {
+    "C3b_update_dialog_visible": {
+      "status": "PASS",
+      "observed": "The actual Android screenshot shows Current version 2.0.0, Latest version 2.0.1, the update description, Package fixture.apk, Close and Download and install. The main session visually inspected the original PNG and independently confirmed the installed APK hash.",
+      "evidence": ["screenshots/android-focus-updates/main-inspection/v3-update-dialog.png"],
+      "screenshot_sha256": "4c43da8f3136147fde7393df96c772f9ef43c98c4c3f3944e8285b4ea0843d86"
+    },
+    "C3c_background_download_progress_and_reentry": {
+      "status": "NOT_VERIFIED",
+      "reason": "No valid progress snapshots were obtained. Several download-state captures and the after-download-tap screenshot are empty. A service query returned No services match, which does not prove download success or failure."
+    },
+    "C3c_process_death_continuation": {
+      "status": "NOT_RUN",
+      "reason": "No confirmed active download and process-exit proof were recorded."
+    },
+    "C3d_completion_notification_and_installer_entry": {
+      "status": "NOT_RUN",
+      "reason": "The download chain was not verified in this attempt."
+    }
+  },
+  "anr_observations": {
+    "new_events_in_captured_window": [
+      "13:16:31 process 7904 com.duoyi.duoyi.focuscheck; captured reason is truncated",
+      "13:19:48 process 7904 com.duoyi.duoyi.focuscheck; Input dispatching timed out"
+    ],
+    "capture_also_contains_prior_v2_event": true,
+    "root_cause": "Unresolved. Existing evidence does not identify the app main-thread blocking point or establish an environment-only cause."
+  },
+  "raw_archive": "initial-debug-device-attempt.tar.gz",
+  "raw_archive_sha256": "6725dd1ee76aad1a8c2aa9fe786fedea9a028ac95141d76c70b3a821c94ed186",
+  "production_app": "Untouched; only the isolated verification package was used.",
+  "next_validation": "A same-source, same-certificate Profile APK is available. Any subsequent Profile interactions must be recorded separately; they do not establish that debug ANRs are fixed."
+}

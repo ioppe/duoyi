@@ -9,6 +9,73 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get mineUpdateBackgroundDownloading => '正在后台下载更新包';
+
+  @override
+  String get mineUpdateCloseKeepsDownloading => '关闭此窗口后下载会继续';
+
+  @override
+  String get mineUpdateCancelDownload => '取消下载';
+
+  @override
+  String get mineUpdateNotificationTitle => '多仪更新';
+
+  @override
+  String get mineUpdateNotificationDownloading => '正在下载更新包，完成后可从通知栏安装';
+
+  @override
+  String get mineUpdateNotificationInstallAction => '点击安装';
+
+  @override
+  String get mineUpdateNotificationChannelName => '应用更新';
+
+  @override
+  String get mineUpdateNotificationChannelDescription => '更新包后台下载与安装提醒';
+
+  @override
+  String get focusDistractionStatusAccessibilityActive => '辅助功能已启用';
+
+  @override
+  String get focusDistractionStatusAccessibilityPending => '已在设置中开启，等待系统生效';
+
+  @override
+  String get focusDistractionStatusBlockerUnconfigured => '未配置拦截应用';
+
+  @override
+  String get focusDistractionStatusUsageOnly => '已授权使用情况访问，辅助功能未授权';
+
+  @override
+  String get focusDistractionStatusMissing => '需要 Android 使用情况访问和辅助功能权限';
+
+  @override
+  String get focusDistractionPermissionHint =>
+      '严格专注需要系统已连接的辅助功能服务。小米、Redmi、POCO 还需在系统应用信息 → 权限管理 → 其他权限中允许“后台弹出界面”。部分应用不发送辅助功能窗口事件，需同时允许使用情况访问以补充检测；它不能代替辅助功能或后台显示许可。';
+
+  @override
+  String get focusTimerNotifChannelName => '专注计时';
+
+  @override
+  String get focusTimerNotifNoTask => '无关联任务';
+
+  @override
+  String get focusTimerNotifPaused => '已暂停';
+
+  @override
+  String get focusTimerNotifRemaining => '剩余';
+
+  @override
+  String get focusTimerNotifElapsed => '已计时';
+
+  @override
+  String get focusTimerNotifActionStart => '开始';
+
+  @override
+  String get focusTimerNotifActionPause => '暂停';
+
+  @override
+  String get focusTimerNotifActionReset => '重置';
+
+  @override
   String get aiLocalTitle => 'AI 服务';
 
   @override

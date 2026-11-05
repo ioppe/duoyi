@@ -1,0 +1,110 @@
+{
+  "source_manifest_entries": 1274,
+  "executable_source_drift": [],
+  "post_snapshot_documentation_changes": [
+    {
+      "path": "docs/android-focus-updates.md",
+      "snapshot_sha256": "dcaba71fc0ed88e0560f01a3ce3eb8b2fef63a1b72daa6d3ea85f9ca12571353",
+      "current_sha256": "dd5471e447c812c36946eb1a42f3c5f0858bf7ecaf1f133508963b5170aca87c",
+      "reason": "Post-build documentation of directly observed OEM kernel freezing and user-controlled unrestricted battery policy; executable source unchanged."
+    }
+  ],
+  "readme_links_checked": 74,
+  "requested_device_acceptance": true,
+  "acceptance_condition": "User-granted unrestricted battery policy; connected Xiaomi validation package only",
+  "errors": [],
+  "files": {
+    "android/app/src/main/kotlin/com/duoyi/duoyi/FocusStatusQuery.kt": {
+      "sha256": "d8a1a7fc0f9e6dfc8cfe973fe31a28e1e2ecdbe1a25388f3cd4cdbb7780d5336",
+      "bytes": 5937
+    },
+    "android/app/src/main/kotlin/com/duoyi/duoyi/MainActivity.kt": {
+      "sha256": "cdf6ba5fb913f0a792d7176067424b7790553b93e6da6d6b6203862f78958ded",
+      "bytes": 61574
+    },
+    "android/app/src/test/kotlin/com/duoyi/duoyi/FocusStatusQueryTest.kt": {
+      "sha256": "358f829e63ad1e0a36679a5472d83655850a8e0b516ea636e337e93026bc43fd",
+      "bytes": 9173
+    },
+    "docs/android-focus-updates.md": {
+      "sha256": "dd5471e447c812c36946eb1a42f3c5f0858bf7ecaf1f133508963b5170aca87c",
+      "bytes": 11775
+    },
+    "evidence/android-focus-updates/README.md": {
+      "sha256": "2d9cce415afa52d8f4f81ace312dc8a7b9f4e1ccf0fe3180b889d9002d1c4794",
+      "bytes": 25261
+    },
+    "evidence/android-focus-updates/whitelist-v10/acceptance.json": {
+      "sha256": "f84bfd07df9fd3ec67128ae9814d4beb2d636f7be30159dea5f7032e1f232b29",
+      "bytes": 2659
+    },
+    "evidence/android-focus-updates/whitelist-v10/active-first.json": {
+      "sha256": "967eb52e20534d664959249a81bac3918c8bd91295beaee6a2416d6f244cad1c",
+      "bytes": 13387
+    },
+    "evidence/android-focus-updates/whitelist-v10/battery-unrestricted.json": {
+      "sha256": "59b14ab7a40547de98cfa1ccb9e8648ce61f3912cf8bd674352f8fc2801d8e38",
+      "bytes": 17358
+    },
+    "evidence/android-focus-updates/whitelist-v10/build.json": {
+      "sha256": "442e91042d75a2a64e7562224382e0480160b74cf91c5bb28d4ff421e51ab4ef",
+      "bytes": 6793
+    },
+    "evidence/android-focus-updates/whitelist-v10/checks-logs.tar.gz": {
+      "sha256": "7abd2b16060ce02e71571a8aee77cde4436b6a9012af9245742da8e78b5838e3",
+      "bytes": 23151
+    },
+    "evidence/android-focus-updates/whitelist-v10/cleanup.json": {
+      "sha256": "50af537c2992070f6c7d7bd6c7f3fee921c097c868202ee2b18d942d12f8eb32",
+      "bytes": 1388
+    },
+    "evidence/android-focus-updates/whitelist-v10/hashindex-resumed.json": {
+      "sha256": "6616e7fdd75372e17ecbc3ca185a0ef78eb867f20b1c9ee2ab266c8995395098",
+      "bytes": 1230
+    },
+    "evidence/android-focus-updates/whitelist-v10/hashindex-unrestricted.json": {
+      "sha256": "6e3e4bbb090af5e414d76765ac3648cbc297819fa6ce1856d7764710959ff751",
+      "bytes": 1728
+    },
+    "evidence/android-focus-updates/whitelist-v10/kernel-freeze-and-authorization.json": {
+      "sha256": "d8161c583f40ec2c1a2cdd88044427862c44ab56e85369fda8f30f848dbb7056",
+      "bytes": 2230
+    },
+    "evidence/android-focus-updates/whitelist-v10/own-service-timeline-resumed.txt": {
+      "sha256": "fd2be5e52a43c12681ae231428f84c10bdde4fb1cf4142742b060e27bdd8640f",
+      "bytes": 6317
+    },
+    "evidence/android-focus-updates/whitelist-v10/own-service-timeline-unrestricted.txt": {
+      "sha256": "069cb441eead7071a8ea1c47e61d2425d757ec373dffcee1cdb8949a4dd0e2bf",
+      "bytes": 6797
+    },
+    "evidence/android-focus-updates/whitelist-v10/own-timeline.txt": {
+      "sha256": "6089db652aa4b06ab84d892339b2a8e90f018265788064608c8440f8d34744de",
+      "bytes": 5297
+    },
+    "evidence/android-focus-updates/whitelist-v10/paused.json": {
+      "sha256": "2b17cc9ba606c19651b2134c915d048884f15091c9831af755011dbb0695d5fd",
+      "bytes": 4565
+    },
+    "evidence/android-focus-updates/whitelist-v10/resumed.json": {
+      "sha256": "5aec682a5a7aec6f2d9fe7b96cd5ec120464e6df38c2a05b7d2d0411a60fb3e9",
+      "bytes": 14458
+    },
+    "evidence/android-focus-updates/whitelist-v10/review-apk.json": {
+      "sha256": "a1c02bfb791155fd6cc3d762be2e8e7f553dfee26a3a8487d40fd495c1ea7459",
+      "bytes": 396
+    },
+    "evidence/android-focus-updates/whitelist-v10/source-manifest.json": {
+      "sha256": "0be080071164d7ccf6e37765295fc32515885f0188c1db9e237916dae45a5b12",
+      "bytes": 150404
+    },
+    "evidence/android-focus-updates/whitelist-v10/validhashindex.json": {
+      "sha256": "74c15b1274eca7f0da9f47bd000df4a5120da53bae0d4930bf9cfcfbaa1b9e2c",
+      "bytes": 961
+    },
+    "test/services/focus_distraction_static_test.dart": {
+      "sha256": "c73ce419e8ff26e8e3beab8ad7d33dd1ade3298327825fd593bb398d24263133",
+      "bytes": 26419
+    }
+  }
+}

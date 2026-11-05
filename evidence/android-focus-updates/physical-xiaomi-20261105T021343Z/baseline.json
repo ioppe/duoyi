@@ -1,0 +1,40 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "recorded_at_utc": "2026-11-05T02:17:59.797359+00:00",
+  "serial": "2df52c4c",
+  "properties": {
+    "ro.product.manufacturer": "Xiaomi",
+    "ro.product.model": "24129PN74C",
+    "ro.build.version.release": "16",
+    "ro.build.version.sdk": "36",
+    "ro.product.cpu.abi": "arm64-v8a",
+    "ro.build.display.id": "BP2A.250605.031.A3"
+  },
+  "screen_size": "Physical size: 1200x2670",
+  "density": "Physical density: 520",
+  "font_scale": "1.25",
+  "screen_off_timeout": "60000",
+  "installed_duoyi_packages": [
+    "package:com.duoyi.duoyi",
+    "package:com.duoyi.duoyi.layoutcheck"
+  ],
+  "formal_package_before": {
+    "versionCode": "142023 minSdk=24 targetSdk=36",
+    "versionName": "2.0.0",
+    "lastUpdateTime": "2026-11-04 19:21:34",
+    "installerPackageName": "com.miui.packageinstaller",
+    "firstInstallTime": "2026-10-23 14:39:35"
+  },
+  "formal_apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+  "formal_signer_cert_sha256": "211a2bf79e5b9f9432d410e34dc0f60c664a0f5105cd7a104dae90069f8b4e8c",
+  "candidate_commit": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+  "source_files_checked": 1266,
+  "source_mismatches": [],
+  "candidate_profile_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v3/build/app/outputs/flutter-apk/app-profile.apk",
+  "candidate_profile_sha256": "dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412",
+  "candidate_signer_cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+  "signers_match": false,
+  "scratch_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z",
+  "evidence_dir": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/evidence/android-focus-updates/physical-xiaomi-20261105T021343Z",
+  "screenshots_dir": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z"
+}

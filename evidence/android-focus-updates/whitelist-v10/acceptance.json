@@ -1,0 +1,27 @@
+{
+  "scope": "Requested Alipay strict-focus return and pause/continue recovery on the connected Xiaomi device, independent validation package",
+  "requested_device_acceptance": true,
+  "package": "com.duoyi.duoyi.focuscheck",
+  "apk_sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+  "conditions": [
+    "Accessibility service connected, background-popup permission and usage access already authorized and retained",
+    "User manually set only the validation package's battery policy to unrestricted; no assistant settings/cgroup writes",
+    "Whitelist exactly QQ and WeChat; strict and monitoring enabled during measurements",
+    "Phone awake and unlocked; no UIAutomator, synthetic input taps, or overlapping case launches in acceptance windows"
+  ],
+  "results": {
+    "alipay_initial_reopen_after_qq_hold": "PASS at actual +2/+5 seconds; battery-unrestricted.json",
+    "weibo_control": "PASS at actual +2/+5 seconds",
+    "qq_wechat_allowed": "PASS; no stale forced return",
+    "paused_alipay_allowed": "PASS; native blocker disabled and Alipay foreground at +2/+5; paused.json",
+    "continued_same_session": "PASS; session focus-1793880540394302 revision 2 paused -> 3 running, retained paused remaining time rather than fresh 1500 seconds",
+    "continued_alipay_first_reopen_after_qq_hold": "PASS at actual +2/+5; resumed.json",
+    "continued_weibo_and_qq": "PASS; Weibo blocked, QQ allowed",
+    "kernel_and_timer_during_qq_hold": "PASS; frozen 0 and notification decreases before and after pause/continue",
+    "cleanup": "PASS; no running snapshot, blocker OFF, notification 951101 absent, timer FGS absent, QQ/WeChat preserved; cleanup.json"
+  },
+  "causal_boundary": "Same-APK control directly observed kernel freeze before the user battery-policy change and no freeze with successful repeated returns afterward. The async status-query code independently removes main-thread blocking risk; the policy-control outcome is not attributed solely to that code change.",
+  "verification": {"fresh_targeted_flutter_passed": 41, "fresh_native_passed": 100, "profile_build_and_signature": "PASS", "full_suite_analyze_backend_standard_debug": "Not rerun in v10"},
+  "review": {"limited_code_review": "b36c977b-c942-4563-8012-28060dfc29a5; no concrete required defect", "spec_sync": "b8a73715-4d99-4636-ba67-ef0801615fbb; threading contract documented, no mandatory additional ADR/API/i18n change"},
+  "not_claimed": ["all devices or long-term deep-sleep behavior", "production package permission configuration or signed upgrade", "earlier notification action-row reachability", "push, release or production deployment"]
+}

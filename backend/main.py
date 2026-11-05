@@ -530,7 +530,14 @@ def _version_to_code(value: str) -> int:
     return major * 100000 + minor * 10000 + patch
 
 
+RELEASE_CODE_SOURCE_MANIFEST = "manifest"
+RELEASE_CODE_SOURCE_CONFIGURED = "configured"
+RELEASE_CODE_SOURCE_DERIVED = "derived"
+RELEASE_CODE_SOURCE_UNKNOWN = "unknown"
+
+
 def _app_version_code(value: str) -> int:
+    """把版本名折算成展示用的数字（可能来自推算，必须标注来源）。"""
     normalized = str(value or "").strip().removeprefix("v")
     current = str(APP_CURRENT_VERSION or "").strip().removeprefix("v")
     if normalized == current:
@@ -540,6 +547,54 @@ def _app_version_code(value: str) -> int:
         current_computed = _version_to_code(current)
         return APP_CURRENT_VERSION_CODE + max(1, computed - current_computed)
     return computed
+
+
+def _configured_version_code(
+    version_name: str,
+    explicit_version_code: int = 0,
+) -> tuple[Optional[int], str]:
+    """只信任明确的真实 build 配置，不用后端自身 build 冒充发布 APK。
+
+    缺省值与历史版本名换算值保留兼容数值，并标记 derived；它们不参与
+    同版本 build 比较。真实 build 恰与历史公式重合时应由产物 manifest 证明。
+    """
+    normalized = str(version_name or "").strip().removeprefix("v")
+    if not normalized:
+        return None, RELEASE_CODE_SOURCE_UNKNOWN
+    derived = _version_to_code(normalized)
+    try:
+        explicit = int(explicit_version_code or 0)
+    except (TypeError, ValueError):
+        explicit = 0
+    if explicit > 0 and explicit not in (derived, APP_CURRENT_VERSION_CODE):
+        return explicit, RELEASE_CODE_SOURCE_CONFIGURED
+    return _app_version_code(normalized), RELEASE_CODE_SOURCE_DERIVED
+
+
+def _update_is_available(
+    client_version_name: str,
+    client_version_code: int,
+    target_version_name: str,
+    target_version_code: Optional[int],
+    legacy_target_version_code: Optional[int] = None,
+) -> bool:
+    """版本名语义优先；name 相同才看可信 build。
+
+    远端 name 更旧时即便 code 更大也不算更新（避免降级提示/强制更新）；
+    name 更高时不需要 code；name 相同时只有可信且更大的 build 才算更新。
+    老客户端不上报 name 时只能比 code：优先用可信 code，管理端配置的版本
+    退回旧的折算值（保持老接口行为），发布通道没有真实 build 时不给提示。
+    """
+    client_name = str(client_version_name or "").strip().removeprefix("v")
+    target_name = str(target_version_name or "").strip().removeprefix("v")
+    if not client_name:
+        effective_code = target_version_code or legacy_target_version_code
+        return bool(effective_code and effective_code > client_version_code)
+    if target_name and _version_gt(target_name, client_name):
+        return True
+    if target_name and _version_gt(client_name, target_name):
+        return False
+    return bool(target_version_code and target_version_code > client_version_code)
 
 
 def _next_patch_version(value: str) -> str:
@@ -649,6 +704,23 @@ def _update_release_defaults(db) -> dict:
     if force_update_required:
         if not update_notes:
             update_notes = APP_UPDATE_DEFAULT_NOTES
+    try:
+        explicit_latest_version_code = int(
+            _setting_get(db, "latest_version_code", 0) or 0
+        )
+    except (TypeError, ValueError):
+        explicit_latest_version_code = 0
+    latest_version_code, latest_version_code_source = _configured_version_code(
+        latest_version,
+        explicit_latest_version_code,
+    )
+    (
+        minimum_supported_version_code,
+        minimum_supported_version_code_source,
+    ) = _configured_version_code(
+        minimum_supported_version,
+        explicit_latest_version_code if minimum_supported_version == latest_version else 0,
+    )
     return {
         "current_version": APP_CURRENT_VERSION,
         "current_version_name": APP_CURRENT_VERSION,
@@ -662,10 +734,13 @@ def _update_release_defaults(db) -> dict:
         "force_app_update_enabled": force_update_required,
         "latest_version": latest_version,
         "latest_version_name": latest_version,
-        "latest_version_code": _app_version_code(
-            latest_version or APP_CURRENT_VERSION
-        ),
+        "latest_version_code": latest_version_code,
+        "latest_version_code_source": latest_version_code_source,
         "minimum_supported_version": minimum_supported_version,
+        "minimum_supported_version_code": minimum_supported_version_code,
+        "minimum_supported_version_code_source": (
+            minimum_supported_version_code_source
+        ),
         "update_notes": update_notes,
         "release_notes": update_notes,
         "update_download_url": update_download_url,
@@ -907,9 +982,11 @@ def _github_latest_mobile_release() -> Optional[dict]:
             apk_asset = asset
     if not version_name:
         return None
+    # GitHub tag 里没有真实 Android build 元数据，禁止从 tag 推算 versionCode。
     return {
         "latest_version_name": version_name,
-        "latest_version_code": _app_version_code(version_name),
+        "latest_version_code": None,
+        "latest_version_code_source": RELEASE_CODE_SOURCE_UNKNOWN,
         "download_url": str((apk_asset or {}).get("browser_download_url") or ""),
         "file_size": int((apk_asset or {}).get("size") or 0),
         "release_notes": str(release.get("body") or APP_UPDATE_DEFAULT_NOTES),
@@ -925,11 +1002,18 @@ def _local_mobile_release(request: Request, app_id: str) -> Optional[dict]:
     apk_path, manifest = resolved
     stat = apk_path.stat()
     version_name = str(manifest.get("version_name") or APP_CURRENT_VERSION)
+    try:
+        manifest_version_code = int(manifest.get("version_code") or 0) or None
+    except (TypeError, ValueError):
+        manifest_version_code = None
     download_path = f"/api/mobile/apps/{app_id}/download"
     return {
         "latest_version_name": version_name,
-        "latest_version_code": int(
-            manifest.get("version_code") or _app_version_code(version_name)
+        "latest_version_code": manifest_version_code,
+        "latest_version_code_source": (
+            RELEASE_CODE_SOURCE_MANIFEST
+            if manifest_version_code is not None
+            else RELEASE_CODE_SOURCE_UNKNOWN
         ),
         "download_url": str(request.base_url).rstrip("/") + download_path,
         "download_path": download_path,
@@ -1063,20 +1147,36 @@ def _mobile_update_response(
         if configured_version_is_newer
         else effective_release_version or configured_version_name or APP_CURRENT_VERSION
     ).strip()
-    latest_version_code = (
-        _app_version_code(latest_version_name)
-        if configured_version_is_newer or not effective_release_version
-        else int(
-            release.get("latest_version_code") or _app_version_code(latest_version_name)
-        )
-    )
+    release_version_code = release.get("latest_version_code")
+    release_version_code_source = str(
+        release.get("latest_version_code_source") or ""
+    ).strip()
+    if release_version_code_source != RELEASE_CODE_SOURCE_MANIFEST:
+        # 发布通道（GitHub tag 等）没有真实 build 元数据：不再拿后端版本或
+        # 从 tag 推算的数字冒充 APK 的实际 versionCode。
+        release_version_code = None
+        release_version_code_source = RELEASE_CODE_SOURCE_UNKNOWN
+    if configured_version_is_newer or not effective_release_version:
+        latest_version_code = settings_payload["latest_version_code"]
+        latest_version_code_source = settings_payload[
+            "latest_version_code_source"
+        ]
+    else:
+        latest_version_code = release_version_code
+        latest_version_code_source = release_version_code_source
     minimum_supported_version = str(
         settings_payload["minimum_supported_version"] or APP_CURRENT_VERSION
     ).strip()
-    minimum_supported_version_code = _app_version_code(minimum_supported_version)
+    minimum_supported_version_code = settings_payload[
+        "minimum_supported_version_code"
+    ]
+    minimum_supported_version_code_source = settings_payload[
+        "minimum_supported_version_code_source"
+    ]
     if _version_gt(minimum_supported_version, latest_version_name):
         latest_version_name = minimum_supported_version
         latest_version_code = minimum_supported_version_code
+        latest_version_code_source = minimum_supported_version_code_source
     configured_download_url = str(settings_payload["download_url"] or "").strip()
     release_download_url = str(release.get("download_url") or "").strip()
     configured_download_is_local = _is_local_mobile_download_url(
@@ -1128,8 +1228,30 @@ def _mobile_update_response(
     effective_current_version_code = int(current_version_code or 0)
     if effective_current_version_code <= 0 and client_version_name:
         effective_current_version_code = _app_version_code(client_version_name)
-    below_minimum = minimum_supported_version_code > effective_current_version_code
-    available = latest_version_code > effective_current_version_code
+    below_minimum = _update_is_available(
+        client_version_name,
+        effective_current_version_code,
+        minimum_supported_version,
+        None
+        if minimum_supported_version_code_source
+        not in (RELEASE_CODE_SOURCE_MANIFEST, RELEASE_CODE_SOURCE_CONFIGURED)
+        else minimum_supported_version_code,
+        None
+        if minimum_supported_version_code_source != RELEASE_CODE_SOURCE_DERIVED
+        else _app_version_code(minimum_supported_version),
+    )
+    available = _update_is_available(
+        client_version_name,
+        effective_current_version_code,
+        latest_version_name,
+        None
+        if latest_version_code_source
+        not in (RELEASE_CODE_SOURCE_MANIFEST, RELEASE_CODE_SOURCE_CONFIGURED)
+        else latest_version_code,
+        None
+        if latest_version_code_source != RELEASE_CODE_SOURCE_DERIVED
+        else _app_version_code(latest_version_name),
+    )
     force_update_required = bool(
         settings_payload.get("force_update_required")
         or settings_payload["force_app_update_enabled"]
@@ -1142,9 +1264,13 @@ def _mobile_update_response(
         "current_version_code": effective_current_version_code,
         "current_version_name": client_version_name or APP_CURRENT_VERSION,
         "latest_version_code": latest_version_code,
+        "latest_version_code_source": latest_version_code_source,
         "latest_version_name": latest_version_name,
         "minimum_supported_version": minimum_supported_version,
         "minimum_supported_version_code": minimum_supported_version_code,
+        "minimum_supported_version_code_source": (
+            minimum_supported_version_code_source
+        ),
         "available": available,
         "force_update": force_update,
         "force_update_required": force_update_required,

@@ -285,6 +285,10 @@ class PomodoroFocusPenalty {
   final String? focusRoomId;
   final String? appPackage;
 
+  /// 记录时的应用显示名（来自已安装应用缓存或原生 `getAppLabel`）。
+  /// 旧记录没有该字段，展示层回退到 [appPackage]。
+  final String? appLabel;
+
   const PomodoroFocusPenalty({
     required this.id,
     required this.occurredAt,
@@ -294,7 +298,21 @@ class PomodoroFocusPenalty {
     this.tag,
     this.focusRoomId,
     this.appPackage,
+    this.appLabel,
   });
+
+  /// 展示用应用名：应用名优先，缺失时回退包名；两者都没有返回 null。
+  String? get displayAppLabel {
+    final label = appLabel?.trim() ?? '';
+    if (label.isNotEmpty) return label;
+    return displayAppPackage;
+  }
+
+  /// 展示用包名（已 trim）；缺失返回 null。
+  String? get displayAppPackage {
+    final package = appPackage?.trim() ?? '';
+    return package.isEmpty ? null : package;
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -307,6 +325,7 @@ class PomodoroFocusPenalty {
     'tag': tag,
     'focusRoomId': focusRoomId,
     'appPackage': appPackage,
+    'appLabel': appLabel,
   };
 
   factory PomodoroFocusPenalty.fromJson(Map<String, dynamic> json) {
@@ -325,6 +344,7 @@ class PomodoroFocusPenalty {
       tag: json['tag']?.toString(),
       focusRoomId: json['focusRoomId']?.toString(),
       appPackage: json['appPackage']?.toString(),
+      appLabel: json['appLabel']?.toString(),
     );
   }
 }

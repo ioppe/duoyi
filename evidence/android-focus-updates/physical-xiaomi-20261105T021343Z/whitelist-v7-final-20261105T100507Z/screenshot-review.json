@@ -1,0 +1,21 @@
+{
+  "screenshot": "../../../screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/strict-panel-crop.png",
+  "original_private_image": "shots-panel.png (session scratch only)",
+  "original_sha256": "e65b9ea852be62facda5ba4c34446e591de432ca56b008dbf60cbfb8f5e64eee",
+  "original_dimensions": [1200, 2670],
+  "crop_box": [30, 180, 1170, 2500],
+  "crop_dimensions": [1140, 2320],
+  "crop_sha256": "4ce0d069fcde60a0d99baffa262c32f1e5b01e09fb126edcafe7e422f4149d97",
+  "pixels_match_exactly": true,
+  "visually_reviewed_by_main_agent": true,
+  "review_method": "Local BrowserPreview and rendered screenshot, no external service",
+  "visible": [
+    "Duoyi Strict Focus panel and own focus page",
+    "Whitelist selected count 2",
+    "Strict and monitoring switches OFF",
+    "Accessibility-enabled text and usage/accessibility settings controls",
+    "New Xiaomi background-popup and usage-access fallback hint, partially visible at the crop bottom"
+  ],
+  "excluded": ["System status and notification content", "Third-party UI", "Account credentials and task content"],
+  "limits": "This image documents visible UI and privacy only. It does not prove Alipay interception, full hint visibility or actual usage permission state; those require the separate device report."
+}

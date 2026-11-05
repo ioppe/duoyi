@@ -1,0 +1,17 @@
+=== END STATE 2026-11-05T07:22:36Z phone=15:22:35 ===
+notif951101=0
+fgs=0
+-- a11y --
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+     Bound services:{Service[label=多仪·专注验证, feedbackType[FEEDBACK_GENERIC], capabilities=0, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED], notificationTimeout=100, requestA11yBtn=false]}
+     Crashed services:{{com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService}}
+-- formal --
+    versionCode=142023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+formal_sha=cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b
+focuscheck_sha=3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a
+-- settings --
+600000
+1.25

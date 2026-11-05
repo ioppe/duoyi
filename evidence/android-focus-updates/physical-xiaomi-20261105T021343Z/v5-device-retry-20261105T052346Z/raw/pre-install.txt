@@ -1,0 +1,32 @@
+=== PRE-INSTALL SNAPSHOT host_utc=2026-11-05T05:23:46Z ===
+phone_time=2026-11-05T13:23:46+0800
+-- focuscheck --
+    versionCode=140023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-05 11:30:01
+      firstInstallTime=2026-11-05 10:30:45
+focuscheck_apk_sha=389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9
+-- formal --
+    versionCode=142023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+formal_apk_sha=cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b
+-- layoutcheck --
+    versionCode=140023 minSdk=24 targetSdk=36
+      firstInstallTime=2026-11-04 15:07:43
+-- a11y --
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+a11y_enabled=1
+-- notif perm --
+        android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_FIXED|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.ACCESS_FINE_LOCATION: granted=false, flags=[ USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+-- packages --
+package:com.duoyi.duoyi.layoutcheck
+package:com.duoyi.duoyi.focuscheck
+package:com.duoyi.duoyi
+-- device --
+Physical size: 1200x2670
+Physical density: 520
+1.25
+600000

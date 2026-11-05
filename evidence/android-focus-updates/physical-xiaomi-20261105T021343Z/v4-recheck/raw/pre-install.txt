@@ -1,0 +1,17 @@
+=== pre-install snapshot 2026-11-05T03:29:53Z ===
+-- focuscheck base.apk sha --
+dc20a1644f0f7bb4ff82eeb46104570f414d22e3179e3260d11327ba4bd8e412  /data/app/~~SqXq7jblrmWK6u7bmMLdWQ==/com.duoyi.duoyi.focuscheck-ualDFjJSxOGo0vwCIxUALQ==/base.apk
+-- focuscheck version --
+    versionCode=140023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-05 10:30:45
+      firstInstallTime=2026-11-05 10:30:45
+-- a11y secure --
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+-- formal --
+    versionCode=142023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+-- formal sha --
+cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b  /data/app/~~d3YTCabuhIr5T99PJuyUsA==/com.duoyi.duoyi-YgWWHBUrEHvEhJ6yaVF35w==/base.apk

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <long name="last_blocked_at" value="1793813120679" />
+    <string name="last_blocked_package">com.android.chrome</string>
+    <long name="expires_at" value="0" />
+    <set name="packages" />
+    <boolean name="enabled" value="false" />
+</map>

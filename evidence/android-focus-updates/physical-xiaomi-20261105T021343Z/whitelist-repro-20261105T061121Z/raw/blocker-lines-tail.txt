@@ -1,0 +1,2 @@
+11-05 13:23:58.090  3810  4171 I ActivityManager: Start proc 15305:com.duoyi.duoyi.focuscheck/u0a565 for service {com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService} caller=android
+11-05 14:14:50.968  3810  3968 D ActivityManager: [xiaomi_power]requestBind IntentBindRecord{1ef00c1 CR com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:}: requested=false rebind=false

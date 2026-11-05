@@ -1,0 +1,621 @@
+{
+  "recorded_at_utc": "2026-11-05T11:59:13.485770+00:00",
+  "purpose": "Bounded diagnosis of UsageEvents candidates and service restarts; unchanged configurations no longer restart monitoring",
+  "source_manifest": "source-manifest-whitelist-v8-diagnostic.json",
+  "source_manifest_sha256": "1e6063ce546394defdd86e4988e722ad72dc8b5b61a56b833626c428d58707a0",
+  "source_files": 1272,
+  "identity_changes": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/AndroidManifest.xml",
+    "android/app/src/main/res/values/strings.xml"
+  ],
+  "delta_from_v7": [
+    "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt"
+  ],
+  "targeted_static_tests_passed": 5,
+  "native_junit_actually_executed": {
+    "exit_code": 0,
+    "executed_in_v8": true,
+    "command": ":app:testDebugUnitTest --console=plain",
+    "xml_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest",
+    "totals": {
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suite_count": 6,
+    "suites": [
+      {
+        "suite": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.DuoyiCalendarMonthTest.xml",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "timezoneFallsBackToSystemDefaultWhenMissingOrInvalid",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "integerPixelMeasurementsStillPassTheFitCheck",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "monthTitleUsesFlutterTemplateWithFallback",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "withoutCountsTheWholeMonthStillRendersWithBadgesHidden",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "todayMarkerIsSetOnlyOnTheGivenDate",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "impossibleBudgetReturnsPositiveFloorInsteadOfPretendingToFit",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "dayCountsMapToExactBadgesAndIgnoreZeroNegativeAndOtherMonths",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "countLabelUsesTemplateOrFallsBackAndOmitsZero",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "sixWeekTinyBudgetShrinksBelowPreferredFloorAndStillFits",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "august2020UsesSixWeeksAndKeepsTheLastDay",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "weekdayLabelsAlwaysNormalizeToSevenEntries",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "leapFebruary2024IncludesThe29thInFiveWeeks",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "october2026StartsOnThursdayAndCoversEveryDayOnceInFiveWeeks",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "february2021StartsOnMondayAndIsExactlyFourWeeksWithoutEmptyWeek",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "sixWeekNormalBudgetKeepsReasonableReadableSize",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          },
+          {
+            "name": "fourAndFiveWeekMonthsKeepPreferredSizes",
+            "class": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "retryOnlyForMatchingActiveBlockedTargetWithinBudget",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "blankPackageNeverMovesTheAcceptedTimestamp",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "backwardsClockRestartsTheWindowInsteadOfBlockingForALongTime",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "continuousDuplicateBurstKeepsTheDeadlineAndNeverStarvesLaterReturns",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "staleSplashObservationDoesNotReplaceNewerOwnConfirmation",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "staleGenerationCannotRetryAfterTheCycleEndsOrReplacesTarget",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "sharedForegroundStateUsesTheProcessLocalTracker",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrFutureEventTimeFallsBackToNowWithoutPoisoningOrdering",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "firstRequestIncludingZeroClockIsAcceptedImmediately",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "newCycleClearsDeferredAndRecordsEachDetectionOnce",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "repeatedDeadlineStaysStableAndChangedTargetKeepsTheSameGlobalDeadline",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "trackerIgnoresMissingPackages",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "eventTimelineKeepsTheEventArmedDeferredCheckAfterUnconfirmed",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "fullCancellationReasonsRemoveTheEventArmedDeferredCheck",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "cooldownIsGlobalAcrossBlockedPackageChanges",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "returnAttemptBudgetIsTwoByDefault",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "newerMainTabObservationCanReplaceTheTrackedForeground",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "deferredFireForRetargetedPackageIsRecordedOnceInsteadOfSkipped",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "equalTimestampObservationStillReplacesAndTiesAreDeterministic",
+            "class": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerComponentsTest.xml",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "fullyQualifiedEntryMatches",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "sameClassNameFromAnotherPackageDoesNotMatch",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "entriesWithSurroundingSpacesStillMatch",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "shortClassNameEntryMatches",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "normalizeClassNameExpandsShortNameOnly",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "colonSeparatedListMatchesAnyEntry",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "malformedEntriesAreIgnoredWithoutThrowing",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrEmptySettingDoesNotMatch",
+            "class": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerExpiryTest.xml",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "noExpiryMarkerKeepsLegacyBehaviour",
+            "class": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+            "status": "passed"
+          },
+          {
+            "name": "requestedExpiryIsNormalized",
+            "class": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+            "status": "passed"
+          },
+          {
+            "name": "futureExpiryIsActive",
+            "class": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+            "status": "passed"
+          },
+          {
+            "name": "boundaryAtExpiryCountsAsExpired",
+            "class": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+            "status": "passed"
+          },
+          {
+            "name": "pastExpiryIsExpired",
+            "class": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerUsagePolicyTest.xml",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "lossForAnotherPackageDoesNotClearTheCurrentForeground",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "emptyOldFutureAndBeforeSessionEventsAreNeverForegroundEvidence",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "lonePauseWithoutInBatchResumeIsALossCandidateForTheTracker",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "monitorGenerationRejectsLateWorkerResultsAndKeepsOneInflightQuery",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "lossPreservesObservationTimeSoOlderEventsCannotReviveIt",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "cooldownRejectionKeepsTheEventForTheNextFreshQuery",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "pauseOrStopOfTheCurrentPackageYieldsAnExplicitLoss",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "ownConfirmationIsNotOverwrittenByAnOlderUsageObservation",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "consumedEventsAreNotResolvedOrRequestedAgainOnRefresh",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "eventsPredatingThisBootCannotBeMappedToTheCurrentForeground",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "slowWorkerResultsKeepTheirOriginalAgeAndCannotOverrideANewerAllowedApp",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "latestResumeWinsAndLatePauseOfAnOlderPackageIsIgnored",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          },
+          {
+            "name": "usageCycleAllowsOnlyOneRequestWhileAaKeepsTwo",
+            "class": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.services.FocusTimerNotificationModelTest.xml",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "anchorRebasesToCanonicalEndSoRebroadcastDoesNotExtendDeadline",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "pausedContentTextShowsFrozenTimeAndPausedLabel",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countdownUsesChronometerCountingDownFromRemaining",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "notificationWhenUsesWallClockEpochInsteadOfElapsedRealtime",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "taskLabelIsUsedWhenPresent",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingTaskFallsBackToInjectedNoTaskLabel",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "runningBindingOffersPauseAndReset",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "negativeAndOversizedValuesAreClamped",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "bindingStateMustMatchPausedFlag",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countUpUsesNowMinusAnchor",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "emptyPayloadIsRejectedSoNoEmptyNotificationIsShown",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countUpCountsUpwardsAndHidesProgress",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "controlUriFallsBackToReturnUriWithoutBinding",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "compactContentTextStartsWithLocalizedTime",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "pausedBindingOffersStartAndReset",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "pausedRebaseKeepsIncomingRemainingEvenWithAnchor",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countUpStartsItsChronometerAtZero",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "controlActionWireNamesMatchDeepLinkSegments",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "pausedProgressAndTimeStayFrozen",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "backgroundProgressAdvancesWithoutExtendingCountdownDeadline",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingPhaseLabelFallsBackToAppTitle",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "anchoredProgressFollowsRebasedRemaining",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "anchoredCountdownInThePastClampsToZeroInsteadOfNegative",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "legacyPayloadWithoutAnchorKeepsRelativeBehaviour",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrMalformedBindingShowsNoActions",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "pausedFreezesTimeAndCancelsExpiry",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "missingReturnUriFallsBackToFocusDeepLink",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countdownRoundsSecondsUpSoOneThousandOneMillisIsNotTwoStepsAhead",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          },
+          {
+            "name": "countUpContentTextUsesElapsedLabelInsteadOfFakeRemaining",
+            "class": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "native_junit_actual_xml_totals": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "apk": {
+    "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v8-diagnostic/build/app/outputs/flutter-apk/app-profile.apk",
+    "application_id": "com.duoyi.duoyi.focuscheck",
+    "build_mode": "profile",
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "size_bytes": 105691917,
+    "sha256": "fb4822fb10fc5008e8483da82c49da473119bbb4d62f0999b08686db2db8d1b7",
+    "build_exit_code": 0,
+    "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "certificate_dn": "C=US, O=Android, CN=Android Debug",
+    "apksigner_verify_exit_code": 0,
+    "apksigner_jar": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar (JDK 17 java -jar)",
+    "label": "多仪·专注验证",
+    "main_activity_metadata": {
+      "name": "com.duoyi.duoyi.MainActivity",
+      "launchable": true,
+      "flutter_deeplinking_enabled": {
+        "value": false,
+        "evidence": "aapt xmltree AndroidManifest.xml android:value(0x01010024)=(type 0x12)0x0"
+      }
+    },
+    "accessibility_service": {
+      "component": "com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService",
+      "resource": "res/xml/duoyi_focus_blocker_accessibility_service.xml",
+      "accessibilityEventTypes": "0x400020",
+      "canRetrieveWindowContent": {
+        "value": false,
+        "evidence": "(type 0x12)0x0"
+      },
+      "bind_accessibility_service_declarations": 1,
+      "unchanged_vs_v7": true
+    },
+    "diagnostic_markers": {
+      "focus blocker usage sample:": "present in dex",
+      "focus blocker usage foreground detected: package=": "present in dex",
+      "FocusBlockerUsageAccess": "present in dex",
+      "caveat": "packaging evidence only; v8 is diagnostic, no device run, no runtime interception claim"
+    },
+    "dart_define": {
+      "DUOYI_SERVER_URL": "http://127.0.0.1:18763",
+      "verified_in_libapp_so": true
+    },
+    "aar_abis": {
+      "listed_in_badging": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "flutter_aot_libapp_so": {
+        "lib/arm64-v8a/libapp.so": 23135120
+      },
+      "plugin_only_abis": [
+        "armeabi-v7a",
+        "x86_64"
+      ]
+    },
+    "source_manifest_sha256": "1e6063ce546394defdd86e4988e722ad72dc8b5b61a56b833626c428d58707a0",
+    "v7_to_v8_changed_files": [
+      "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt"
+    ],
+    "artifact": "build/app/outputs/flutter-apk/app-profile.apk",
+    "installed": false,
+    "diagnostic_only": true
+  },
+  "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "logs_archive": "verification-whitelist-v8-diagnostic-logs.tar.gz",
+  "logs_archive_sha256": "964fea6b77465e916836362baa60f82cca92de0707e37c0e0213d950c300dce1",
+  "not_rerun": [
+    "Full Flutter suite",
+    "Flutter analyze",
+    "Standard debug build"
+  ],
+  "claim_boundary": "Diagnostic only. v7 full Flutter pass is historical and does not prove new native behavior. Alipay and continue failures remain unresolved until separate physical evidence establishes otherwise."
+}

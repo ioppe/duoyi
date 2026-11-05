@@ -1,0 +1,11 @@
+NotificationRecord(0x0dfb2481: pkg=com.duoyi.duoyi.focuscheck user=UserHandle{0} id=951101 tag=null importance=2 key=0|com.duoyi.duoyi.focuscheck|951101|null|10565 bbbc=0: Notification(channel=duoyi_focus_timer_v1 shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT color=0xffc85656 category=stopwatch actions=2 vis=PUBLIC focusType=null))
+   icon=Icon(typ=RESOURCE pkg=com.duoyi.duoyi.focuscheck id=0x7f070093)
+   flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT
+   color=0xffc85656
+   actions={
+   android.title=String (专注中)
+   android.chronometerCountDown=Boolean (true)
+   android.text=String (剩余 24:56)
+   android.progress=Integer (2)
+   android.progressMax=Integer (1000)
+   android.progressIndeterminate=Boolean (false)

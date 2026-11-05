@@ -1,0 +1,49 @@
+{
+  "recorded_at_utc": "2026-11-05T12:36:27.467917+00:00",
+  "source_files": 1272,
+  "copies": {
+    "candidate": {
+      "files": 1272,
+      "identity_differences": [
+        "android/app/build.gradle.kts",
+        "android/app/src/main/AndroidManifest.xml",
+        "android/app/src/main/res/values/strings.xml"
+      ]
+    },
+    "standard": {
+      "files": 1272,
+      "identity_differences": []
+    }
+  },
+  "apks": [
+    {
+      "kind": "candidate",
+      "sha256": "8e0ee421b64675f9f92f442e8c54b03fe81dc7190357cb11c7db1f62134aa117",
+      "size_bytes": 105691917
+    },
+    {
+      "kind": "standard",
+      "sha256": "3976bcdd35dd9e3be4c96c28868bac97d82a4a1d470395c6629a5ff1f7a2dc7f",
+      "size_bytes": 160509744
+    }
+  ],
+  "native_junit_actual": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "changed_paths_checked": 126,
+  "public_files_parsed": {
+    "json": 52,
+    "png": 5,
+    "xml": 6
+  },
+  "readme_links_checked": 65,
+  "per_attempt_hashes_checked": 17,
+  "gzip_original_bytes_checked": 2,
+  "errors": [],
+  "physical_acceptance": "Separate actual device report; consistency checks alone do not establish returns.",
+  "evidence_index": "evidence-index-whitelist-v9-final.json",
+  "evidence_index_sha256": "03cabe732dcde5e55c4050f5ccc7e5e6ad464c5e17ac8a76b689988b674ce0ed"
+}

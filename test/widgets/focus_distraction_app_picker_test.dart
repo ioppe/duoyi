@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:duoyi/core/app_brand.dart';
+
 import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/models/pomodoro.dart';
 import 'package:duoyi/services/focus_distraction_service.dart';
@@ -192,6 +195,70 @@ void main() {
     expect(attempts, 2);
   });
 
+  for (final scenario in [
+    (size: const Size(390, 844), scale: 1.0, keyboard: 0.0),
+    (size: const Size(320, 640), scale: 1.5, keyboard: 0.0),
+    (size: const Size(390, 844), scale: 1.5, keyboard: 250.0),
+  ]) {
+    testWidgets('long app list keeps save visible at ${scenario.size}, '
+        '${scenario.scale}x text and ${scenario.keyboard}px keyboard', (
+      tester,
+    ) async {
+      List<String>? savedPackages;
+      final apps = List.generate(
+        40,
+        (index) => InstalledFocusApp(
+          label: index == 38 ? 'Chrome' : '应用 $index',
+          packageName: index == 38
+              ? 'com.android.chrome'
+              : 'com.example.app$index',
+        ),
+      );
+      await _open(
+        tester,
+        loadApps: () async => apps,
+        onDone: (_, packages) async => savedPackages = packages,
+        size: scenario.size,
+        textScale: scenario.scale,
+      );
+      tester.view.viewInsets = FakeViewPadding(bottom: scenario.keyboard);
+      await tester.pumpAndSettle();
+
+      final done = find.byKey(const ValueKey('focus_distraction_done'));
+      final cancel = find.byKey(const ValueKey('focus_distraction_cancel'));
+      expect(done.hitTestable(), findsOneWidget);
+      expect(cancel.hitTestable(), findsOneWidget);
+      final chrome = find.byKey(
+        const ValueKey('focus_distraction_app_com.android.chrome'),
+      );
+      await tester.scrollUntilVisible(
+        chrome,
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(FocusDistractionAppPicker),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is Scrollable &&
+                    widget.axisDirection == AxisDirection.down,
+              ),
+            )
+            .first,
+        maxScrolls: 80,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(chrome);
+      await tester.pumpAndSettle();
+      expect(done.hitTestable(), findsOneWidget);
+      await tester.tap(done);
+      await tester.pumpAndSettle();
+
+      expect(savedPackages, ['com.android.chrome']);
+      expect(find.byType(FocusDistractionAppPicker), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('done stays reachable on a narrow screen with large text', (
     tester,
   ) async {
@@ -211,5 +278,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(saved, isTrue);
+  });
+
+  testWidgets('renders real installed app icons and placeholder otherwise', (
+    tester,
+  ) async {
+    // 1x1 透明 PNG：验证“有合法字节就显示真实图标”。
+    final png = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    );
+    final apps = <InstalledFocusApp>[
+      InstalledFocusApp(
+        label: '微信',
+        packageName: 'com.tencent.mm',
+        iconBytes: png,
+      ),
+      InstalledFocusApp(label: '抖音', packageName: 'com.ss.android.ugc.aweme'),
+    ];
+    await _open(tester, loadApps: () async => apps, onDone: (_, _) async {});
+
+    expect(
+      find.byKey(const ValueKey('focus_distraction_icon_com.tencent.mm')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('focus_distraction_icon_placeholder_com.tencent.mm'),
+      ),
+      findsNothing,
+    );
+    // 没有图标字节的应用必须显示占位，而不是破图/空白。
+    expect(
+      find.byKey(
+        const ValueKey(
+          'focus_distraction_icon_placeholder_com.ss.android.ugc.aweme',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('focus_distraction_icon_com.ss.android.ugc.aweme'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('app without icon bytes keeps the list usable with placeholder', (
+    tester,
+  ) async {
+    String? savedPackage;
+    final apps = <InstalledFocusApp>[
+      InstalledFocusApp(label: '占位图标', packageName: 'com.example.noicon'),
+    ];
+    await _open(
+      tester,
+      loadApps: () async => apps,
+      onDone: (_, packages) async => savedPackage = packages.first,
+    );
+
+    expect(find.text('占位图标'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey('focus_distraction_icon_placeholder_com.example.noicon'),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('focus_distraction_app_com.example.noicon')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('focus_distraction_done')));
+    await tester.pumpAndSettle();
+    expect(savedPackage, 'com.example.noicon');
   });
 }

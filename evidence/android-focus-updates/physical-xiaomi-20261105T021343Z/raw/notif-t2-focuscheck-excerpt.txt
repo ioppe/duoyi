@@ -1,0 +1,9 @@
+NotificationRecord(0x0750e4d7: pkg=com.duoyi.duoyi.focuscheck user=UserHandle{0} id=951101 tag=null importance=2 key=0|com.duoyi.duoyi.focuscheck|951101|null|10565 bbbc=0: Notification(channel=duoyi_f
+   icon=Icon(typ=RESOURCE pkg=com.duoyi.duoyi.focuscheck id=0x7f070093)
+   flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT
+   when=1793848070136/1793848070136
+   color=0xffc85656
+   android.title=String (专注中)
+   android.chronometerCountDown=Boolean (true)
+   android.text=String (无关联任务)
+   android.progress=Integer (20)

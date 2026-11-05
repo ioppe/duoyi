@@ -16,6 +16,8 @@ class AppUpdateService extends ChangeNotifier {
   static const _downloadedVersionKey = 'duoyi_update_downloaded_apk_version';
   static const _downloadedVersionCodeKey =
       'duoyi_update_downloaded_apk_version_code';
+  static const _downloadedVersionCodeSourceKey =
+      'duoyi_update_downloaded_apk_version_code_source';
   static const _downloadedUrlKey = 'duoyi_update_downloaded_apk_url';
   static const _downloadedAssetNameKey =
       'duoyi_update_downloaded_apk_asset_name';
@@ -38,6 +40,12 @@ class AppUpdateService extends ChangeNotifier {
 
   String? _latestVersion;
   int? _latestVersionCode;
+
+  /// 只保留可信来源（清单/显式配置/老接口真实值）的 build code。
+  int? _latestVersionCodeTrusted;
+  int? _minimumSupportedVersionCodeTrusted;
+  int? _latestVersionCodeRaw;
+  String? _latestVersionCodeSourceText;
   String? _latestUrl;
   String? _latestAssetName;
   String? _latestNotes;
@@ -55,9 +63,33 @@ class AppUpdateService extends ChangeNotifier {
   String? _error;
   DateTime? _lastDownloadProgressNotifyAt;
   double? _lastNotifiedDownloadProgress;
+  AppUpdateDownloadStatus? _downloadStatus;
+  int? _downloadId;
+  int? _downloadReceivedBytes;
+  int? _downloadTotalBytes;
+  String? _downloadFailureReason;
+  Timer? _downloadPollTimer;
+  bool _disposed = false;
 
   String? get latestVersion => _latestVersion;
   int? get latestVersionCode => _latestVersionCode;
+  int? get latestVersionCodeRaw => _latestVersionCodeRaw;
+  String? get latestVersionCodeSource => _latestVersionCodeSourceText;
+  AppUpdateDownloadStatus? get downloadStatus => _downloadStatus;
+  int? get downloadId => _downloadId;
+  int? get downloadReceivedBytes => _downloadReceivedBytes;
+  int? get downloadTotalBytes => _downloadTotalBytes;
+  String? get downloadFailureReason => _downloadFailureReason;
+
+  /// 系统 DownloadManager 任务仍在进行（pending/running/paused）。
+  bool get backgroundDownloadActive => _downloadStatus?.isActive ?? false;
+
+  /// 已下载完成但还没安装。
+  bool get downloadCompleted => _downloadStatus?.isSuccessful ?? false;
+
+  bool get _backgroundDownloadAvailable =>
+      AppUpdateInstaller.supportsBackgroundDownload ||
+      debugForceAppUpdateBackgroundDownload;
   String? get latestUrl => _latestUrl;
   String? get latestAssetName => _latestAssetName;
   String? get latestNotes => _latestNotes;
@@ -83,9 +115,12 @@ class AppUpdateService extends ChangeNotifier {
       _downloadedFilePath != null && _downloadedFilePath!.trim().isNotEmpty;
 
   bool get hasUpdate {
-    if (_hasNewerVersionCode(_latestVersionCode)) return true;
-    if (_latestVersion == null) return false;
-    return compareAppVersions(_latestVersion!, currentVersion) > 0;
+    return hasNewerAppVersion(
+      currentVersion: currentVersion,
+      currentVersionCode: currentVersionCode,
+      latestVersion: _latestVersion,
+      latestVersionCode: _latestVersionCodeTrusted,
+    );
   }
 
   bool get mustUpdate => shouldForceAppUpdate(
@@ -94,18 +129,22 @@ class AppUpdateService extends ChangeNotifier {
     minimumSupportedVersion: _minimumSupportedVersion,
     forceUpdateRequired: _forceUpdateRequired,
     currentVersionCode: currentVersionCode,
-    latestVersionCode: _latestVersionCode,
-    minimumSupportedVersionCode: _minimumSupportedVersionCode,
+    latestVersionCode: _latestVersionCodeTrusted,
+    minimumSupportedVersionCode: _minimumSupportedVersionCodeTrusted,
   );
 
   void resetForServerChange() {
     _latestVersion = null;
     _latestVersionCode = null;
+    _latestVersionCodeTrusted = null;
+    _latestVersionCodeRaw = null;
+    _latestVersionCodeSourceText = null;
     _latestUrl = null;
     _latestAssetName = null;
     _latestNotes = null;
     _minimumSupportedVersion = null;
     _minimumSupportedVersionCode = null;
+    _minimumSupportedVersionCodeTrusted = null;
     _forceUpdateBlockedReason = null;
     _forceUpdateRequired = false;
     _serverPolicyLoaded = false;
@@ -128,6 +167,7 @@ class AppUpdateService extends ChangeNotifier {
     notifyListeners();
     try {
       await _restoreDownloadedInstaller(allowPopulateUpdateInfo: true);
+      await _restoreBackgroundDownload();
       bool? mobileUpdateLoaded;
       try {
         mobileUpdateLoaded = await _checkBackendMobileUpdate();
@@ -153,11 +193,15 @@ class AppUpdateService extends ChangeNotifier {
       if (configLoaded == false) {
         _latestVersion = null;
         _latestVersionCode = null;
+        _latestVersionCodeTrusted = null;
+        _latestVersionCodeRaw = null;
+        _latestVersionCodeSourceText = null;
         _latestUrl = null;
         _latestAssetName = null;
         _latestNotes = null;
         _minimumSupportedVersion = null;
         _minimumSupportedVersionCode = null;
+        _minimumSupportedVersionCodeTrusted = null;
         _forceUpdateBlockedReason = null;
         _forceUpdateRequired = false;
         _serverPolicyLoaded = false;
@@ -192,6 +236,7 @@ class AppUpdateService extends ChangeNotifier {
     notifyListeners();
     try {
       await _restoreDownloadedInstaller(allowPopulateUpdateInfo: true);
+      await _restoreBackgroundDownload();
       bool? mobileUpdateLoaded;
       try {
         mobileUpdateLoaded = await _checkBackendMobileUpdate();
@@ -206,11 +251,15 @@ class AppUpdateService extends ChangeNotifier {
       if (configLoaded == false) {
         _latestVersion = null;
         _latestVersionCode = null;
+        _latestVersionCodeTrusted = null;
+        _latestVersionCodeRaw = null;
+        _latestVersionCodeSourceText = null;
         _latestUrl = null;
         _latestAssetName = null;
         _latestNotes = null;
         _minimumSupportedVersion = null;
         _minimumSupportedVersionCode = null;
+        _minimumSupportedVersionCodeTrusted = null;
         _forceUpdateBlockedReason = null;
         _forceUpdateRequired = false;
         _serverPolicyLoaded = false;
@@ -278,9 +327,12 @@ class AppUpdateService extends ChangeNotifier {
           : rawConfig;
       final rawLatest = _stringValue(data['latest_version']);
       final latest = _versionAtLeastCurrent(rawLatest);
-      final latestCode = _versionCodeAtLeastCurrent(
-        rawLatest,
-        _intValue(data['latest_version_code']),
+      final latestCodeRaw = _intValue(data['latest_version_code']);
+      final latestCode = _versionCodeAtLeastCurrent(rawLatest, latestCodeRaw);
+      final latestCodeTrusted = _trustedIncomingVersionCode(
+        versionName: rawLatest,
+        versionCode: latestCodeRaw,
+        codeSource: _stringValue(data['latest_version_code_source']),
       );
       final rawDownloadUrl = _resolveBackendUrl(
         base,
@@ -289,21 +341,32 @@ class AppUpdateService extends ChangeNotifier {
       final notes = _stringValue(data['update_notes']);
       final rawMinimum = _stringValue(data['minimum_supported_version']);
       final minimum = _versionAtLeastCurrent(rawMinimum);
+      final minimumCodeRaw = _intValue(data['minimum_supported_version_code']);
       final minimumCode = _versionCodeAtLeastCurrent(
         rawMinimum,
-        _intValue(data['minimum_supported_version_code']),
+        minimumCodeRaw,
+      );
+      final minimumCodeTrusted = _trustedIncomingVersionCode(
+        versionName: rawMinimum,
+        versionCode: minimumCodeRaw,
+        codeSource: _stringValue(data['minimum_supported_version_code_source']),
       );
       final downloadUrl = _sanitizeDownloadUrlForVersion(
         rawDownloadUrl,
         latest.isEmpty ? minimum : latest,
       );
-      final hasNewerLatest =
-          _hasNewerVersionCode(latestCode) ||
-          (latest.isNotEmpty && compareAppVersions(latest, currentVersion) > 0);
-      final hasRaisedMinimum =
-          _hasNewerVersionCode(minimumCode) ||
-          (minimum.isNotEmpty &&
-              compareAppVersions(minimum, currentVersion) > 0);
+      final hasNewerLatest = hasNewerAppVersion(
+        currentVersion: currentVersion,
+        currentVersionCode: currentVersionCode,
+        latestVersion: rawLatest,
+        latestVersionCode: latestCodeTrusted,
+      );
+      final hasRaisedMinimum = hasNewerAppVersion(
+        currentVersion: currentVersion,
+        currentVersionCode: currentVersionCode,
+        latestVersion: rawMinimum,
+        latestVersionCode: minimumCodeTrusted,
+      );
       final policyEnabled =
           data['force_update_required'] == true ||
           data['force_app_update_enabled'] == true;
@@ -316,11 +379,17 @@ class AppUpdateService extends ChangeNotifier {
       if (!hasPolicy) return false;
       _latestVersion = latest.isEmpty ? null : latest;
       _latestVersionCode = latestCode;
+      _latestVersionCodeRaw = latestCodeRaw;
+      _latestVersionCodeSourceText = _stringValue(
+        data['latest_version_code_source'],
+      );
+      _latestVersionCodeTrusted = latestCodeTrusted;
       _latestUrl = downloadUrl.isEmpty ? null : downloadUrl;
       _latestAssetName = _assetNameFromUrl(downloadUrl);
       _latestNotes = notes.isEmpty ? null : notes;
       _minimumSupportedVersion = minimum.isEmpty ? null : minimum;
       _minimumSupportedVersionCode = minimumCode;
+      _minimumSupportedVersionCodeTrusted = minimumCodeTrusted;
       _forceUpdateBlockedReason = null;
       _forceUpdateRequired = policyEnabled;
       _serverPolicyLoaded = true;
@@ -370,9 +439,12 @@ class AppUpdateService extends ChangeNotifier {
       }
       final rawLatest = _stringValue(data['latest_version_name']);
       final latest = _versionAtLeastCurrent(rawLatest);
-      final latestCode = _versionCodeAtLeastCurrent(
-        rawLatest,
-        _intValue(data['latest_version_code']),
+      final latestCodeRaw = _intValue(data['latest_version_code']);
+      final latestCode = _versionCodeAtLeastCurrent(rawLatest, latestCodeRaw);
+      final latestCodeTrusted = _trustedIncomingVersionCode(
+        versionName: rawLatest,
+        versionCode: latestCodeRaw,
+        codeSource: _stringValue(data['latest_version_code_source']),
       );
       final rawDownloadUrl = _resolveBackendUrl(
         base,
@@ -381,23 +453,35 @@ class AppUpdateService extends ChangeNotifier {
       final notes = _stringValue(data['release_notes']);
       final rawMinimum = _stringValue(data['minimum_supported_version']);
       final minimum = _versionAtLeastCurrent(rawMinimum);
+      final minimumCodeRaw = _intValue(data['minimum_supported_version_code']);
       final minimumCode = _versionCodeAtLeastCurrent(
         rawMinimum,
-        _intValue(data['minimum_supported_version_code']),
+        minimumCodeRaw,
+      );
+      final minimumCodeTrusted = _trustedIncomingVersionCode(
+        versionName: rawMinimum,
+        versionCode: minimumCodeRaw,
+        codeSource: _stringValue(data['minimum_supported_version_code_source']),
       );
       final downloadUrl = _sanitizeDownloadUrlForVersion(
         rawDownloadUrl,
         latest.isEmpty ? minimum : latest,
       );
       final blockedReason = _stringValue(data['force_update_blocked_reason']);
-      final available =
-          data['available'] == true ||
-          _hasNewerVersionCode(latestCode) ||
-          (latest.isNotEmpty && compareAppVersions(latest, currentVersion) > 0);
-      final belowMinimum =
-          _hasNewerVersionCode(minimumCode) ||
-          (minimum.isNotEmpty &&
-              compareAppVersions(currentVersion, minimum) < 0);
+      // 版本名语义优先：远端 name 更旧时不因 code 更大而提示更新；
+      // name 相同只有可信的真实 build 更高才算更新。
+      final available = hasNewerAppVersion(
+        currentVersion: currentVersion,
+        currentVersionCode: currentVersionCode,
+        latestVersion: rawLatest,
+        latestVersionCode: latestCodeTrusted,
+      );
+      final belowMinimum = hasNewerAppVersion(
+        currentVersion: currentVersion,
+        currentVersionCode: currentVersionCode,
+        latestVersion: rawMinimum,
+        latestVersionCode: minimumCodeTrusted,
+      );
       final policyEnabled =
           data['force_update_required'] == true ||
           data['force_app_update_enabled'] == true;
@@ -409,11 +493,17 @@ class AppUpdateService extends ChangeNotifier {
       }
       _latestVersion = latest.isEmpty ? null : latest;
       _latestVersionCode = latestCode;
+      _latestVersionCodeRaw = latestCodeRaw;
+      _latestVersionCodeSourceText = _stringValue(
+        data['latest_version_code_source'],
+      );
+      _latestVersionCodeTrusted = latestCodeTrusted;
       _latestUrl = downloadUrl.isEmpty ? null : downloadUrl;
       _latestAssetName = _assetNameFromUrl(downloadUrl);
       _latestNotes = notes.isEmpty ? null : notes;
       _minimumSupportedVersion = minimum.isEmpty ? null : minimum;
       _minimumSupportedVersionCode = minimumCode;
+      _minimumSupportedVersionCodeTrusted = minimumCodeTrusted;
       _forceUpdateBlockedReason = blockedReason.isEmpty ? null : blockedReason;
       _forceUpdateRequired = forceUpdate;
       _serverPolicyLoaded = true;
@@ -449,14 +539,25 @@ class AppUpdateService extends ChangeNotifier {
     return code < currentCode ? currentCode : code;
   }
 
+  int? _trustedIncomingVersionCode({
+    required String versionName,
+    int? versionCode,
+    String? codeSource,
+  }) {
+    if (versionName.trim().isNotEmpty &&
+        compareAppVersions(versionName, currentVersion) < 0) {
+      return null;
+    }
+    return resolveTrustedVersionCode(
+      versionName: versionName,
+      versionCode: versionCode,
+      codeSource: codeSource,
+    );
+  }
+
   int? _intValue(dynamic value) {
     if (value is int) return value;
     return int.tryParse(_stringValue(value));
-  }
-
-  bool _hasNewerVersionCode(int? code) {
-    final current = currentVersionCode;
-    return current != null && current > 0 && code != null && code > current;
   }
 
   String _resolveBackendUrl(String base, String value) {
@@ -669,9 +770,11 @@ class AppUpdateService extends ChangeNotifier {
     }
     if (!fillMissingOnly) {
       _latestVersion = releaseVersion;
-      _latestVersionCode = releaseVersion == null
-          ? null
-          : _versionToCode(releaseVersion);
+      // GitHub tag 里没有真实 Android build 元数据，禁止从 tag 合成 versionCode。
+      _latestVersionCode = null;
+      _latestVersionCodeRaw = null;
+      _latestVersionCodeTrusted = null;
+      _latestVersionCodeSourceText = null;
       _latestNotes = releaseNotes;
       _latestUrl = asset?['browser_download_url'] as String?;
       _latestAssetName = asset?['name'] as String?;
@@ -689,7 +792,10 @@ class AppUpdateService extends ChangeNotifier {
             compareAppVersions(releaseVersion, _latestVersion!) > 0);
     if (releaseIsNewerThanCurrent && releaseIsNewerThanLoaded) {
       _latestVersion = releaseVersion;
-      _latestVersionCode = _versionToCode(releaseVersion);
+      _latestVersionCode = null;
+      _latestVersionCodeRaw = null;
+      _latestVersionCodeTrusted = null;
+      _latestVersionCodeSourceText = null;
       if (releaseNotes != null && releaseNotes.isNotEmpty) {
         _latestNotes = releaseNotes;
       }
@@ -745,8 +851,20 @@ class AppUpdateService extends ChangeNotifier {
   }) {
     _latestVersion = latestVersion;
     _latestVersionCode = latestVersionCode;
+    _latestVersionCodeRaw = latestVersionCode;
+    _latestVersionCodeSourceText = null;
+    _latestVersionCodeTrusted = resolveTrustedVersionCode(
+      versionName: latestVersion ?? '',
+      versionCode: latestVersionCode,
+      codeSource: null,
+    );
     _minimumSupportedVersion = minimumSupportedVersion;
     _minimumSupportedVersionCode = minimumSupportedVersionCode;
+    _minimumSupportedVersionCodeTrusted = resolveTrustedVersionCode(
+      versionName: minimumSupportedVersion ?? '',
+      versionCode: minimumSupportedVersionCode,
+      codeSource: null,
+    );
     _forceUpdateRequired = forceUpdateRequired;
     _latestUrl = latestUrl;
     _latestAssetName = _assetNameFromUrl(latestUrl ?? '');
@@ -788,18 +906,27 @@ class AppUpdateService extends ChangeNotifier {
 
     final cachedVersion = (prefs.getString(_downloadedVersionKey) ?? '').trim();
     final cachedVersionCode = prefs.getInt(_downloadedVersionCodeKey);
+    final cachedVersionCodeSource = prefs.getString(
+      _downloadedVersionCodeSourceKey,
+    );
+    final cachedTrustedCode = resolveTrustedVersionCode(
+      versionName: cachedVersion,
+      versionCode: cachedVersionCode,
+      codeSource: cachedVersionCodeSource,
+    );
     final cachedUrl = (prefs.getString(_downloadedUrlKey) ?? '').trim();
     if (_downloadUrlLooksStaleForVersion(cachedUrl, cachedVersion)) {
       await _clearDownloadedInstaller(prefs);
       return;
     }
-    if (!_isNewerThanCurrent(cachedVersion, cachedVersionCode)) {
+    // 旧缓存里由 versionName 合成的假 build 不能让已最新版误报。
+    if (!_isNewerThanCurrent(cachedVersion, cachedTrustedCode)) {
       await _clearDownloadedInstaller(prefs);
       return;
     }
     if (!_cachedInstallerMatchesLoadedUpdate(
       version: cachedVersion,
-      versionCode: cachedVersionCode,
+      versionCode: cachedTrustedCode,
       url: cachedUrl,
       allowPopulateUpdateInfo: allowPopulateUpdateInfo,
     )) {
@@ -811,12 +938,14 @@ class AppUpdateService extends ChangeNotifier {
     if (allowPopulateUpdateInfo) {
       _latestVersion ??= cachedVersion.isEmpty ? null : cachedVersion;
       _latestVersionCode ??= cachedVersionCode;
+      _latestVersionCodeTrusted ??= cachedTrustedCode;
       if ((_latestUrl == null || _latestUrl!.trim().isEmpty) &&
           cachedUrl.isNotEmpty) {
         _latestUrl = cachedUrl;
       }
       final cachedAssetName = (prefs.getString(_downloadedAssetNameKey) ?? '')
           .trim();
+      _latestVersionCodeSourceText ??= cachedVersionCodeSource;
       if ((_latestAssetName == null || _latestAssetName!.trim().isEmpty) &&
           cachedAssetName.isNotEmpty) {
         _latestAssetName = cachedAssetName;
@@ -833,7 +962,7 @@ class AppUpdateService extends ChangeNotifier {
   }) {
     final loadedHasUpdate = _isNewerThanCurrent(
       _latestVersion,
-      _latestVersionCode,
+      _latestVersionCodeTrusted,
     );
     if (!loadedHasUpdate) return allowPopulateUpdateInfo;
 
@@ -844,9 +973,9 @@ class AppUpdateService extends ChangeNotifier {
         compareAppVersions(loadedVersion, version) != 0) {
       return false;
     }
-    if (_latestVersionCode != null &&
+    if (_latestVersionCodeTrusted != null &&
         versionCode != null &&
-        _latestVersionCode != versionCode) {
+        _latestVersionCodeTrusted != versionCode) {
       return false;
     }
     final loadedUrl = _latestUrl?.trim();
@@ -859,13 +988,13 @@ class AppUpdateService extends ChangeNotifier {
     return true;
   }
 
-  bool _isNewerThanCurrent(String? version, int? versionCode) {
-    if (_hasNewerVersionCode(versionCode)) return true;
-    final normalized = version?.trim();
-    return normalized != null &&
-        normalized.isNotEmpty &&
-        compareAppVersions(normalized, currentVersion) > 0;
-  }
+  bool _isNewerThanCurrent(String? version, int? versionCode) =>
+      hasNewerAppVersion(
+        currentVersion: currentVersion,
+        currentVersionCode: currentVersionCode,
+        latestVersion: version,
+        latestVersionCode: versionCode,
+      );
 
   Future<void> _rememberDownloadedInstaller(String path) async {
     final prefs = await _downloadedInstallerPrefs();
@@ -875,9 +1004,13 @@ class AppUpdateService extends ChangeNotifier {
     if (version != null && version.isNotEmpty) {
       await prefs.setString(_downloadedVersionKey, version);
     }
-    final versionCode = _latestVersionCode;
+    final versionCode = _latestVersionCodeTrusted;
     if (versionCode != null) {
       await prefs.setInt(_downloadedVersionCodeKey, versionCode);
+    }
+    final versionCodeSource = _latestVersionCodeSourceText;
+    if (versionCodeSource != null && versionCodeSource.isNotEmpty) {
+      await prefs.setString(_downloadedVersionCodeSourceKey, versionCodeSource);
     }
     final url = _latestUrl?.trim();
     if (url != null && url.isNotEmpty) {
@@ -896,6 +1029,7 @@ class AppUpdateService extends ChangeNotifier {
     await storage.remove(_downloadedPathKey);
     await storage.remove(_downloadedVersionKey);
     await storage.remove(_downloadedVersionCodeKey);
+    await storage.remove(_downloadedVersionCodeSourceKey);
     await storage.remove(_downloadedUrlKey);
     await storage.remove(_downloadedAssetNameKey);
   }
@@ -931,16 +1065,41 @@ class AppUpdateService extends ChangeNotifier {
     return true;
   }
 
-  Future<void> downloadAndInstallLatest() async {
-    if (!AppUpdateInstaller.supportsInstall) {
+  /// 下载并安装最新版本。
+  ///
+  /// Android 交给系统 DownloadManager 在后台下载，本方法启动任务后立即返回；
+  /// 进度/结果通过 [downloadStatus]、[downloadProgress] 暴露，UI 可关闭弹窗，
+  /// 下载不会因此中断。桌面/Web 仍沿用页内 http 流。
+  Future<void> downloadAndInstallLatest({
+    int? accentColor,
+    String? appName,
+    String? notificationTitle,
+    String? notificationText,
+    String? installActionLabel,
+    String? channelName,
+    String? channelDescription,
+  }) async {
+    if (!AppUpdateInstaller.supportsInstall && !_backgroundDownloadAvailable) {
       _error = '当前平台不支持应用内 APK 更新';
-      notifyListeners();
+      _safeNotify();
       return;
     }
     if (await _tryInstallDownloadedInstaller()) return;
     if (_latestUrl == null) {
       _error = '没有可下载的 APK';
-      notifyListeners();
+      _safeNotify();
+      return;
+    }
+    if (_backgroundDownloadAvailable) {
+      await startBackgroundDownload(
+        accentColor: accentColor,
+        appName: appName,
+        notificationTitle: notificationTitle,
+        notificationText: notificationText,
+        installActionLabel: installActionLabel,
+        channelName: channelName,
+        channelDescription: channelDescription,
+      );
       return;
     }
 
@@ -989,6 +1148,227 @@ class AppUpdateService extends ChangeNotifier {
       _installing = false;
       notifyListeners();
     }
+  }
+
+  /// 启动系统后台下载；同一任务不会重复创建。
+  ///
+  /// [accentColor]、[notificationTitle] 等外观参数由调用方传入
+  /// 当前主题主色与品牌文案（原生侧不能读 I18n）。
+  Future<void> startBackgroundDownload({
+    int? accentColor,
+    String? appName,
+    String? notificationTitle,
+    String? notificationText,
+    String? installActionLabel,
+    String? channelName,
+    String? channelDescription,
+  }) async {
+    if (!_backgroundDownloadAvailable) {
+      _error = '当前平台不支持系统后台下载';
+      _safeNotify();
+      return;
+    }
+    if (_downloading || backgroundDownloadActive) return;
+    final url = _latestUrl?.trim() ?? '';
+    if (url.isEmpty) {
+      _error = '没有可下载的 APK';
+      _safeNotify();
+      return;
+    }
+    final versionName = _latestVersion?.trim() ?? '';
+    final brand = appName?.trim().isNotEmpty == true ? appName!.trim() : '多仪';
+    _error = null;
+    _downloading = true;
+    _downloadStatus = AppUpdateDownloadStatus.pending;
+    _downloadFailureReason = null;
+    _downloadProgress = null;
+    _downloadReceivedBytes = 0;
+    _downloadTotalBytes = null;
+    _safeNotify();
+    try {
+      final snapshot = await AppUpdateInstaller.startBackgroundDownload(
+        url: url,
+        fileName: _latestAssetName ?? 'duoyi-$versionName.apk',
+        versionName: versionName,
+        versionCode: _latestVersionCode,
+        accentColor: accentColor ?? defaultAppUpdateAccentColor,
+        notificationTitle: notificationTitle ?? brand,
+        notificationText: notificationText ?? '正在下载更新包 $versionName'.trim(),
+        installActionLabel: installActionLabel ?? '点击安装',
+        channelName: channelName ?? '应用更新',
+        channelDescription: channelDescription ?? '应用更新包后台下载与安装提醒',
+      );
+      if (snapshot == null) {
+        _downloading = false;
+        _downloadStatus = null;
+        _error = '无法启动后台下载';
+        _safeNotify();
+        return;
+      }
+      await _applyDownloadSnapshot(snapshot);
+      if (snapshot.status.isActive) _startDownloadPolling();
+    } catch (e) {
+      _downloading = false;
+      _downloadStatus = AppUpdateDownloadStatus.failed;
+      _downloadFailureReason = '$e';
+      _error = '更新失败: $e';
+      _safeNotify();
+    }
+  }
+
+  /// 取消当前下载任务（只删除本应用持有的那一个）。
+  Future<void> cancelDownload() async {
+    _downloadPollTimer?.cancel();
+    _downloadPollTimer = null;
+    try {
+      await AppUpdateInstaller.cancelBackgroundDownload();
+    } catch (_) {
+      // 取消失败不阻塞 UI；下一次查询会纠正真实状态。
+    }
+    _downloading = false;
+    _downloadStatus = null;
+    _downloadId = null;
+    _downloadProgress = null;
+    _downloadReceivedBytes = null;
+    _downloadTotalBytes = null;
+    _downloadFailureReason = null;
+    _safeNotify();
+  }
+
+  /// 安装已下载的安装包（不会自动触发，必须由用户操作）。
+  Future<void> installDownloadedInstaller() async {
+    await _tryInstallDownloadedInstaller();
+  }
+
+  /// 重新读取原生下载任务状态（应用回到前台/服务重建时调用）。
+  Future<void> refreshDownloadState() async {
+    await _restoreBackgroundDownload();
+  }
+
+  Future<void> _restoreBackgroundDownload() async {
+    if (!_backgroundDownloadAvailable) return;
+    AppUpdateDownloadSnapshot? snapshot;
+    try {
+      snapshot = await AppUpdateInstaller.queryBackgroundDownload();
+    } catch (_) {
+      return;
+    }
+    if (snapshot == null) {
+      _downloadPollTimer?.cancel();
+      _downloadPollTimer = null;
+      _downloadStatus = null;
+      _downloadId = null;
+      _downloadReceivedBytes = null;
+      _downloadTotalBytes = null;
+      if (!hasDownloadedInstaller) {
+        _downloading = false;
+        _downloadProgress = null;
+      }
+      return;
+    }
+    await _applyDownloadSnapshot(snapshot);
+    if (snapshot.status.isActive) {
+      _startDownloadPolling();
+    }
+  }
+
+  Future<void> _applyDownloadSnapshot(
+    AppUpdateDownloadSnapshot snapshot,
+  ) async {
+    _downloadId = snapshot.downloadId;
+    _downloadStatus = snapshot.status;
+    _downloadReceivedBytes = snapshot.receivedBytes;
+    _downloadTotalBytes = snapshot.totalBytes;
+    _latestVersion ??= snapshot.versionName;
+    if ((_latestUrl == null || _latestUrl!.trim().isEmpty) &&
+        (snapshot.url?.trim().isNotEmpty ?? false)) {
+      _latestUrl = snapshot.url!.trim();
+    }
+    if ((_latestAssetName == null || _latestAssetName!.trim().isEmpty) &&
+        (snapshot.fileName?.trim().isNotEmpty ?? false)) {
+      _latestAssetName = snapshot.fileName!.trim();
+    }
+    if (snapshot.status.isSuccessful) {
+      _downloadPollTimer?.cancel();
+      _downloadPollTimer = null;
+      _downloading = false;
+      final path = snapshot.trimmedLocalPath;
+      final exists =
+          path != null && await AppUpdateInstaller.downloadedFileExists(path);
+      if (path != null && exists) {
+        _downloadedFilePath = path;
+        _downloadProgress = 1;
+        _downloadFailureReason = null;
+        _error = null;
+        await _rememberDownloadedInstaller(path);
+      } else {
+        _downloadStatus = AppUpdateDownloadStatus.failed;
+        _downloadFailureReason = 'missing_file';
+        _downloadProgress = null;
+        _error = '更新包下载完成但文件缺失，请重试';
+      }
+    } else if (snapshot.status.isFailed) {
+      _downloadPollTimer?.cancel();
+      _downloadPollTimer = null;
+      _downloading = false;
+      _downloadProgress = null;
+      _downloadFailureReason = snapshot.reason ?? 'failed';
+      _error = '更新下载失败，请重试';
+    } else {
+      _downloading = true;
+      _downloadProgress = snapshot.progress;
+      _downloadFailureReason = null;
+      _error = null;
+    }
+    _safeNotify();
+  }
+
+  void _startDownloadPolling() {
+    _downloadPollTimer?.cancel();
+    _downloadPollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      unawaited(_pollBackgroundDownload(timer));
+    });
+  }
+
+  @visibleForTesting
+  Future<void> debugPollDownloadForTest() => _pollBackgroundDownload();
+
+  Future<void> _pollBackgroundDownload([Timer? timer]) async {
+    if (_disposed) {
+      timer?.cancel();
+      return;
+    }
+    AppUpdateDownloadSnapshot? snapshot;
+    try {
+      snapshot = await AppUpdateInstaller.queryBackgroundDownload();
+    } catch (_) {
+      return;
+    }
+    if (_disposed) return;
+    if (snapshot == null) {
+      timer?.cancel();
+      _downloadStatus = null;
+      _downloadId = null;
+      _downloading = false;
+      _downloadProgress = null;
+      _safeNotify();
+      return;
+    }
+    await _applyDownloadSnapshot(snapshot);
+    if (!snapshot.status.isActive) timer?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _downloadPollTimer?.cancel();
+    _downloadPollTimer = null;
+    super.dispose();
+  }
+
+  void _safeNotify() {
+    if (_disposed) return;
+    notifyListeners();
   }
 
   bool _shouldNotifyDownloadProgress(double progress) {

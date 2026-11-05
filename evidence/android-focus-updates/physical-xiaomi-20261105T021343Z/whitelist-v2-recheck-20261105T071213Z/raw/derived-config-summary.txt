@@ -1,0 +1,14 @@
+[configured via real UI]
+strictFocusMode=True monitorDistractingApps=True mode=whitelist
+whitelist=['com.tencent.mm', 'com.tencent.mobileqq']
+[final cleanup state]
+strictFocusMode=False monitorDistractingApps=False whitelist=['com.tencent.mm', 'com.tencent.mobileqq']
+[native whitelist-complement during live session]
+expires_at=1793864888709
+native_set_count=203
+com.sina.weibo in_set=True
+com.eg.android.AlipayGphone in_set=True
+com.xiaomi.scanner in_set=True
+com.tencent.mobileqq in_set=False
+com.tencent.mm in_set=False
+enabled=true

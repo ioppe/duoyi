@@ -1,0 +1,9 @@
+=== CASE5 pause (own UI) phone=15:20:31.881555728 ===
+=== CASE5 paused -> launch alipay phone=15:21:35.989241641 ===
+t+2 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity}
+t+5 focus=com.eg.android.AlipayGphone/com.ali.user.mobile.loginupgrade.activity.LoginActivity}
+blocker lines since pause:
+11-05 15:20:40.384 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 15:20:51.408 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 15:21:14.869 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 15:21:20.883 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=false

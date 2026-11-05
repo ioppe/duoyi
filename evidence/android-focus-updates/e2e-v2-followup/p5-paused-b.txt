@@ -1,0 +1,2 @@
+                android.text=String (No linked task · Paused · 24:50)
+                android.progress=Integer (6)

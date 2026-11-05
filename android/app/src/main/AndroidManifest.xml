@@ -48,6 +48,10 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- duoyi/deep_links owns URI delivery; avoid a second named-route push. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -89,6 +93,15 @@
                 android:resource="@xml/update_file_paths" />
         </provider>
 
+        <!-- DownloadProvider 在独立进程发送完成广播；接收端校验本应用持有的下载 ID。 -->
+        <receiver
+            android:name=".AndroidUpdateDownloadReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <!-- flutter_local_notifications: 开机恢复已调度闹钟 -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
@@ -96,6 +109,17 @@
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
             android:exported="false" />
+
+        <!-- 独立专注计时通知：不依赖白噪音播放，系统 chronometer 在后台继续计时。 -->
+        <service
+            android:name=".services.FocusTimerForegroundService"
+            android:exported="false"
+            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-started focus timer with a persistent countdown notification" />
+        </service>
 
         <!-- 白噪音前台播放服务：音频由 Flutter audioplayers 播放，原生服务负责
              mediaPlayback 前台保活和播放状态通知。 -->

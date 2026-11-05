@@ -1,0 +1,165 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "phase": "v4-recheck (narrow delta after flutter_deeplinking_enabled=false)",
+  "host_utc_recorded": "2026-11-05T03:47:44Z",
+  "time_note": "device logs/screenshots use device local wall clock (e.g. 11:33); host UTC differs by ~8h; not interchangeable",
+  "serial": "2df52c4c",
+  "device": {
+    "model": "Xiaomi24129PN74C",
+    "android": "16/API36",
+    "abi_arm64": true,
+    "screen": "1200x2670",
+    "density": 520,
+    "font_scale": "1.25",
+    "screen_off_timeout": 60000,
+    "end_state_unchanged": {
+      "font_scale": "1.25",
+      "density": "Physical density: 520",
+      "screen_off_timeout": "60000"
+    }
+  },
+  "candidate_v4": {
+    "apk": "android-candidate-v4/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105609997,
+    "host_sha256": "389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9",
+    "device_base_apk_sha256": "389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9",
+    "hash_equal": true,
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "label": "多仪·专注验证",
+    "activity": "com.duoyi.duoyi.MainActivity",
+    "build_mode": "profile (arm64 AOT)",
+    "signer_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "main_activity_metadata_flutter_deeplinking_enabled": false,
+    "metadata_verified_by": "aapt2 dump xmltree inside activity com.duoyi.duoyi.MainActivity (metadata file deep-link-fix/manifest-v4-profile.txt)",
+    "install": "adb -s 2df52c4c install -r (no -d, no -g)",
+    "install_result": "Success",
+    "install_preserved": {
+      "firstInstallTime": "2026-11-05 10:30:45 (unchanged from v3 install)",
+      "lastUpdateTime": "2026-11-05 11:30:01"
+    },
+    "manifest_deeplink_scheme": "duoyi-focus-check",
+    "dart_accepted_scheme": "duoyi only (lib/services/deep_link_service.dart:51 _isDuoyiDeepLink)"
+  },
+  "items": [
+    {
+      "id": 1,
+      "requirement": "配置已选AI扫描不变 + 严格/监控开启 + 运行计时 + 真实打开扫描被拉回并记录名称/包名",
+      "status": "PASS",
+      "steps": [
+        "启动验证包(安装后数据保留)",
+        "专注页->严格专注面板检查",
+        "选择器恢复黑名单并勾选AI扫描->完成",
+        "重置到25:00->开始计时",
+        "am start LAUNCHER com.xiaomi.scanner"
+      ],
+      "observed": "计时 进行中 24:53；启动 scanner 后焦点立即回到 com.duoyi.duoyi.focuscheck/MainActivity（scanner pid 18890 确已启动）；日志 11:33:17.808 'DuoyiFocusBlocker: focus blocker bounced com.xiaomi.scanner to focus tab'；最近惩罚新增 '打开分心应用 AI扫描 (com.xiaomi.scanner) · 11/5 11:33 · 1 分钟'；同窗口 _onUnknownRoute / Null check operator / Navigator.pushNamed / didPushRouteInformation 计数 = 0",
+      "config_at_start_of_turn": "白名单·已选2 + 严格/监控 ON（与 v3 结束时 黑名单·已选1 + OFF 不同；非本轮改动），已通过 UI 恢复为 黑名单·已选3（含 com.xiaomi.scanner）+ 严格/监控 ON",
+      "evidence": [
+        "raw/u07-saved.xml",
+        "raw/u11-record.xml",
+        "raw/logcat-bounce-v4.txt.gz",
+        "raw/timer-start.txt"
+      ]
+    },
+    {
+      "id": 2,
+      "requirement": "UI 明确已暂停后打开扫描停留前台、不拉回",
+      "status": "PASS",
+      "steps": [
+        "暂停并确认页面/通知均为已暂停",
+        "暂停态 am start com.xiaomi.scanner"
+      ],
+      "observed": "页面 已暂停 23:56，通知 text='无关联任务 · 已暂停 · 23:56'；启动 scanner 后 mCurrentFocus=com.xiaomi.scanner/ScanActivity（停留前台）；日志 11:34:11 'focus blocker service connected; cleared expired=false, enabled=false'，此后无 bounce，全程 bounce 计数仍为 1（仅第1项那次）",
+      "evidence": [
+        "raw/u12-paused.xml",
+        "raw/logcat-bounce-v4.txt.gz"
+      ]
+    },
+    {
+      "id": 3,
+      "requirement": "reset / 开关 OFF 后扫描不再被拦截",
+      "status": "PASS",
+      "steps": [
+        "暂停态 reset -> 25:00",
+        "严格专注 OFF、监控 OFF",
+        "再次 am start com.xiaomi.scanner"
+      ],
+      "observed": "重置后 已暂停 25:00、951101 消失；两开关 checked=false；11:36:07 启动 scanner 后 mCurrentFocus=com.xiaomi.scanner/ScanActivity，无新 bounce 日志",
+      "evidence": [
+        "raw/u37-final-panel.xml",
+        "raw/logcat-bounce-v4.txt.gz",
+        "raw/end-state.txt"
+      ]
+    },
+    {
+      "id": 4,
+      "requirement": "自有 deep link 通道 warm/cold 回到 Focus，且无新的 _onUnknownRoute/Null check",
+      "status": "PASS (warm + cold-Activity)；true cold process NOT_VERIFIED",
+      "cases": [
+        {
+          "case": "control: duoyi-focus-check://focus 显式组件",
+          "result": "IGNORED_BY_DART",
+          "detail": "未被导航处理（Dart 仅接受 scheme=duoyi，deep_link_service.dart:51），无异常。此为输入不匹配，不是产品失败"
+        },
+        {
+          "case": "WARM explicit ACTION_VIEW duoyi://focus",
+          "timestamp_device": "11:42:39",
+          "result": "PASS",
+          "detail": "am start 提示 intent delivered to top-most instance(onNewIntent)；界面从 今日待办 切到 番茄专注（专注页签 sel=true）；该时间窗异常计数 0"
+        },
+        {
+          "case": "COLD-ACTIVITY explicit ACTION_VIEW duoyi://focus（Activity 已 BACK 结束，进程仍存活）",
+          "timestamp_device": "11:43:36",
+          "result": "PASS",
+          "detail": "ActivityRecord 记录数 0 -> 新 Activity：wm_create_activity 计数 3->4，Flutter 重新启动 '[startup] critical local storage completed in 242ms'；直接落在 番茄专注/专注页签；异常计数 0"
+        }
+      ],
+      "not_verified": "TRUE COLD PROCESS：无障碍关闭后 am kill 仍无法回收（curProcState=7 仍持服务），按约束不使用 force-stop，故未取得进程级冷启动的 deep link 证据",
+      "evidence": [
+        "raw/u26-warm-result.xml",
+        "raw/u28-cold-duoyi-focus.xml",
+        "raw/logcat-warm2.txt.gz",
+        "raw/logcat-cold2.txt.gz",
+        "raw/deeplink-warm.txt",
+        "raw/deeplink-cold-activity.txt"
+      ]
+    },
+    {
+      "id": 5,
+      "requirement": "实际点击计时通知正文回专注 / 实际点击 7307 完成通知进入安装入口",
+      "status": "NOT_VERIFIED",
+      "detail": "① 7307 完成通知已随 v4 package update 被系统取消，当前无本应用更新通知；按约束不重新大批下载，故安装入口点击未测。② 951101 计时通知存在（FGS foregroundId=951101，channel duoyi_focus_timer_v1，color 0xffc85656），但本 ROM 的 SystemUI 通知栏不进入 uiautomator 语义树（dump 始终只返回应用窗口/AOD），无法安全定位卡片坐标；按约束未盲点。已保存唤醒后展开通知栏的全屏截图供视觉定位（含其他应用私密通知，仅 scratch，不入库）",
+      "scratch_screenshot_for_vision": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/v4-recheck/shade-20261105T1147.png (1200x2670, mean=211.5, 拍摄时 mCurrentFocus=NotificationShade, device 11:47)",
+      "blocked_on": "主会话用视觉给出本应用卡片坐标后可 resume 本代理执行真实点击"
+    }
+  ],
+  "cleanup": {
+    "timer": "reset -> 已暂停 25:00",
+    "strict_off": true,
+    "monitor_off": true,
+    "notification_951101_gone": true,
+    "focus_timer_fgs_stopped": true,
+    "accessibility": "临时关闭后已恢复；secure 值同时包含 focuscheck 与正式包服务",
+    "formal_package_unchanged": {
+      "versionName": "2.0.0",
+      "versionCode": 142023,
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34",
+      "device_base_apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b"
+    },
+    "device_settings_unchanged": {
+      "font_scale": "1.25",
+      "density": "520",
+      "screen_off_timeout": "60000"
+    },
+    "fixture": "未修改，仍 legacy/0.08（本轮未触发下载）",
+    "verification_app": "保留安装与数据（未卸载未清数据）"
+  },
+  "observations": [
+    "本轮开始时严格/监控为 ON 且分心应用选择为 白名单·已选2，与 v3 结束态（黑名单·已选1、OFF）不同，非本轮改动；已按测试要求恢复为 黑名单·已选3（含 AI扫描）",
+    "辅助功能列表中正式包 com.duoyi.duoyi 仍显示“无法运行。点按即可查看相关信息。”，secure 值仍包含其服务，本轮未改动该条目",
+    "控制用例证明 duoyi-focus-check://focus 不被 Dart 接受：在该隔离包中只有 duoyi:// 才走自有通道，故 deep link 验收须用 duoyi:// + 显式组件"
+  ]
+}

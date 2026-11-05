@@ -1,0 +1,20 @@
+{
+  "delegation": "753f95ab-5ee9-426f-ae38-8fe67d34eed7",
+  "scope": "V5 notification spec/i18n/E2E delta, read-only, 8 tool calls",
+  "findings": 2,
+  "main_resolutions": {
+    "docs/requirement-v2.md": {
+      "line": 516,
+      "sha256": "9b44e4e3b5e775edf34724144a67cb3a6fd785c43dfd921a4ecd6bfc894e0ce5"
+    },
+    "docs/design-v2.md": {
+      "line": 153,
+      "sha256": "4b1fbd776ec301c52f1bf8bbad565bfff5adcd49ec08c909925ad8ad4d2455ea"
+    }
+  },
+  "localization": "Five keys complete in zh/en I18n, ARB and generated files; references in main.dart",
+  "manual_regression": "Time/body/control scenarios documented as unchecked, execution recorded separately",
+  "adr_or_release_notes_required": false,
+  "documentation_snapshot_record": "notification-v5-final/documentation-sync-v5.json",
+  "boundary": "Main applied the two precise documentation corrections after the read-only report; no second spec review claimed."
+}

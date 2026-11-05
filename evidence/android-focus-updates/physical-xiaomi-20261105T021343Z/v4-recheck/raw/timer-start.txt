@@ -1,0 +1,4 @@
+t_start_utc=2026-11-05T03:33:01Z device=
+device_now=2026-11-05T11:33:17
+pause_launch_device=2026-11-05T11:34:19
+off_launch_device=2026-11-05T11:36:07

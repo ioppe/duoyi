@@ -1,0 +1,27 @@
+{
+  "focusTextCandidates" : [
+    {
+      "centerX" : 307,
+      "centerY" : 481,
+      "confidence" : 1,
+      "height" : 62,
+      "text" : "专注中",
+      "width" : 179,
+      "x" : 217,
+      "y" : 450
+    },
+    {
+      "centerX" : 1000,
+      "centerY" : 485,
+      "confidence" : 0.5,
+      "height" : 49,
+      "text" : "剩余 20:58",
+      "width" : 222,
+      "x" : 889,
+      "y" : 460
+    }
+  ],
+  "height" : 2670,
+  "note" : "Coordinates are screenshot pixels; require current own notification card and matching native state before any click. Only whitelisted focus labels are emitted.",
+  "width" : 1200
+}

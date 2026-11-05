@@ -1,0 +1,40 @@
+{
+  "evidence_dir": "evidence/android-focus-updates/whitelist-v10",
+  "run": "resumed acceptance",
+  "files": [
+    {
+      "path": "resumed.json",
+      "sha256": "5aec682a5a7aec6f2d9fe7b96cd5ec120464e6df38c2a05b7d2d0411a60fb3e9",
+      "bytes": 14458
+    },
+    {
+      "path": "own-service-timeline-resumed.txt",
+      "sha256": "fd2be5e52a43c12681ae231428f84c10bdde4fb1cf4142742b060e27bdd8640f",
+      "bytes": 6317
+    }
+  ],
+  "apk": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9"
+  },
+  "session": {
+    "sessionId": "focus-1793880540394302",
+    "revision": 3,
+    "endsAt": "2026-11-05T21:34:46.410+08:00"
+  },
+  "kernel": {
+    "freeze_start": "0",
+    "freeze_end": "0"
+  },
+  "previous_evidence_untouched": [
+    "active-first.json",
+    "own-timeline.txt",
+    "validhashindex.json",
+    "battery-unrestricted.json",
+    "hashindex-unrestricted.json",
+    "paused.json",
+    "kernel-freeze-and-authorization.json"
+  ],
+  "raw_private_copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/focus-v10-device/resumed/raw.json",
+  "verdict": "PASS (A,B,C,F blocked; D QQ allowed; same session resumed)"
+}

@@ -1,0 +1,163 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v8-diagnostic-20261105T115617Z",
+  "phase": "v8 diagnostic: why Alipay not returned + continue-after-pause; strict no-UiAutomation-during-session control",
+  "serial": "2df52c4c",
+  "times": {
+    "host_utc": {
+      "keyguard": "2026-11-05T11:56:06Z",
+      "install": "2026-11-05T11:56:17Z",
+      "setup": "2026-11-05T11:57:16Z",
+      "AB": "11:59:46-12:00:17Z",
+      "cleanup": "12:02-12:12Z"
+    },
+    "phone_local": {
+      "keyguard": "19:56:05",
+      "install": "19:56:17",
+      "setup_dump": "19:57:16",
+      "A": "19:59:46.02",
+      "B": "19:59:51.42",
+      "cleanup_dumps": "20:02:12+"
+    }
+  },
+  "device_precheck": {
+    "mWakefulness": "Awake",
+    "deviceLocked": 0,
+    "isKeyguardShowing": false,
+    "focus": "com.miui.home/.Launcher",
+    "agent_action": "none (no wake/bypass)"
+  },
+  "artifact": {
+    "apk": "android-candidate-whitelist-v8-diagnostic/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105691917,
+    "host_sha256": "fb4822fb10fc5008e8483da82c49da473119bbb4d62f0999b08686db2db8d1b7",
+    "device_base_apk_sha256_before": "e6fcc9e41d51b54d5a2fb3da4fff85e5e531d94cc7adffd0dcbeab69d8222369",
+    "device_base_apk_sha256_after": "fb4822fb10fc5008e8483da82c49da473119bbb4d62f0999b08686db2db8d1b7",
+    "binding": "EQUAL after install -r (no -d/-g)",
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "firstInstallTime_preserved": "2026-11-05 10:30:45",
+    "lastUpdateTime_after": "2026-11-05 19:56:18",
+    "formal_untouched": {
+      "versionCode": 142023,
+      "apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b"
+    },
+    "layoutcheck_untouched": {
+      "versionCode": 140023
+    },
+    "v4_installed": false
+  },
+  "uiautomator_control": {
+    "policy": "no uiautomator/UiAutomation during active session or pause/continue",
+    "setup_reads": [
+      "19:57:16 ONE shot on strict panel with config OFF, after installation; observed blacklist/empty. Origin of the difference from v7 is unproven."
+    ],
+    "measurement_window_reads": "NONE between 19:59:40 and 20:00:20 (Case A/B)",
+    "cleanup_reads": "declared CLEANUP_UIAUTOMATOR_AT=2026-11-05T12:02:12Z and later; used only after measurements",
+    "third_party_launch": "standard am start MAIN/LAUNCHER -n <known default component>; no monkey; no force-stop"
+  },
+  "setup_deviation": {
+    "observed_during_setup_after_install": "mode=blacklist, pkgs=[], strict=False, monitor=False. This was not a pre-install observation; the cause of the difference from the prior v7 cleanup is unknown.",
+    "test_configuration": "real UI to mode=whitelist, pkgs=[] (all 205 apps treated as distractors), strict+monitor ON, 1500s",
+    "deviation": "The required QQ+WeChat selection was not restored during setup, although UiAutomation was permitted while OFF. This did not satisfy the requested test configuration.",
+    "impact": "Case C NOT RUN; A/B observations have configuration and sampling limits, and D NOT RUN.",
+    "native_check": {
+      "enabled": true,
+      "count": 205,
+      "has_weibo": true,
+      "has_alipay": true,
+      "expires_at": 1793881458289
+    },
+    "confirmed_after": "CFG strict=True monitor=True mode=whitelist pkgs=[]; SNAP running=True type=0 total=1500",
+    "aa_actual": "BOUND, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED] (2 types)",
+    "usage_access": "GET_USAGE_STATS: allow"
+  },
+  "cases": [
+    {
+      "id": "A",
+      "what": "weibo DEFAULT (am start MAIN/LAUNCHER -n com.sina.weibo/.SplashActivity)",
+      "at": "19:59:46.02",
+      "actual_foreground": {
+        "plus2": "com.duoyi.duoyi.focuscheck/MainActivity",
+        "plus5": "INVALID SAMPLE: overlapped my HOME+Alipay launch; read com.eg.android.AlipayGphone/XRiverActivity while own log shows no Alipay event at that time"
+      },
+      "own_log_summary": "UsageEvents supplied a fresh Weibo resume, request 1/1 was logged, then own foreground confirmed. Complete original lines are in own-service-timeline.txt.",
+      "verdict": "PARTIAL OBSERVATION: actual own foreground at +2s; +5s invalid, so stable +2/+5 acceptance was not completed."
+    },
+    {
+      "id": "B",
+      "what": "alipay DEFAULT from HOME (am start ... -n com.eg.android.AlipayGphone/.AlipayLogin)",
+      "at": "19:59:51.42",
+      "actual_foreground": {
+        "plus2": "com.eg.android.AlipayGphone/XRiverActivity",
+        "plus5": "com.miui.home/.launcher (same sampling interference)"
+      },
+      "own_log_summary": "A request for Alipay was logged at 20:00:14.834, then Home observations cancelled pending work. Complete original lines are in own-service-timeline.txt.",
+      "interpretation_facts": "Alipay remained foreground at +2s after the 19:59:51.42 launch. The 20:00:14.834 request and subsequent cancellation occurred about 23 seconds later, after measurement interference and unplanned app switches; they do not establish the cause of the initial failure. No Alipay UsageEvents verdict is established for that initial sampling window.",
+      "verdict": "FAIL observed at +2s; +5s invalid. Initial cause unresolved; late request/cancellation is a separate observation."
+    },
+    {
+      "id": "C",
+      "what": "QQ/WeChat allow",
+      "verdict": "NOT RUN (setup deviation: empty whitelist makes them distractors, original semantics untestable)"
+    },
+    {
+      "id": "D",
+      "what": "own UI pause -> continue -> weibo +2/+5",
+      "verdict": "NOT RUN (time box exhausted; no continue-without-UiAutomation control obtained)"
+    }
+  ],
+  "service_destroyed_control": {
+    "in_measurement_window": "0 occurrences (logcat --pid=27544, 19:59:46-20:00:18 had none)",
+    "after_cleanup_uiautomator": "4 occurrences appeared in logs captured after my CLEANUP-time UiAutomation (12:02:12Z onward)",
+    "note": "more consistent with UiAutomation suppressing/rebuilding the AA service than with an active-session system destroy; not reproduced while UiAutomation was avoided"
+  },
+  "cleanup": {
+    "session": "real UI reset -> running=None",
+    "strict": false,
+    "monitor": false,
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "aa": "BOUND (2 types)",
+    "usage_access": "allow retained",
+    "background_popup": "始终允许 (untouched this run)",
+    "whitelist_left": "mode=whitelist, pkgs=[] — required QQ+WeChat selection was not restored by this attempt. A separate controlled attempt is responsible for restoring it; no user reselection is required by this report.",
+    "formal": {
+      "versionCode": 142023,
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34"
+    },
+    "layoutcheck": {
+      "versionCode": 140023
+    },
+    "globals": {
+      "wm_size": "1200x2670",
+      "density": "520",
+      "font_scale": "1.25",
+      "screen_off_timeout": "600000"
+    },
+    "device": "HOME",
+    "host": "no server/reverse; no source/Git changes"
+  },
+  "privacy": {
+    "public": [
+      "diagnostic.json",
+      "own-service-timeline.txt (complete raw lines in original order; only relevant packages; 11 lines naming other packages omitted and declared in header)",
+      "evidence-sha256.json (real JSON)"
+    ],
+    "not_public": [
+      "full logcat/prefs/dumps",
+      "other apps' list contents",
+      "third-party UI/screenshots"
+    ]
+  },
+  "editorial_correction": {
+    "scope": "Sampling limits, configuration provenance, and delayed-request causality only; no new phone execution or product pass.",
+    "original_report_sha256": "d0c7737ced1e4dacad5e27df7566b8264a8ff35c0c40bce6278c122fcce7e21e",
+    "original_timeline_sha256": "a63a8b0c83684cb9d7df168f9bcbf58d25cd2e0cdf8a6808a82ef01975b2badb",
+    "original_index_sha256": "eb44e5661aafa80ddcad51c65dac04f0ba47f35c9ccbfbf0c0c7268347e69358",
+    "originals_storage": "Session scratch whitelist-v8-evidence-originals; preserved before correction.",
+    "timeline_source_raw_sha256": "f2cebee124f609a9f5c7a9434b47f0a470f6fc9c3830a833249b06f163d9aedb"
+  }
+}

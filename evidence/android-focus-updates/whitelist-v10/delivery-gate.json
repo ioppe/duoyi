@@ -1,0 +1,31 @@
+{
+  "delegate": "8e451030-d01e-45de-b63e-ad2a6bb6bc54",
+  "scope": "One read-only precommit gate for v10 delta after 5473be8; local commit, not release gate",
+  "local_commit_ready": true,
+  "requested_device_acceptance": "PASS under recorded conditions",
+  "conditions": "Connected Xiaomi, independent focuscheck v10 APK, whitelist only QQ/WeChat, awake/unlocked device, accessibility/popup/usage access retained and user-set unrestricted battery policy",
+  "blockers": [],
+  "independent_checks": {
+    "staged_paths_before_gate": 24,
+    "verification_file_hashes": "23/23 matched; verification excludes itself",
+    "source_manifest_entries": 1274,
+    "executable_source_hashes": "matched staged source",
+    "post_build_doc_delta": "Only documented OEM freeze/battery-policy guidance; declared before/after hashes match",
+    "readme_links": "74 checked, no broken local links",
+    "actual_archived_junit": {"suites": 7, "tests": 100, "failures": 0, "errors": 0, "skipped": 0},
+    "fresh_targeted_flutter_passed": 41,
+    "apk_sha256": "f9c71d0820b7f091b4f91fd10ceecda1258aabc83b6ddbd121af99b5db1eb8a9",
+    "apk_bytes": 105708301,
+    "privacy_revision": "Original report/timeline/index hashes verified in private backup; measured cases and outcomes unchanged",
+    "kernel_control": "Frozen 1 and stopped timer before policy change; frozen 0, progressing timer and repeated returns after same-APK change",
+    "resume_control": "Same session identity, paused revision 2 -> running revision 3, actual foreground cases passed",
+    "staged_payload_safety": "No APK, database, secrets, dependency locks or version changes staged"
+  },
+  "limitations": [
+    "No full Flutter suite, analyze, backend or standard debug rerun in v10; relevant tests/profile build are actual new runs",
+    "No cross-device, long-term deep-sleep, formal signed upgrade or earlier notification action-row acceptance",
+    "source_head denotes baseline; actual working-tree source is bound by per-file hashes and verified on commit",
+    "No push, tag, release or production deployment"
+  ],
+  "verification_index_boundary": "This gate is added after verification.json and is intentionally excluded from its file hash index."
+}

@@ -1,0 +1,225 @@
+{
+  "purpose": "Diagnostic instrumentation only: window event delivery vs filtering; does not establish a product fix",
+  "source_head_at_snapshot": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "source_files": 1270,
+  "source_manifest": "source-manifest-whitelist-v3-diagnostic.json",
+  "source_manifest_sha256": "a21320acb43b57195ab59510e1ac362137b3bc83cb7bf5407b1fd81accbd6c19",
+  "source_changes_since_v2": [
+    "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt"
+  ],
+  "native_junit": {
+    "exit_code": 0,
+    "command": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/android/gradlew -p /Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v3-diagnostic/android :app:testDebugUnitTest --console=plain",
+    "workdir": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/android",
+    "duration_seconds": 42,
+    "source": "measured from ALL TEST-*.xml in this v3 diagnostic run",
+    "totals": {
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "passed": 77,
+    "suites": [
+      {
+        "name": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.034,
+        "file": "TEST-com.duoyi.duoyi.DuoyiCalendarMonthTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.003,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.003,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerComponentsTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.0,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerExpiryTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.012,
+        "file": "TEST-com.duoyi.duoyi.services.FocusTimerNotificationModelTest.xml"
+      }
+    ],
+    "failures": [],
+    "policy_suite": {
+      "name": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 0.003,
+      "file": "TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml"
+    }
+  },
+  "apk": {
+    "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v3-diagnostic/build/app/outputs/flutter-apk/app-profile.apk",
+    "application_id": "com.duoyi.duoyi.focuscheck",
+    "build_mode": "profile",
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "size_bytes": 105691917,
+    "sha256": "6c88b84a1e2d44f4f8fdd750424c0993c122a3dc5d4b40d965587a84a7072726",
+    "build_exit_code": 0,
+    "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "certificate_dn": "C=US, O=Android, CN=Android Debug",
+    "flutter_payload_entries": [
+      {
+        "entry": "lib/arm64-v8a/libapp.so",
+        "abi": "arm64-v8a",
+        "size_bytes": 23135120,
+        "kind": "flutter_aot"
+      },
+      {
+        "entry": "lib/arm64-v8a/libflutter.so",
+        "abi": "arm64-v8a",
+        "size_bytes": 12401088,
+        "kind": "flutter_runtime"
+      },
+      {
+        "entry": "lib/arm64-v8a/libvmservice_snapshot.so",
+        "abi": "arm64-v8a",
+        "size_bytes": 1704848,
+        "kind": "flutter_runtime"
+      }
+    ],
+    "aot_abi": [
+      "arm64-v8a"
+    ],
+    "aot_arm64_only": true,
+    "other_abi_plugin_entries": [
+      {
+        "entry": "lib/arm64-v8a/libdartjni.so",
+        "abi": "arm64-v8a",
+        "size_bytes": 97112,
+        "kind": "plugin_prebuilt"
+      },
+      {
+        "entry": "lib/arm64-v8a/libdatastore_shared_counter.so",
+        "abi": "arm64-v8a",
+        "size_bytes": 7112,
+        "kind": "plugin_prebuilt"
+      },
+      {
+        "entry": "lib/armeabi-v7a/libdartjni.so",
+        "abi": "armeabi-v7a",
+        "size_bytes": 57044,
+        "kind": "plugin_prebuilt"
+      },
+      {
+        "entry": "lib/armeabi-v7a/libdatastore_shared_counter.so",
+        "abi": "armeabi-v7a",
+        "size_bytes": 4416,
+        "kind": "plugin_prebuilt"
+      },
+      {
+        "entry": "lib/x86_64/libdartjni.so",
+        "abi": "x86_64",
+        "size_bytes": 99128,
+        "kind": "plugin_prebuilt"
+      },
+      {
+        "entry": "lib/x86_64/libdatastore_shared_counter.so",
+        "abi": "x86_64",
+        "size_bytes": 6224,
+        "kind": "plugin_prebuilt"
+      }
+    ],
+    "other_abi_note": "armeabi-v7a/x86_64 carry only prebuilt plugin libs; DPPL aapt badging lists native-code arm64-v8a, armeabi-v7a, x86_64.",
+    "native_code_abis_declared_in_badging": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86_64"
+    ],
+    "launchable_activity": "com.duoyi.duoyi.MainActivity",
+    "application_label": "多仪·专注验证",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "compile_sdk": 36,
+    "platform_build_version_code": 36,
+    "diagnostic_build": {
+      "purpose": "whitelist return issue instrumentation only; no product-fix claim",
+      "only_changed_source_vs_v2_snapshot": "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt",
+      "changed_file_sha256": "ba7f8483e3a0d4047d53ea83bdb1b2f846b4c0995032162d5bf8c94ca5924d63",
+      "v2_file_sha256": "aef890df278074489516d38eaf9f0a3765a6a8a1c95bf5c649a5081b249b75f1",
+      "log_point_count": 14,
+      "markers_present_in_classes_dex": [
+        "focus blocker window received",
+        "focus blocker window rejected",
+        "focus blocker verification scheduled",
+        "focus blocker verification fired",
+        "focus blocker deferred fired",
+        "focus blocker service interrupted",
+        "focus blocker cooldown"
+      ],
+      "event_content_boundary": "source comment line 54 states only package name, event type and clocks are logged; no event.text / event.source / window content reads",
+      "evidence_files": {
+        "dex_strings": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/dex-strings-diagnostic.txt"
+      }
+    },
+    "dart_define_evidence": {
+      "requested": {
+        "DUOYI_SERVER_URL": "http://127.0.0.1:18763"
+      },
+      "wrapper_injected_from_file": {
+        "path": "build/config/client-defines.json",
+        "DUOYI_SERVER_URL": "https://todo.skydrow.site"
+      },
+      "effective_value": "http://127.0.0.1:18763",
+      "proof": "strings lib/arm64-v8a/libapp.so contains http://127.0.0.1:18763 (line 58956); todo.skydrow.site absent (count 0)",
+      "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/libapp-so-strings-sample.txt"
+    },
+    "main_activity_metadata": {
+      "flutter_deeplinking_enabled": {
+        "value": false,
+        "merged_manifest": {
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/merged-profile-main-manifest.xml",
+          "lines": "82-83",
+          "snippet": "<meta-data android:name=\"flutter_deeplinking_enabled\" android:value=\"false\" />"
+        },
+        "actual_apk_aapt_xmltree": {
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/apk-manifest-xmltree.txt",
+          "lines": "90-91",
+          "snippet": "android:name=\"flutter_deeplinking_enabled\" / android:value=(type 0x12)0x0"
+        }
+      }
+    },
+    "evidence_files": {
+      "aapt_badging": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/apk-aapt-badging.txt",
+      "apk_manifest_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/apk-manifest-xmltree.txt",
+      "signature": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/apk-signature.txt",
+      "payload": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/apk-payload-entries.txt",
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v3-diagnostic/isolated-profile-build.log"
+    }
+  },
+  "logs_archive": "verification-whitelist-v3-diagnostic-logs.tar.gz",
+  "logs_archive_sha256": "9ad7e62df8ff812829fe0c673c8e0a2087a5fdf6e32f2ae39fa10fdb55e1297d",
+  "checks_not_repeated": "No Dart source changes; full Flutter/analyze/standard build not repeated for this diagnostic-only candidate. V2 results are historical, not physical proof for this diagnostic APK.",
+  "device_claim_boundary": "Actual repeat-open event observations recorded in a separate physical attempt; only focuscheck may be installed -r, no production package changes."
+}

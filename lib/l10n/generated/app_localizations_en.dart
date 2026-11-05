@@ -9,6 +9,82 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get mineUpdateBackgroundDownloading =>
+      'Downloading the update in the background';
+
+  @override
+  String get mineUpdateCloseKeepsDownloading =>
+      'Downloading continues after you close this window';
+
+  @override
+  String get mineUpdateCancelDownload => 'Cancel download';
+
+  @override
+  String get mineUpdateNotificationTitle => 'Duoyi update';
+
+  @override
+  String get mineUpdateNotificationDownloading =>
+      'Downloading the update; install from the notification when it finishes';
+
+  @override
+  String get mineUpdateNotificationInstallAction => 'Tap to install';
+
+  @override
+  String get mineUpdateNotificationChannelName => 'App updates';
+
+  @override
+  String get mineUpdateNotificationChannelDescription =>
+      'Background update downloads and install reminders';
+
+  @override
+  String get focusDistractionStatusAccessibilityActive =>
+      'Accessibility service enabled';
+
+  @override
+  String get focusDistractionStatusAccessibilityPending =>
+      'Enabled in Settings, waiting for the system to activate it';
+
+  @override
+  String get focusDistractionStatusBlockerUnconfigured =>
+      'No blocked apps configured';
+
+  @override
+  String get focusDistractionStatusUsageOnly =>
+      'Usage access granted, accessibility service not enabled';
+
+  @override
+  String get focusDistractionStatusMissing =>
+      'Requires Android usage access and accessibility permissions';
+
+  @override
+  String get focusDistractionPermissionHint =>
+      'Strict Focus requires the accessibility service to be enabled and connected. On Xiaomi, Redmi and POCO, also allow \"Display pop-up windows while running in the background\" under App info → Permissions → Other permissions. Some apps do not send accessibility window events, so usage access is also needed to detect them. Usage access cannot replace the accessibility service or permission to display the app from the background.';
+
+  @override
+  String get focusTimerNotifChannelName => 'Focus timer';
+
+  @override
+  String get focusTimerNotifNoTask => 'No linked task';
+
+  @override
+  String get focusTimerNotifPaused => 'Paused';
+
+  @override
+  String get focusTimerNotifRemaining => 'Remaining';
+
+  @override
+  String get focusTimerNotifElapsed => 'Elapsed';
+
+  @override
+  String get focusTimerNotifActionStart => 'Start';
+
+  @override
+  String get focusTimerNotifActionPause => 'Pause';
+
+  @override
+  String get focusTimerNotifActionReset => 'Reset';
+
+  @override
   String get aiLocalTitle => 'AI service';
 
   @override

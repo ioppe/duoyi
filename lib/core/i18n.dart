@@ -43,6 +43,14 @@ extension AppLocaleX on AppLocale {
 }
 
 const Map<String, String> _zh = <String, String>{
+  'mine.update.background_downloading': '正在后台下载更新包',
+  'mine.update.close_keeps_downloading': '关闭此窗口后下载会继续',
+  'mine.update.cancel_download': '取消下载',
+  'mine.update.notification_title': '多仪更新',
+  'mine.update.notification_downloading': '正在下载更新包，完成后可从通知栏安装',
+  'mine.update.notification_install_action': '点击安装',
+  'mine.update.notification_channel_name': '应用更新',
+  'mine.update.notification_channel_description': '更新包后台下载与安装提醒',
   'ai.local.title': 'AI 服务',
   'ai.local.entry_hint': '本地 AI 配置与当前服务状态',
   'ai.local.description':
@@ -294,6 +302,21 @@ const Map<String, String> _zh = <String, String>{
   'focus.distraction.picker.summary_available': '可选应用',
   'focus.distraction.picker.save_failed': '保存失败，请重试',
   'repeat.weekdays': '工作日',
+  'focus.distraction.status.accessibility_active': '辅助功能已启用',
+  'focus.distraction.status.accessibility_pending': '已在设置中开启，等待系统生效',
+  'focus.distraction.status.blocker_unconfigured': '未配置拦截应用',
+  'focus.distraction.status.usage_only': '已授权使用情况访问，辅助功能未授权',
+  'focus.distraction.status.missing': '需要 Android 使用情况访问和辅助功能权限',
+  'focus.distraction.permission_hint':
+      '严格专注需要系统已连接的辅助功能服务。小米、Redmi、POCO 还需在系统应用信息 → 权限管理 → 其他权限中允许“后台弹出界面”。部分应用不发送辅助功能窗口事件，需同时允许使用情况访问以补充检测；它不能代替辅助功能或后台显示许可。',
+  'focus.timer.notif.channel_name': '专注计时',
+  'focus.timer.notif.no_task': '无关联任务',
+  'focus.timer.notif.paused': '已暂停',
+  'focus.timer.notif.remaining': '剩余',
+  'focus.timer.notif.elapsed': '已计时',
+  'focus.timer.notif.action.start': '开始',
+  'focus.timer.notif.action.pause': '暂停',
+  'focus.timer.notif.action.reset': '重置',
   // 个性设置
   'preferences.title': '个性设置',
   'preferences.local.title': '本地个性设置',
@@ -1582,6 +1605,18 @@ const Map<String, String> _zh = <String, String>{
 };
 
 const Map<String, String> _en = <String, String>{
+  'mine.update.background_downloading':
+      'Downloading the update in the background',
+  'mine.update.close_keeps_downloading':
+      'Downloading continues after you close this window',
+  'mine.update.cancel_download': 'Cancel download',
+  'mine.update.notification_title': 'Duoyi update',
+  'mine.update.notification_downloading':
+      'Downloading the update; install from the notification when it finishes',
+  'mine.update.notification_install_action': 'Tap to install',
+  'mine.update.notification_channel_name': 'App updates',
+  'mine.update.notification_channel_description':
+      'Background update downloads and install reminders',
   'ai.local.title': 'AI service',
   'ai.local.entry_hint': 'Local AI settings and active service',
   'ai.local.description':
@@ -1861,6 +1896,31 @@ const Map<String, String> _en = <String, String>{
   'focus.distraction.picker.summary_remaining': 'remaining as distractions',
   'focus.distraction.picker.summary_available': 'available apps',
   'focus.distraction.picker.save_failed': 'Unable to save. Try again.',
+  'focus.distraction.status.accessibility_active':
+      'Accessibility service enabled',
+  'focus.distraction.status.accessibility_pending':
+      'Enabled in Settings, waiting for the system to activate it',
+  'focus.distraction.status.blocker_unconfigured': 'No blocked apps configured',
+  'focus.distraction.status.usage_only':
+      'Usage access granted, accessibility service not enabled',
+  'focus.distraction.status.missing':
+      'Requires Android usage access and accessibility permissions',
+  'focus.distraction.permission_hint':
+      'Strict Focus requires the accessibility service to be enabled and connected. '
+      'On Xiaomi, Redmi and POCO, also allow '
+      '"Display pop-up windows while running in the background" under '
+      'App info → Permissions → Other permissions. Some apps do not send '
+      'accessibility window events, so usage access is also needed to detect them. '
+      'Usage access cannot replace the accessibility service or permission '
+      'to display the app from the background.',
+  'focus.timer.notif.channel_name': 'Focus timer',
+  'focus.timer.notif.no_task': 'No linked task',
+  'focus.timer.notif.paused': 'Paused',
+  'focus.timer.notif.remaining': 'Remaining',
+  'focus.timer.notif.elapsed': 'Elapsed',
+  'focus.timer.notif.action.start': 'Start',
+  'focus.timer.notif.action.pause': 'Pause',
+  'focus.timer.notif.action.reset': 'Reset',
   'preferences.title': 'Personal settings',
   'preferences.local.title': 'Local personal settings',
   'preferences.local.subtitle':

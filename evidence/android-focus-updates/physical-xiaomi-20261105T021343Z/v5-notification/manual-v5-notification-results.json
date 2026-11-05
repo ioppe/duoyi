@@ -1,0 +1,52 @@
+{
+  "schema": "manual-v5-notification-results",
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "source_head_at_snapshot": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+  "branch": "fix/android-focus-updates-notifications",
+  "device_serial": "2df52c4c",
+  "device_model_last_observed": "Xiaomi 24129PN74C",
+  "device_unavailable_observed_host_utc": "2026-11-05T04:33:28Z",
+  "result": "NOT_RUN_DEVICE_DISCONNECTED",
+  "passed": 0,
+  "failed": 0,
+  "not_run": 5,
+  "blocker": "The target disappeared from both ADB and the host USB device inventory. Repeated checks across approximately 45 seconds found no device. A physical data connection is required to continue.",
+  "candidate": {
+    "application_id": "com.duoyi.duoyi.focuscheck",
+    "label": "多仪·专注验证",
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "build_mode": "profile",
+    "size_bytes": 105675533,
+    "sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+    "host_verified": true,
+    "installed_in_this_attempt": false,
+    "device_apk_hash_binding": "NOT_RUN"
+  },
+  "cases": [
+    {"id": "V5-0", "case": "Install with -r and bind installed APK hash while preserving formal app, data and grants", "status": "NOT_RUN", "evidence": ["raw/device-unavailable.txt"]},
+    {"id": "V5-1", "case": "Start and observe visible remaining time decrease in compact and expanded native notification", "status": "NOT_RUN", "evidence": ["raw/device-unavailable.txt"]},
+    {"id": "V5-2", "case": "Physically tap Pause and observe frozen time plus Start/Reset", "status": "NOT_RUN", "evidence": ["raw/device-unavailable.txt"]},
+    {"id": "V5-3", "case": "Physically tap Start to resume same phase/task/remaining, then Reset to full idle time without completion", "status": "NOT_RUN", "evidence": ["raw/device-unavailable.txt"]},
+    {"id": "V5-4", "case": "Physically tap notification body to focus page with no duplicate route error", "status": "NOT_RUN", "evidence": ["raw/device-unavailable.txt"]}
+  ],
+  "device_actions_in_this_attempt": [],
+  "last_trusted_device_state": {
+    "source": "../v4-recheck/manual-v4-recheck-results.json",
+    "installed_validation_apk": "V4 Profile, not V5",
+    "timer": "idle 25:00",
+    "strict_focus": false,
+    "distraction_monitor": false,
+    "focus_notification_951101_present": false,
+    "focus_foreground_service_present": false,
+    "formal_package": "com.duoyi.duoyi 2.0.0/142023",
+    "formal_apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+    "note": "Inherited last observed V4 state; not reverified after the physical connection disappeared. This attempt made no device changes."
+  },
+  "resume_requirements": [
+    "Reconnect the same phone with a data-capable USB connection and allow USB debugging if prompted.",
+    "Use install -r only for com.duoyi.duoyi.focuscheck; never overwrite the production package.",
+    "Use fresh own-card screenshots/OCR for actual button and body clicks; configured intents and unit tests are not physical tap evidence."
+  ],
+  "claim_boundary": "Automatic tests and APK builds are reported separately. No V5 phone screenshot, notification tap, installation or runtime PASS is claimed."
+}

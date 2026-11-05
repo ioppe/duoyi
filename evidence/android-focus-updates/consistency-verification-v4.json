@@ -1,0 +1,15 @@
+{
+  "recorded_at_utc": "2026-11-05T03:36:26.452690+00:00",
+  "scope": "V4 route-fix physical-device delivery consistency; not a new product test run",
+  "stats": {
+    "source_files": 1267,
+    "current_apks": 3,
+    "json_files": 29,
+    "physical_evidence_references": 23,
+    "png_files": 40,
+    "readme_links": 32,
+    "diff_check_exit": 0,
+    "indexed_public_files": 33
+  },
+  "errors": []
+}

@@ -1,0 +1,6 @@
+=== CASE4b WECHAT(allow) phone=15:20:03.269458864 ===
+Starting: Intent { cmp=com.tencent.mm/.ui.LauncherUI }
+t+5 focus=com.tencent.mm/com.tencent.mm.ui.chatting.gallery.ImageGalleryUI} resumed=com.tencent.mm/.ui.chatting.gallery.ImageGalleryUI t11073}
+=== CASE4c blocked->allowed 350ms: alipay->QQ phone=15:20:10.654243549 ===
+t+2 focus=com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity}
+t+5 focus=com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity} resumed=com.tencent.mobileqq/.activity.SplashActivity t11074}

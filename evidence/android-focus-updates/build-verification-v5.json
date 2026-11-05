@@ -1,0 +1,526 @@
+{
+  "recorded_at_utc": "2026-11-05T04:38:55.837529+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "source_head_at_snapshot": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+  "purpose": "Visible remaining/elapsed time in compact and expanded focus notification, with Pause/Start/Reset controls bound to the existing timer session",
+  "source_manifest": "source-manifest-v5.json",
+  "source_manifest_sha256": "d9ae8fcdf0c47f5b0aa1017a80976b316889a64e242bb321aeefe1706f5674f7",
+  "standard_source_manifest": "source-manifest-standard-v5.json",
+  "standard_source_manifest_sha256": "5d9dbd86fc5be009f097c5637d924b7b71b60bd050a519861b72d783e73cc8a7",
+  "files_checked": 1268,
+  "source_mismatches": [],
+  "delta_from_v4": [
+    "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerForegroundService.kt",
+    "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerNotificationModel.kt",
+    "android/app/src/test/kotlin/com/duoyi/duoyi/services/FocusTimerNotificationModelTest.kt",
+    "docs/android-focus-updates.md",
+    "docs/design-v2.md",
+    "docs/manual-regression-checklist.md",
+    "docs/requirement-v2.md",
+    "lib/core/i18n.dart",
+    "lib/l10n/app_en.arb",
+    "lib/l10n/app_zh.arb",
+    "lib/l10n/generated/app_localizations.dart",
+    "lib/l10n/generated/app_localizations_en.dart",
+    "lib/l10n/generated/app_localizations_zh.dart",
+    "lib/main.dart",
+    "lib/providers/pomodoro_provider.dart",
+    "lib/services/focus_timer_notification_service.dart",
+    "test/providers/pomodoro_notification_control_test.dart",
+    "test/services/focus_timer_notification_static_test.dart",
+    "test/services/focus_timer_notification_test.dart"
+  ],
+  "automatic_checks": {
+    "schema": "automatic-v5-summary",
+    "revision": "final code freeze (NEW copy android-standard-v5-final)",
+    "work_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v5-final",
+    "work_dir_is_ascii_copy": true,
+    "product_edits_made_by_runner": false,
+    "no_adb": true,
+    "no_git_write": true,
+    "candidate_copy_touched": false,
+    "overall_result": "PASS - all 5 checks exit 0; source freeze final matches 1268 in repo and copy; docs-only delta as recorded",
+    "source_freeze": {
+      "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+      "head": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+      "branch": "fix/android-focus-updates-notifications",
+      "manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v5-final-source-manifest.json",
+      "manifest_file_sha256": "5d9dbd86fc5be009f097c5637d924b7b71b60bd050a519861b72d783e73cc8a7",
+      "manifest_entries": 1268,
+      "manifest_contains_1268": true,
+      "copy_drift_pre": {
+        "files_checked": 1268,
+        "missing": 0,
+        "hash_mismatch": 0
+      },
+      "copy_drift_post": {
+        "files_checked": 1268,
+        "missing": 0,
+        "hash_mismatch": 0
+      },
+      "repo_drift_pre": {
+        "files_checked": 1268,
+        "missing": 0,
+        "hash_mismatch": 0
+      },
+      "repo_drift_post": {
+        "files_checked": 1268,
+        "missing": 0,
+        "hash_mismatch": 0
+      },
+      "freeze_verdict": "PASS: repo and copy both match all 1268 manifest entries, before and after the run",
+      "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "lock_unchanged_by_pubget": true,
+      "lock_in_manifest_copy_repo_identical": true
+    },
+    "documentation_sync": {
+      "record": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/documentation-sync-v5.json",
+      "delta_vs_initial_manifest": [
+        "docs/design-v2.md",
+        "docs/requirement-v2.md"
+      ],
+      "non_documentation_delta": [],
+      "non_documentation_sources_unchanged": true,
+      "doc_hashes": {
+        "docs/requirement-v2.md": {
+          "before_sha256": "8954ce4b4dbc4b1ec85b68cca9e48a36e831d423445ab0e8ff4cf9ff2671b2e6",
+          "after_sha256": "9b44e4e3b5e775edf34724144a67cb3a6fd785c43dfd921a4ecd6bfc894e0ce5",
+          "repo_matches_after": true,
+          "copy_matches_after": true,
+          "manifest_matches_after": true
+        },
+        "docs/design-v2.md": {
+          "before_sha256": "03160f65c90a4b2905366ba7318aa8739210c5dd5a9bcdf14e97582c72b95e35",
+          "after_sha256": "4b1fbd776ec301c52f1bf8bbad565bfff5adcd49ec08c909925ad8ad4d2455ea",
+          "repo_matches_after": true,
+          "copy_matches_after": true,
+          "manifest_matches_after": true
+        }
+      },
+      "post_run_both_spec_docs_match_in_repo_and_copy": true
+    },
+    "checks": [
+      {
+        "name": "pub_get_enforce_lockfile",
+        "command": "flutter pub get --enforce-lockfile",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/standard-v5-pubget.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "pass",
+        "duration_seconds": 3,
+        "notes": "Got dependencies!; lock hash identical before/after"
+      },
+      {
+        "name": "targeted_tests",
+        "command": "flutter test --no-pub --reporter expanded test/services/focus_timer_notification_test.dart test/services/focus_timer_notification_static_test.dart test/providers/pomodoro_notification_control_test.dart test/providers/pomodoro_distraction_lifecycle_test.dart test/services/android_deep_link_routing_test.dart",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/targeted-v5.log",
+        "exit_code": 0,
+        "passed": 39,
+        "failed": 0,
+        "result": "pass",
+        "duration_seconds": 7,
+        "notes": "'00:01 +39: All tests passed!'; includes the new paused-reload notification regression (old V5 copy had 38)"
+      },
+      {
+        "name": "full_flutter_test",
+        "command": "flutter test --no-pub --reporter expanded",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/full-flutter-v5.log",
+        "exit_code": 0,
+        "passed": 2869,
+        "failed": 0,
+        "result": "pass",
+        "duration_seconds": 151,
+        "notes": "'02:29 +2869: All tests passed!'; 0 [E] markers. Actual final count, measured on the final copy"
+      },
+      {
+        "name": "flutter_analyze",
+        "command": "flutter analyze --no-pub",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/analyze-v5.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "pass",
+        "duration_seconds": 8,
+        "notes": "No issues found! (ran in 7.0s)"
+      },
+      {
+        "name": "dart_format_check_changed_dart_only",
+        "command": "dart format --output=none --set-exit-if-changed <the 11 changed/new Dart files>",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/format-v5.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": 0,
+        "result": "pass",
+        "duration_seconds": 0,
+        "notes": "Formatted 11 files (0 changed); list re-derived from repo git diff + untracked, identical to previous round; file list: /Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/format-v5-filelist.txt"
+      }
+    ],
+    "blockers": [],
+    "not_run": [
+      "backend python unittest (unchanged, not rerun)",
+      "flutter build apk / profile build (native candidate build runs in parallel from android-candidate-v5-final)",
+      "device/ADB tests"
+    ],
+    "notes": [
+      "All prior logs under physical-xiaomi-20261105T021343Z/notification-v5 left untouched (25 entries).",
+      "Old V5 run counts (2868) are NOT reused as final; 2869 is the measured final number."
+    ],
+    "no_edits_made": true
+  },
+  "native_junit": {
+    "result_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v5-final/build/app/test-results/testDebugUnitTest",
+    "suite_count": 4,
+    "totals": {
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "passed": 58,
+    "suites": [
+      {
+        "file": "TEST-com.duoyi.duoyi.DuoyiCalendarMonthTest.xml",
+        "name": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": 0.032,
+        "cases": [
+          "timezoneFallsBackToSystemDefaultWhenMissingOrInvalid",
+          "integerPixelMeasurementsStillPassTheFitCheck",
+          "monthTitleUsesFlutterTemplateWithFallback",
+          "withoutCountsTheWholeMonthStillRendersWithBadgesHidden",
+          "todayMarkerIsSetOnlyOnTheGivenDate",
+          "impossibleBudgetReturnsPositiveFloorInsteadOfPretendingToFit",
+          "dayCountsMapToExactBadgesAndIgnoreZeroNegativeAndOtherMonths",
+          "countLabelUsesTemplateOrFallsBackAndOmitsZero",
+          "sixWeekTinyBudgetShrinksBelowPreferredFloorAndStillFits",
+          "august2020UsesSixWeeksAndKeepsTheLastDay",
+          "weekdayLabelsAlwaysNormalizeToSevenEntries",
+          "leapFebruary2024IncludesThe29thInFiveWeeks",
+          "october2026StartsOnThursdayAndCoversEveryDayOnceInFiveWeeks",
+          "february2021StartsOnMondayAndIsExactlyFourWeeksWithoutEmptyWeek",
+          "sixWeekNormalBudgetKeepsReasonableReadableSize",
+          "fourAndFiveWeekMonthsKeepPreferredSizes"
+        ]
+      },
+      {
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerComponentsTest.xml",
+        "name": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": 0.004,
+        "cases": [
+          "fullyQualifiedEntryMatches",
+          "sameClassNameFromAnotherPackageDoesNotMatch",
+          "entriesWithSurroundingSpacesStillMatch",
+          "shortClassNameEntryMatches",
+          "normalizeClassNameExpandsShortNameOnly",
+          "colonSeparatedListMatchesAnyEntry",
+          "malformedEntriesAreIgnoredWithoutThrowing",
+          "missingOrEmptySettingDoesNotMatch"
+        ]
+      },
+      {
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerExpiryTest.xml",
+        "name": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": 0.0,
+        "cases": [
+          "noExpiryMarkerKeepsLegacyBehaviour",
+          "requestedExpiryIsNormalized",
+          "futureExpiryIsActive",
+          "boundaryAtExpiryCountsAsExpired",
+          "pastExpiryIsExpired"
+        ]
+      },
+      {
+        "file": "TEST-com.duoyi.duoyi.services.FocusTimerNotificationModelTest.xml",
+        "name": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time": 0.014,
+        "cases": [
+          "anchorRebasesToCanonicalEndSoRebroadcastDoesNotExtendDeadline",
+          "pausedContentTextShowsFrozenTimeAndPausedLabel",
+          "countdownUsesChronometerCountingDownFromRemaining",
+          "notificationWhenUsesWallClockEpochInsteadOfElapsedRealtime",
+          "taskLabelIsUsedWhenPresent",
+          "missingTaskFallsBackToInjectedNoTaskLabel",
+          "runningBindingOffersPauseAndReset",
+          "negativeAndOversizedValuesAreClamped",
+          "bindingStateMustMatchPausedFlag",
+          "countUpUsesNowMinusAnchor",
+          "emptyPayloadIsRejectedSoNoEmptyNotificationIsShown",
+          "countUpCountsUpwardsAndHidesProgress",
+          "controlUriFallsBackToReturnUriWithoutBinding",
+          "compactContentTextStartsWithLocalizedTime",
+          "pausedBindingOffersStartAndReset",
+          "pausedRebaseKeepsIncomingRemainingEvenWithAnchor",
+          "countUpStartsItsChronometerAtZero",
+          "controlActionWireNamesMatchDeepLinkSegments",
+          "pausedProgressAndTimeStayFrozen",
+          "backgroundProgressAdvancesWithoutExtendingCountdownDeadline",
+          "missingPhaseLabelFallsBackToAppTitle",
+          "anchoredProgressFollowsRebasedRemaining",
+          "anchoredCountdownInThePastClampsToZeroInsteadOfNegative",
+          "legacyPayloadWithoutAnchorKeepsRelativeBehaviour",
+          "missingOrMalformedBindingShowsNoActions",
+          "pausedFreezesTimeAndCancelsExpiry",
+          "missingReturnUriFallsBackToFocusDeepLink",
+          "countdownRoundsSecondsUpSoOneThousandOneMillisIsNotTwoStepsAhead",
+          "countUpContentTextUsesElapsedLabelInsteadOfFakeRemaining"
+        ]
+      }
+    ],
+    "command": "./gradlew :app:testDebugUnitTest --console=plain",
+    "working_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v5-final/android",
+    "exit_code": 0,
+    "duration_seconds": 22,
+    "build_successful": true,
+    "jdk": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+    "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/native-v5-junit.log",
+    "gradle_warnings": {
+      "kotlin_deprecations": [
+        "DuoyiTodoWidgetProvider.kt:195",
+        "DuoyiTodoWidgetProvider.kt:257",
+        "DuoyiWidgetLayout.kt:121",
+        "MainActivity.kt:1012",
+        "FocusTimerForegroundService.kt:334"
+      ],
+      "note": "deprecation warnings only; no test failures"
+    },
+    "generated_at_utc": "2026-11-05T04:29:42Z"
+  },
+  "apks": [
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v5-final/build/app/outputs/flutter-apk/app-profile.apk",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "application_label": "多仪·专注验证",
+      "build_mode": "profile",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 105675533,
+      "sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+      "build_exit_code": 0,
+      "build_duration_seconds": 50,
+      "build_command": "flutter build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "certificate_dn": "C=US, O=Android, CN=Android Debug",
+      "apksigner": {
+        "scheme_v1": false,
+        "scheme_v2": true,
+        "scheme_v3": false,
+        "signers": 1,
+        "exit_code": 0,
+        "invoked_as": "java -Xmx1024M -jar /Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar verify --verbose --print-certs"
+      },
+      "apk_tooling": {
+        "aapt": "build-tools/35.0.0/aapt",
+        "compile_sdk": 36,
+        "min_sdk": 24,
+        "jdk": "jdk-17.0.12"
+      },
+      "native_code_declared": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "flutter_payload_entries": {
+        "arm64_v8a_native_libs": [
+          "lib/arm64-v8a/libapp.so",
+          "lib/arm64-v8a/libdartjni.so",
+          "lib/arm64-v8a/libdatastore_shared_counter.so",
+          "lib/arm64-v8a/libflutter.so",
+          "lib/arm64-v8a/libvmservice_snapshot.so"
+        ],
+        "arm64_v8a_native_lib_size_bytes": {
+          "lib/arm64-v8a/libapp.so": 23135120,
+          "lib/arm64-v8a/libdartjni.so": 97112,
+          "lib/arm64-v8a/libdatastore_shared_counter.so": 7112,
+          "lib/arm64-v8a/libflutter.so": 12401088,
+          "lib/arm64-v8a/libvmservice_snapshot.so": 1704848
+        },
+        "plugin_only_abis": [
+          "armeabi-v7a",
+          "x86_64"
+        ],
+        "plugin_only_abi_entries": [
+          "lib/armeabi-v7a/libdartjni.so",
+          "lib/armeabi-v7a/libdatastore_shared_counter.so",
+          "lib/x86_64/libdartjni.so",
+          "lib/x86_64/libdatastore_shared_counter.so"
+        ],
+        "flutter_assets_entry_count": 92,
+        "flutter_assets_manifest_present": true,
+        "total_zip_entries": 1805
+      },
+      "main_activity": "com.duoyi.duoyi.MainActivity",
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "main_activity_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/manifest-v5-profile.txt",
+          "evidence_line": 176,
+          "evidence": "A: android:name(0x01010003)=\"flutter_deeplinking_enabled\" -> A: android:value(0x01010024)=(type 0x12)0x0"
+        }
+      },
+      "main_activity_node_line": 142,
+      "notification_control_scheme": {
+        "value": "duoyi",
+        "file": "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerNotificationModel.kt",
+        "line": 187,
+        "default_return_uri": {
+          "value": "duoyi://tab/focus",
+          "line": 185
+        }
+      },
+      "external_deep_link_scheme": {
+        "value": "duoyi-focus-check",
+        "file": "android/app/src/main/AndroidManifest.xml",
+        "line": 64
+      },
+      "evidence_files": {
+        "badging_and_manifest_and_cert": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/manifest-v5-profile.txt",
+        "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/isolated-v5-profile-build.log",
+        "pubget_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/candidate-v5-pubget.log",
+        "junit_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/native-v5-junit.log",
+        "junit_summary": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/native-v5-junit-summary.json"
+      },
+      "source_root": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-v5-final",
+      "generated_at_utc": "2026-11-05T04:28:57Z",
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libapp.so",
+        "lib/arm64-v8a/libflutter.so"
+      ],
+      "raw_metadata_archive_member": "isolated-v5-profile-apk.json"
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v5-final/build/app/outputs/flutter-apk/app-debug.apk",
+      "application_id": "com.duoyi.duoyi",
+      "application_label": "多仪",
+      "build_mode": "debug",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 160488064,
+      "sha256": "cecc6f22bb2182c6d4f9f5cb40579a8524d624c85d834ecea7776cc60af52cb9",
+      "build_exit_code": 0,
+      "build_duration_seconds": 31,
+      "build_command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+      "build_cwd": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v5-final",
+      "deployment_config": "wrapper public default (no --dart-define fixture override)",
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "certificate_dn": "C=US, O=Android, CN=Android Debug",
+      "apksigner": {
+        "scheme_v1": false,
+        "scheme_v2": true,
+        "scheme_v3": false,
+        "signers": 1,
+        "exit_code": 0,
+        "invoked_as": "java -Xmx1024M -jar /Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar verify --verbose --print-certs"
+      },
+      "apk_tooling": {
+        "aapt": "build-tools/35.0.0/aapt",
+        "compile_sdk": 36,
+        "min_sdk": 24,
+        "jdk": "jdk-17.0.12"
+      },
+      "native_code_declared": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "flutter_payload_entries": {
+        "arm64_v8a_native_libs": [
+          "lib/arm64-v8a/libVkLayer_khronos_validation.so",
+          "lib/arm64-v8a/libdartjni.so",
+          "lib/arm64-v8a/libdatastore_shared_counter.so",
+          "lib/arm64-v8a/libflutter.so"
+        ],
+        "arm64_v8a_native_lib_size_bytes": {
+          "lib/arm64-v8a/libVkLayer_khronos_validation.so": 15240080,
+          "lib/arm64-v8a/libdartjni.so": 97112,
+          "lib/arm64-v8a/libdatastore_shared_counter.so": 7112,
+          "lib/arm64-v8a/libflutter.so": 37582296
+        },
+        "plugin_only_abis": [
+          "armeabi-v7a",
+          "x86_64"
+        ],
+        "plugin_only_abi_entries": [
+          "lib/armeabi-v7a/libdartjni.so",
+          "lib/armeabi-v7a/libdatastore_shared_counter.so",
+          "lib/x86_64/libdartjni.so",
+          "lib/x86_64/libdatastore_shared_counter.so"
+        ],
+        "flutter_runtime_entry": "lib/arm64-v8a/libflutter.so",
+        "dart_snapshot_entry": "assets/flutter_assets/kernel_blob.bin",
+        "kernel_blob_size_bytes": 103627168,
+        "libapp_so_present": false,
+        "flutter_assets_entry_count": 95,
+        "flutter_assets_manifest_present": true,
+        "total_zip_entries": 1807
+      },
+      "main_activity": "com.duoyi.duoyi.MainActivity",
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "main_activity_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/manifest-v5-standard.txt",
+          "evidence_line": 176,
+          "evidence": "A: android:name(0x01010003)=\"flutter_deeplinking_enabled\" -> A: android:value(0x01010024)=(type 0x12)0x0"
+        }
+      },
+      "main_activity_node_line": 142,
+      "notification_control_scheme": {
+        "value": "duoyi",
+        "file": "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerNotificationModel.kt",
+        "line": 187
+      },
+      "external_deep_link_scheme": {
+        "value": "duoyi-focus-check",
+        "file": "android/app/src/main/AndroidManifest.xml",
+        "line": 64
+      },
+      "evidence_files": {
+        "badging_manifest_cert_zip": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/manifest-v5-standard.txt",
+        "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/standard-v5-debug-build.log",
+        "apk_sha256": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/standard-debug-apk-sha256.txt"
+      },
+      "install_warning": {
+        "formal_version_code": 142023,
+        "this_build_version_code": 140023,
+        "note": "MUST NOT install over the formal com.duoyi.duoyi 142023 build; different signing cert / lower version code. No ADB was used."
+      },
+      "generated_at_utc": "2026-11-05T04:37:36Z",
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libflutter.so",
+        "assets/flutter_assets/kernel_blob.bin"
+      ],
+      "raw_metadata_archive_member": "standard-v5-debug-apk.json"
+    }
+  ],
+  "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0,
+      "backend_files_compared": 14,
+      "hashes_unchanged": true,
+      "evidence": "build-verification.json and verification-logs.tar.gz",
+      "note": "Backend unchanged by V4/V5; not rerun."
+    }
+  },
+  "logs_archive": "verification-v5-logs.tar.gz",
+  "logs_archive_sha256": "35f9e575c919cd76f109795b5284dfb81cdfc8c7dfa3dd34ccec4c7925d9624b",
+  "device_claim_boundary": "Automatic checks and APK builds do not establish actual notification taps. Xiaomi V5 physical results are recorded separately. Standard debug APK must not replace the production-signed installation."
+}

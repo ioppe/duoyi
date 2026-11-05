@@ -1,0 +1,9 @@
+{
+  "review_apk": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-debug.apk",
+  "source_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v7-final/build/app/outputs/flutter-apk/app-debug.apk",
+  "sha256": "a0f516eaafbc55fa55d3d634781635688ffd66060527b461714e207c0b91858a",
+  "size_bytes": 160509736,
+  "historical_v2_backup": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v7-final/previous-standard-whitelist-v2.apk",
+  "historical_v2_sha256": "2d1562eeda5aa44d3c52c2c55bc52351f1e050ab41dc699b2126aac67692b055",
+  "note": "Ignored review output only; standard debug APK must never be installed over the formal app."
+}
