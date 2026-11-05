@@ -1,0 +1,19 @@
+NotificationRecord(0x0060d072: pkg=com.duoyi.duoyi.focuscheck user=UserHandle{0} id=7307 tag=null importance=3 key=0|com.duoyi.duoyi.focuscheck|7307|null|10565 bbbc=0: Notification(channel=duoyi_app_u
+   icon=Icon(typ=RESOURCE pkg=com.duoyi.duoyi.focuscheck id=0x7f070093)
+   flags=AUTO_CANCEL
+   when=1793847025579/1793847025579
+   color=0xffc85656
+   android.title=String (多仪)
+   android.text=String (2.0.1 · fixture.apk)
+   android.progress=Integer (0)
+   android.progressMax=In
+
+NotificationRecord(0x0a000a96: pkg=com.duoyi.duoyi.focuscheck user=UserHandle{0} id=951101 tag=null importance=2 key=0|com.duoyi.duoyi.focuscheck|951101|null|10565 bbbc=0: Notification(channel=duoyi_f
+   icon=Icon(typ=RESOURCE pkg=com.duoyi.duoyi.focuscheck id=0x7f070093)
+   flags=ONGOING_EVENT|ONLY_ALERT_ONCE|NO_CLEAR|FOREGROUND_SERVICE|SILENT
+   when=1793848104892/1793848104892
+   color=0xffc85656
+   android.title=String (专注中)
+   android.chronometerCountDown=Boolean (true)
+   android.text=String (无关联任务)
+   android.progress=Integer (278)

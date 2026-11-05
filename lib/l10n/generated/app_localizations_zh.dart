@@ -57,6 +57,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get focusTimerNotifPaused => '已暂停';
 
   @override
+  String get focusTimerNotifRemaining => '剩余';
+
+  @override
+  String get focusTimerNotifElapsed => '已计时';
+
+  @override
+  String get focusTimerNotifActionStart => '开始';
+
+  @override
+  String get focusTimerNotifActionPause => '暂停';
+
+  @override
+  String get focusTimerNotifActionReset => '重置';
+
+  @override
   String get aiLocalTitle => 'AI 服务';
 
   @override

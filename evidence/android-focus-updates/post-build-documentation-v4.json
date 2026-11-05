@@ -1,0 +1,15 @@
+{
+  "recorded_at_utc": "2026-11-05T03:46:11.677683+00:00",
+  "source_manifest": "source-manifest-v4.json",
+  "source_manifest_sha256": "636e41d0948d266ba2aa646965c64dd645a1d8d3d9be0d05f6c775e44d538a11",
+  "compiled_sources_unchanged": true,
+  "changes": {
+    "docs/manual-regression-checklist.md": {
+      "before_sha256": "19885553a12a790a93097e3127d7698d661b9a68361374ab1770c83613fdb8ab",
+      "after_sha256": "717bde7fc58af7818696b6e5d3f9fb3ba74c9da00cd93d7ccc2fb5d47a2e8313",
+      "reason": "Add one unchecked physical regression scenario for single-owner routing, cold focus entry, OAuth and shared text after targeted spec-sync. Documentation is not compiled into the APK."
+    }
+  },
+  "unchanged_original_snapshot_files": 1266,
+  "claim_boundary": "Historical build manifests and APK binding remain unchanged. Only this documented checklist delta occurred after the build."
+}

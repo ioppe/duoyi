@@ -1,0 +1,88 @@
+{
+  "reviewed_by": "main agent via built-in browser; viewing native images, not browser application E2E",
+  "observed": [
+    "Picker shows distinct real icons, labels, packages and fixed Cancel/Done",
+    "System accessibility consent page is visible",
+    "After reset focus page shows 25:00",
+    "Strict and monitor switches are OFF"
+  ],
+  "privacy_edit": "Top 180 pixels cropped from public screenshots to exclude unrelated status-bar media thumbnails; original image bytes retained only in session scratch.",
+  "screenshots": [
+    {
+      "file": "01-distractor-picker-real-icons.png",
+      "original_size": [
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ],
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "original_sha256": "0def10964770246b044ac68c083808df9e1dd32acda4001c300692b2001bd3fb",
+      "public_sha256": "1d0df1e8b37bab4c96436718226e591c7ee0e309526f31653b75e1c80fd83f28"
+    },
+    {
+      "file": "02-system-a11y-consent.png",
+      "original_size": [
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ],
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "original_sha256": "7b4a8437b00c7d76b9d2b8993884ad32a0b7781c285db98c189475ba17f92f4d",
+      "public_sha256": "b871b49d77ee98fbb1f2ac809664ecbac2e664a50f69249dfee50ef8652a935d"
+    },
+    {
+      "file": "03-focus-page-after-reset.png",
+      "original_size": [
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ],
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "original_sha256": "51d61b765021c9f6a0f9696e003114d73219319eee2788b515d52a7b390bf58e",
+      "public_sha256": "2b38c6c722c78d9a114016b586350aaa41b51d739232eaa1f714c718e4df5cb3"
+    },
+    {
+      "file": "04-strict-panel-switches-off.png",
+      "original_size": [
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ],
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "original_sha256": "f00003e16a60b35263c4cc2d33274b4c33cc8888e05201033d462ad4dd71113c",
+      "public_sha256": "0eeedbdb55b0e7d6d5b196c6426c2ee56fd0d007cd3e253a0deff3b6d1b96daf"
+    }
+  ]
+}

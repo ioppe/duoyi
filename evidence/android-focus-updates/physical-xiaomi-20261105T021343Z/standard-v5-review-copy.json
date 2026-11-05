@@ -1,0 +1,12 @@
+{
+  "recorded_at_utc": "2026-11-05T04:38:54.944319+00:00",
+  "path": "build/app/outputs/flutter-apk/app-debug.apk",
+  "source_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-v5-final/build/app/outputs/flutter-apk/app-debug.apk",
+  "size_bytes": 160488064,
+  "sha256": "cecc6f22bb2182c6d4f9f5cb40579a8524d624c85d834ecea7776cc60af52cb9",
+  "application_id": "com.duoyi.duoyi",
+  "build_mode": "debug",
+  "previous_v4_backup_scratch": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/notification-v5-final/previous-standard-v4.apk",
+  "previous_v4_sha256": "b0c8bf26e1581dcf4f8867971e3714b11bd6e9760d9816e219458f5c31881704",
+  "scope": "Generated ignored standard review APK; never installed over production package."
+}

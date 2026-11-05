@@ -1,0 +1,16 @@
+{
+  "recorded_at_utc": "2026-11-05T04:50:54.989111+00:00",
+  "scope": "Final V5 delivery consistency; does not substitute for product tests or physical input.",
+  "stats": {
+    "source_files": 1268,
+    "built_apks": 2,
+    "review_apk_copies": 2,
+    "json_files": 48,
+    "physical_evidence_references": 43,
+    "png_files": 43,
+    "readme_links": 37,
+    "diff_check_exit": 0,
+    "indexed_public_files": 65
+  },
+  "errors": []
+}

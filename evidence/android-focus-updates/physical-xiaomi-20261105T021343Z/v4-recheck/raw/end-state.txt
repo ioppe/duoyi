@@ -1,0 +1,16 @@
+=== end-state 2026-11-05T03:47:44Z ===
+notif_951101_count=0
+FGS=0
+focuscheck_pid=23283
+-- a11y --
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+-- formal --
+    versionCode=142023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+formal_sha=cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b
+-- device settings --
+1.25
+Physical density: 520
+60000

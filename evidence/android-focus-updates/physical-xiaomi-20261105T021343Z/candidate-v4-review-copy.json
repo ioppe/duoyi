@@ -1,0 +1,11 @@
+{
+  "path": "build/app/outputs/flutter-apk/app-focuscheck-profile.apk",
+  "package": "com.duoyi.duoyi.focuscheck",
+  "version_name": "2.0.0",
+  "version_code": 140023,
+  "mode": "profile",
+  "sha256": "389033e2f383632e2de6be1e4810a3da068b0335ac443cfafe8cbf82a2f8e8f9",
+  "size_bytes": 105609997,
+  "source_manifest_sha256": "636e41d0948d266ba2aa646965c64dd645a1d8d3d9be0d05f6c775e44d538a11",
+  "purpose": "Local review copy of the same isolated physical-test APK; not committed and not a formal-app upgrade"
+}

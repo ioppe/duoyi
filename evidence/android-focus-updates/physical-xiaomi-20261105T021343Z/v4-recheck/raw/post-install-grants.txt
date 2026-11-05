@@ -1,0 +1,11 @@
+=== post-install grants 2026-11-05T03:30:18Z ===
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+-- accessibility_enabled --
+1
+-- POST_NOTIFICATIONS --
+        android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_FIXED|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.ACCESS_FINE_LOCATION: granted=false, flags=[ USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+-- formal unchanged --
+    versionCode=142023 minSdk=24 targetSdk=36
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35

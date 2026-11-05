@@ -1,0 +1,8 @@
+{
+  "recorded_at_utc": "2026-11-05T04:04:19.852740+00:00",
+  "pid": 60328,
+  "port": 18765,
+  "purpose": "Temporary loopback-only private screenshot inspection",
+  "result": "identity matched and terminated",
+  "port_accepts_connection_after": false
+}

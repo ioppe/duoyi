@@ -1,0 +1,38 @@
+{
+  "scope": "Final V4/V5 delta local-commit delivery gate; no release or deployment claim",
+  "delegation_id": "463fba21-41bf-4ed1-adbd-5b5a03e0f0c4",
+  "branch": "fix/android-focus-updates-notifications",
+  "head_reviewed": "2dbdfd53bd021096602a4b49cec19be3d6551bef",
+  "read_only": true,
+  "local_commit_ready": true,
+  "product_device_acceptance": false,
+  "local_commit_blockers": [],
+  "staged_scope_at_review": {"files": 94, "source_and_docs": 21, "evidence": 73, "cached_diff_check_exit": 0},
+  "independent_verification": {
+    "source_manifests": {"files_each": 1268, "missing": 0, "hash_mismatches": 0, "standard_identity_changes": 0, "candidate_identity_changes": 3},
+    "archive_sha256": "35f9e575c919cd76f109795b5284dfb81cdfc8c7dfa3dd34ccec4c7925d9624b",
+    "artifact_hashes_and_aapt_identity": "PASS for both actual APKs",
+    "merged_main_activity_deeplinking_false": "PASS for both actual APKs",
+    "flutter_targeted": {"passed": 39, "failed": 0},
+    "flutter_full": {"passed": 2869, "failed": 0},
+    "native_junit": {"passed": 58, "failed": 0, "errors": 0, "skipped": 0, "notification_model_cases": 29},
+    "analysis": "No issues found",
+    "format": {"files": 11, "changes": 0},
+    "localization": "Five notification keys complete in zh/en; no key-set difference",
+    "documentation": "Four source documentation files synchronized; no non-documentation snapshot delta from the spec update",
+    "raw_log_storage": "Four original/gzip hash records present; independently checked bounce log decompression matches original bytes",
+    "staged_apks_or_secrets": false
+  },
+  "inherited_checks": {"backend_passed": 317, "backend_files_unchanged": 14, "rerun": false},
+  "device_blocker": {
+    "serial": "2df52c4c",
+    "result": "NOT_RUN_DEVICE_DISCONNECTED",
+    "cases_not_run": 5,
+    "passed": 0,
+    "failed": 0,
+    "installed_in_this_attempt": false,
+    "evidence": "physical-xiaomi-20261105T021343Z/v5-notification/manual-v5-notification-results.json",
+    "required_to_continue": "Physical reconnection and USB debugging authorization; actual notification button/body clicks remain required"
+  },
+  "claim_boundary": "The gate performed no test/build/device execution. It independently read existing logs, hashes, staged scope and APK metadata. Local code may be committed; V5 device acceptance remains blocked. No merge/push/tag/release/deployment or production upgrade is approved or claimed."
+}

@@ -68,6 +68,68 @@ void main() {
     expect(model, contains('fun chronometerBaseElapsed'));
     expect(model, contains('val expiryDelayMillis: Long'));
 
+    // 可见时间：正文以本地化时间开头，任务名放 BigText 展开详情。
+    expect(model, contains('val contentText: String'));
+    expect(model, contains('val detailText: String'));
+    expect(
+      model,
+      contains('fun formatDuration(millis: Long, roundUp: Boolean = false)'),
+    );
+    expect(model, contains('val remainingLabel: String'));
+    expect(model, contains('val elapsedLabel: String'));
+    expect(service, contains('setContentText(model.contentText)'));
+    expect(
+      service,
+      contains('NotificationCompat.BigTextStyle().bigText(model.detailText)'),
+    );
+
+    // 秒级刷新由原生单调时钟推进；没有 wakelock，也不靠 15s 进度节流。
+    expect(service, contains('handler.postDelayed(this, tickMillis)'));
+    expect(service, contains('private const val tickMillis = 1_000L'));
+    expect(service, isNot(contains('15_000L')));
+    expect(service, isNot(contains('WakeLock')));
+    expect(service, isNot(contains('PARTIAL_WAKE_LOCK')));
+
+    // canonical 锚点：首次同步折算当前时间，到期只用锚点，重推不延长期限。
+    expect(model, contains('val anchorMillis: Long = 0L'));
+    expect(model, contains('fun rebasedAt(wallClockNow: Long)'));
+    expect(
+      model,
+      contains('fun expiryDelayMillisAt(wallClockNow: Long): Long'),
+    );
+    expect(service, contains('val base = model.rebasedAt(nowWallClock)'));
+    expect(service, contains('model.expiryDelayMillisAt(nowWallClock)'));
+    expect(
+      service,
+      contains('scheduleTicker(base, SystemClock.elapsedRealtime())'),
+    );
+
+    // 通知按钮：标准 actions，显式 MainActivity + 独立 data URI。
+    expect(model, contains('enum class FocusTimerControlAction'));
+    expect(model, contains('val hasControlBinding: Boolean'));
+    expect(
+      model,
+      contains('val controlActions: List<FocusTimerControlAction>'),
+    );
+    expect(
+      model,
+      contains('fun controlUri(action: FocusTimerControlAction): String'),
+    );
+    expect(model, contains('const val controlHost = "focus-timer"'));
+    expect(
+      service,
+      contains('builder.addAction(actionIcon(action), label, pending)'),
+    );
+    expect(service, contains('Intent.ACTION_VIEW'));
+    expect(service, contains('PendingIntent.getActivity('));
+    expect(service, contains('Uri.parse(model.controlUri(action))'));
+    expect(
+      service,
+      contains(
+        'PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE',
+      ),
+    );
+
     // MainActivity 注册独立通道并转发到期事件，不改既有 duoyi/update 段。
     expect(
       mainActivity,
@@ -103,6 +165,36 @@ void main() {
       expect(dartService, contains("'progressPermille': progressPermille"));
       expect(dartService, contains("'accentColorArgb': accentColorArgb"));
       expect(dartService, contains('setBrand'));
+      // 可见时间/按钮文案与绑定身份都在同一条 payload 上注入。
+      expect(dartService, contains("'anchorMillis': anchorMillis"));
+      expect(dartService, contains("'controlSessionId': controlSessionId"));
+      expect(dartService, contains("'controlRevision': controlRevision"));
+      expect(dartService, contains("'controlState': controlState"));
+      expect(dartService, contains("'remainingLabel': remainingLabel"));
+      expect(dartService, contains("'elapsedLabel': elapsedLabel"));
+      expect(dartService, contains("'startActionLabel': startActionLabel"));
+      expect(dartService, contains("'pauseActionLabel': pauseActionLabel"));
+      expect(dartService, contains("'resetActionLabel': resetActionLabel"));
+      // 主题/语言重推必须复用同一锚点与绑定，不能丢按钮或延长期限。
+      expect(dartService, contains('anchorMillis: _lastAnchorMillis'));
+      expect(dartService, contains('controlSessionId: _lastControlSessionId'));
+      expect(dartService, contains('controlRevision: _lastControlRevision'));
+      expect(dartService, contains('controlState: _lastControlState'));
+      // 通知按钮深链解析器就在同一文件，供 main 分发复用。
+      expect(dartService, contains('class FocusTimerNotificationControl'));
+      expect(
+        dartService,
+        contains('static FocusTimerNotificationControl? parse('),
+      );
+      expect(dartService, contains("static const String host = 'focus-timer'"));
+      expect(
+        dartService,
+        contains('static const int maxSessionIdLength = 128'),
+      );
+      expect(
+        dartService,
+        contains('static const Set<String> controlStates = <String>{'),
+      );
       expect(
         dartService,
         contains("_channel.invokeMethod<void>(method, arguments)"),
@@ -114,14 +206,14 @@ void main() {
       // provider 在全部状态出口同步或清理通知。
       expect(provider, contains('FocusTimerNotificationService _focusTimer'));
       expect(provider, contains('void _syncFocusTimerNotification()'));
-      expect(
-        provider,
-        contains('unawaited(_focusTimer.sync(_state, paused: false))'),
-      );
-      expect(
-        provider,
-        contains('unawaited(_focusTimer.sync(_state, paused: true))'),
-      );
+      // provider 在所有状态出口同步或清理通知，且运行/暂停都带 canonical 锚点与控制身份。
+      expect(provider, contains('anchorMillis: focusTimerAnchorMillis'));
+      expect(provider, contains('int get focusTimerAnchorMillis =>'));
+      expect(provider, contains('controlSessionId: _widgetSessionId'));
+      expect(provider, contains('controlState: _widgetTimerState.wireName'));
+      expect(provider, contains('_focusTimer.sync('));
+      expect(provider, contains('paused: false,'));
+      expect(provider, contains('paused: true,'));
       expect(provider, contains('unawaited(_focusTimer.stop())'));
       expect(provider, contains('_handleNativeFocusTimerExpired'));
       expect(
@@ -151,12 +243,34 @@ void main() {
       expect(main, contains('I18n.tr(\'focus.timer.notif.channel_name\')'));
       expect(main, contains('I18n.tr(\'focus.timer.notif.no_task\')'));
       expect(main, contains('I18n.tr(\'focus.timer.notif.paused\')'));
+      expect(main, contains('I18n.tr(\'focus.timer.notif.remaining\')'));
+      expect(main, contains('I18n.tr(\'focus.timer.notif.elapsed\')'));
+      expect(main, contains('I18n.tr(\'focus.timer.notif.action.start\')'));
+      expect(main, contains('I18n.tr(\'focus.timer.notif.action.pause\')'));
+      expect(main, contains('I18n.tr(\'focus.timer.notif.action.reset\')'));
+
+      // 通知按钮落回既有深链分发：先回到专注页，再复用小组件绑定校验。
+      expect(main, contains('FocusTimerNotificationControl.parse(uri)'));
+      expect(main, contains('uri.host == FocusTimerNotificationControl.host'));
+      expect(main, contains('state.navigateTo(4, allowHidden: true);'));
+      expect(main, contains('pomodoro.applyWidgetControl('));
+      // 不得新增第二套深链/广播转发，也不得让畸形控制请求落到 unknown 兜底。
+      expect(main, isNot(contains("Uri.parse('duoyi://focus-timer")));
+      expect(
+        main,
+        contains('debugPrint(\'[DeepLink] rejected focus timer control:'),
+      );
 
       // 中英双语文案键必须成对存在。
       for (final key in <String>[
         'focus.timer.notif.channel_name',
         'focus.timer.notif.no_task',
         'focus.timer.notif.paused',
+        'focus.timer.notif.remaining',
+        'focus.timer.notif.elapsed',
+        'focus.timer.notif.action.start',
+        'focus.timer.notif.action.pause',
+        'focus.timer.notif.action.reset',
         'focus.distraction.status.accessibility_active',
         'focus.distraction.status.accessibility_pending',
         'focus.distraction.status.blocker_unconfigured',
@@ -165,6 +279,36 @@ void main() {
       ]) {
         final occurrences = RegExp("'$key':").allMatches(i18n).length;
         expect(occurrences, 2, reason: 'missing zh/en pair for $key');
+      }
+
+      // ARB 模板与 checked-in generated 必须同步，避免只改 i18n.dart 造成缺词。
+      final zhArb = File('lib/l10n/app_zh.arb').readAsStringSync();
+      final enArb = File('lib/l10n/app_en.arb').readAsStringSync();
+      final generatedZh = File(
+        'lib/l10n/generated/app_localizations_zh.dart',
+      ).readAsStringSync();
+      final generatedEn = File(
+        'lib/l10n/generated/app_localizations_en.dart',
+      ).readAsStringSync();
+      for (final arbKey in <String>[
+        'focusTimerNotifRemaining',
+        'focusTimerNotifElapsed',
+        'focusTimerNotifActionStart',
+        'focusTimerNotifActionPause',
+        'focusTimerNotifActionReset',
+      ]) {
+        expect(zhArb, contains('"$arbKey"'), reason: 'missing zh ARB $arbKey');
+        expect(enArb, contains('"$arbKey"'), reason: 'missing en ARB $arbKey');
+        expect(
+          generatedZh,
+          contains('get $arbKey =>'),
+          reason: 'missing zh generated getter $arbKey',
+        );
+        expect(
+          generatedEn,
+          contains('get $arbKey =>'),
+          reason: 'missing en generated getter $arbKey',
+        );
       }
     },
   );

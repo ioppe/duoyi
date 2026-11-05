@@ -1,0 +1,42 @@
+{
+  "recorded_at_utc": "2026-11-05T04:39:17.216224+00:00",
+  "serial": "2df52c4c",
+  "host_services": [
+    {
+      "pid": 37281,
+      "port": 18763,
+      "identity_matched": true,
+      "result": "terminated",
+      "port_accepts_connection_after": false
+    },
+    {
+      "pid": 37285,
+      "port": 18764,
+      "identity_matched": true,
+      "result": "terminated",
+      "port_accepts_connection_after": false
+    }
+  ],
+  "errors": [],
+  "fixture_final_state": {
+    "mode": "legacy",
+    "delay": 0.08,
+    "apk_ready": true
+  },
+  "usb_reverse": {
+    "mapping": "tcp:18763 -> tcp:18763",
+    "result": "NOT_VERIFIED: target device unavailable; no mapping removal attempted",
+    "query_exit": 1,
+    "target_error": "error: device '2df52c4c' not found"
+  },
+  "remaining_blockers": [
+    "Target phone is disconnected; its reverse mapping and current device state cannot be reverified."
+  ],
+  "device_state_boundary": "V5 made no device writes; formal app, grants and idle end state were last verified in V4, not reverified after disconnect.",
+  "preserved": [
+    "Phone verification package and its data",
+    "New verification accessibility/notification permissions",
+    "Formal application and existing accessibility-service entry",
+    "All unrelated phone/host processes and reverse mappings"
+  ]
+}

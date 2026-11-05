@@ -1,0 +1,9 @@
+V5 notification physical check: device unavailable
+Observed host UTC: 2026-11-05T04:33:28Z
+Target serial: 2df52c4c
+ADB device listing contained no devices.
+Target get-state: error: no devices/emulators found
+Target shell probe: adb: device '2df52c4c' not found
+The device runner repeated checks across approximately 45 seconds; the host USB inventory did not identify the Xiaomi device.
+No V5 install, UI action, settings change or process action was performed.
+This is a sanitized connection-status excerpt; original raw record remains in session scratch.

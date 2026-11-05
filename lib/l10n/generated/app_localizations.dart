@@ -194,6 +194,36 @@ abstract class AppLocalizations {
   /// **'已暂停'**
   String get focusTimerNotifPaused;
 
+  /// No description provided for @focusTimerNotifRemaining.
+  ///
+  /// In zh, this message translates to:
+  /// **'剩余'**
+  String get focusTimerNotifRemaining;
+
+  /// No description provided for @focusTimerNotifElapsed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已计时'**
+  String get focusTimerNotifElapsed;
+
+  /// No description provided for @focusTimerNotifActionStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get focusTimerNotifActionStart;
+
+  /// No description provided for @focusTimerNotifActionPause.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停'**
+  String get focusTimerNotifActionPause;
+
+  /// No description provided for @focusTimerNotifActionReset.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置'**
+  String get focusTimerNotifActionReset;
+
   /// No description provided for @aiLocalTitle.
   ///
   /// In zh, this message translates to:

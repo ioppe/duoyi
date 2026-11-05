@@ -1,0 +1,52 @@
+{
+  "reviewed_by": "Main agent via built-in browser, native screenshot review only",
+  "observed_card": "Red Duoyi icon, 专注中, 无关联任务, progress bar; remaining time absent in this Xiaomi compact card, prompting user V5 requirement. No actual tap asserted.",
+  "privacy": "App screenshots top180 pixels removed to exclude unrelated media status thumbnails. Notification crop excludes all other cards. Full originals only session scratch.",
+  "screenshots": [
+    {
+      "file": "01-strict-panel-off-end-state.png",
+      "original_sha256": "d8c2b6275440d53b2b9c99988b59c84800cd9ded9fad1bffc1f5c20be8f50c76",
+      "public_sha256": "feaf5f40fb655a6fda6399ad07bf80bfc1422ba267e7393e0068db7d4d9d12b5",
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ]
+    },
+    {
+      "file": "02-focus-page-idle-end-state.png",
+      "original_sha256": "afcfcc2e71a80f1eb1d5f063bcae655bd1b0f10d9a85148bfac46fe64d7a9f64",
+      "public_sha256": "0fd6bbc923ac128a07babdad77f00cd161ea9c17546cf97b1820cdd2ea535a38",
+      "crop_box": [
+        0,
+        180,
+        1200,
+        2670
+      ],
+      "public_size": [
+        1200,
+        2490
+      ]
+    },
+    {
+      "file": "03-focus-notification-card-crop.png",
+      "public_sha256": "5f22534074f9bd1e0b9694a7342c74165ce7e16f8ca9ea3f38e3e5bedabaea05",
+      "crop_box": [
+        40,
+        1018,
+        1160,
+        1230
+      ],
+      "public_size": [
+        1120,
+        212
+      ],
+      "source": "Whole notification shade retained only in scratch; main agent visually verified this crop contains only own focus card."
+    }
+  ]
+}

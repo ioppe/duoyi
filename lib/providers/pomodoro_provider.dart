@@ -1579,11 +1579,31 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// 计时状态 → 原生持续通知；非运行且非暂停时清理运行通知。
+  ///
+  /// 同步必须带 canonical 锚点与真实控制身份：原生据此折算时间（主题/语言重推
+  /// 不会延长期限），并用 session + revision + state 生成可操作按钮。
   void _syncFocusTimerNotification() {
     if (_state.isRunning) {
-      unawaited(_focusTimer.sync(_state, paused: false));
+      unawaited(
+        _focusTimer.sync(
+          _state,
+          paused: false,
+          anchorMillis: focusTimerAnchorMillis,
+          controlSessionId: _widgetSessionId,
+          controlRevision: _widgetRevision,
+          controlState: _widgetTimerState.wireName,
+        ),
+      );
     } else if (_isPaused) {
-      unawaited(_focusTimer.sync(_state, paused: true));
+      unawaited(
+        _focusTimer.sync(
+          _state,
+          paused: true,
+          controlSessionId: _widgetSessionId,
+          controlRevision: _widgetRevision,
+          controlState: _widgetTimerState.wireName,
+        ),
+      );
     } else {
       unawaited(_focusTimer.stop());
     }
@@ -1607,6 +1627,14 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// `now + remaining` 漂移）；正计时与非运行态为 0（原生改用 Chronometer）。
   int get focusTimerEndsAtMillis =>
       _state.isRunning && !_state.isCountUp ? (_activeAnchorMs ?? 0) : 0;
+
+  /// 通知同步用的 canonical 锚点（真实 instant，epoch ms）：倒计时=结束时刻，
+  /// 正计时=开始时刻；暂停与非运行态为 0（原生冻结在传入的剩余值）。
+  ///
+  /// 与 [focusTimerEndsAtMillis] 的区别：正计时也给出锚点，原生才能按
+  /// `now - anchor` 计算已计时；主题/语言重推时锚点不变，因此不会延长期限。
+  int get focusTimerAnchorMillis =>
+      !_state.isRunning || _isPaused ? 0 : (_activeAnchorMs ?? 0);
 
   /// 小组件控制入口。
   ///
@@ -1784,6 +1812,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       _widgetSessionId = sessionId;
       _widgetRevision = revision < 0 ? 0 : revision;
       _widgetTimerState = PomodoroWidgetTimerState.paused;
+      _isPaused = true;
       _pausedRuntime = paused;
       _state = PomodoroState(
         remainingSeconds: paused.remainingSeconds,

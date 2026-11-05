@@ -310,6 +310,11 @@ const Map<String, String> _zh = <String, String>{
   'focus.timer.notif.channel_name': '专注计时',
   'focus.timer.notif.no_task': '无关联任务',
   'focus.timer.notif.paused': '已暂停',
+  'focus.timer.notif.remaining': '剩余',
+  'focus.timer.notif.elapsed': '已计时',
+  'focus.timer.notif.action.start': '开始',
+  'focus.timer.notif.action.pause': '暂停',
+  'focus.timer.notif.action.reset': '重置',
   // 个性设置
   'preferences.title': '个性设置',
   'preferences.local.title': '本地个性设置',
@@ -1901,6 +1906,11 @@ const Map<String, String> _en = <String, String>{
   'focus.timer.notif.channel_name': 'Focus timer',
   'focus.timer.notif.no_task': 'No linked task',
   'focus.timer.notif.paused': 'Paused',
+  'focus.timer.notif.remaining': 'Remaining',
+  'focus.timer.notif.elapsed': 'Elapsed',
+  'focus.timer.notif.action.start': 'Start',
+  'focus.timer.notif.action.pause': 'Pause',
+  'focus.timer.notif.action.reset': 'Reset',
   'preferences.title': 'Personal settings',
   'preferences.local.title': 'Local personal settings',
   'preferences.local.subtitle':

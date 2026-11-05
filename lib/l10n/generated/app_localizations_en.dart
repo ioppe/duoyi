@@ -66,6 +66,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get focusTimerNotifPaused => 'Paused';
 
   @override
+  String get focusTimerNotifRemaining => 'Remaining';
+
+  @override
+  String get focusTimerNotifElapsed => 'Elapsed';
+
+  @override
+  String get focusTimerNotifActionStart => 'Start';
+
+  @override
+  String get focusTimerNotifActionPause => 'Pause';
+
+  @override
+  String get focusTimerNotifActionReset => 'Reset';
+
+  @override
   String get aiLocalTitle => 'AI service';
 
   @override
