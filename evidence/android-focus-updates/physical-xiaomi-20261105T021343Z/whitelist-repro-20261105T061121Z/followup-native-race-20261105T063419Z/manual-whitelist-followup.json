@@ -1,0 +1,50 @@
+{
+  "phase": "bounded follow-up: read-only appops/BAL + unlock state (no config/build/install changes)",
+  "host_utc": "2026-11-05T06:34-06:38Z",
+  "phone_local": "2026-11-05 14:34–14:38 +0800",
+  "serial": "2df52c4c",
+  "unlock_state": {
+    "at_attach": "mWakefulness=Dozing, deviceLocked=1, mCurrentFocus=NotificationShade",
+    "after_single_WAKEUP": "mWakefulness=Awake, deviceLocked=1 (仍锁屏)",
+    "conclusion": "用户尚未解锁；按约定不再尝试解锁手势，返回 NeedsUserAction",
+    "attempts": "仅 1 次 KEYCODE_WAKEUP；未重复 KEYCODE_MENU/wm dismiss-keyguard/上滑循环"
+  },
+  "appops_readonly": {
+    "command": "cmd appops get com.duoyi.duoyi.focuscheck",
+    "non_default_ops": 62,
+    "background_start_op": "NOT PRESENT — 该只读列表中没有 background-start / activity-start / foreground-service 类 op（故无法据此判定 BAL 被拒）",
+    "vendor_note": "未执行任何 appops set；未做写操作"
+  },
+  "bal_diagnostic": {
+    "dumpsys_activity_bal_lines": "0 条（无 BAL/BackgroundActivityLaunch 记录）",
+    "current_buffer_own_lines": "当前缓冲区仅覆盖 14:32:47–14:34:31，无本包/UID 的 BAL 或 deny 行"
+  },
+  "target_window_logs": {
+    "requested_window": "14:13:35–14:14:05",
+    "availability": "NOT AVAILABLE — logcat 缓冲区最早仅到 14:32:47（uptime 33 天，无重启），目标时段已轮转",
+    "no_guess": "不复述 14:13 时段的系统侧原因；此前仅有的证据是已保存的 14:13:42.560 本包 bounce 行与前台采样"
+  },
+  "current_session_state": {
+    "timer_isRunning": "absent (snapshot 无 isRunning/endsAtMs)",
+    "blocker": {
+      "enabled": false,
+      "expires_at": 0,
+      "last_blocked_at": 1793859222556,
+      "last_blocked_package": "com.sina.weibo"
+    },
+    "blocker_packages_now": "当前（会话结束后）文件中 packages 无成员；成员事实以主会话更正采集为准，不再主张“空集合”",
+    "config_unchanged": {
+      "strictFocusMode": true,
+      "monitorDistractingApps": true,
+      "mode": "whitelist",
+      "whitelisted": [
+        "com.tencent.mm",
+        "com.tencent.mobileqq",
+        "com.xiaomi.scanner"
+      ]
+    }
+  },
+  "correction_acknowledged": "此前“packages 为空集合”是我的解析错误（set.text 为空不代表无成员；成员在子 <string> 节点，主会话统计 202 项，weibo/alipay=true、QQ/WeChat/scanner=false）。本跟进不再使用该错误结论。",
+  "not_executed": "支付宝/QQ/微信对照启动未执行：设备始终锁屏（无法确认非锁屏的真前台），按要求不新增启动、不改配置、不新建会话",
+  "state_left": "未做任何写入：无配置变更、无 appops set、无新会话、未改正式包/AA/全局设置"
+}

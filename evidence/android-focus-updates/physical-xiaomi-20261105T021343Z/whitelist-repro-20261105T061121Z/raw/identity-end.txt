@@ -1,0 +1,12 @@
+=== formal identity check 2026-11-05T06:20:45Z ===
+    versionCode=142023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+formal_sha=cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b
+validation_sha=7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f
+-- device --
+Physical size: 1200x2670
+Physical density: 520
+1.25
+600000

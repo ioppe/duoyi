@@ -1,0 +1,35 @@
+{
+  "scope": "Final cleanup after v8 controlled setup was blocked; no further acceptance measurements",
+  "device_serial": "2df52c4c",
+  "device_apk": {
+    "generation": "v8 diagnostic",
+    "sha256_last_bound_by_controlled_attempt": "fb4822fb10fc5008e8483da82c49da473119bbb4d62f0999b08686db2db8d1b7",
+    "v9_installed": false
+  },
+  "own_preferences_read_back": {
+    "strictFocusMode": false,
+    "monitorDistractingApps": false,
+    "distractingAppSelectionMode": "whitelist",
+    "distractingAppPackages": [],
+    "running_snapshot_present": false
+  },
+  "native_blocker_enabled": false,
+  "notification_951101_count": 0,
+  "timer_foreground_service_present": false,
+  "whitelist_restored": false,
+  "limitation": "QQ and WeChat were not restored in the independent validation package. Strict focus and monitoring are OFF. No claim of complete repair or successful final device acceptance.",
+  "main_session_actions": [
+    "Checked awake and unlocked state without waking or unlocking",
+    "Opened only focuscheck and checked its search field; injected text did not enter the field",
+    "Cancelled picker changes using Back, returned Home",
+    "Read own preference XML, native blocker config, notification and service state",
+    "Removed only the temporary UI XML created by the main session"
+  ],
+  "protected_packages": {
+    "formal": "No install, uninstall, clear-data, preference or permission changes",
+    "layoutcheck": "No install, uninstall, clear-data, preference or permission changes"
+  },
+  "permissions": "No permission or global setting changes in this cleanup; previously authorized grants were not revoked",
+  "private_evidence": "Session scratch main-whitelist-ui-restore; full preference, notification and service dumps and own screenshot stay private",
+  "next_state": "Repeated device trials stopped. Code and incomplete acceptance results retained for a local checkpoint only."
+}

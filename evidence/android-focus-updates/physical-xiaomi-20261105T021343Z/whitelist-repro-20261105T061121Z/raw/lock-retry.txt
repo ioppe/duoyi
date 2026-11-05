@@ -1,0 +1,12 @@
+  mWakefulness=Awake
+[writeDump] write ERROR: Broken pipe
+  mCurrentFocus=Window{9302070 u0 NotificationShade}
+[writeDump] write ERROR: Broken pipe
+afterMENU locked=deviceLocked=1
+  mCurrentFocus=Window{9302070 u0 NotificationShade}
+  mWakefulness=Awake
+deviceLocked=1
+  mCurrentFocus=Window{9302070 u0 NotificationShade}
+  mWakefulness=Awake
+deviceLocked=1
+  mCurrentFocus=Window{9302070 u0 NotificationShade}

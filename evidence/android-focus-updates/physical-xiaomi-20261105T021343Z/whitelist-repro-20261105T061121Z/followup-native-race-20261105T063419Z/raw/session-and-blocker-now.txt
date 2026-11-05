@@ -1,0 +1,12 @@
+strictFocusMode=True
+monitorDistractingApps=True
+mode=whitelist
+whitelisted=['com.tencent.mm', 'com.tencent.mobileqq', 'com.xiaomi.scanner']
+timer_isRunning=None
+timer_endsAtMs=None
+blocker_last_blocked_at=1793859222556
+blocker_last_blocked_package=com.sina.weibo
+blocker_expires_at=0
+blocker_enabled=false
+blocker_packages_count=0
+weibo_in_set=False alipay_in_set=False qq_in_set=False wechat_in_set=False scanner_in_set=False

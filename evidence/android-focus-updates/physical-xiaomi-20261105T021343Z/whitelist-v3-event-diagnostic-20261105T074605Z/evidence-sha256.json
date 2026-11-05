@@ -1,0 +1,11 @@
+{
+  "source_raw_sha256": "2a7b510d4c0cc194853422e67ed648beb6f09d7af2444a6656aa9f9039ae3efd",
+  "service_lines_copied_verbatim": 18,
+  "time_window_phone_local": "2026-11-05 15:48:30-15:49:30 +0800",
+  "previous_scratch_derived_timeline_sha256": "3c2686d54a715790ca17a5c2c6a60d080e6b94c4e8bc3f5b9958ac937049b6ab",
+  "correction": "Earlier scratch-derived timeline truncated some raw lines; this public extraction copies complete service lines verbatim. Original scratch timeline retained, no product result changed.",
+  "files": {
+    "diagnostic.json": "fd4e927f5239c760b3c68a52723f610cf7846ab9c44e459b6f45e0e9ff02dcef",
+    "window-event-timeline.txt": "4d73b526b8798553697bcc2c78ed65dd7e30fcb45776c1db59cea56c29daf839"
+  }
+}

@@ -1,0 +1,891 @@
+{
+  "recorded_at_utc": "2026-11-05T12:27:08.727378+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "source_head_at_snapshot": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "purpose": "Strict focus whitelist: fixed cooldown, observed confirmation, fresh permission-gated UsageEvents fallback, and idempotent identical configuration. Temporary v8 usage samples removed.",
+  "source_manifest": "source-manifest-whitelist-v9-final.json",
+  "source_manifest_sha256": "e955712454adb54dcea35ac29a81b7e2cb94c8525fa6b8a8bb3c23924bc49fd7",
+  "standard_source_manifest": "source-manifest-standard-whitelist-v9-final.json",
+  "standard_source_manifest_sha256": "aeef997e5dff3aa9ce168e46dc2f6fe46ce1295e8deda1548cdc1594fb5b9964",
+  "files_checked": 1272,
+  "source_mismatches": [],
+  "automatic_checks": {
+    "checks": [
+      {
+        "name": "pub-get-enforce-lockfile",
+        "command": "flutter pub get --enforce-lockfile",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/pub-get.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "duration_seconds": 4
+      },
+      {
+        "name": "targeted-static-contract",
+        "command": "flutter test --no-pub test/services/focus_distraction_static_test.dart test/screens/pomodoro_strict_focus_static_test.dart --reporter expanded",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/targeted-static-contract.log",
+        "exit_code": 0,
+        "passed": 5,
+        "failed": 0,
+        "duration_seconds": 10
+      },
+      {
+        "name": "standard-debug-build",
+        "command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-build.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "duration_seconds": 44
+      },
+      {
+        "name": "pub get --enforce-lockfile",
+        "exit_code": 0,
+        "log": "candidate-pub-get.log",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": ":app:testDebugUnitTest --console=plain",
+        "exit_code": 0,
+        "log": "native-junit.log",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": "build apk --profile (target-platform android-arm64)",
+        "exit_code": 0,
+        "log": "isolated-profile-build.log",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": "aapt dump badging",
+        "exit_code": 0,
+        "log": "apk-aapt-badging.txt",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": "aapt dump xmltree AndroidManifest.xml",
+        "exit_code": 0,
+        "log": "apk-aapt-xmltree-manifest.txt",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": "aapt dump xmltree res/xml/duoyi_focus_blocker_accessibility_service.xml",
+        "exit_code": 0,
+        "log": "apk-aapt-xmltree-aa-service.txt",
+        "source_schema": "candidate commands[].exit"
+      },
+      {
+        "name": "java -jar build-tools/36.0.0/lib/apksigner.jar verify --print-certs",
+        "exit_code": 0,
+        "log": "apk-apksigner-verify.txt",
+        "source_schema": "candidate commands[].exit"
+      }
+    ],
+    "standard": {
+      "run": "whitelist-v9-final",
+      "verification_copy": "$PI_SCRATCH_DIR/android-standard-whitelist-v9-final",
+      "source_repository": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+      "source_head": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+      "source_files": 1272,
+      "identity_only_changes": [],
+      "isolated_android_identity": false,
+      "source_manifest_sha256": "aeef997e5dff3aa9ce168e46dc2f6fe46ce1295e8deda1548cdc1594fb5b9964",
+      "source_sha256_map_matches_candidate": {
+        "equal": true,
+        "files": 1272,
+        "differing_entries": []
+      },
+      "delta_vs_v7_standard": {
+        "changed_files": [
+          "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt",
+          "docs/android-focus-updates.md"
+        ],
+        "count": 2
+      },
+      "lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "lock_sha256_unchanged_before_after": true,
+      "source_drift_prepost": {
+        "repo_clean_files": 1274,
+        "copy_clean_files": 1272,
+        "identical": 1272,
+        "differing": 0,
+        "copy_only": 0
+      },
+      "generated_scaffold": {
+        "android/gradlew": "ec56c02543666d92d9ac5ae7fcc48f88ce4de0deb8b7f9b39928ca46f68c1b2b",
+        "android/gradle/wrapper/gradle-wrapper.jar": "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da",
+        "android/local.properties": "generated by flutter, path-only",
+        "note": "repo and copy carry no gradlew/wrapper.jar (gitignored); Flutter regenerated them during build; product inputs untouched"
+      },
+      "reused_from_v7_not_rerun": [
+        {
+          "check": "targeted-7-files",
+          "passed": 55,
+          "source": "v7 final run"
+        },
+        {
+          "check": "full-flutter-test",
+          "passed": 2871,
+          "source": "v7 final run"
+        },
+        {
+          "check": "flutter-analyze",
+          "exit_code": 0,
+          "source": "v7 final run"
+        },
+        {
+          "check": "dart-format-7-files",
+          "exit_code": 0,
+          "changed": 0,
+          "source": "v7 final run"
+        }
+      ],
+      "reuse_proof": "$PI_SCRATCH_DIR/physical-xiaomi-20261105T021343Z/whitelist-v9-final/flutter-input-reuse-proof.json (authored by main session, 790 Flutter inputs identical, unmodified)",
+      "totals": {
+        "checks_run": 3,
+        "tests_run": 5,
+        "passed": 5,
+        "failed": 0
+      },
+      "checks": [
+        {
+          "name": "pub-get-enforce-lockfile",
+          "command": "flutter pub get --enforce-lockfile",
+          "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/pub-get.log",
+          "exit_code": 0,
+          "passed": null,
+          "failed": null,
+          "duration_seconds": 4
+        },
+        {
+          "name": "targeted-static-contract",
+          "command": "flutter test --no-pub test/services/focus_distraction_static_test.dart test/screens/pomodoro_strict_focus_static_test.dart --reporter expanded",
+          "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/targeted-static-contract.log",
+          "exit_code": 0,
+          "passed": 5,
+          "failed": 0,
+          "duration_seconds": 10
+        },
+        {
+          "name": "standard-debug-build",
+          "command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+          "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-build.log",
+          "exit_code": 0,
+          "passed": null,
+          "failed": null,
+          "duration_seconds": 44
+        }
+      ],
+      "failures": [],
+      "not_run": [
+        "native Kotlin/JUnit (separate runner)",
+        "Profile build (separate runner)",
+        "full Flutter suite / analyze / format (reused from v7)",
+        "backend tests",
+        "E2E",
+        "ADB install/device validation",
+        "candidate metadata",
+        "review APK copy"
+      ]
+    },
+    "candidate": {
+      "generated_by": "test-runner",
+      "copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final",
+      "log_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final",
+      "commands": [
+        {
+          "step": "pub get --enforce-lockfile",
+          "cwd": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final",
+          "exit": 0,
+          "log": "candidate-pub-get.log"
+        },
+        {
+          "step": ":app:testDebugUnitTest --console=plain",
+          "cwd": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final",
+          "exit": 0,
+          "log": "native-junit.log",
+          "executed": true
+        },
+        {
+          "step": "build apk --profile (target-platform android-arm64)",
+          "cwd": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final",
+          "exit": 0,
+          "log": "isolated-profile-build.log"
+        },
+        {
+          "step": "aapt dump badging",
+          "exit": 0,
+          "log": "apk-aapt-badging.txt"
+        },
+        {
+          "step": "aapt dump xmltree AndroidManifest.xml",
+          "exit": 0,
+          "log": "apk-aapt-xmltree-manifest.txt"
+        },
+        {
+          "step": "aapt dump xmltree res/xml/duoyi_focus_blocker_accessibility_service.xml",
+          "exit": 0,
+          "log": "apk-aapt-xmltree-aa-service.txt"
+        },
+        {
+          "step": "java -jar build-tools/36.0.0/lib/apksigner.jar verify --print-certs",
+          "exit": 0,
+          "log": "apk-apksigner-verify.txt"
+        }
+      ],
+      "native_totals": {
+        "tests": 90,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "apk": {
+        "sha256": "8e0ee421b64675f9f92f442e8c54b03fe81dc7190357cb11c7db1f62134aa117",
+        "size_bytes": 105691917,
+        "path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/outputs/flutter-apk/app-profile.apk"
+      },
+      "assertions": {
+        "aa_event_types_0x400020": true,
+        "can_retrieve_window_content_false": true,
+        "flutter_deeplinking_enabled_false": true,
+        "usage_sample_marker_absent": true,
+        "accepted_usage_marker_present": true,
+        "usage_helper_present": true
+      },
+      "source_drift": {
+        "repo_files_equal": 1272,
+        "copy_files_equal": 1269,
+        "copy_diff": [
+          "android/app/build.gradle.kts",
+          "android/app/src/main/AndroidManifest.xml",
+          "android/app/src/main/res/values/strings.xml"
+        ],
+        "lock_matches": true,
+        "gen_l10n_no_drift": true
+      },
+      "mutually_exclusive_prefixes_note": "only candidate-*/native-*/isolated-*/apk-* written; standard* and flutter-input-reuse-proof.json untouched",
+      "not_run": [
+        "full flutter suite",
+        "flutter analyze",
+        "dart format",
+        "standard debug build",
+        "device install",
+        "runtime interception"
+      ]
+    }
+  },
+  "actual_flutter_pass_counts": {
+    "targeted-static-contract": 5
+  },
+  "native_junit": {
+    "exit_code": 0,
+    "executed_in_v9": true,
+    "reused_from_previous_generation": false,
+    "command": ":app:testDebugUnitTest --console=plain",
+    "xml_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest",
+    "totals": {
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suite_count": 6,
+    "suites": [
+      {
+        "suite": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.DuoyiCalendarMonthTest.xml",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "timezoneFallsBackToSystemDefaultWhenMissingOrInvalid",
+            "status": "passed"
+          },
+          {
+            "name": "integerPixelMeasurementsStillPassTheFitCheck",
+            "status": "passed"
+          },
+          {
+            "name": "monthTitleUsesFlutterTemplateWithFallback",
+            "status": "passed"
+          },
+          {
+            "name": "withoutCountsTheWholeMonthStillRendersWithBadgesHidden",
+            "status": "passed"
+          },
+          {
+            "name": "todayMarkerIsSetOnlyOnTheGivenDate",
+            "status": "passed"
+          },
+          {
+            "name": "impossibleBudgetReturnsPositiveFloorInsteadOfPretendingToFit",
+            "status": "passed"
+          },
+          {
+            "name": "dayCountsMapToExactBadgesAndIgnoreZeroNegativeAndOtherMonths",
+            "status": "passed"
+          },
+          {
+            "name": "countLabelUsesTemplateOrFallsBackAndOmitsZero",
+            "status": "passed"
+          },
+          {
+            "name": "sixWeekTinyBudgetShrinksBelowPreferredFloorAndStillFits",
+            "status": "passed"
+          },
+          {
+            "name": "august2020UsesSixWeeksAndKeepsTheLastDay",
+            "status": "passed"
+          },
+          {
+            "name": "weekdayLabelsAlwaysNormalizeToSevenEntries",
+            "status": "passed"
+          },
+          {
+            "name": "leapFebruary2024IncludesThe29thInFiveWeeks",
+            "status": "passed"
+          },
+          {
+            "name": "october2026StartsOnThursdayAndCoversEveryDayOnceInFiveWeeks",
+            "status": "passed"
+          },
+          {
+            "name": "february2021StartsOnMondayAndIsExactlyFourWeeksWithoutEmptyWeek",
+            "status": "passed"
+          },
+          {
+            "name": "sixWeekNormalBudgetKeepsReasonableReadableSize",
+            "status": "passed"
+          },
+          {
+            "name": "fourAndFiveWeekMonthsKeepPreferredSizes",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "retryOnlyForMatchingActiveBlockedTargetWithinBudget",
+            "status": "passed"
+          },
+          {
+            "name": "blankPackageNeverMovesTheAcceptedTimestamp",
+            "status": "passed"
+          },
+          {
+            "name": "backwardsClockRestartsTheWindowInsteadOfBlockingForALongTime",
+            "status": "passed"
+          },
+          {
+            "name": "continuousDuplicateBurstKeepsTheDeadlineAndNeverStarvesLaterReturns",
+            "status": "passed"
+          },
+          {
+            "name": "staleSplashObservationDoesNotReplaceNewerOwnConfirmation",
+            "status": "passed"
+          },
+          {
+            "name": "staleGenerationCannotRetryAfterTheCycleEndsOrReplacesTarget",
+            "status": "passed"
+          },
+          {
+            "name": "sharedForegroundStateUsesTheProcessLocalTracker",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrFutureEventTimeFallsBackToNowWithoutPoisoningOrdering",
+            "status": "passed"
+          },
+          {
+            "name": "firstRequestIncludingZeroClockIsAcceptedImmediately",
+            "status": "passed"
+          },
+          {
+            "name": "newCycleClearsDeferredAndRecordsEachDetectionOnce",
+            "status": "passed"
+          },
+          {
+            "name": "repeatedDeadlineStaysStableAndChangedTargetKeepsTheSameGlobalDeadline",
+            "status": "passed"
+          },
+          {
+            "name": "trackerIgnoresMissingPackages",
+            "status": "passed"
+          },
+          {
+            "name": "eventTimelineKeepsTheEventArmedDeferredCheckAfterUnconfirmed",
+            "status": "passed"
+          },
+          {
+            "name": "fullCancellationReasonsRemoveTheEventArmedDeferredCheck",
+            "status": "passed"
+          },
+          {
+            "name": "cooldownIsGlobalAcrossBlockedPackageChanges",
+            "status": "passed"
+          },
+          {
+            "name": "returnAttemptBudgetIsTwoByDefault",
+            "status": "passed"
+          },
+          {
+            "name": "newerMainTabObservationCanReplaceTheTrackedForeground",
+            "status": "passed"
+          },
+          {
+            "name": "deferredFireForRetargetedPackageIsRecordedOnceInsteadOfSkipped",
+            "status": "passed"
+          },
+          {
+            "name": "equalTimestampObservationStillReplacesAndTiesAreDeterministic",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerComponentsTest.xml",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "fullyQualifiedEntryMatches",
+            "status": "passed"
+          },
+          {
+            "name": "sameClassNameFromAnotherPackageDoesNotMatch",
+            "status": "passed"
+          },
+          {
+            "name": "entriesWithSurroundingSpacesStillMatch",
+            "status": "passed"
+          },
+          {
+            "name": "shortClassNameEntryMatches",
+            "status": "passed"
+          },
+          {
+            "name": "normalizeClassNameExpandsShortNameOnly",
+            "status": "passed"
+          },
+          {
+            "name": "colonSeparatedListMatchesAnyEntry",
+            "status": "passed"
+          },
+          {
+            "name": "malformedEntriesAreIgnoredWithoutThrowing",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrEmptySettingDoesNotMatch",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerExpiryTest.xml",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "noExpiryMarkerKeepsLegacyBehaviour",
+            "status": "passed"
+          },
+          {
+            "name": "requestedExpiryIsNormalized",
+            "status": "passed"
+          },
+          {
+            "name": "futureExpiryIsActive",
+            "status": "passed"
+          },
+          {
+            "name": "boundaryAtExpiryCountsAsExpired",
+            "status": "passed"
+          },
+          {
+            "name": "pastExpiryIsExpired",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.FocusBlockerUsagePolicyTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.FocusBlockerUsagePolicyTest.xml",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "lossForAnotherPackageDoesNotClearTheCurrentForeground",
+            "status": "passed"
+          },
+          {
+            "name": "emptyOldFutureAndBeforeSessionEventsAreNeverForegroundEvidence",
+            "status": "passed"
+          },
+          {
+            "name": "lonePauseWithoutInBatchResumeIsALossCandidateForTheTracker",
+            "status": "passed"
+          },
+          {
+            "name": "monitorGenerationRejectsLateWorkerResultsAndKeepsOneInflightQuery",
+            "status": "passed"
+          },
+          {
+            "name": "lossPreservesObservationTimeSoOlderEventsCannotReviveIt",
+            "status": "passed"
+          },
+          {
+            "name": "cooldownRejectionKeepsTheEventForTheNextFreshQuery",
+            "status": "passed"
+          },
+          {
+            "name": "pauseOrStopOfTheCurrentPackageYieldsAnExplicitLoss",
+            "status": "passed"
+          },
+          {
+            "name": "ownConfirmationIsNotOverwrittenByAnOlderUsageObservation",
+            "status": "passed"
+          },
+          {
+            "name": "consumedEventsAreNotResolvedOrRequestedAgainOnRefresh",
+            "status": "passed"
+          },
+          {
+            "name": "eventsPredatingThisBootCannotBeMappedToTheCurrentForeground",
+            "status": "passed"
+          },
+          {
+            "name": "slowWorkerResultsKeepTheirOriginalAgeAndCannotOverrideANewerAllowedApp",
+            "status": "passed"
+          },
+          {
+            "name": "latestResumeWinsAndLatePauseOfAnOlderPackageIsIgnored",
+            "status": "passed"
+          },
+          {
+            "name": "usageCycleAllowsOnlyOneRequestWhileAaKeepsTwo",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "suite": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+        "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/test-results/testDebugUnitTest/TEST-com.duoyi.duoyi.services.FocusTimerNotificationModelTest.xml",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "cases": [
+          {
+            "name": "anchorRebasesToCanonicalEndSoRebroadcastDoesNotExtendDeadline",
+            "status": "passed"
+          },
+          {
+            "name": "pausedContentTextShowsFrozenTimeAndPausedLabel",
+            "status": "passed"
+          },
+          {
+            "name": "countdownUsesChronometerCountingDownFromRemaining",
+            "status": "passed"
+          },
+          {
+            "name": "notificationWhenUsesWallClockEpochInsteadOfElapsedRealtime",
+            "status": "passed"
+          },
+          {
+            "name": "taskLabelIsUsedWhenPresent",
+            "status": "passed"
+          },
+          {
+            "name": "missingTaskFallsBackToInjectedNoTaskLabel",
+            "status": "passed"
+          },
+          {
+            "name": "runningBindingOffersPauseAndReset",
+            "status": "passed"
+          },
+          {
+            "name": "negativeAndOversizedValuesAreClamped",
+            "status": "passed"
+          },
+          {
+            "name": "bindingStateMustMatchPausedFlag",
+            "status": "passed"
+          },
+          {
+            "name": "countUpUsesNowMinusAnchor",
+            "status": "passed"
+          },
+          {
+            "name": "emptyPayloadIsRejectedSoNoEmptyNotificationIsShown",
+            "status": "passed"
+          },
+          {
+            "name": "countUpCountsUpwardsAndHidesProgress",
+            "status": "passed"
+          },
+          {
+            "name": "controlUriFallsBackToReturnUriWithoutBinding",
+            "status": "passed"
+          },
+          {
+            "name": "compactContentTextStartsWithLocalizedTime",
+            "status": "passed"
+          },
+          {
+            "name": "pausedBindingOffersStartAndReset",
+            "status": "passed"
+          },
+          {
+            "name": "pausedRebaseKeepsIncomingRemainingEvenWithAnchor",
+            "status": "passed"
+          },
+          {
+            "name": "countUpStartsItsChronometerAtZero",
+            "status": "passed"
+          },
+          {
+            "name": "controlActionWireNamesMatchDeepLinkSegments",
+            "status": "passed"
+          },
+          {
+            "name": "pausedProgressAndTimeStayFrozen",
+            "status": "passed"
+          },
+          {
+            "name": "backgroundProgressAdvancesWithoutExtendingCountdownDeadline",
+            "status": "passed"
+          },
+          {
+            "name": "missingPhaseLabelFallsBackToAppTitle",
+            "status": "passed"
+          },
+          {
+            "name": "anchoredProgressFollowsRebasedRemaining",
+            "status": "passed"
+          },
+          {
+            "name": "anchoredCountdownInThePastClampsToZeroInsteadOfNegative",
+            "status": "passed"
+          },
+          {
+            "name": "legacyPayloadWithoutAnchorKeepsRelativeBehaviour",
+            "status": "passed"
+          },
+          {
+            "name": "missingOrMalformedBindingShowsNoActions",
+            "status": "passed"
+          },
+          {
+            "name": "pausedFreezesTimeAndCancelsExpiry",
+            "status": "passed"
+          },
+          {
+            "name": "missingReturnUriFallsBackToFocusDeepLink",
+            "status": "passed"
+          },
+          {
+            "name": "countdownRoundsSecondsUpSoOneThousandOneMillisIsNotTwoStepsAhead",
+            "status": "passed"
+          },
+          {
+            "name": "countUpContentTextUsesElapsedLabelInsteadOfFakeRemaining",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "actual_native_junit_totals": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "inherited_flutter_checks": {
+    "origin": "build-verification-whitelist-v7-final.json",
+    "origin_sha256": "c598ee020ddf46d9fd095d30bb60afce3d0d57d6fdee2503a9596a91184fc4f5",
+    "input_proof_archive_member": "v9-final/flutter-input-reuse-proof.json",
+    "input_proof_sha256": "3afe39ffe082e2b89d66d2a026ace3cdd73b38e6a876da9663c1aaba5ed3fe75",
+    "unchanged_inputs": 790,
+    "targeted_passed": 55,
+    "full_passed": 2871,
+    "analyze": "No issues found",
+    "format": "7 files, 0 changes",
+    "not_rerun_in_v9": true
+  },
+  "apks": [
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v9-final/build/app/outputs/flutter-apk/app-profile.apk",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "build_mode": "profile",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 105691917,
+      "sha256": "8e0ee421b64675f9f92f442e8c54b03fe81dc7190357cb11c7db1f62134aa117",
+      "build_exit_code": 0,
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "certificate_dn": "C=US, O=Android, CN=Android Debug",
+      "apksigner_verify_exit_code": 0,
+      "apksigner_jar": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar (JDK 17 java -jar)",
+      "label": "多仪·专注验证",
+      "main_activity_metadata": {
+        "name": "com.duoyi.duoyi.MainActivity",
+        "launchable": true,
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "evidence": "aapt dump xmltree AndroidManifest.xml: android:value(0x01010024)=(type 0x12)0x0"
+        }
+      },
+      "accessibility_service": {
+        "component": "com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService",
+        "resource": "res/xml/duoyi_focus_blocker_accessibility_service.xml",
+        "accessibilityEventTypes": "0x400020",
+        "canRetrieveWindowContent": {
+          "value": false,
+          "evidence": "(type 0x12)0x0"
+        },
+        "bind_accessibility_service_declarations": 1
+      },
+      "zip_flutter_payload": {
+        "lib/arm64-v8a/libapp.so": 23135120,
+        "lib/arm64-v8a/libflutter.so": 12401088,
+        "aot_abis": [
+          "arm64-v8a"
+        ],
+        "other_abis_plugin_only": [
+          "armeabi-v7a",
+          "x86_64"
+        ]
+      },
+      "dex_markers": {
+        "focus blocker usage sample:": {
+          "present": false,
+          "hits": 0,
+          "expected": "ABSENT (v8 diagnostic samples removed)"
+        },
+        "focus blocker usage foreground detected: package=": {
+          "present": true
+        },
+        "com/duoyi/duoyi/FocusBlockerUsageAccess": {
+          "present": true
+        }
+      },
+      "dart_define": {
+        "DUOYI_SERVER_URL": "http://127.0.0.1:18763",
+        "verified_in_libapp_so": true
+      },
+      "source_manifest_sha256": "e955712454adb54dcea35ac29a81b7e2cb94c8525fa6b8a8bb3c23924bc49fd7",
+      "source_head": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+      "v7_to_v9_changed_files": [
+        "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt",
+        "docs/android-focus-updates.md"
+      ],
+      "command": "python3 scripts/flutter_with_config.py build apk --profile --no-pub --target-platform android-arm64 --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18763",
+      "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "artifact": "build/app/outputs/flutter-apk/app-profile.apk",
+      "installed": false,
+      "review_apk_copied": false,
+      "log_dir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final",
+      "evidence_files": [
+        "candidate-pub-get.log",
+        "native-junit.log",
+        "native-junit-summary.json",
+        "isolated-profile-build.log",
+        "apk-aapt-badging.txt",
+        "apk-aapt-xmltree-manifest.txt",
+        "apk-aapt-xmltree-aa-service.txt",
+        "apk-apksigner-verify.txt",
+        "candidate-source-drift-before.json",
+        "candidate-source-drift-after.json",
+        "candidate-checks-summary.json"
+      ],
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libapp.so",
+        "lib/arm64-v8a/libflutter.so"
+      ],
+      "raw_metadata_archive_member": "v9-final/isolated-profile-apk.json"
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v9-final/build/app/outputs/flutter-apk/app-debug.apk",
+      "application_id": "com.duoyi.duoyi",
+      "build_mode": "debug",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 160509744,
+      "sha256": "3976bcdd35dd9e3be4c96c28868bac97d82a4a1d470395c6629a5ff1f7a2dc7f",
+      "build_exit_code": 0,
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "main_activity_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false
+        }
+      },
+      "main_activity": "com.duoyi.duoyi.MainActivity",
+      "target_sdk": 36,
+      "abi_payload": {
+        "verified_abi": "arm64-v8a",
+        "arm64-v8a": [
+          "libflutter.so",
+          "libdartjni.so",
+          "libdatastore_shared_counter.so",
+          "libVkLayer_khronos_validation.so"
+        ],
+        "note": "debug: Dart in kernel_blob.bin (no libapp.so); armeabi-v7a/x86_64 entries are plugin prebuilts and were not treated as verified"
+      },
+      "verification": {
+        "aapt2_badging": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-badging.txt",
+        "manifest_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-manifest.xmltree.txt",
+        "aa_service_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-aa-service.xmltree.txt",
+        "apksigner": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-apksigner.txt",
+        "apksigner_jar": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar",
+        "aa_service_attrs": {
+          "accessibilityEventTypes": "0x00400020",
+          "accessibilityFeedbackType": "0x00000010",
+          "accessibilityFlags": "0x00000010",
+          "notificationTimeout": 100,
+          "canRetrieveWindowContent": false,
+          "extra_capabilities": []
+        }
+      },
+      "source_manifest_sha256": "aeef997e5dff3aa9ce168e46dc2f6fe46ce1295e8deda1548cdc1594fb5b9964",
+      "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/standard-debug-build.log",
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libflutter.so",
+        "assets/flutter_assets/kernel_blob.bin"
+      ],
+      "raw_metadata_archive_member": "v9-final/standard-debug-apk.json"
+    }
+  ],
+  "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0,
+      "backend_files_compared": 14,
+      "hashes_unchanged": true,
+      "not_rerun": true,
+      "evidence": "build-verification.json and verification-logs.tar.gz"
+    }
+  },
+  "logs_archive": "verification-whitelist-v9-final-logs.tar.gz",
+  "logs_archive_sha256": "4235f3b94464fbd05f98cfa1d831c473ff68adb1d724f360aa38763410bba87f",
+  "device_claim_boundary": "Automatic checks and APK packaging do not establish actual foreground acceptance. v8 device observations remain bound to the v8 diagnostic APK; current v9 device execution must be separately identified. Permissions were explicitly authorized and granted through real system UI earlier; no new grant is performed by this collector."
+}

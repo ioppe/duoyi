@@ -1,0 +1,22 @@
+{
+  "original_size": [
+    1200,
+    2670
+  ],
+  "original_sha256": "7c054220d504e43a562e2656746882a155a6d7e43e6940c563daa868a8f094e5",
+  "public_size": [
+    1200,
+    2325
+  ],
+  "public_sha256": "4dff9da576df8094cd11bcceaec72f59e62e47475080e7239cc92d9baf2cf42f",
+  "crop_box": [
+    0,
+    120,
+    1200,
+    2445
+  ],
+  "pixels_match_crop": true,
+  "main_visual_review": "Actually viewed via local BrowserPreview and browser screenshot: own strict-focus panel only, paused timer badge, white selected2 and both strict/monitor togglesOFF; no third-party UI or unrelated notifications.",
+  "claim_boundary": "Evidence of own app and end configuration only; v2 physical returns have3failures.",
+  "private_original": "Original remains in session scratch only; not committed."
+}

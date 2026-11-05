@@ -1,0 +1,21 @@
+# Own service lines in original raw order; complete lines, no deduplication or truncation.
+# Device local +0800, 19:59:40.000 through 20:00:20.999; logcat filtered by PID 27544, not by all UID processes.
+# Source raw/log-own-1.txt SHA256 f2cebee124f609a9f5c7a9434b47f0a470f6fc9c3830a833249b06f163d9aedb; full raw remains private in scratch.
+# Public packages: focuscheck / Weibo / Alipay / QQ / WeChat / Home; internal policy class names retained.
+# Omitted 11 complete lines containing other package names. This filtered excerpt cannot establish absence of events.
+# Previous published report, timeline, and index preserved in scratch whitelist-v8-evidence-originals.
+
+11-05 19:59:46.473 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=2 recent=[com.duoyi.duoyi.focuscheck/PAUSED@1793879986122,com.sina.weibo/RESUMED@1793879986125] verdict=Foreground(decisiveAtWallMillis=1793879986125, packageName=com.sina.weibo, observedAtUptimeMillis=1479225442) tracked=com.duoyi.duoyi.focuscheck trackedAt=1479196710
+11-05 19:59:46.473 27544 27544 I DuoyiFocusBlocker: focus blocker usage foreground detected: package=com.sina.weibo eventAt=1793879986125
+11-05 19:59:46.478 27544 27544 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/1), awaiting confirmation
+11-05 19:59:46.641 27544 27544 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+11-05 19:59:46.641 27544 27544 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+11-05 19:59:46.970 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=4 recent=[com.duoyi.duoyi.focuscheck/PAUSED@1793879986122,com.sina.weibo/RESUMED@1793879986125,com.sina.weibo/PAUSED@1793879986496,com.duoyi.duoyi.focuscheck/RESUMED@1793879986498] verdict=Foreground(decisiveAtWallMillis=1793879986498, packageName=com.duoyi.duoyi.focuscheck, observedAtUptimeMillis=1479225815) tracked=com.duoyi.duoyi.focuscheck trackedAt=1479225853
+11-05 19:59:47.474 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=5 recent=[com.sina.weibo/RESUMED@1793879986125,com.sina.weibo/PAUSED@1793879986496,com.duoyi.duoyi.focuscheck/RESUMED@1793879986498,com.sina.weibo/STOPPED@1793879987363] verdict=Loss(decisiveAtWallMillis=1793879987363, packageName=com.sina.weibo, observedAtUptimeMillis=1479226680) tracked=com.duoyi.duoyi.focuscheck trackedAt=1479225853
+11-05 19:59:47.976 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=5 recent=[com.sina.weibo/RESUMED@1793879986125,com.sina.weibo/PAUSED@1793879986496,com.duoyi.duoyi.focuscheck/RESUMED@1793879986498,com.sina.weibo/STOPPED@1793879987363] verdict=com.duoyi.duoyi.FocusBlockerUsageVerdict$None@17a6bbc tracked=com.duoyi.duoyi.focuscheck trackedAt=1479225853
+11-05 19:59:49.478 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=6 recent=[com.sina.weibo/PAUSED@1793879986496,com.duoyi.duoyi.focuscheck/RESUMED@1793879986498,com.sina.weibo/STOPPED@1793879987363,com.miui.home/RESUMED@1793879989141] verdict=Foreground(decisiveAtWallMillis=1793879989141, packageName=com.miui.home, observedAtUptimeMillis=1479228458) tracked=com.miui.home trackedAt=1479228482
+11-05 19:59:49.979 27544 27544 I DuoyiFocusBlocker: focus blocker usage sample: count=6 recent=[com.sina.weibo/PAUSED@1793879986496,com.duoyi.duoyi.focuscheck/RESUMED@1793879986498,com.sina.weibo/STOPPED@1793879987363,com.miui.home/RESUMED@1793879989141] verdict=com.duoyi.duoyi.FocusBlockerUsageVerdict$None@17a6bbc tracked=com.miui.home trackedAt=1479228482
+11-05 20:00:14.834 27544 27544 I DuoyiFocusBlocker: focus blocker requested com.eg.android.AlipayGphone to focus tab (attempt 1/2), awaiting confirmation
+11-05 20:00:14.835 27544 27544 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=nonblocked-window window=com.miui.home pending=com.eg.android.AlipayGphone deferred=com.eg.android.AlipayGphone
+11-05 20:00:14.835 27544 27544 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=nonblocked-window window=com.miui.home pending=none deferred=com.eg.android.AlipayGphone
+11-05 20:00:14.835 27544 27544 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=nonblocked-window window=com.miui.home pending=none deferred=com.eg.android.AlipayGphone

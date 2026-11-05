@@ -1,0 +1,136 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v2-diagnostic-20261105T073043Z",
+  "phase": "bounded failure-state diagnostic for v2 reopen/whitelist miss",
+  "serial": "2df52c4c",
+  "times": {
+    "host_utc": {
+      "precheck": "2026-11-05T07:30:42Z",
+      "repro": "2026-11-05T07:31:35Z-07:32:00Z",
+      "cleanup": "2026-11-05T07:33Z"
+    },
+    "phone_local": {
+      "wall": "2026-11-05 15:30–15:33 +0800"
+    },
+    "note": "host and phone clocks recorded separately; native expires/last_blocked rendered in HOST local tz in my parser, so use epoch ms for truth"
+  },
+  "preconditions": {
+    "interactive": true,
+    "deviceLocked": 0,
+    "keyguardShowing": false,
+    "installed_v2_sha256": "3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a",
+    "pid_at_start": 29386,
+    "prior_state": "strict/monitor FALSE, whitelist=[com.tencent.mm, com.tencent.mobileqq], no running session (no user session active → I started my own via real UI)"
+  },
+  "my_session": {
+    "started": "~15:31:15 local",
+    "totalSeconds": 1500,
+    "endsAtMs": 1793865374178,
+    "endsAt_utc": "2026-11-05T07:56:14Z (future at failure)",
+    "strict": true,
+    "monitor": true,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ]
+  },
+  "repro": {
+    "cold": "15:31:35.771 am start com.sina.weibo/.SplashActivity → 15:31:36.071 'requested com.sina.weibo (attempt 1/2)' → 15:31:36.262 'confirmed return to duoyi' + 'cancelled pending work reason=own-foreground'; cold+5s focus=com.duoyi.duoyi.focuscheck/MainActivity (PASS control)",
+    "reopen": "15:31:40.995 same am start → +2s focus=com.sina.weibo/.MainTabActivity, topResumed=com.sina.weibo/.MainTabActivity; still weibo at 15:31:57 (FAIL)",
+    "own_log_at_reopen": "本 PID 在 15:31:40–45 窗口内没有任何 DuoyiFocusBlocker 行；整个会话 requested=1 / confirmed=1（仅冷启动那次）——重开未产生任何 request"
+  },
+  "failure_state_at_15_31_57": {
+    "focus": "com.sina.weibo/com.sina.weibo.MainTabActivity",
+    "accessibility": {
+      "bound": "多仪·专注验证 BOUND",
+      "service_line": "Service[label=多仪·专注验证, capabilities=0, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED], notificationTimeout=100, requestA11yBtn=false]",
+      "canRetrieveWindowContent": "该 ROM 的 dumpsys accessibility 未输出 canRetrieveWindowContent / a11y-tool 标志（缺字段，非 false）",
+      "formal_service": "com.duoyi.duoyi 仍在 Crashed services（未改、未修）"
+    },
+    "process": {
+      "pid": 29386,
+      "pid_stable": true,
+      "restart": false,
+      "curProcState_samples": [
+        0,
+        5,
+        19
+      ],
+      "note": "ActivityManager 输出里同一包出现多行 ProcessRecord（含已缓存/其他用户态），own pid 未变"
+    },
+    "anr": {
+      "lastanr": "no ANR has occurred since boot"
+    },
+    "native_blocker": {
+      "enabled": true,
+      "expires_at": 1793865374178,
+      "expires_at_future": true,
+      "native_set_count": 203,
+      "com.sina.weibo": true,
+      "com.eg.android.AlipayGphone": true,
+      "com.tencent.mobileqq": false,
+      "com.tencent.mm": false,
+      "last_blocked_at": 1793863896066,
+      "last_blocked_at_meaning": "=cold bounce 15:31:36 local；重开未推进该时间戳",
+      "last_blocked_package": "com.sina.weibo"
+    },
+    "main_looper_liveness": {
+      "notification_id": 951101,
+      "samples": [
+        "剩余 24:03",
+        "剩余 24:00",
+        "剩余 23:57"
+      ],
+      "interval_s": 3,
+      "conclusion": "FGS 通知持续走秒 → 主线程/looper 未冻结（chronometer 每秒刷新）",
+      "notification_actions_seen_in_system_log": "actionButton1 name: 暂停 ; actionButton2 name: 重置"
+    },
+    "fgs_process": "FocusTimerForegroundService 与 AA service 同属 own PID 29386（同一进程）"
+  },
+  "system_side_evidence": {
+    "bal": "本包在缓冲区内没有任何 BackgroundActivityLaunch 记录（既无拒绝也无允许）",
+    "freezer_kill_anr": "本包在失败窗口没有 freezer/kill/ANR/crash 记录",
+    "miui_show_when_locked": "'ActivityRecordImpl: MIUILOG- Show when locked PermissionDenied pkg : com.duoyi.duoyi.focuscheck uid : 10565' 全缓冲出现 76 次，**冷启动成功的 15:31:36.125-129 也有**→ 不是本次失败与成功之间的差异信号，不能据此归因",
+    "foreground_transition": "15:31:41.091 GlobalDock onForegroundInfoChanged: foreground=com.sina.weibo(pid 16025), lastForeground=com.duoyi.duoyi.focuscheck(pid 29386) — 正常切换，无拦截标记",
+    "log_span": "system buffer 覆盖 12:04:25–15:32:59，故 15:31:40 窗口可用（旧 15:18 窗口已在早期轮转，未重新获取）"
+  },
+  "verdict_facts": [
+    "AA 在失败时仍 BOUND 且 eventTypes 含 WINDOW_STATE_CHANGED/TYPE_WINDOWS_CHANGED",
+    "原生配置在失败时 enabled=true / 203 项 / 未过期 / weibo∈集合",
+    "进程 PID 未变、无 ANR、无冻结、主线程走秒",
+    "重开瞬间本包零 blocker 日志、零 request",
+    "MIUI Show-when-locked 拒绝在成功路径同样出现 → 非差异点"
+  ],
+  "cannot_determine_without_instrumentation": [
+    "AA 事件是否被投递给本服务（v2 没有 event-accepted 日志）",
+    "若已投递，是否被应用侧过滤（同包去抖/一次性/仅处理首窗口）——v2 无 rejected/debounce 日志",
+    "因此不能从现有证据判定 root cause；需要代码侧事件接受/拒绝日志（或不改码的更强系统追踪，本任务禁止）"
+  ],
+  "cleanup": {
+    "strict": false,
+    "monitor": false,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "running": "none",
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "formal": {
+      "versionCode": 142023,
+      "untouched": true
+    },
+    "no_writes": "无 pref/store 写入、无 appops/secure/设置改动、无 grant、无 kill/force-stop/uninstall、无全局清日志"
+  },
+  "privacy": {
+    "public": [
+      "safe-log-excerpt.txt（仅含 com.duoyi.duoyi.focuscheck 的行 + 一条 foreground 切换记录，无第三方 UI 文本）",
+      "本 diagnostic.json 的字段摘要"
+    ],
+    "scratch_only": [
+      "完整 system/own-pid logcat",
+      "完整 prefs XML（含 203 项清单）"
+    ],
+    "third_party_screenshots": "未拍摄任何第三方界面（失败时前台为微博，未截图）"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "review_apk": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-debug.apk",
+  "source_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v9-final/build/app/outputs/flutter-apk/app-debug.apk",
+  "sha256": "3976bcdd35dd9e3be4c96c28868bac97d82a4a1d470395c6629a5ff1f7a2dc7f",
+  "size_bytes": 160509744,
+  "historical_v7_backup": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-v9-final/previous-standard-whitelist-v7.apk",
+  "historical_v7_sha256": "a0f516eaafbc55fa55d3d634781635688ffd66060527b461714e207c0b91858a",
+  "note": "Ignored local review output. Standard debug is not a production upgrade and must never overwrite the installed formal app."
+}

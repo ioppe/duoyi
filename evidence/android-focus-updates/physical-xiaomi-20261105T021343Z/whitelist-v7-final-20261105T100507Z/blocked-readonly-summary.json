@@ -1,0 +1,24 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v7-final-20261105T100507Z",
+  "result": "BLOCKED_AT_ENTRY",
+  "matrix_status": "NOT_RUN",
+  "host_utc": "2026-11-05T10:04:24Z-10:04:42Z",
+  "phone_local": "2026-11-05T18:04:23+0800",
+  "serial": "2df52c4c",
+  "device_state": {
+    "wakefulness": "Dozing",
+    "device_locked": true,
+    "keyguard_showing": true,
+    "focused_component": "NotificationShade"
+  },
+  "writes_performed": false,
+  "install_performed": false,
+  "usage_access_granted_in_system": false,
+  "host_candidate_sha256": "e6fcc9e41d51b54d5a2fb3da4fff85e5e531d94cc7adffd0dcbeab69d8222369",
+  "installed_apk_sha256_at_this_attempt": "51b8c6209a213d8ea2113af82990c97fbed2c8e6f0ff726b5e7a4d503ebb4620",
+  "formal_and_layout_apps_unchanged": true,
+  "no_wakeup_unlock_or_credential_actions": true,
+  "follow_up": "User subsequently confirmed manual unlock; the resumed matrix is recorded separately. This historical record does not describe the later device state.",
+  "original_private_report_sha256": "f5a82f4e7662e8a3636403e065e515d3dd97f53b9de2e001efe38e90ab861a60"
+}

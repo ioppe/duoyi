@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'需要 Android 使用情况访问和辅助功能权限'**
   String get focusDistractionStatusMissing;
 
+  /// No description provided for @focusDistractionPermissionHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'严格专注需要系统已连接的辅助功能服务。小米、Redmi、POCO 还需在系统应用信息 → 权限管理 → 其他权限中允许“后台弹出界面”。部分应用不发送辅助功能窗口事件，需同时允许使用情况访问以补充检测；它不能代替辅助功能或后台显示许可。'**
+  String get focusDistractionPermissionHint;
+
   /// No description provided for @focusTimerNotifChannelName.
   ///
   /// In zh, this message translates to:

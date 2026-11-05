@@ -1,0 +1,6 @@
+11-05 15:17:11.319 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 15:17:28.360 29386 29386 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 15:18:01.265 29386 29386 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 15:18:01.549 29386 29386 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+11-05 15:18:01.549 29386 29386 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+11-05 15:18:22.884 29386 29386 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation

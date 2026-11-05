@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -63,7 +64,39 @@ void main() {
     expect(screen, isNot(contains('packageCtrl')));
     expect(screen, contains('使用情况权限'));
     expect(screen, contains('辅助功能拦截'));
-    expect(screen, contains('开启辅助功能后'));
+    expect(screen, contains("I18n.tr('focus.distraction.permission_hint')"));
+    final i18n = File('lib/core/i18n.dart').readAsStringSync();
+    expect(
+      RegExp(r"'focus\.distraction\.permission_hint':").allMatches(i18n),
+      hasLength(2),
+      reason: '严格专注权限提示必须保留中英文映射',
+    );
+    for (final entry in <String, List<String>>{
+      'zh': ['已连接的辅助功能服务', '后台弹出界面', '使用情况访问', '不发送辅助功能窗口事件'],
+      'en': [
+        'accessibility service to be enabled and connected',
+        'Display pop-up windows while running in the background',
+        'usage access is also needed',
+        'cannot replace the accessibility service',
+      ],
+    }.entries) {
+      final arb =
+          jsonDecode(File('lib/l10n/app_${entry.key}.arb').readAsStringSync())
+              as Map<String, dynamic>;
+      final hint = arb['focusDistractionPermissionHint'];
+      final generated = File(
+        'lib/l10n/generated/app_localizations_${entry.key}.dart',
+      ).readAsStringSync();
+      expect(generated, contains('String get focusDistractionPermissionHint'));
+      for (final prerequisite in entry.value) {
+        expect(
+          hint,
+          contains(prerequisite),
+          reason: '${entry.key} 权限说明不能遗漏系统许可或补漏条件',
+        );
+        expect(generated, contains(prerequisite));
+      }
+    }
 
     expect(backup, contains("'pomodoro_focus_penalties'"));
     expect(sync, contains("'pomodoro_focus_penalties': 'focus_penalties'"));

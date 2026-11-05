@@ -1,0 +1,4 @@
+=== CASE4 QQ(allow) start phone=15:19:37.426466895 host=2026-11-05T07:19:38Z ===
+precheck locked=deviceLocked=0 keyguard=false
+Starting: Intent { cmp=com.tencent.mobileqq/.activity.SplashActivity }
+t+5 focus=com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity} resumed=com.tencent.mobileqq/.activity.SplashActivity t11074}

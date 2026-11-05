@@ -13,6 +13,7 @@
   "focusDistractionStatusBlockerUnconfigured": "No blocked apps configured",
   "focusDistractionStatusUsageOnly": "Usage access granted, accessibility service not enabled",
   "focusDistractionStatusMissing": "Requires Android usage access and accessibility permissions",
+  "focusDistractionPermissionHint": "Strict Focus requires the accessibility service to be enabled and connected. On Xiaomi, Redmi and POCO, also allow \"Display pop-up windows while running in the background\" under App info → Permissions → Other permissions. Some apps do not send accessibility window events, so usage access is also needed to detect them. Usage access cannot replace the accessibility service or permission to display the app from the background.",
   "focusTimerNotifChannelName": "Focus timer",
   "focusTimerNotifNoTask": "No linked task",
   "focusTimerNotifPaused": "Paused",

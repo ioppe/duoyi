@@ -21,6 +21,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
 import android.provider.CalendarContract
 import android.provider.Settings
 import android.provider.OpenableColumns
@@ -83,8 +84,31 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        // API 29+ 由 onTopResumedActivityChanged 提供真实前台确认；更低版本没有该回调，
+        // 在这里用同一 uptime 时钟观察自己，保证拦截服务仍能确认“已返回多仪”。
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            observeOwnForegroundConfirmation()
+        }
         scheduleWidgetRestoreAfterResume()
         AndroidUpdateDownloads.resumePendingInstallIfAllowed(this)
+    }
+
+    override fun onTopResumedActivityChanged(isTopResumed: Boolean) {
+        // 回调本身只在 API 29+ 触发；显式版本判断同时满足 lint 的 NewApi 检查。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            super.onTopResumedActivityChanged(isTopResumed)
+        }
+        if (isTopResumed) observeOwnForegroundConfirmation()
+    }
+
+    /**
+     * 记录本应用已成为前台（进程内共享给无障碍拦截服务）。
+     *
+     * 只写入包名与 uptime，不持有 Activity 引用；更旧的无障碍窗口事件不会覆盖它。
+     */
+    private fun observeOwnForegroundConfirmation() {
+        val now = SystemClock.uptimeMillis()
+        FocusBlockerForegroundState.observeForeground(packageName, now, now)
     }
 
     override fun onDestroy() {

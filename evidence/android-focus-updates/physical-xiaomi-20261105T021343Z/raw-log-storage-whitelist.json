@@ -1,0 +1,32 @@
+{
+  "purpose": "Preserve two new raw logs including trailing spaces as gzip; no diagnostic content was trimmed or rewritten.",
+  "files": [
+    {
+      "original_path": "v5-device-retry-20261105T052346Z/raw/logcat-bodytap.txt",
+      "stored_path": "v5-device-retry-20261105T052346Z/raw/logcat-bodytap.txt.gz",
+      "original_sha256": "5bebae61d765c3342665a8d9008e078ffdb091fa02e93d602be9f74d83dc09de",
+      "gzip_sha256": "8b4e3b00570828c4972f62f91ff3122da5562318d98e0e77eb1901001bcc6896",
+      "original_size_bytes": 51757,
+      "gzip_size_bytes": 8714,
+      "decompressed_bytes_verified_identical": true
+    },
+    {
+      "original_path": "whitelist-repro-20261105T061121Z/raw/derived-config.txt",
+      "stored_path": "whitelist-repro-20261105T061121Z/raw/derived-config.txt.gz",
+      "original_sha256": "771b63ef09f8fc4ed16ffd638ae30b2d58181ccad6d1f15c571347409f0a3dcf",
+      "gzip_sha256": "5a72b39de14f333a179a86aa256c168c8e3754fa81dd5545179c47e6cb1ab76e",
+      "original_size_bytes": 545,
+      "gzip_size_bytes": 335,
+      "decompressed_bytes_verified_identical": true,
+      "interpretation": "The blank packages(set) field remains preserved as an erroneous rendering; corrected membership JSON still establishes 202 packages at the original reproduction time."
+    }
+  ],
+  "metadata_changes": {
+    "current_report_references": "Updated only the raw-log paths to .txt.gz; physical results and original observation times unchanged.",
+    "v5_retry_index_before_sha256": "223876ea297495e8f3dc2f280e21e275a8756e0b2156f5d2a7943636f65c24ac",
+    "v5_retry_index_before_archive_member": "final-v2/initial-v5-retry-evidence-index.json in ../verification-whitelist-logs.tar.gz",
+    "v5_retry_index_current": "v5-device-retry-20261105T052346Z/evidence-sha256.json",
+    "historical_verification": "v5-device-retry-20261105T052346Z/verification.json remains the original 05:45:42 UTC verification, not a new product test run."
+  },
+  "private_originals": "Uncompressed byte-identical originals retained under session scratch/raw-byte-backups-whitelist; no preferences or full-device screenshots were added to public evidence."
+}

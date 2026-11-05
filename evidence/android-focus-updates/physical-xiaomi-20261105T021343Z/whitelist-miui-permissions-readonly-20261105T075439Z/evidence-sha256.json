@@ -1,0 +1,8 @@
+{
+  "source_system_log_sha256": "0906f1f17f81580d697664cfa2b962de1fc4f2da43a46d3aa6178cfccc9cbf1e",
+  "complete_own_lines": 10,
+  "files": {
+    "miui-permissions-readonly.json": "72e0aa488ee60b07460cd45af00d4c5c73cce7921f0c0673817348db200acf8c",
+    "own-systemlog-excerpt.txt": "7c1875ca7619a26413f03b71dff06c127a0b89df164bb888e67f7dff134bb5dd"
+  }
+}

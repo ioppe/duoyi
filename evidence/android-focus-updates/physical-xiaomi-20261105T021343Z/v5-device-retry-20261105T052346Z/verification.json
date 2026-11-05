@@ -1,0 +1,20 @@
+{
+  "recorded_at_utc": "2026-11-05T05:45:42.021025+00:00",
+  "scope": "Physical retry evidence integrity, not a product test rerun",
+  "source_commit": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "source_files_checked": 1268,
+  "source_hash_drift": [],
+  "physical_result": "PARTIAL_PASS",
+  "passed_cases": 3,
+  "blocked_cases": 2,
+  "notification_controls_accepted": false,
+  "report_references_verified": 15,
+  "public_images_verified": 3,
+  "xml_files_parsed": 6,
+  "readme_links_verified": 39,
+  "public_files_indexed": 19,
+  "changes_only_in_evidence": true,
+  "staged_files": 0,
+  "new_commit_created": false,
+  "errors": []
+}

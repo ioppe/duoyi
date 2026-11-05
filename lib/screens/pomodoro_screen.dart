@@ -1225,7 +1225,7 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                     ),
                   ),
                   child: Text(
-                    '开启辅助功能后，严格专注运行时会把打开的分心 App 拉回多仪；未授权辅助功能时仍会用使用情况访问记录分心 App 惩罚。',
+                    I18n.tr('focus.distraction.permission_hint'),
                     style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                       color: cs.onSurface.withValues(alpha: 0.68),
                     ),

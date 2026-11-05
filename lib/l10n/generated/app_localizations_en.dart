@@ -57,6 +57,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Requires Android usage access and accessibility permissions';
 
   @override
+  String get focusDistractionPermissionHint =>
+      'Strict Focus requires the accessibility service to be enabled and connected. On Xiaomi, Redmi and POCO, also allow \"Display pop-up windows while running in the background\" under App info → Permissions → Other permissions. Some apps do not send accessibility window events, so usage access is also needed to detect them. Usage access cannot replace the accessibility service or permission to display the app from the background.';
+
+  @override
   String get focusTimerNotifChannelName => 'Focus timer';
 
   @override

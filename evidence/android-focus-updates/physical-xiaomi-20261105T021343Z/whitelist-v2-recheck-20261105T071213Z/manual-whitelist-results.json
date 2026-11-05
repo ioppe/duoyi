@@ -1,0 +1,160 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v2-recheck-20261105T071213Z",
+  "phase": "FINAL whitelist-v2 physical recheck",
+  "serial": "2df52c4c",
+  "host_utc": {
+    "start": "2026-11-05T07:11:15Z",
+    "end": "2026-11-05T07:26Z"
+  },
+  "phone_local": {
+    "start": "2026-11-05T15:11:15+0800",
+    "end": "2026-11-05T15:26+0800"
+  },
+  "device_precheck": {
+    "interactive": true,
+    "mWakefulness": "Awake",
+    "deviceLocked": 0,
+    "keyguardShowing": false,
+    "note": "user 已解锁；每次启动前重新校验 unlocked"
+  },
+  "artifact_binding": {
+    "apk": "android-candidate-whitelist-v2/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105691917,
+    "host_sha256": "3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a",
+    "device_base_apk_sha256": "3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a",
+    "hash_equal": true,
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "install": "install -r (no -d/-g) Success",
+    "firstInstallTime_preserved": "2026-11-05 10:30:45",
+    "lastUpdateTime_after": "2026-11-05 15:11:44",
+    "signer": "AndroidDebug b4ea31fb...c2b1d3",
+    "a11y": "focuscheck BOUND (TYPE_WINDOW_STATE_CHANGED/TYPE_WINDOWS_CHANGED)；com.duoyi.duoyi 服务仍为 Crashed（未动）",
+    "usage_stats": "GET_USAGE_STATS: No operations（未授予；拦截不依赖它）"
+  },
+  "cases": [
+    {
+      "id": "0",
+      "name": "install binding / preconditions",
+      "status": "PASS",
+      "observed": "host==device sha256 3783a42a…；firstInstall 保留 2026-11-05 10:30:45；AA focuscheck BOUND；UsageStats 未授予；formal 与 layoutcheck 未动"
+    },
+    {
+      "id": "1",
+      "name": "whitelist ONLY QQ+WeChat via real UI",
+      "status": "PASS",
+      "observed": "选择器白名单已选 2；Dart config distractingAppPackages=['com.tencent.mm','com.tencent.mobileqq']；会话内原生补集 203 项：weibo=True alipay=True scanner=True QQ=False WeChat=False（enabled=true）",
+      "note": "期间误触多选 com.agentsanywhere.app，已用真实 UI 取消并复核回 2 项"
+    },
+    {
+      "id": "2a",
+      "name": "Weibo default launch -> actual return (+2s/+5s)",
+      "status": "PASS",
+      "observed": "15:18:01.265 requested com.sina.weibo (attempt 1/2) -> 15:18:01.549 confirmed return to duoyi + cancelled pending work(own-foreground)；+2s/+5s focused 与 topResumed 均为 com.duoyi.duoyi.focuscheck/MainActivity"
+    },
+    {
+      "id": "2b",
+      "name": "Weibo repeat open (existing task / MainTab resume)",
+      "status": "FAIL",
+      "observed": "15:18:17 再次 am start .SplashActivity；+1s/+2s/+5s focused 与 topResumed 均为 com.sina.weibo/.MainTabActivity；该时刻所采本 PID 日志无任何 requested/confirmed 行（未观察到拉回请求）",
+      "evidence": [
+        "raw/case2-weibo.txt",
+        "raw/blocker-timeline.txt"
+      ]
+    },
+    {
+      "id": "2c",
+      "name": "cross-package within 600ms: Weibo -> Alipay",
+      "status": "FAIL",
+      "observed": "15:18:22.884 requested com.sina.weibo (attempt 1/2) 后无 confirmed；Alipay 全程无 request；+2s/+5s focused 与 topResumed 均为 com.eg.android.AlipayGphone/...LoginActivity"
+    },
+    {
+      "id": "3",
+      "name": "Alipay default launch from Home -> actual return (+2s/+5s)",
+      "status": "FAIL",
+      "observed": "15:19:07 precheck locked=0 keyguard=false focus=launcher；启动 .AlipayLogin 后 +2s/+5s focused 与 topResumed 均为 com.eg.android.AlipayGphone/...LoginActivity；所采本 PID 日志无该包 requested/confirmed（累计 requested=2 confirmed=1 不变）"
+    },
+    {
+      "id": "4",
+      "name": "allowed controls QQ/WeChat + blocked->allowed quick switch",
+      "status": "PASS",
+      "observed": "QQ .activity.SplashActivity +5s 仍在前台；WeChat .ui.LauncherUI +5s 仍在前台；15:20:10 支付宝->QQ 间隔 350ms：+2s/+5s 均为 QQ SplashActivity，无排队旧任务抢占",
+      "privacy_note": "微信恢复到其上次界面，我未读取内容、未截图"
+    },
+    {
+      "id": "5",
+      "name": "pause/reset release",
+      "status": "PASS",
+      "observed": "真实 UI 暂停 -> 已暂停 21:42，日志 15:21:20 enabled=false，暂停期间启动支付宝停留前台（无 request）；真实 UI 重置 -> 25:00、951101=0、FocusTimerForegroundService=0；严格/监控最终 False/False；白名单保持 2 项",
+      "note": "首次重置后应用把 strict/monitor 恢复为 TRUE，已用 UI 再次关闭并复核 False/False"
+    }
+  ],
+  "log_hygiene": {
+    "own_pid": "29386",
+    "scope_correction": "29386 是 PID，原 own_uid 字段标注有误；本报告日志按该 PID 过滤，不声称已覆盖整个 UID 或系统后台启动日志。",
+    "_onUnknownRoute": 0,
+    "Null check operator": 0,
+    "Unhandled Exception": 0,
+    "note": "仅本 PID + 明确时间窗，未全局清日志"
+  },
+  "cleanup": {
+    "timer": "已暂停 25:00",
+    "strict": false,
+    "monitor": false,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "notif951101": "0",
+    "timer_fgs": "0",
+    "a11y": "focuscheck enabled+BOUND；com.duoyi.duoyi 仍 Crashed（未改）",
+    "formal_untouched": {
+      "versionCode": 142023,
+      "versionName": "2.0.0",
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34",
+      "apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b"
+    },
+    "device_settings_unchanged": {
+      "screen_off_timeout": "600000",
+      "font_scale": "1.25",
+      "density": "520",
+      "size": "1200x2670"
+    },
+    "no_writes": "无 pref/store 写入、无 shell channel 伪造、无 appops/secure/全局设置改动、无残留会话",
+    "device_left": "已把验证包置于前台；随后 HOME 到桌面，未留第三方私密界面"
+  },
+  "product_findings": {
+    "good": [
+      "冷启动(splash)路径 requested->confirmed->own foreground",
+      "允许列表 QQ/微信 不被拦截",
+      "白名单补集派生正确(203 项)",
+      "暂停/重置可释放拦截"
+    ],
+    "bad": [
+      "应用已有任务时再次打开（Splash->MainTab 直接恢复）完全不发起拉回请求",
+      "跨包 600ms：旧 request 无 confirmed，新包(支付宝)无 request",
+      "支付宝常规冷启动不发起任何 request，稳定停留在其 LoginActivity"
+    ],
+    "note": "均以真实 focused/topResumed 组件判定，未用 requested 日志冒充成功；未推测根因"
+  },
+  "privacy": {
+    "published": "自有配置摘要、原生集合计数与 5 个目标包成员、时间线、前台组件名、1 张裁剪后的应用内截图",
+    "not_published": [
+      "完整 prefs XML",
+      "203 项应用清单",
+      "第三方界面截图",
+      "锁屏/通知栏整屏"
+    ],
+    "screenshot": {
+      "path": "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/01-focus-page-idle-strict-off-cropped.png",
+      "crop": "full 1200x2670 -> (0,120)-(1200,2445) size 1200x2325",
+      "sha256": "4dff9da576df8094cd11bcceaec72f59e62e47475080e7239cc92d9baf2cf42f",
+      "verification": "本地 Vision OCR 命中白名单标签 专注中/已暂停（确认是本应用界面）"
+    },
+    "deleted_suspect_capture": "首张最终截图拍摄时前台已被微信聊天界面占据（私有面），OCR 未命中任何专注标签；已删除该图与对应 scratch 副本，未入库，并重拍为当前截图"
+  },
+  "remaining_blocker": "无硬件阻塞；产品侧 2b/2c/3 三处真实失败待修"
+}

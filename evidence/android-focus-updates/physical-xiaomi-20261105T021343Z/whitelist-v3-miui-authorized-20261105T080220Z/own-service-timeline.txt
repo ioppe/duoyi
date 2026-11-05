@@ -1,0 +1,16 @@
+11-05 16:07:09.200 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.sina.weibo type=32 eventAt=1465362708 now=1465362810 tracked=com.duoyi.duoyi.focuscheck trackedAt=1465345422
+11-05 16:07:09.200 23292 23292 I DuoyiFocusBlocker: focus blocker cooldown: target=com.sina.weibo now=1465362810 remaining=0 generation=1
+11-05 16:07:09.205 23292 23292 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 16:07:09.205 23292 23292 I DuoyiFocusBlocker: focus blocker verification scheduled: target=com.sina.weibo generation=2 attempt=1 delay=600
+11-05 16:07:09.408 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.duoyi.duoyi.focuscheck type=32 eventAt=1465362915 now=1465363018 tracked=com.duoyi.duoyi.focuscheck trackedAt=1465362887
+11-05 16:07:09.408 23292 23292 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+11-05 16:07:09.408 23292 23292 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+11-05 16:07:14.562 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.sina.weibo type=32 eventAt=1465368070 now=1465368171 tracked=com.duoyi.duoyi.focuscheck trackedAt=1465362915
+11-05 16:07:14.562 23292 23292 I DuoyiFocusBlocker: focus blocker cooldown: target=com.sina.weibo now=1465368171 remaining=0 generation=3
+11-05 16:07:14.567 23292 23292 I DuoyiFocusBlocker: focus blocker requested com.sina.weibo to focus tab (attempt 1/2), awaiting confirmation
+11-05 16:07:14.567 23292 23292 I DuoyiFocusBlocker: focus blocker verification scheduled: target=com.sina.weibo generation=4 attempt=1 delay=600
+11-05 16:07:14.766 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.duoyi.duoyi.focuscheck type=32 eventAt=1465368274 now=1465368376 tracked=com.duoyi.duoyi.focuscheck trackedAt=1465368195
+11-05 16:07:14.766 23292 23292 I DuoyiFocusBlocker: focus blocker confirmed return to duoyi from com.sina.weibo
+11-05 16:07:14.766 23292 23292 I DuoyiFocusBlocker: focus blocker cancelled pending work: reason=own-foreground window=com.duoyi.duoyi.focuscheck pending=com.sina.weibo deferred=none
+11-05 16:07:32.515 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.miui.home type=32 eventAt=1465386025 now=1465386125 tracked=com.duoyi.duoyi.focuscheck trackedAt=1465368274
+11-05 16:07:33.120 23292 23292 I DuoyiFocusBlocker: focus blocker window received: package=com.duoyi.duoyi.focuscheck type=32 eventAt=1465386629 now=1465386730 tracked=com.miui.home trackedAt=1465386025

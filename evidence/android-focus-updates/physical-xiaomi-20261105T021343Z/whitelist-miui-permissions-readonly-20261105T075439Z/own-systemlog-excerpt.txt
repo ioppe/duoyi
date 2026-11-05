@@ -1,0 +1,13 @@
+# Complete own-package system lines, device local +0800, 15:48:37.6-15:48:38.6.
+# These are requests and explicit MIUI rejections; no third-party UI text.
+
+11-05 15:48:37.870  3810  9751 I CamOpt_Service: notifyActivityStart: intent = Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras) }
+11-05 15:48:37.872  3810 11266 D ActivityStarterImpl: MIUILOG- Permission Denied Activity : Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras) } pkg : com.duoyi.duoyi.focuscheck uid : 10565 tuid : 10304
+11-05 15:48:37.872  3810 11266 D WindowManager: Collecting in transition 39553: ActivityRecord{197107563 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t-1} init visibleRequested:false dc:null
+11-05 15:48:37.873  3810 11266 I ActivityTaskManager: } of invisible launch ActivityRecord{197107563 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t-1}
+11-05 15:48:37.874  3810 11266 I ActivityTaskManager: START u0 {dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 10565 from pid 23292 callingPackage com.duoyi.duoyi.focuscheck (BAL_ALLOW_TOKEN) result code=3
+11-05 15:48:38.475  3810  9751 I CamOpt_Service: notifyActivityStart: intent = Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras) }
+11-05 15:48:38.476  3810 11139 D ActivityStarterImpl: MIUILOG- Permission Denied Activity : Intent { dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras) } pkg : com.duoyi.duoyi.focuscheck uid : 10565 tuid : 10304
+11-05 15:48:38.477  3810 11139 D WindowManager: Collecting in transition 39554: ActivityRecord{104082728 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t-1} init visibleRequested:false dc:null
+11-05 15:48:38.478  3810 11139 I ActivityTaskManager: } of invisible launch ActivityRecord{104082728 u0 com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity t-1}
+11-05 15:48:38.478  3810 11139 I ActivityTaskManager: START u0 {dat=duoyi://tab/... flg=0x34000000 xflg=0x4 cmp=com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity (has extras)} with LAUNCH_SINGLE_TOP from uid 10565 from pid 23292 callingPackage com.duoyi.duoyi.focuscheck (BAL_ALLOW_TOKEN) result code=3

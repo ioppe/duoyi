@@ -1,0 +1,13 @@
+-- protections --
+v8_sha=fb4822fb10fc5008e8483da82c49da473119bbb4d62f0999b08686db2db8d1b7
+    versionCode=142023 minSdk=24 targetSdk=36
+    lastUpdateTime=2026-11-04 19:21:34
+      firstInstallTime=2026-10-23 14:39:35
+    versionCode=140023 minSdk=24 targetSdk=36
+Physical size: 1200x2670
+Physical density: 520
+1.25
+600000
+usage=GET_USAGE_STATS: allow; time=+11m21s176ms ago
+     Bound services:{Service[label=多仪·专注验证, feedbackType[FEEDBACK_GENERIC], capabilities=0, eventTypes=[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED], notificationTimeout=100, requestA11yBtn=false]}
+notif951101=0

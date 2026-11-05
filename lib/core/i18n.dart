@@ -307,6 +307,8 @@ const Map<String, String> _zh = <String, String>{
   'focus.distraction.status.blocker_unconfigured': '未配置拦截应用',
   'focus.distraction.status.usage_only': '已授权使用情况访问，辅助功能未授权',
   'focus.distraction.status.missing': '需要 Android 使用情况访问和辅助功能权限',
+  'focus.distraction.permission_hint':
+      '严格专注需要系统已连接的辅助功能服务。小米、Redmi、POCO 还需在系统应用信息 → 权限管理 → 其他权限中允许“后台弹出界面”。部分应用不发送辅助功能窗口事件，需同时允许使用情况访问以补充检测；它不能代替辅助功能或后台显示许可。',
   'focus.timer.notif.channel_name': '专注计时',
   'focus.timer.notif.no_task': '无关联任务',
   'focus.timer.notif.paused': '已暂停',
@@ -1903,6 +1905,14 @@ const Map<String, String> _en = <String, String>{
       'Usage access granted, accessibility service not enabled',
   'focus.distraction.status.missing':
       'Requires Android usage access and accessibility permissions',
+  'focus.distraction.permission_hint':
+      'Strict Focus requires the accessibility service to be enabled and connected. '
+      'On Xiaomi, Redmi and POCO, also allow '
+      '"Display pop-up windows while running in the background" under '
+      'App info → Permissions → Other permissions. Some apps do not send '
+      'accessibility window events, so usage access is also needed to detect them. '
+      'Usage access cannot replace the accessibility service or permission '
+      'to display the app from the background.',
   'focus.timer.notif.channel_name': 'Focus timer',
   'focus.timer.notif.no_task': 'No linked task',
   'focus.timer.notif.paused': 'Paused',

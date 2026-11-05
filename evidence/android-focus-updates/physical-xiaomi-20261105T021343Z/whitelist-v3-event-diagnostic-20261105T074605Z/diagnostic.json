@@ -1,0 +1,165 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v3-event-diagnostic-20261105T074605Z",
+  "phase": "v3 instrumented event diagnostic (3 launches, no behavior change)",
+  "serial": "2df52c4c",
+  "times": {
+    "host_utc": {
+      "precheck": "2026-11-05T07:45:45Z",
+      "install": "2026-11-05T07:46:05Z",
+      "launches": "07:48:32-07:49:20Z",
+      "cleanup": "07:51Z"
+    },
+    "phone_local": {
+      "session_start": "15:48:14 +0800",
+      "L1": "15:48:32.22",
+      "L2": "15:48:37.59",
+      "L3": "15:49:13.12",
+      "cleanup": "15:51"
+    }
+  },
+  "artifact": {
+    "apk": "android-candidate-whitelist-v3-diagnostic/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105691917,
+    "host_sha256": "6c88b84a1e2d44f4f8fdd750424c0993c122a3dc5d4b40d965587a84a7072726",
+    "device_base_apk_sha256": "6c88b84a1e2d44f4f8fdd750424c0993c122a3dc5d4b40d965587a84a7072726",
+    "hash_equal": true,
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "install": "install -r Success",
+    "firstInstallTime_preserved": "2026-11-05 10:30:45",
+    "post_notifications": "granted=true",
+    "aa_after_update": "更新后瞬间 Bound={} 且两服务在 Crashed；**启动应用后自动重绑** → focuscheck BOUND (TYPE_WINDOW_STATE_CHANGED/TYPE_WINDOWS_CHANGED, timeout=100)；未做任何写入/未重新授权；com.duoyi.duoyi 仍 Crashed（未改）"
+  },
+  "my_session": {
+    "started": "15:48:14 local",
+    "totalSeconds": 1500,
+    "endsAtMs": 1793866389917,
+    "strict": true,
+    "monitor": true,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "pid": 23292,
+    "uid": "10565"
+  },
+  "launches": [
+    {
+      "id": "L1",
+      "what": "weibo cold (com.sina.weibo/.SplashActivity)",
+      "result": "PASS",
+      "focus": {
+        "plus2": "com.duoyi.duoyi.focuscheck/MainActivity",
+        "plus5": "com.duoyi.duoyi.focuscheck/MainActivity (topResumed same)"
+      },
+      "log": [
+        "15:48:32.524 window received: package=com.sina.weibo type=32 eventAt=1464246030 now=1464246134 tracked=com.duoyi.duoyi.focuscheck trackedAt=1464221656",
+        "15:48:32.524 cooldown: target=com.sina.weibo now=1464246134 remaining=0 generation=1",
+        "15:48:32.530 requested attempt 1/2 → verification scheduled delay=600",
+        "15:48:32.729 window received: package=com.duoyi.duoyi.focuscheck type=32 → confirmed return + cancelled pending(own-foreground)"
+      ]
+    },
+    {
+      "id": "L2",
+      "what": "weibo repeat open (existing .MainTabActivity)",
+      "result": "FAIL",
+      "focus": {
+        "plus2": "com.sina.weibo/.MainTabActivity",
+        "plus5": "com.sina.weibo/.MainTabActivity (topResumed .MainTabActivity)"
+      },
+      "log": [
+        "15:48:37.870 window received: package=com.sina.weibo type=32 eventAt=1464251376 now=1464251480 tracked=com.duoyi.duoyi.focuscheck trackedAt=1464246235",
+        "15:48:37.870 cooldown: target=com.sina.weibo now=1464251480 remaining=0 generation=3  (非 stale、非冷却)",
+        "15:48:37.874 requested attempt 1/2 → verification scheduled delay=600",
+        "15:48:38.474 verification fired: foreground=com.sina.weibo  (attempt1 未生效)",
+        "15:48:38.479 requested attempt 2/2 → scheduled",
+        "15:48:39.080 verification fired: foreground=com.sina.weibo  (attempt2 未生效)",
+        "15:48:39.080 return unconfirmed (foreground=com.sina.weibo, attempts=2) → verification finished reason=unconfirmed"
+      ]
+    },
+    {
+      "id": "L3",
+      "what": "alipay default (com.eg.android.AlipayGphone/.AlipayLogin) from Home, fresh unlocked",
+      "result": "FAIL",
+      "focus": {
+        "pre": "launcher (locked=0, keyguard=false)",
+        "plus2": "com.eg.android.AlipayGphone/...LoginActivity",
+        "plus5": "same (topResumed same)"
+      },
+      "log": [
+        "15:49:13.436 window received: package=com.miui.home type=32 eventAt=1464286944 now=1464287046 tracked=com.sina.weibo trackedAt=1464251376",
+        "**没有任何 com.eg.android.AlipayGphone 的 window received 行**（own pid 日志中该包出现次数 = 0）"
+      ]
+    }
+  ],
+  "failure_state_at_15_49_43": {
+    "focus": "com.eg.android.AlipayGphone/...LoginActivity",
+    "aa_bound": "多仪·专注验证 BOUND (eventTypes 含 WINDOW_STATE_CHANGED/WINDOWS_CHANGED, notificationTimeout=100)",
+    "formal_aa": "com.duoyi.duoyi 仍 Crashed（未改）",
+    "pid": 23292,
+    "pid_stable": true,
+    "native": {
+      "enabled": true,
+      "set_count": 203,
+      "weibo_in": true,
+      "alipay_in": true,
+      "qq_in": false,
+      "wechat_in": false,
+      "expires_at": 1793866389917,
+      "expiry_future": true,
+      "last_blocked_package": "com.sina.weibo",
+      "last_blocked_at": 1793864917870
+    },
+    "notif_951101": {
+      "present": true,
+      "channel": "duoyi_focus_timer_v1",
+      "samples": [
+        "剩余 23:56",
+        "剩余 23:56"
+      ],
+      "note": "两次采样（相隔数分钟）文本相同 → 本轮**未观察到文本变化**，不判定为 ticking 或冻结（未检查 chronometer base）"
+    }
+  },
+  "conclusions_evidence_only": [
+    "L2 的失败**不在事件接收或过滤**：事件已收到(type=32)、cooldown remaining=0、非 stale；两次 attempt 都按时 scheduled(600ms) 且 fired，但两次 verification 都读到 foreground=com.sina.weibo，最终 reason=unconfirmed。缺陷位于“把自家 Focus 拉回前台/使其取得焦点”这一步。",
+    "L1 与 L2 走同一代码路径，仅前置状态不同（L1 目标为 Splash 启动中；L2 目标已有 MainTabActivity 且本应用此前就在前台）→ 说明拉回在先-前台场景下有效、在“目标已 resume 且本应用刚被压到后台”场景下两次均无效。",
+    "L3 在本轮**没有观测到 Alipay 的任何 window 事件**（服务 bound、配置 203 含 alipay、会话未过期）→ 只能表述为『events NOT OBSERVED in this run』，不能推断 ROM 从不下发。",
+    "仅新增日志，未改变订阅/能力/行为：L1 仍 PASS、L2 仍 FAIL、L3 仍 FAIL（与 v2 表现一致）→ **不可据此认为已修复**。"
+  ],
+  "cannot_determine": [
+    "L3 为何无事件：日志点在 event 到达之后，事件根本未到达与“到达前被系统丢弃”在本轮不可区分（未做系统级 a11y 追踪）",
+    "L2 拉回无效的具体原因（startActivity 被 MIUI 拦截/任务栈优先级/焦点抢占）需代码侧与系统 a11y/ATMS 侧进一步证据；本轮无 BAL 记录可用（未复采）"
+  ],
+  "cleanup": {
+    "strict": false,
+    "monitor": false,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "running": "none",
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "aa_bound": true,
+    "formal": {
+      "versionCode": 142023,
+      "untouched": true
+    },
+    "home": true,
+    "no_writes": "无 pref/store 写入、无 AppOps/secure/settings 改动、无新增授权、无 kill/force-stop、无全局清日志、未拍任何第三方截图"
+  },
+  "privacy": {
+    "public": [
+      "diagnostic.json",
+      "window-event-timeline.txt（仅自有服务行：package/type/reason/时间戳）"
+    ],
+    "scratch_only": [
+      "完整 own-pid logcat",
+      "完整 prefs（含 203 项清单）",
+      "通知全量 dumpsys"
+    ],
+    "third_party": "未读取内容、未截图、未发消息/支付"
+  }
+}

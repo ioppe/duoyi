@@ -1,0 +1,13 @@
+{
+  "scope": "Only the isolated validation package com.duoyi.duoyi.focuscheck / 多仪·专注验证",
+  "evidence_before_request": "MIUI ActivityStarterImpl logged Permission Denied Activity twice for the exact focuscheck MainActivity return intents; system Other permissions showed 后台弹出界面=拒绝.",
+  "question": "小米已明确拒绝验证包从后台显示，当前“后台弹出界面”为“拒绝”。是否允许在系统 UI 中为“多仪·专注验证”开启这一项，以完成实测？",
+  "user_selected": "允许为“多仪·专注验证”开启后台弹出界面",
+  "authorized_action": "Use the real system UI to allow only 后台弹出界面 for focuscheck, preserve this permission after testing, and retest the already installed v3 diagnostic APK to isolate the permission effect.",
+  "unchanged_boundaries": [
+    "Formal com.duoyi.duoyi and layout validation package permissions/data",
+    "Lock-screen display and other unrelated permissions",
+    "No direct AppOps or secure/settings writes, no private API or task-reordering workaround"
+  ],
+  "execution_result": "Recorded separately by the whitelist-v3-miui-authorized physical attempt; this authorization record alone is not proof the UI grant or return succeeded."
+}

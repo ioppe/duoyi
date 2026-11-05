@@ -1,0 +1,13 @@
+{
+  "recorded_at_utc": "2026-11-05T07:14:01.950250+00:00",
+  "application_id": "com.duoyi.duoyi.focuscheck",
+  "source_metadata": "whitelist-fix-v2/isolated-profile-apk.json",
+  "source_apk": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v2/build/app/outputs/flutter-apk/app-profile.apk",
+  "review_apk": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/build/app/outputs/flutter-apk/app-focuscheck-profile.apk",
+  "sha256": "3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a",
+  "size_bytes": 105691917,
+  "historical_v5_backup": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/previous-candidate-v5.apk",
+  "historical_v5_sha256": "7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f",
+  "verification": "source, review copy and recorded metadata match; previous v5 retained in scratch",
+  "installation_boundary": "Only focuscheck may be installed with -r; standard debug must never replace formal installation"
+}

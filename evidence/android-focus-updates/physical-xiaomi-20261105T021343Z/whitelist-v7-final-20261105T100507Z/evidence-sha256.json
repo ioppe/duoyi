@@ -1,0 +1,26 @@
+{
+  "original_mislabeled_index_sha256": "74663afab43e874a2eec7a9ac8ca492bdc0ea8549022f35653a576b6b58c3dcd",
+  "revision": "Original SHA text preserved in session scratch; valid JSON now records unchanged case outcomes, screenshot relocation and explicit review provenance.",
+  "files": {
+    "manual-whitelist-results.json": {
+      "sha256": "9ba1f2f41262638f83f0301950bb5509de5e073fabd83bd87f580f1b58caefb4",
+      "size_bytes": 10043
+    },
+    "own-service-timeline.txt": {
+      "sha256": "822cccd2acb8f186a94e4c44093e24d52587a74a645a8dbbff5e7a9f8c8d3d74",
+      "size_bytes": 3970
+    },
+    "screenshot-review.json": {
+      "sha256": "cee89ccb0a69a8f3ba53d00ec9a4e9b4cb80157ae2061658c9f90b7d00c06c51",
+      "size_bytes": 1317
+    },
+    "blocked-readonly-summary.json": {
+      "sha256": "4e11c9aa6b80d33b765a296dd37e532870f1820faa5163cc3938ad801519b52a",
+      "size_bytes": 1112
+    },
+    "../../../screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/strict-panel-crop.png": {
+      "sha256": "4ce0d069fcde60a0d99baffa262c32f1e5b01e09fb126edcafe7e422f4149d97",
+      "size_bytes": 255161
+    }
+  }
+}

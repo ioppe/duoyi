@@ -1,0 +1,434 @@
+{
+  "recorded_at_utc": "2026-11-05T12:36:27.467917+00:00",
+  "scope": "Changed public task evidence; excludes this index, v9 verification and delivery gate to avoid circular hashes",
+  "files": {
+    "evidence/android-focus-updates/README.md": {
+      "sha256": "6b371f6aea30a20afe997b020e4d29abd74999fc8988afa02fbcd5772f421adf",
+      "size_bytes": 22301
+    },
+    "evidence/android-focus-updates/build-verification-whitelist-v3-diagnostic.json": {
+      "sha256": "106f75396a675e00026596857dba0eebdcd2faa879cf1c4bb3c91aa52cf90a05",
+      "size_bytes": 9814
+    },
+    "evidence/android-focus-updates/build-verification-whitelist-v5-events-only.json": {
+      "sha256": "15374730e1495c65f3279691039d50cc986e87340848e36ff89184e8eb5382a6",
+      "size_bytes": 6941
+    },
+    "evidence/android-focus-updates/build-verification-whitelist-v7-final.json": {
+      "sha256": "c598ee020ddf46d9fd095d30bb60afce3d0d57d6fdee2503a9596a91184fc4f5",
+      "size_bytes": 36127
+    },
+    "evidence/android-focus-updates/build-verification-whitelist-v8-diagnostic.json": {
+      "sha256": "e6c2d8a66cd1e03e5028c09500086bfa1c516d18ca5795573f9a3c6f1bebfe27",
+      "size_bytes": 24827
+    },
+    "evidence/android-focus-updates/build-verification-whitelist-v9-final.json": {
+      "sha256": "f8d1e1780c8f71fde3d84af0ec17dbf79c9e76d4d110981f10aa1875623f3baa",
+      "size_bytes": 34081
+    },
+    "evidence/android-focus-updates/build-verification-whitelist.json": {
+      "sha256": "cc9f054a2ecc96d30c3d6da79eab40628c81f307d449de7e5a73e7325a512cf9",
+      "size_bytes": 25825
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/candidate-whitelist-review-copy.json": {
+      "sha256": "8caee45df81b795598059ed79f7826230e358511ccea1573b69841c2552d8553",
+      "size_bytes": 1135
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/candidate-whitelist-v7-review-copy.json": {
+      "sha256": "a9732c8657f79bbc85e3fb7d900e4c5af4f63bcdb321c0dbc7352cd317644ec3",
+      "size_bytes": 856
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/candidate-whitelist-v9-review-copy.json": {
+      "sha256": "68925677afb208b7f701f6f71235abca10df617696e15c3d14ff94540b4b1921",
+      "size_bytes": 887
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/main-cleanup-whitelist.json": {
+      "sha256": "c4beb2b9c94ed20cdd6f44e447196e53c0e2dc491d1e34e2ede43a780d55dc03",
+      "size_bytes": 1914
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/miui-background-popup-authorization.json": {
+      "sha256": "405e0c3d5aeb4af2d3a9d51f5651564d39defc19eec7032f4a044060b3e330ab",
+      "size_bytes": 1268
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/raw-log-storage-whitelist.json": {
+      "sha256": "3deab5287461e614e0e6532ee5752d00776a7490a06c4db0a62976bf40e0b580",
+      "size_bytes": 2142
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/spec-sync-whitelist-v6.json": {
+      "sha256": "10c1733051c9ed72875f5ddc9f187299234032fadb129a4fd39f53c1e1893278",
+      "size_bytes": 1932
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/standard-whitelist-review-copy.json": {
+      "sha256": "8bb52cd2f8bbddf58db61f0e5d39d39ec75c687acc9bf103eebd8ce1b27a9db8",
+      "size_bytes": 1105
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/standard-whitelist-v7-review-copy.json": {
+      "sha256": "5f47d2e5a1157e4f2ffb7844c0d5efd4fd74b2e9406a4db2e8c2b55f2638503d",
+      "size_bytes": 839
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/standard-whitelist-v9-review-copy.json": {
+      "sha256": "9eef6c9db656858e2946036b53d285f967d0779ebb9cc6c2aa51f95309626f00",
+      "size_bytes": 870
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/usage-access-authorization-whitelist-v7.json": {
+      "sha256": "9c42ba436ef05755101431d94bde6fde888db9879f74ceab4079c261fe832695",
+      "size_bytes": 1430
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/evidence-sha256.json": {
+      "sha256": "453ed76fe37df18e38cd6e3855a597356fa49812df760537bbd82580aa2c1438",
+      "size_bytes": 4067
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/manual-v5-notification-results.json": {
+      "sha256": "ea00c76f3efd42babf008563735a3dc450f0c4db79990f2bf754652611cae586",
+      "size_bytes": 8706
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c-end-before-reset.xml": {
+      "sha256": "4e81fd606489d12c479a826c5e610e7896678df17c12e8737b135386c2160150",
+      "size_bytes": 14277
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c-end-reset.xml": {
+      "sha256": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+      "size_bytes": 14270
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c0-focus.xml": {
+      "sha256": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+      "size_bytes": 14270
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c1-running.xml": {
+      "sha256": "ff55e48afee79cabb5e2c3fe26d7a7173883aa98956e7378ca994929f82daf91",
+      "size_bytes": 14277
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c4-after-bodytap.xml": {
+      "sha256": "91e933250f629fe4861549ec981dd8997ff42d2d9b09dea9168df3ee7573488c",
+      "size_bytes": 14277
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/end-idle.xml": {
+      "sha256": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+      "size_bytes": 14270
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/end-state.txt": {
+      "sha256": "64fb2fe47a7d6589abfab713dcca83a62aad293a8c1edec17ebc0f3d0f967362",
+      "size_bytes": 1082
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/install-v5.txt": {
+      "sha256": "781a31c82430c97897af612ece5e0ca2205e301cb5ff121ce2660541ea5182c7",
+      "size_bytes": 36
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/logcat-bodytap.txt.gz": {
+      "sha256": "8b4e3b00570828c4972f62f91ff3122da5562318d98e0e77eb1901001bcc6896",
+      "size_bytes": 8714
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/notif-951101-actions.txt": {
+      "sha256": "e69fcaaf2c9a9419599860b0d75a123310177c3093f46fb9f03397b4a81bc066",
+      "size_bytes": 312
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/notif-951101-excerpt.txt": {
+      "sha256": "b61c1af554d1396f9c4bf75f5b7c08351a74310bfa24d52d04c91a94fe387e65",
+      "size_bytes": 844
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/ocr-shade-S7.json": {
+      "sha256": "723135fe4830fe480b3b94790b93fe59d0ec4ac26a97180043d38dcf26ac48d1",
+      "size_bytes": 624
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/post-install.txt": {
+      "sha256": "25d88c4673c63aee4471d0a933e3c65324d574b17890f1b622fd319b747c459f",
+      "size_bytes": 641
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/pre-install.txt": {
+      "sha256": "2229370c1a2cc890ade9fee66ccf7c0e609b6c46e002d160c0a3ab91d9dd34ec",
+      "size_bytes": 1336
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/screenshot-review.json": {
+      "sha256": "461942b35179cc8e1b6574a26af47d22167d0e50a6c89394db262eadfffd8148",
+      "size_bytes": 1962
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/verification.json": {
+      "sha256": "51be0306cfc2b0de025124ea033146e0ad81e4795360857947c8cc92df6015fe",
+      "size_bytes": 636
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-miui-permissions-readonly-20261105T075439Z/evidence-sha256.json": {
+      "sha256": "a0535e2f12c9d814c2e62c4e8b4c36a381f600d352bf2962c04163688e5a5a51",
+      "size_bytes": 353
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-miui-permissions-readonly-20261105T075439Z/miui-permissions-readonly.json": {
+      "sha256": "72e0aa488ee60b07460cd45af00d4c5c73cce7921f0c0673817348db200acf8c",
+      "size_bytes": 3287
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-miui-permissions-readonly-20261105T075439Z/own-systemlog-excerpt.txt": {
+      "sha256": "7c1875ca7619a26413f03b71dff06c127a0b89df164bb888e67f7dff134bb5dd",
+      "size_bytes": 2484
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/manual-whitelist-followup.json": {
+      "sha256": "0a610911c4e25e3a2d34100c6bcc01d8fc87aefe918a5c540268238db6890168",
+      "size_bytes": 2795
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/raw/appops-background-start-grep.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/raw/appops-full.txt": {
+      "sha256": "a61b301d5bd01d289a666a5edf20d98be899d9f82bfc3595e621045400dbfe1a",
+      "size_bytes": 1788
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/raw/bal-check.txt": {
+      "sha256": "08d8b1bf018bbd40ec539b7f5d908bf6bd36a3b15966239f7ee9490988294f3d",
+      "size_bytes": 103
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/raw/session-and-blocker-now.txt": {
+      "sha256": "1438ca9908c25aa59ef781dc452c618cdb57c45ef23c54cd679436a3ec7aa129",
+      "size_bytes": 427
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/followup-native-race-20261105T063419Z/raw/state-attach.txt": {
+      "sha256": "86d4a386621d6ba917d8b55301dfe7738fef058de8c441600fee27b05d1d510d",
+      "size_bytes": 178
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/manual-whitelist-repro.json": {
+      "sha256": "db39305603116857581b103b2970514eab4dadde744ee3ab64aa423e5a8bcb86",
+      "size_bytes": 6197
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/aa-state-before-trimmed.txt": {
+      "sha256": "4dbd38f2bf0fddccdcb6d834a4af294b51e31594717bd8c2e33cd4142b7d2a29",
+      "size_bytes": 516
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/aa-state-now.txt": {
+      "sha256": "0d01aecde597f67aff3596f149e897f9d94e13ecdb9c66790cef63cd818277e3",
+      "size_bytes": 588
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/blocker-lines-tail.txt": {
+      "sha256": "3f96494304ed8296ea57e77460ef276971216f789b339f02901b4455061e6ef3",
+      "size_bytes": 428
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/derived-config.txt.gz": {
+      "sha256": "5a72b39de14f333a179a86aa256c168c8e3754fa81dd5545179c47e6cb1ab76e",
+      "size_bytes": 335
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/identity-end.txt": {
+      "sha256": "51f917e726df20f6ebd72f819d52af4b613cc88c8ab91567ea1126542b162f4b",
+      "size_bytes": 429
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/lock-retry.txt": {
+      "sha256": "821c499cdd9263c6cae15aad755e9b0f78b601d2fb2cea74596d92b20ad1a290",
+      "size_bytes": 411
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/native-package-membership-corrected.json": {
+      "sha256": "ce3a335a3796232fbfdcdd3bde9fa0d5eaab6c561ae1132d2114522f2f82ad6e",
+      "size_bytes": 908
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/readonly-appops.txt": {
+      "sha256": "c7b35be247060483d7d868038ec92bd318966af5cd5af7f44ba0cc1b12604280",
+      "size_bytes": 805
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-repro-20261105T061121Z/raw/repro-weibo.txt": {
+      "sha256": "4437943344dbe7da81ebe2694a36fd29ddc30d27222d38a6950ff3d61c83e5da",
+      "size_bytes": 2059
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-diagnostic-20261105T073043Z/diagnostic.json": {
+      "sha256": "d6ef5308e58913ecc58c54d1588cfde4081af5d5c6fab0e43bf44de1278baf0b",
+      "size_bytes": 6476
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-diagnostic-20261105T073043Z/safe-log-excerpt.txt": {
+      "sha256": "fb8a9a421ce607fbe0edb0c78c765f4c7c5a77f86b0d0a37f8040f75697d500d",
+      "size_bytes": 6627
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/manual-whitelist-results.json": {
+      "sha256": "c758490d860c04e907d01638f41c760862fc20dd934eea32d4178eb04b9043b0",
+      "size_bytes": 7722
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/blocker-timeline.txt": {
+      "sha256": "40233c659317a8fdc2ff9ed6fbc4d4cc2a7364b4d2493496be76dfa09c128793",
+      "size_bytes": 819
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/case2-weibo.txt": {
+      "sha256": "6daef90cc455be5431128dc6ad9a4a69204496b341c928f66753d2f08a7090a8",
+      "size_bytes": 1170
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/case3-alipay.txt": {
+      "sha256": "f12cabb27eb965e599e6cdd6180674509727288f69deb8bb1bbb28136466a9b6",
+      "size_bytes": 633
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/case4-qq.txt": {
+      "sha256": "c3a207dd7d8c816e28ae505840a1ce58f8ea290a2bd460208478c8c44d1efb43",
+      "size_bytes": 337
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/case4-wechat-and-switch.txt": {
+      "sha256": "c31180947c06ce7c7a38c8c8148301b641c7e50184bd536aa30f6e9410f5ee26",
+      "size_bytes": 543
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/case5-pause.txt": {
+      "sha256": "80f6caad2c5b003c0682dbd58d7d2556a4824d912f7887b6a1dbd49b9c61de7e",
+      "size_bytes": 819
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/derived-config-summary.txt": {
+      "sha256": "b58c2c19d5ca5b223682927941b53ea95d8d674de500aebb801c2b4868976a60",
+      "size_bytes": 536
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/raw/end-state.txt": {
+      "sha256": "9c33c0eb7f16c3dcdfb4bb9d9a32278f90c8ddc143ed662a11f4c3a569bdeff1",
+      "size_bytes": 893
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/screenshot-review.json": {
+      "sha256": "6a45e5ba311056d2ea8c224a03b3c47ad7f44347486abfe0c07d114df37fa3b5",
+      "size_bytes": 779
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-event-diagnostic-20261105T074605Z/diagnostic.json": {
+      "sha256": "fd4e927f5239c760b3c68a52723f610cf7846ab9c44e459b6f45e0e9ff02dcef",
+      "size_bytes": 7483
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-event-diagnostic-20261105T074605Z/evidence-sha256.json": {
+      "sha256": "4605a610f8ed3a22e8593bc5f95a4aaa488524489d4909d6c07a86d6088f24b7",
+      "size_bytes": 727
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-event-diagnostic-20261105T074605Z/window-event-timeline.txt": {
+      "sha256": "4d73b526b8798553697bcc2c78ed65dd7e30fcb45776c1db59cea56c29daf839",
+      "size_bytes": 2976
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-miui-authorized-20261105T080220Z/evidence-sha256.json": {
+      "sha256": "7d5e848e18f1eab4c060261c3f3ef49a11635fa64c315994a301630a09736275",
+      "size_bytes": 807
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-miui-authorized-20261105T080220Z/manual-whitelist-results.json": {
+      "sha256": "be8cd85770f043d59eb74e799b4cd6537461ed758df071a936c7af91f91887ec",
+      "size_bytes": 7485
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v3-miui-authorized-20261105T080220Z/own-service-timeline.txt": {
+      "sha256": "beb5aefcc173f18c6fdb51c770e0f5fd3c519163a285092583eb49250734b317",
+      "size_bytes": 2684
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v5-events-only-20261105T083023Z/diagnostic.json": {
+      "sha256": "25c2c10d598470247aa402e261d4e6a698783704f6eb80de8904ec5d492c7c2b",
+      "size_bytes": 7861
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v5-events-only-20261105T083023Z/hashindex.txt": {
+      "sha256": "f43870be7347e281efeb043a864681f59870d919e874096f3985c57139e7f6ae",
+      "size_bytes": 173
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v5-events-only-20261105T083023Z/own-service-timeline.txt": {
+      "sha256": "d3f4af9ff5558e95cce4ca9024de60933edc395780beb65fb53153db0a812622",
+      "size_bytes": 21413
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/blocked-readonly-summary.json": {
+      "sha256": "4e11c9aa6b80d33b765a296dd37e532870f1820faa5163cc3938ad801519b52a",
+      "size_bytes": 1112
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/evidence-sha256.json": {
+      "sha256": "633c574e28af19fe312a423d28211091dda165e4de546bb179c9cba8ab479cec",
+      "size_bytes": 1163
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/manual-whitelist-results.json": {
+      "sha256": "9ba1f2f41262638f83f0301950bb5509de5e073fabd83bd87f580f1b58caefb4",
+      "size_bytes": 10043
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/own-service-timeline.txt": {
+      "sha256": "822cccd2acb8f186a94e4c44093e24d52587a74a645a8dbbff5e7a9f8c8d3d74",
+      "size_bytes": 3970
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/screenshot-review.json": {
+      "sha256": "cee89ccb0a69a8f3ba53d00ec9a4e9b4cb80157ae2061658c9f90b7d00c06c51",
+      "size_bytes": 1317
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-controlled-20261105T121653Z/controlled-setup-blocked.json": {
+      "sha256": "7e131233fcdfc7637f341c383c9fb12b69a345eb054c1b43d8a4ed843d5f3fc1",
+      "size_bytes": 5057
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-controlled-20261105T121653Z/evidence-sha256.json": {
+      "sha256": "8ac97be5b71fe42d1f156f095b2171639ce0ec4606d2cdeb0e24c5f3c758cb3d",
+      "size_bytes": 271
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-controlled-20261105T121653Z/protections.txt": {
+      "sha256": "0ba83ad4fb3504417e4fd6527d3cf3f83523e56c5536e9ecccedc0aa9d6a6ff6",
+      "size_bytes": 604
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-diagnostic-20261105T115617Z/diagnostic.json": {
+      "sha256": "1b82df0dedc08a47b85727814daea0433bbc10ed545de6e9412be13c99727c0d",
+      "size_bytes": 8085
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-diagnostic-20261105T115617Z/evidence-sha256.json": {
+      "sha256": "c0249ce6f947a8cbbb7c2968d3265e5858c7a51c8b3e8cf6bde968f450d7dbe7",
+      "size_bytes": 301
+    },
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v8-diagnostic-20261105T115617Z/own-service-timeline.txt": {
+      "sha256": "92a68c6f810dcc4768aee4e6a6d3071c645cd20e9d197b0e5d00034fd8567600",
+      "size_bytes": 4361
+    },
+    "evidence/android-focus-updates/source-manifest-standard-whitelist-v7-final.json": {
+      "sha256": "edb69393e86cee21efc720ab593dda4e404a9acb17197f419b1dacba723f7a3e",
+      "size_bytes": 149990
+    },
+    "evidence/android-focus-updates/source-manifest-standard-whitelist-v9-final.json": {
+      "sha256": "aeef997e5dff3aa9ce168e46dc2f6fe46ce1295e8deda1548cdc1594fb5b9964",
+      "size_bytes": 149990
+    },
+    "evidence/android-focus-updates/source-manifest-standard-whitelist.json": {
+      "sha256": "edcb75bd5b928dcdf649af8198b133612b8bcc74c5ac744726e333fb073074b7",
+      "size_bytes": 149688
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist-v3-diagnostic.json": {
+      "sha256": "a21320acb43b57195ab59510e1ac362137b3bc83cb7bf5407b1fd81accbd6c19",
+      "size_bytes": 149836
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist-v5-events-only.json": {
+      "sha256": "68bb1c42ba65048c0093919c32a7985c005a7e75f7d81cf15f144db6d6312677",
+      "size_bytes": 149837
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist-v7-final.json": {
+      "sha256": "5f23f7e40f8126e6253f4d969bbb7482c1352bde63a9b79bde1a4eea542b6bed",
+      "size_bytes": 150127
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist-v8-diagnostic.json": {
+      "sha256": "1e6063ce546394defdd86e4988e722ad72dc8b5b61a56b833626c428d58707a0",
+      "size_bytes": 150132
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist-v9-final.json": {
+      "sha256": "e955712454adb54dcea35ac29a81b7e2cb94c8525fa6b8a8bb3c23924bc49fd7",
+      "size_bytes": 150127
+    },
+    "evidence/android-focus-updates/source-manifest-whitelist.json": {
+      "sha256": "e0f7ae8d8d7ead26871ff99c227c525cb31f7a811bfe1285e11fc8654a0ad218",
+      "size_bytes": 149825
+    },
+    "evidence/android-focus-updates/verification-whitelist-logs.tar.gz": {
+      "sha256": "9ad473184c2e5722f0a8d47e91fe53f618676e18dfb4748c40d5e99322834780",
+      "size_bytes": 1547446
+    },
+    "evidence/android-focus-updates/verification-whitelist-v3-diagnostic-logs.tar.gz": {
+      "sha256": "9ad7e62df8ff812829fe0c673c8e0a2087a5fdf6e32f2ae39fa10fdb55e1297d",
+      "size_bytes": 2210258
+    },
+    "evidence/android-focus-updates/verification-whitelist-v5-events-only-logs.tar.gz": {
+      "sha256": "d10c9a1444618c3b180b94ea624c41a2ac5f6d83a1dc6c91aa7e03bb6a07a9f6",
+      "size_bytes": 15615
+    },
+    "evidence/android-focus-updates/verification-whitelist-v7-final-logs.tar.gz": {
+      "sha256": "e85739b34569fc607dd2c2dfa362cfc0ddfb1b6c40f09798139a96333b8dd2c7",
+      "size_bytes": 374489
+    },
+    "evidence/android-focus-updates/verification-whitelist-v8-diagnostic-logs.tar.gz": {
+      "sha256": "964fea6b77465e916836362baa60f82cca92de0707e37c0e0213d950c300dce1",
+      "size_bytes": 25839
+    },
+    "evidence/android-focus-updates/verification-whitelist-v9-final-logs.tar.gz": {
+      "sha256": "4235f3b94464fbd05f98cfa1d831c473ff68adb1d724f360aa38763410bba87f",
+      "size_bytes": 46232
+    },
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/01-focus-page-idle-after-v5-recheck.png": {
+      "sha256": "0fd6bbc923ac128a07babdad77f00cd161ea9c17546cf97b1820cdd2ea535a38",
+      "size_bytes": 220558
+    },
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/02-focus-notification-remaining-23m40.png": {
+      "sha256": "4b1dc264a763893658d97be7013f427ccae20c8d6bea2a56edad6fddb3608945",
+      "size_bytes": 94538
+    },
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/03-focus-notification-remaining-20m58.png": {
+      "sha256": "b1f19458e0dfdf33bb040dc3c595e4fa84edf473a5c1b5dfee650c41304f281e",
+      "size_bytes": 42552
+    },
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v2-recheck-20261105T071213Z/01-focus-page-idle-strict-off-cropped.png": {
+      "sha256": "4dff9da576df8094cd11bcceaec72f59e62e47475080e7239cc92d9baf2cf42f",
+      "size_bytes": 231811
+    },
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/strict-panel-crop.png": {
+      "sha256": "4ce0d069fcde60a0d99baffa262c32f1e5b01e09fb126edcafe7e422f4149d97",
+      "size_bytes": 255161
+    }
+  }
+}

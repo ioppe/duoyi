@@ -1,0 +1,273 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v7-final-20261105T100507Z",
+  "phase": "v7 final strict-focus matrix (events-only AA 32|4194304, canRetrieve=false, UsageAccess ON for focuscheck)",
+  "serial": "2df52c4c",
+  "times": {
+    "host_utc": {
+      "keyguard_check": "2026-11-05T11:35:40Z",
+      "install": "2026-11-05T11:35:57Z",
+      "cases": "11:39:46-11:45:00Z",
+      "end": "2026-11-05T11:45:54Z"
+    },
+    "phone_local": {
+      "keyguard_check": "19:35:40",
+      "install": "19:35:57",
+      "C1": "19:39:46.90",
+      "C2": "19:39:52.26",
+      "C3": "19:40:07.66",
+      "C4": "19:40:15.50",
+      "C5": "19:40:44",
+      "C6a": "19:40:52",
+      "C6b": "19:41:00",
+      "C6c": "19:41:07",
+      "C7pause": "19:41:26",
+      "C7pausedWeibo": "19:42:00",
+      "C7continue": "19:42:39",
+      "C7retest": "19:43:43",
+      "C8": "19:44:18-19:44:58",
+      "end": "19:45:53"
+    }
+  },
+  "device_precheck": {
+    "mWakefulness": "Awake",
+    "deviceLocked": 0,
+    "isKeyguardShowing": false,
+    "mCurrentFocus": "com.miui.home/.Launcher",
+    "note": "user manually unlocked; verified fresh before install; no wake/bypass by agent"
+  },
+  "artifact": {
+    "apk": "android-candidate-whitelist-v7-final/build/app/outputs/flutter-apk/app-profile.apk",
+    "size_bytes": 105691917,
+    "host_sha256": "e6fcc9e41d51b54d5a2fb3da4fff85e5e531d94cc7adffd0dcbeab69d8222369",
+    "device_base_apk_sha256_before": "51b8c6209a213d8ea2113af82990c97fbed2c8e6f0ff726b5e7a4d503ebb4620",
+    "device_base_apk_sha256_after": "e6fcc9e41d51b54d5a2fb3da4fff85e5e531d94cc7adffd0dcbeab69d8222369",
+    "binding": "host==device after install -r (no -d/-g)",
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "installer": "install -r only focuscheck",
+    "firstInstallTime_preserved": "2026-11-05 10:30:45",
+    "lastUpdateTime_after": "2026-11-05 19:35:57",
+    "aapt_badging": "com.duoyi.duoyi.focuscheck 140023/2.0.0; launchable-activity com.duoyi.duoyi.MainActivity",
+    "a11y_xml_in_apk": {
+      "file": "res/xml/duoyi_focus_blocker_accessibility_service.xml",
+      "accessibilityEventTypes": "0x00400020 (TYPE_WINDOW_STATE_CHANGED|TYPE_WINDOWS_CHANGED)",
+      "canRetrieveWindowContent": false,
+      "notificationTimeout": 100,
+      "accessibilityFeedbackType": "0x10 (GENERIC)",
+      "accessibilityFlags": "0x10"
+    },
+    "v4_installed": false
+  },
+  "permissions": {
+    "usage_access": {
+      "authorization": "允许为“多仪·专注验证”开启使用情况访问并保留",
+      "executed_via": "真实系统 UI（设置→应用使用情况数据→多仪·专注验证→开关→风险页勾选+3s倒计时→确定）",
+      "before": "GET_USAGE_STATS: No operations / Default mode: default",
+      "after": "GET_USAGE_STATS: allow（switch=true）",
+      "only_this_app_changed": true,
+      "retained": true,
+      "no_appops_write": true
+    },
+    "background_popup": {
+      "state": "始终允许（上轮经用户授权、本轮未进入该页、未改动）"
+    },
+    "other_permissions": "未改动、未枚举公开"
+  },
+  "accessibility_actual": {
+    "bound": "多仪·专注验证 BOUND",
+    "eventTypes": "[TYPE_WINDOW_STATE_CHANGED, TYPE_WINDOWS_CHANGED] (=32|4194304, 2 types as designed)",
+    "rebind": "install 后由启动本应用自动重绑；未重新授权/写设置",
+    "formal_app": "com.duoyi.duoyi 仍 Crashed（未改）",
+    "pid": "28377",
+    "uid": "10565"
+  },
+  "session": {
+    "created": "real UI",
+    "strict": true,
+    "monitor": true,
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "whitelist_edited": false,
+    "totalSeconds": 1500,
+    "endsAtMs": 1793880271929,
+    "native_enabled": true,
+    "native_count": 203,
+    "native_has_weibo": true,
+    "native_has_alipay": true,
+    "native_has_scanner": true,
+    "native_has_qq": false,
+    "native_has_wechat": false
+  },
+  "cases": [
+    {
+      "id": "C1",
+      "what": "weibo FIRST (.SplashActivity)",
+      "at": "19:39:46.90",
+      "foreground": {
+        "plus2": "com.duoyi.duoyi.focuscheck/MainActivity",
+        "plus5": "com.duoyi.duoyi.focuscheck/MainActivity (topResumed same t11123)"
+      },
+      "verdict": "PASS",
+      "evidence": [
+        "19:39:47.096 usage foreground detected: package=com.sina.weibo",
+        "19:39:47.100 requested weibo (attempt 1/1) awaiting confirmation",
+        "19:39:47.264 cancelled pending: reason=config-changed deferred=com.sina.weibo"
+      ]
+    },
+    {
+      "id": "C2",
+      "what": "weibo REOPEN (existing MainTab)",
+      "at": "19:39:52.26",
+      "foreground": {
+        "plus2": "focuscheck/MainActivity",
+        "plus5": "focuscheck/MainActivity"
+      },
+      "verdict": "PASS",
+      "evidence": [
+        "19:39:52.508 requested weibo (attempt 1/2)",
+        "19:39:52.570 cancelled pending: reason=config-changed deferred=none"
+      ]
+    },
+    {
+      "id": "C3",
+      "what": "alipay FIRST from HOME (pre: locked=0/keyguard=false/launcher)",
+      "at": "19:40:07.66",
+      "foreground": {
+        "plus2": "com.eg.android.AlipayGphone/com.alipay.mobile.nebulax.xriver.activity.XRiverActivity",
+        "plus5": "same (topResumed same t11121)"
+      },
+      "verdict": "FAIL",
+      "own_log": "0 行含 AlipayGphone（无 usage foreground detected、无 requested、无 confirmed）"
+    },
+    {
+      "id": "C4",
+      "what": "alipay REOPEN",
+      "at": "19:40:15.50",
+      "foreground": {
+        "plus2": "AlipayGphone/XRiverActivity",
+        "plus5": "same"
+      },
+      "verdict": "FAIL",
+      "own_log": "AlipayGphone 行数 0"
+    },
+    {
+      "id": "C5",
+      "what": "weibo->alipay 600ms cross-package",
+      "at": "19:40:44",
+      "foreground": {
+        "plus2": "AlipayGphone/XRiverActivity",
+        "plus5": "same (t11121)"
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "id": "C6",
+      "what": "allowed controls + quick switch",
+      "verdict": "PASS",
+      "QQ": {
+        "at": "19:40:52",
+        "plus5": "com.tencent.mobileqq/com.tencent.mobileqq.activity.SplashActivity"
+      },
+      "WeChat": {
+        "at": "19:41:00",
+        "plus5": "com.tencent.mm/com.tencent.mm.ui.chatting.variants.ChattingMainUI"
+      },
+      "alipay_to_QQ_350ms": {
+        "at": "19:41:07",
+        "plus2": "mobileqq/SplashActivity",
+        "plus5": "mobileqq/SplashActivity",
+        "steal": false
+      }
+    },
+    {
+      "id": "C7",
+      "what": "real UI pause -> release -> continue -> re-expect pull-back",
+      "verdict": "SPLIT",
+      "pause": {
+        "at": "19:41:26",
+        "observed": "pause 后启动微博：+2/+5 均为 com.sina.weibo/MainTabActivity（**放行成立**，因运行态下微博本会被拉回）",
+        "verdict": "PASS"
+      },
+      "continue": {
+        "at": "19:42:39",
+        "observed": "点击继续后快照 isRunning=true type=0 剩余24:08（确认已恢复运行）；但 19:42:39 与 19:43:43 两次运行态启动微博，+2/+5 均停留 com.sina.weibo/.MainTabActivity，未拉回",
+        "verdict": "FAIL(异常)",
+        "evidence": [
+          "19:42:42.175 usage monitor started: reason=config-changed",
+          "19:42:45.412 usage monitor stopped: reason=service-destroyed",
+          "19:42:49.190 service connected; cleared expired=false, enabled=true",
+          "19:42:49.190 usage monitor started: reason=service-connected",
+          "native 复核: enabled=true expires_at=1793880420162 count=203 weibo∈",
+          "19:43:43 之后 own log 无任何 weibo window/US 记录"
+        ],
+        "note": "该异常出现在 pause/continue 之后且伴随 AA service-destroyed；本报告只记录事实，不推断根因、不改源码"
+      }
+    },
+    {
+      "id": "C8",
+      "what": "real UI reset -> release",
+      "at": "19:44:18-19:44:58",
+      "observed": "重置(25:00)后启动微博：+2/+5 均 MainTabActivity（放行）",
+      "verdict": "PASS"
+    }
+  ],
+  "cleanup": {
+    "session": "reset via real UI → 已暂停 25:00",
+    "switches": "OFF/OFF",
+    "whitelist": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ],
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "aa": "BOUND，2 类 eventTypes 保留",
+    "usage_access": "allow 保留",
+    "background_popup": "始终允许（未改动）",
+    "formal": {
+      "versionCode": 142023,
+      "firstInstallTime": "2026-10-23 14:39:35",
+      "lastUpdateTime": "2026-11-04 19:21:34",
+      "apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+      "untouched": true
+    },
+    "layoutcheck": {
+      "versionCode": 140023,
+      "untouched": true
+    },
+    "globals": {
+      "wm_size": "1200x2670",
+      "density": "520",
+      "font_scale": "1.25",
+      "screen_off_timeout": "600000"
+    },
+    "device": "HOME",
+    "host": "未起 server/reverse；未改源码/Git；无全局清日志"
+  },
+  "privacy": {
+    "public": [
+      "manual-whitelist-results.json",
+      "own-service-timeline.txt（raw 逐行 verbatim）",
+      "evidence-sha256.json",
+      "../../../screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/whitelist-v7-final-20261105T100507Z/strict-panel-crop.png（cropped, own panel only）"
+    ],
+    "private": {
+      "original_screenshot": "scratch only: shots-panel.png (1200x2670)",
+      "crop_box": "(30,180)-(1170,2500) → 1140x2320",
+      "crop_sha256": "4ce0d069fcde60a0d99baffa262c32f1e5b01e09fb126edcafe7e422f4149d97"
+    },
+    "not_public": [
+      "完整 logcat/prefs/系统 dump",
+      "其他权限清单",
+      "第三方 UI 内容/截图"
+    ]
+  },
+  "evidence_revision": {
+    "original_report_sha256": "e0441f04e9b0f47965a9b479da5092f8f8c8c21b3c18bed9b4e2509e0e2245cb",
+    "changes": "Move the unchanged screenshot to evidence/screenshots, record visual/pixel review, and replace the mislabeled SHA text with valid JSON. Case outcomes remain unchanged.",
+    "screenshot_review": "screenshot-review.json"
+  }
+}

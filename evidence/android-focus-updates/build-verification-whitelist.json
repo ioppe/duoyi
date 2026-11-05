@@ -1,0 +1,479 @@
+{
+  "recorded_at_utc": "2026-11-05T07:14:03.557480+00:00",
+  "branch": "fix/android-focus-updates-notifications",
+  "source_head_at_snapshot": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+  "purpose": "Strict-focus whitelist return: fixed global cooldown, event-armed deferred check, bounded return verification and observed foreground confirmation",
+  "source_manifest": "source-manifest-whitelist.json",
+  "source_manifest_sha256": "e0f7ae8d8d7ead26871ff99c227c525cb31f7a811bfe1285e11fc8654a0ad218",
+  "standard_source_manifest": "source-manifest-standard-whitelist.json",
+  "standard_source_manifest_sha256": "edcb75bd5b928dcdf649af8198b133612b8bcc74c5ac744726e333fb073074b7",
+  "files_checked": 1270,
+  "source_mismatches": [],
+  "delta_from_v5": [
+    "android/app/src/main/kotlin/com/duoyi/duoyi/DuoyiFocusBlockerAccessibilityService.kt",
+    "android/app/src/main/kotlin/com/duoyi/duoyi/FocusBlockerBouncePolicy.kt",
+    "android/app/src/main/kotlin/com/duoyi/duoyi/MainActivity.kt",
+    "android/app/src/test/kotlin/com/duoyi/duoyi/FocusBlockerBouncePolicyTest.kt",
+    "docs/android-focus-updates.md",
+    "docs/manual-regression-checklist.md",
+    "test/services/focus_distraction_static_test.dart"
+  ],
+  "automatic_checks": {
+    "generated_at_utc": "2026-11-05T07:12:00Z",
+    "phase": "whitelist-v2 final",
+    "repo": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix",
+    "head": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+    "branch": "fix/android-focus-updates-notifications",
+    "verification_copy": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2",
+    "immutable_copy": true,
+    "toolchain": {
+      "flutter": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+      "dart_adjacent": true,
+      "java_home": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+      "android_home": "/Users/sky/Library/Android/sdk",
+      "gradle_user_home": "/Users/sky/Library/Developer/duoyi/gradle",
+      "flutter_storage_base_url": "https://storage.flutter-io.cn",
+      "TZ": "UTC"
+    },
+    "source_manifest": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2-source-manifest.json",
+    "source_manifest_sha256": "edcb75bd5b928dcdf649af8198b133612b8bcc74c5ac744726e333fb073074b7",
+    "source_files": 1270,
+    "source_manifest_head": "cdee4e44e932e8c85a8fb153d2fb405db41c90c1",
+    "source_manifest_identity_changes": [],
+    "repo_copy_drift": {
+      "checked_files": 1270,
+      "copy_missing": 0,
+      "copy_hash_mismatch": 0,
+      "repo_mismatch_pre_and_post": 0,
+      "generated_only_after_run": [
+        "android/local.properties (flutter version fields, not in manifest)",
+        "build/config/client-defines.json (not in manifest)",
+        "build/ outputs"
+      ],
+      "verdict": "no source drift: 1270/1270 identical to manifest and to repo working tree before and after all checks and the build"
+    },
+    "lock_before_after": {
+      "required": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "before": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "after": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+      "unchanged": true,
+      "enforce_lockfile": true
+    },
+    "checks": [
+      {
+        "name": "pub_get",
+        "command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter pub get --enforce-lockfile",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/pub-get.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "Got dependencies! lock unchanged",
+        "duration_seconds": 4.37
+      },
+      {
+        "name": "targeted_flutter_test",
+        "command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter test --no-pub --reporter expanded test/services/focus_distraction_static_test.dart test/providers/pomodoro_distraction_lifecycle_test.dart test/providers/pomodoro_provider_test.dart test/services/focus_native_event_session_test.dart test/models/pomodoro_config_test.dart test/services/android_deep_link_routing_test.dart",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/targeted-flutter.log",
+        "exit_code": 0,
+        "passed": 53,
+        "failed": 0,
+        "result": "All tests passed! (measured this run)",
+        "duration_seconds": 8.23
+      },
+      {
+        "name": "full_flutter_test",
+        "command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter test --no-pub --reporter expanded",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/full-flutter.log",
+        "exit_code": 0,
+        "passed": 2870,
+        "failed": 0,
+        "result": "All tests passed! (measured this run, not inherited)",
+        "duration_seconds": 260.58
+      },
+      {
+        "name": "analyze",
+        "command": "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter analyze --no-pub",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/analyze.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "No issues found! (8.4s)",
+        "duration_seconds": 9.05
+      },
+      {
+        "name": "format_check",
+        "command": "/Users/sky/Library/Developer/duoyi/dart-3.44.1/bin/dart format --output=none --set-exit-if-changed test/services/focus_distraction_static_test.dart",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/format.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "Formatted 1 file (0 changed)",
+        "duration_seconds": 0.12
+      },
+      {
+        "name": "standard_debug_build",
+        "command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-build.log",
+        "exit_code": 0,
+        "passed": null,
+        "failed": null,
+        "result": "Built build/app/outputs/flutter-apk/app-debug.apk",
+        "duration_seconds": 38.24,
+        "metadata": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk.json"
+      }
+    ],
+    "standard_debug_apk": {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2/build/app/outputs/flutter-apk/app-debug.apk",
+      "size_bytes": 160504824,
+      "sha256": "2d1562eeda5aa44d3c52c2c55bc52351f1e050ab41dc699b2126aac67692b055",
+      "application_id": "com.duoyi.duoyi",
+      "build_mode": "debug",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "flutter_deeplinking_enabled": false,
+      "metadata_json": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk.json",
+      "evidence_files": {
+        "badging": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-badging.txt",
+        "apk_manifest_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-manifest-xmltree.txt",
+        "payload_entries": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-payload-entries.txt",
+        "signature": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-signature.txt",
+        "note": "standard-debug-* names used so the shared log dir's candidate/profile artifacts (apk-aapt-badging.txt, apk-manifest-xmltree.txt) cannot overwrite this APK's evidence"
+      }
+    },
+    "scaffolding_fix": {
+      "reason": "copy lacks android/gradlew + gradle/wrapper/gradle-wrapper.jar (gitignored, absent from 1270 manifest)",
+      "action": "copied android/gradlew and android/gradle/wrapper/gradle-wrapper.jar from source repo into the copy; local.properties already present",
+      "sha256": {
+        "gradlew": "ec56c02543666d92d9ac5ae7fcc48f88ce4de0deb8b7f9b39928ca46f68c1b2b",
+        "gradle-wrapper.jar": "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da"
+      },
+      "evidence": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/scaffolding-copy.txt"
+    },
+    "not_run": {
+      "adb_physical": "none; device locked, no physical PASS claimed",
+      "backend": "unchanged, not rerun",
+      "native_junit": "not rerun here (candidate runner scope)",
+      "install": "APK not installed, not copied to repo"
+    },
+    "repo_state_untouched": "no source edits, no git writes, no ADB; repo working tree set unchanged, only generated build artifacts inside the v2 copy",
+    "shared_log_dir_note": "log dir also holds candidate-runner artifacts (candidate-*, native-junit-*, isolated-profile-*, build-summary.json); only pub-get/targeted-flutter/full-flutter/analyze/format/standard-debug-build + standard-debug-apk-* belong to this standard v2 run"
+  },
+  "native_junit": {
+    "exit_code": 0,
+    "command": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/android/gradlew -p /Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v2/android :app:testDebugUnitTest --console=plain",
+    "workdir": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-android-focus-fix/android",
+    "duration_seconds": 65,
+    "source": "measured from ALL TEST-*.xml in this run (no v1 inheritance)",
+    "totals": {
+      "tests": 77,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "passed": 77,
+    "suites": [
+      {
+        "name": "com.duoyi.duoyi.DuoyiCalendarMonthTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.082,
+        "file": "TEST-com.duoyi.duoyi.DuoyiCalendarMonthTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.003,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerComponentsTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.008,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerComponentsTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.FocusBlockerExpiryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.001,
+        "file": "TEST-com.duoyi.duoyi.FocusBlockerExpiryTest.xml"
+      },
+      {
+        "name": "com.duoyi.duoyi.services.FocusTimerNotificationModelTest",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "time_seconds": 0.027,
+        "file": "TEST-com.duoyi.duoyi.services.FocusTimerNotificationModelTest.xml"
+      }
+    ],
+    "failures": [],
+    "policy_suite": {
+      "name": "com.duoyi.duoyi.FocusBlockerBouncePolicyTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 0.003,
+      "file": "TEST-com.duoyi.duoyi.FocusBlockerBouncePolicyTest.xml"
+    }
+  },
+  "apks": [
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-candidate-whitelist-v2/build/app/outputs/flutter-apk/app-profile.apk",
+      "application_id": "com.duoyi.duoyi.focuscheck",
+      "build_mode": "profile",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 105691917,
+      "sha256": "3783a42ae10ecdd23ce50a25c74db8d803b5ca41658b7c9f67f31b23056b7f9a",
+      "build_exit_code": 0,
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "certificate_dn": "C=US, O=Android, CN=Android Debug",
+      "flutter_payload_entries": [
+        {
+          "entry": "lib/arm64-v8a/libapp.so",
+          "abi": "arm64-v8a",
+          "size_bytes": 23135120,
+          "kind": "flutter_aot"
+        },
+        {
+          "entry": "lib/arm64-v8a/libflutter.so",
+          "abi": "arm64-v8a",
+          "size_bytes": 12401088,
+          "kind": "flutter_runtime"
+        },
+        {
+          "entry": "lib/arm64-v8a/libvmservice_snapshot.so",
+          "abi": "arm64-v8a",
+          "size_bytes": 1704848,
+          "kind": "flutter_runtime"
+        }
+      ],
+      "aot_abi": [
+        "arm64-v8a"
+      ],
+      "aot_arm64_only": true,
+      "other_abi_plugin_entries": [
+        {
+          "entry": "lib/arm64-v8a/libdartjni.so",
+          "abi": "arm64-v8a",
+          "size_bytes": 97112,
+          "kind": "plugin_prebuilt"
+        },
+        {
+          "entry": "lib/arm64-v8a/libdatastore_shared_counter.so",
+          "abi": "arm64-v8a",
+          "size_bytes": 7112,
+          "kind": "plugin_prebuilt"
+        },
+        {
+          "entry": "lib/armeabi-v7a/libdartjni.so",
+          "abi": "armeabi-v7a",
+          "size_bytes": 57044,
+          "kind": "plugin_prebuilt"
+        },
+        {
+          "entry": "lib/armeabi-v7a/libdatastore_shared_counter.so",
+          "abi": "armeabi-v7a",
+          "size_bytes": 4416,
+          "kind": "plugin_prebuilt"
+        },
+        {
+          "entry": "lib/x86_64/libdartjni.so",
+          "abi": "x86_64",
+          "size_bytes": 99128,
+          "kind": "plugin_prebuilt"
+        },
+        {
+          "entry": "lib/x86_64/libdatastore_shared_counter.so",
+          "abi": "x86_64",
+          "size_bytes": 6224,
+          "kind": "plugin_prebuilt"
+        }
+      ],
+      "other_abi_note": "armeabi-v7a and x86_64 carry only prebuilt plugin libs (libdartjni, libdatastore_shared_counter); no Flutter AOT/runtime there. Actual aapt badging therefore lists native-code: arm64-v8a, armeabi-v7a, x86_64.",
+      "native_code_abis_declared_in_badging": [
+        "arm64-v8a",
+        "armeabi-v7a",
+        "x86_64"
+      ],
+      "launchable_activity": "com.duoyi.duoyi.MainActivity",
+      "application_label": "多仪·专注验证",
+      "min_sdk": 24,
+      "target_sdk": 36,
+      "compile_sdk": 36,
+      "platform_build_version_code": 36,
+      "sdk_used": {
+        "aapt": "/Users/sky/Library/Android/sdk/build-tools/35.0.0/aapt",
+        "apksigner_jar": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar",
+        "java": "JDK 17"
+      },
+      "dart_define_evidence": {
+        "requested": {
+          "DUOYI_SERVER_URL": "http://127.0.0.1:18763"
+        },
+        "wrapper_injected_from_file": {
+          "path": "build/config/client-defines.json",
+          "DUOYI_SERVER_URL": "https://todo.skydrow.site"
+        },
+        "effective_value": "http://127.0.0.1:18763",
+        "proof": "strings lib/arm64-v8a/libapp.so shows \"http://127.0.0.1:18763\" only; \"todo.skydrow.site\" absent",
+        "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/libapp-so-strings-sample.txt",
+        "evidence_line": "58967"
+      },
+      "main_activity_metadata": {
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "merged_manifest": {
+            "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/merged-profile-main-manifest.xml",
+            "lines": "82-83",
+            "snippet": "<meta-data android:name=\"flutter_deeplinking_enabled\" android:value=\"false\" />"
+          },
+          "actual_apk_aapt_xmltree": {
+            "evidence_file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/apk-manifest-xmltree.txt",
+            "lines": "90-91",
+            "snippet": "android:name=\"flutter_deeplinking_enabled\" / android:value=(type 0x12)0x0"
+          }
+        }
+      },
+      "evidence_files": {
+        "aapt_badging": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/apk-aapt-badging.txt",
+        "apk_manifest_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/apk-manifest-xmltree.txt",
+        "signature": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/apk-signature.txt",
+        "payload": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/apk-payload-entries.txt",
+        "build_log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/isolated-profile-build.log",
+        "resolved_command": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/isolated-profile-build-dryrun.json"
+      },
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libapp.so",
+        "lib/arm64-v8a/libflutter.so"
+      ],
+      "raw_metadata_archive_member": "final-v2/isolated-profile-apk.json"
+    },
+    {
+      "absolute_path": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2/build/app/outputs/flutter-apk/app-debug.apk",
+      "application_id": "com.duoyi.duoyi",
+      "build_mode": "debug",
+      "version_name": "2.0.0",
+      "version_code": 140023,
+      "size_bytes": 160504824,
+      "sha256": "2d1562eeda5aa44d3c52c2c55bc52351f1e050ab41dc699b2126aac67692b055",
+      "build_exit_code": 0,
+      "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+      "certificate": {
+        "dn": "C=US, O=Android, CN=Android Debug",
+        "sha1": "7fc1309624dd34dc67a2074c64bfd6436d3830a8",
+        "md5": "e78ed34c48c62eaca6cc41d21a07ab74",
+        "is_debug_key": true,
+        "evidence": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-signature.txt",
+        "tool": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar via JDK17 java -jar (wrapper known broken)"
+      },
+      "main_activity_metadata": {
+        "main_activity": "com.duoyi.duoyi.MainActivity",
+        "flutter_deeplinking_enabled": {
+          "value": false,
+          "merged_manifest_evidence": {
+            "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2/build/app/intermediates/packaged_manifests/debug/processDebugManifestForPackage/AndroidManifest.xml",
+            "line": 82,
+            "text": "android:name=\"flutter_deeplinking_enabled\" android:value=\"false\""
+          },
+          "actual_apk_xmltree_evidence": {
+            "file": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-manifest-xmltree.txt",
+            "line": 90,
+            "text": "A: android:name(0x01010003)=\"flutter_deeplinking_enabled\" (Raw: \"flutter_deeplinking_enabled\") | A: android:value(0x01010024)=(type 0x12)0x0"
+          }
+        }
+      },
+      "sdk": {
+        "compile_sdk": 36,
+        "target_sdk": 36,
+        "min_sdk": 24,
+        "aapt": "/Users/sky/Library/Android/sdk/build-tools/35.0.0/aapt",
+        "apksigner_jar": "/Users/sky/Library/Android/sdk/build-tools/36.0.0/lib/apksigner.jar",
+        "java": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home"
+      },
+      "flutter_payload_entries": {
+        "arm64_v8a_libs": [
+          "lib/arm64-v8a/libflutter.so",
+          "lib/arm64-v8a/libdartjni.so",
+          "lib/arm64-v8a/libdatastore_shared_counter.so",
+          "lib/arm64-v8a/libVkLayer_khronos_validation.so"
+        ],
+        "flutter_assets_dir_entries": 95,
+        "dart_runtime": [
+          "assets/flutter_assets/kernel_blob.bin (103628672 B)",
+          "assets/flutter_assets/isolate_snapshot_data (11093091 B)",
+          "assets/flutter_assets/vm_snapshot_data (13646 B)"
+        ],
+        "evidence": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-payload-entries.txt"
+      },
+      "build": {
+        "command": "python3 scripts/flutter_with_config.py build apk --debug --no-pub --target-platform android-arm64",
+        "effective_command": "flutter build apk --dart-define-from-file=build/config/client-defines.json --debug --no-pub --target-platform android-arm64",
+        "workdir": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/android-standard-whitelist-v2",
+        "exit_code": 0,
+        "duration_seconds": 38.24,
+        "gradle_task": "assembleDebug 36.6s",
+        "log": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-build.log",
+        "dry_run": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/build-dry-run.json",
+        "config": "public deployment profile, no initial fixture define",
+        "public_defines": {
+          "DUOYI_SERVER_URL": "https://todo.skydrow.site",
+          "DUOYI_UPDATE_REPOSITORY": "ioppe/duoyi",
+          "DUOYI_WEB_TARGET": "desktop"
+        },
+        "scaffolding_fix": {
+          "reason": "copy lacks android/gradlew + gradle/wrapper/gradle-wrapper.jar (gitignored, absent from 1270 manifest)",
+          "action": "copied android/gradlew and android/gradle/wrapper/gradle-wrapper.jar from source repo into the copy; local.properties already present",
+          "sha256": {
+            "gradlew": "ec56c02543666d92d9ac5ae7fcc48f88ce4de0deb8b7f9b39928ca46f68c1b2b",
+            "gradle-wrapper.jar": "16caeaf66d57a0d1d2087fef6a97efa62de8da69afa5b908f40db35afc4342da"
+          },
+          "evidence": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/scaffolding-copy.txt"
+        }
+      },
+      "install_performed": false,
+      "formal_install_warning": "debug build, debug cert (CN=Android Debug) - must never be installed as the formal release",
+      "generated_at_utc": "2026-11-05T07:10:42Z",
+      "evidence_files": {
+        "badging": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-badging.txt",
+        "apk_manifest_xmltree": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-manifest-xmltree.txt",
+        "payload_entries": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-payload-entries.txt",
+        "signature": "/Users/sky/Documents/.pi-desktop/data/scratch/0ce5368b-4129-4faf-bd6d-154cba571b08/physical-xiaomi-20261105T021343Z/whitelist-fix-v2/standard-debug-apk-signature.txt",
+        "note": "standard-debug-* names used so the shared log dir's candidate/profile artifacts (apk-aapt-badging.txt, apk-manifest-xmltree.txt) cannot overwrite this APK's evidence"
+      },
+      "verified_flutter_payload_entries": [
+        "lib/arm64-v8a/libflutter.so",
+        "assets/flutter_assets/kernel_blob.bin"
+      ],
+      "raw_metadata_archive_member": "final-v2/standard-debug-apk.json"
+    }
+  ],
+  "pubspec_lock_sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "inherited_unchanged_checks": {
+    "backend_unittest": {
+      "passed": 317,
+      "failed": 0,
+      "backend_files_compared": 14,
+      "hashes_unchanged": true,
+      "evidence": "build-verification.json and verification-logs.tar.gz",
+      "note": "Backend unchanged; not rerun for whitelist-native fix."
+    }
+  },
+  "logs_archive": "verification-whitelist-logs.tar.gz",
+  "logs_archive_sha256": "9ad473184c2e5722f0a8d47e91fe53f618676e18dfb4748c40d5e99322834780",
+  "device_claim_boundary": "Automatic results do not prove physical returns. Actual Weibo/Alipay returns and QQ/WeChat allow controls are recorded separately. Never install standard debug APK over the production app."
+}

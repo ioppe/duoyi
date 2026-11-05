@@ -1,0 +1,20 @@
+{
+  "source": "Complete verbatim lines from private raw log; no event text, nodes or third-party UI",
+  "original_partial_timeline_sha256": "a52d6c7943c07851ec44c529854c4fb4cc7112281193a241d4435b07f4bc32d0",
+  "private_raw_sha256": {
+    "log-own.txt": "0784fa3e1bf5f75f54efff906b5c55f0504a830bfcc91445221cc2c7dcdc71b5",
+    "L1-L2-L3-service-log.txt": "e6f06afc3c360f3c47c0db586594b40ff9d8143fdf185cfcba52d9cda1baab9a"
+  },
+  "restored_rows": 16,
+  "rows_extended_from_original": 2,
+  "files": {
+    "manual-whitelist-results.json": {
+      "sha256": "be8cd85770f043d59eb74e799b4cd6537461ed758df071a936c7af91f91887ec",
+      "size_bytes": 7485
+    },
+    "own-service-timeline.txt": {
+      "sha256": "beb5aefcc173f18c6fdb51c770e0f5fd3c519163a285092583eb49250734b317",
+      "size_bytes": 2684
+    }
+  }
+}

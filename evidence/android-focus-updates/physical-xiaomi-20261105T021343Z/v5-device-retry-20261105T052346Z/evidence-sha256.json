@@ -1,0 +1,24 @@
+{
+  "scope": "This reconnected physical-test attempt only; excludes self and verification result. Updated losslessly for gzip raw-log storage; historical verification.json retains its original observation time. See ../raw-log-storage-whitelist.json.",
+  "sha256": {
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/manual-v5-notification-results.json": "ea00c76f3efd42babf008563735a3dc450f0c4db79990f2bf754652611cae586",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c-end-before-reset.xml": "4e81fd606489d12c479a826c5e610e7896678df17c12e8737b135386c2160150",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c-end-reset.xml": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c0-focus.xml": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c1-running.xml": "ff55e48afee79cabb5e2c3fe26d7a7173883aa98956e7378ca994929f82daf91",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/c4-after-bodytap.xml": "91e933250f629fe4861549ec981dd8997ff42d2d9b09dea9168df3ee7573488c",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/end-idle.xml": "0e4d6ab8c0d3d2af396aca489b1c916a7185403c304ccc234f6a1889c91ee134",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/end-state.txt": "64fb2fe47a7d6589abfab713dcca83a62aad293a8c1edec17ebc0f3d0f967362",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/install-v5.txt": "781a31c82430c97897af612ece5e0ca2205e301cb5ff121ce2660541ea5182c7",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/logcat-bodytap.txt.gz": "8b4e3b00570828c4972f62f91ff3122da5562318d98e0e77eb1901001bcc6896",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/notif-951101-actions.txt": "e69fcaaf2c9a9419599860b0d75a123310177c3093f46fb9f03397b4a81bc066",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/notif-951101-excerpt.txt": "b61c1af554d1396f9c4bf75f5b7c08351a74310bfa24d52d04c91a94fe387e65",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/ocr-shade-S7.json": "723135fe4830fe480b3b94790b93fe59d0ec4ac26a97180043d38dcf26ac48d1",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/post-install.txt": "25d88c4673c63aee4471d0a933e3c65324d574b17890f1b622fd319b747c459f",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/raw/pre-install.txt": "2229370c1a2cc890ade9fee66ccf7c0e609b6c46e002d160c0a3ab91d9dd34ec",
+    "evidence/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/screenshot-review.json": "461942b35179cc8e1b6574a26af47d22167d0e50a6c89394db262eadfffd8148",
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/01-focus-page-idle-after-v5-recheck.png": "0fd6bbc923ac128a07babdad77f00cd161ea9c17546cf97b1820cdd2ea535a38",
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/02-focus-notification-remaining-23m40.png": "4b1dc264a763893658d97be7013f427ccae20c8d6bea2a56edad6fddb3608945",
+    "evidence/screenshots/android-focus-updates/physical-xiaomi-20261105T021343Z/v5-device-retry-20261105T052346Z/03-focus-notification-remaining-20m58.png": "b1f19458e0dfdf33bb040dc3c595e4fa84edf473a5c1b5dfee650c41304f281e"
+  }
+}

@@ -1,0 +1,10 @@
+device_base_apk_sha=7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f
+expected_sha=7c902052b53a6782df5e6a999015395d27ced8fd069c106d0696775f8d6d762f
+-- package after install --
+    versionCode=140023 minSdk=24 targetSdk=36
+    versionName=2.0.0
+    lastUpdateTime=2026-11-05 13:23:57
+      firstInstallTime=2026-11-05 10:30:45
+-- grants --
+com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService:com.duoyi.duoyi/com.duoyi.duoyi.DuoyiFocusBlockerAccessibilityService
+        android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_FIXED|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]

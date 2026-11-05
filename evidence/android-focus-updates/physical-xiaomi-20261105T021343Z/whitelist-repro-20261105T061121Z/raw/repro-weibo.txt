@@ -1,0 +1,22 @@
+=== WEIBO LAUNCH ===
+phone_t0=14:13:15.646162697 host_t0=2026-11-05T06:13:16Z
+weibo_pid=16025
+=== WEIBO explicit launch ===
+phone_t0=14:13:42.168747999 host_utc=2026-11-05T06:13:42Z
+t+2s   mCurrentFocus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}
+t+5s   mCurrentFocus=Window{768af9 u0 com.sina.weibo/com.sina.weibo.MainTabActivity}
+11-05 14:08:36.119 15305 15305 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-05 14:08:36.158 15305 15305 I flutter : [DuoyiApp] resume config failed: 无法获取服务器配置，请检查连接后重试
+11-05 14:08:36.195 15305 15305 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-05 14:11:58.387 15305 15305 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 14:12:01.128 15305 15305 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 14:12:40.287 15305 15305 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 14:12:58.228 15305 15305 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@963a091
+11-05 14:13:03.879 15305 15305 I DuoyiFocusBlocker: focus blocker service connected; cleared expired=false, enabled=true
+11-05 14:13:42.314 15305 15305 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-05 14:13:42.437 15305 15305 D ViewRootImplStubImpl: , surfaceView:io.flutter.embedding.android.FlutterSurfaceView{b6e8f0c V.E...... ........ 0,0-1200,2670}, SurfaceView[com.duoyi.duoyi.focuscheck/com.duoyi.duoyi.MainActivity]
+11-05 14:13:42.486 15305 15305 I flutter : [HomeWidget] Android refreshAllWidgets updated 0 widgets
+11-05 14:13:42.560 15305 15305 I DuoyiFocusBlocker: focus blocker bounced com.sina.weibo to focus tab
+sample1 phone=14:13:58 focus=com.sina.weibo/com.sina.weibo.MainTabActivity}
+sample2 phone=14:14:00 focus=com.sina.weibo/com.sina.weibo.MainTabActivity}
+sample3 phone=14:14:03 focus=NotificationShade}

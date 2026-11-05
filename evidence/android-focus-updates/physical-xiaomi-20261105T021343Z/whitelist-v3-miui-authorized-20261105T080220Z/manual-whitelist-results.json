@@ -1,0 +1,176 @@
+{
+  "run_id": "physical-xiaomi-20261105T021343Z",
+  "attempt": "whitelist-v3-miui-authorized-20261105T080220Z",
+  "phase": "v3 + user-authorized MIUI『后台弹出界面』ONLY (real system UI) → recheck same 3 launches",
+  "serial": "2df52c4c",
+  "times": {
+    "host_utc": {
+      "start": "2026-11-05T08:01:51Z",
+      "toggle": "2026-11-05T08:04:40Z",
+      "launches": "08:07:08-08:07:40Z",
+      "cleanup": "08:09Z"
+    },
+    "phone_local": {
+      "start": "16:01:51",
+      "toggle": "16:04:40",
+      "L1": "16:07:08.93",
+      "L2": "16:07:14.27",
+      "L3": "16:07:32.30",
+      "cleanup": "16:09"
+    }
+  },
+  "user_authorization": {
+    "text": "允许为“多仪·专注验证”开启后台弹出界面",
+    "scope": "ONLY com.duoyi.duoyi.focuscheck 的 MIUI 后台弹出界面",
+    "at": "2026-11-05T16:04:40+0800 / 08:04:40Z",
+    "actor": "user via asktool; executed by agent through real system UI"
+  },
+  "installed_artifact": {
+    "package": "com.duoyi.duoyi.focuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "device_base_apk_sha256": "6c88b84a1e2d44f4f8fdd750424c0993c122a3dc5d4b40d965587a84a7072726",
+    "sha_unchanged_throughout": true,
+    "firstInstallTime": "2026-11-05 10:30:45",
+    "lastUpdateTime": "2026-11-05 15:46:06",
+    "note": "全程未安装 v4/未替换任何 APK"
+  },
+  "permission_change": {
+    "page": "设置→应用详情(多仪·专注验证)→权限管理→其他权限",
+    "label": "后台弹出界面",
+    "before": "拒绝",
+    "after": "始终允许",
+    "dialog": "标题『多仪·专注验证』+ 副标题『后台弹出界面』，选项 拒绝(未选)/始终允许 → 选择 始终允许",
+    "only_this_changed": true,
+    "verified_unchanged": [
+      "锁屏显示=拒绝"
+    ],
+    "retained_after_test": "后台弹出界面=始终允许（测试后再次 UI 复核）",
+    "formal_app": "未进入、未改动",
+    "no_other_grants": "未授予任何其他权限；未用 appops/secure/shell 写入；未改 AA 能力",
+    "other_permissions": "其他权限未变，完整只读核对记录仅留会话 scratch。"
+  },
+  "baseline": {
+    "aa_bound": "多仪·专注验证 BOUND (TYPE_WINDOW_STATE_CHANGED/TYPE_WINDOWS_CHANGED, timeout=100)",
+    "formal_aa": "com.duoyi.duoyi 仍 Crashed（未改）",
+    "native": {
+      "enabled": true,
+      "set_count": 203,
+      "weibo_in": true,
+      "alipay_in": true,
+      "expires_at": 1793867513680
+    },
+    "session": {
+      "strict": true,
+      "monitor": true,
+      "whitelist": [
+        "com.tencent.mm",
+        "com.tencent.mobileqq"
+      ],
+      "running": true,
+      "totalSeconds": 1500
+    },
+    "pid": "23292",
+    "uid": "10565"
+  },
+  "launches": [
+    {
+      "id": "L1",
+      "what": "weibo default (com.sina.weibo/.SplashActivity)",
+      "actual_foreground": {
+        "plus2": "com.duoyi.duoyi.focuscheck/MainActivity",
+        "plus5": "com.duoyi.duoyi.focuscheck/MainActivity (topResumed same)"
+      },
+      "result": "PASS",
+      "service_log": [
+        "16:07:09.200 window received: package=com.sina.weibo type=32 tracked=com.duoyi.duoyi.focuscheck",
+        "16:07:09.200 cooldown remaining=0 generation=1",
+        "16:07:09.205 requested attempt 1/2 → verification scheduled delay=600",
+        "16:07:09.408 window received: package=com.duoyi.duoyi.focuscheck → confirmed return + cancelled pending(own-foreground)"
+      ]
+    },
+    {
+      "id": "L2",
+      "what": "weibo REOPEN (existing .MainTabActivity)",
+      "actual_foreground": {
+        "plus2": "com.duoyi.duoyi.focuscheck/MainActivity",
+        "plus5": "com.duoyi.duoyi.focuscheck/MainActivity (topResumed same)"
+      },
+      "result": "PASS (was FAIL before authorization)",
+      "service_log": [
+        "16:07:14.562 window received: package=com.sina.weibo type=32 tracked=com.duoyi.duoyi.focuscheck",
+        "16:07:14.562 cooldown remaining=0 generation=3",
+        "16:07:14.567 requested attempt 1/2 → verification scheduled delay=600",
+        "16:07:14.766 window received: package=com.duoyi.duoyi.focuscheck → confirmed return + cancelled pending(own-foreground)"
+      ]
+    },
+    {
+      "id": "L3",
+      "what": "alipay default (com.eg.android.AlipayGphone/.AlipayLogin) from Home, unlocked",
+      "actual_foreground": {
+        "plus2": "com.eg.android.AlipayGphone/...LoginActivity",
+        "plus5": "com.eg.android.AlipayGphone/...LoginActivity (topResumed same)"
+      },
+      "result": "FAIL (unchanged)",
+      "service_log": [
+        "16:07:32.515 window received: package=com.miui.home (HOME)",
+        "16:07:33.120 window received: package=com.duoyi.duoyi.focuscheck tracked=com.miui.home",
+        "**没有任何 com.eg.android.AlipayGphone 的 window received 行（own pid 日志中 alipay 出现次数 = 0）**，因此也未产生 requested/verification"
+      ]
+    }
+  ],
+  "allow_controls": {
+    "QQ": "+5s com.tencent.mobileqq/.activity.SplashActivity (PASS, 未拦截)",
+    "WeChat": "+5s com.tencent.mm/.ui.chatting.variants.ChattingMainUI (PASS, 未拦截；未读取任何内容)",
+    "quick blocked->QQ (350ms)": "+2s/+5s 均为 QQ SplashActivity，无排队旧任务抢占 (PASS)"
+  },
+  "release": {
+    "pause": "本轮未单独执行 pause 子例（时间盒内按 brief 允许的最小集执行；会话由 reset 释放）",
+    "reset": "真实 UI 重置 → 已暂停 25:00",
+    "strict/monitor": "OFF/OFF",
+    "notification_951101": 0,
+    "timer_fgs": 0,
+    "whitelist_retained": [
+      "com.tencent.mm",
+      "com.tencent.mobileqq"
+    ]
+  },
+  "product_findings": {
+    "fixed_by_authorized_permission": "同一个 v3 APK、相同白名单与严格配置，授权前后使用不同测试会话。明确的 MIUI 后台显示拒绝在授权后不再出现，微博已有任务重开由 FAIL 变为 PASS；首次和重开均有实际 +2s/+5s 前台核对及 requested→confirmed。",
+    "still_failing": "支付宝在开启后台弹出许可后仍失败，本轮自有服务没有收到它的窗口事件。仅能证明该许可未解决此场景，事件缺失原因仍需进一步诊断。",
+    "log_hygiene": "仅 own PID 23292 / UID 10565 + 明确时间窗；未全局清日志；未读第三方内容"
+  },
+  "cleanup": {
+    "device": "HOME/launcher",
+    "formal_untouched": {
+      "versionCode": 142023
+    },
+    "global_settings": {
+      "screen_off_timeout": "600000",
+      "font_scale": "1.25",
+      "density": "520"
+    },
+    "host": "未起 server / 未动 reverse / 未改 Git / 未改源码",
+    "authorized_permission": "保持 始终允许（用户要求保留功能）"
+  },
+  "privacy": {
+    "public": [
+      "manual-whitelist-results.json",
+      "own-service-timeline.txt（仅自有服务行+时间戳）"
+    ],
+    "not_published": [
+      "完整 logcat/prefs/应用清单",
+      "任何第三方界面截图"
+    ],
+    "third_party": "仅默认入口启动，未读内容/未发消息/未支付/未截图"
+  },
+  "public_derivation": {
+    "original_private_report_sha256": "a78e59a16f9db5db77d2d30d0b4cc3ff00743b0c234c7baa037dcac9f7f5083c",
+    "changes": [
+      "仅公开相关的后台弹出与锁屏显示权限，其他核对仍保留原始记录",
+      "纠正同会话表述：授权前后为不同测试会话",
+      "支付宝结论限定为授权后仍失败，不声称已定位事件缺失原因",
+      "时间线从原始日志完整恢复，保留旧截短派生版哈希"
+    ]
+  }
+}

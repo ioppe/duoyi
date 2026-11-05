@@ -1,0 +1,5 @@
+=== state 2026-11-05T06:34:19Z ===
+  mWakefulness=Dozing
+deviceLocked=1
+  mCurrentFocus=Window{9302070 u0 NotificationShade}
+  mCurrentFocus=Window{9302070 u0 NotificationShade}

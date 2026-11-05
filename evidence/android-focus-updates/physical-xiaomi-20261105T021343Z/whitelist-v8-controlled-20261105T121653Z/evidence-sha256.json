@@ -1,0 +1,10 @@
+{
+  "controlled-setup-blocked.json": {
+    "sha256": "7e131233fcdfc7637f341c383c9fb12b69a345eb054c1b43d8a4ed843d5f3fc1",
+    "bytes": 5057
+  },
+  "protections.txt": {
+    "sha256": "0ba83ad4fb3504417e4fd6527d3cf3f83523e56c5536e9ecccedc0aa9d6a6ff6",
+    "bytes": 604
+  }
+}

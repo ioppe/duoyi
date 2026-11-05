@@ -1,0 +1,37 @@
+{
+  "review_delegation_id": "8e9940cd-c0a8-4586-9698-6f204e18b802",
+  "scope": "Whitelist return fix after cdee4e4: MIUI background-display prerequisite and permission-gated UsageEvents fallback",
+  "review_was_read_only": true,
+  "required_canonical_updates": [
+    {
+      "path": "docs/requirement-v2.md",
+      "applied": true,
+      "detail": "R13.1a now names MIUI background-display permission and separately authorized usage access for apps without accessibility window events; overview no longer promises return from accessibility permission alone."
+    },
+    {
+      "path": "docs/design-v2.md",
+      "applied": true,
+      "detail": "The Strict Focus panel must explain all three prerequisites, automatic granting is forbidden, and fallback uses only recent package/type/time metadata."
+    }
+  ],
+  "existing_documents_synchronized": [
+    "docs/android-focus-updates.md: bounded queries, event freshness, generation cancellation, cooldown and per-origin attempt budgets",
+    "docs/manual-regression-checklist.md: positive and negative foreground cases remain unchecked pending actual verification"
+  ],
+  "i18n": {
+    "key": "focus.distraction.permission_hint",
+    "getter": "focusDistractionPermissionHint",
+    "maps": ["zh", "en"],
+    "arb_and_generated_files_complete": true,
+    "pinned_gen_l10n_exit_code": 0,
+    "pinned_format_files": 5,
+    "pinned_format_changed": 0
+  },
+  "unneeded_updates": {
+    "adr": "No new process, persistence, schema or API boundary",
+    "release_notes": "No release, version change, tag or publication",
+    "backend_contract": "No backend route, schema or payload change",
+    "manifest_permissions": "Uses the existing PACKAGE_USAGE_STATS declaration; authorization remains a system UI choice"
+  },
+  "claim_boundary": "Documentation consistency only. Tests and actual foreground acceptance are recorded separately; no usage permission has been granted by this record."
+}
