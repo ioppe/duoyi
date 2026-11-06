@@ -239,7 +239,7 @@ void main() {
     cloudB.dispose();
   });
 
-  test('底层 provider 正在同步时 requestSync 不重复触发回调', () async {
+  test('底层 provider 正在同步时手动请求等待且重复调用共享 Future', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{'todos': '[]'});
     final requestStarted = Completer<void>();
     final release = Completer<http.Response>();
@@ -261,6 +261,7 @@ void main() {
       source: cloud,
       onSyncRequested: () async {
         calls++;
+        await cloud.syncNowAndPull();
       },
     );
 
@@ -269,8 +270,13 @@ void main() {
     expect(cloud.isSyncing, isTrue);
     expect(controller.canSync, isFalse);
 
-    await controller.requestSync();
-    expect(calls, 0, reason: '底层已同步中，不应重复触发应用层回调');
+    var completed = false;
+    final manual = controller.requestSync();
+    expect(identical(controller.requestSync(), manual), isTrue);
+    unawaited(manual.then((_) => completed = true));
+    await Future<void>.delayed(Duration.zero);
+    expect(calls, 1);
+    expect(completed, isFalse, reason: '下拉转圈必须等待实际同步完成');
     expect(controller.isSyncing, isTrue);
 
     release.complete(
@@ -285,6 +291,9 @@ void main() {
       ),
     );
     await syncFuture.timeout(const Duration(seconds: 5));
+    await manual.timeout(const Duration(seconds: 5));
+    expect(completed, isTrue);
+    expect(calls, 1);
     expect(cloud.isSyncing, isFalse);
     expect(controller.canSync, isTrue);
 

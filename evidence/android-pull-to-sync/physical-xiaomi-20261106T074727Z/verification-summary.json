@@ -1,0 +1,238 @@
+{
+  "status": "passed",
+  "execution": "staged across four runs on the same APK",
+  "device": {
+    "serial": "2df52c4c",
+    "manufacturer": "Xiaomi",
+    "model": "24129PN74C",
+    "android": "16",
+    "api": "36",
+    "abi": "arm64-v8a",
+    "size": "Physical size: 1200x2670",
+    "density": "Physical density: 520",
+    "font_scale": "1.25"
+  },
+  "candidate": {
+    "package": "com.duoyi.duoyi.pullsynccheck",
+    "apk_sha256": "04a48f180eb0b203c469781b1f6b4e5ef445cb5550a7055e0d0f777ea07df23a",
+    "apk_bytes": 160529512,
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "launchable_activity": "com.duoyi.duoyi.MainActivity",
+    "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "debug": true,
+    "base_commit": "4602528a49191b5e3bae2f32b8603fc8956f42ef",
+    "test_server": "http://127.0.0.1:18781",
+    "pid": "1519",
+    "device_log_start": "11-06 16:36:12.000",
+    "installed_at_utc": "2026-11-06T08:36:17.220496+00:00"
+  },
+  "passed_checks": 16,
+  "checks": [
+    {
+      "case": "05-today-remote-and-singleflight",
+      "status": "passed",
+      "sync_path": "/api/sync/item-delta",
+      "http_status": 200,
+      "elapsed": 7.011,
+      "duplicate_pull": true,
+      "spinner_observed": true,
+      "expected_record": "远端新增·下拉验证·fixed-v2",
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "06-repeat-without-local-edit",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "07-failure-feedback",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 503,
+      "elapsed": 1.503,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "08-retry-recovery",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": "远端新增·下拉验证·fixed-v2",
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "09-empty-goal-tab",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.506,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "10-horizontal-gesture",
+      "status": "passed",
+      "sync_requests": 0,
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "11-habit-empty-global-sync",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2"
+    },
+    {
+      "case": "11b-global-data-after-tab-return",
+      "status": "passed",
+      "expected_record": "跨页面下拉·全局已同步",
+      "extra_sync_requests": 0,
+      "evidence_directory": "fixed-v2-rest"
+    },
+    {
+      "case": "12-focus-page",
+      "status": "passed",
+      "sync_path": "/api/sync/item-delta",
+      "http_status": 200,
+      "elapsed": 1.536,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-rest"
+    },
+    {
+      "case": "13-mine-top",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.519,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-rest"
+    },
+    {
+      "case": "14-middle-scroll-no-sync",
+      "status": "passed",
+      "sync_requests": 0,
+      "evidence_directory": "fixed-v2-final"
+    },
+    {
+      "case": "15-todo-list-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.515,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-final"
+    },
+    {
+      "case": "16-calendar-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.506,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-routes"
+    },
+    {
+      "case": "17-notes-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.51,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-routes"
+    },
+    {
+      "case": "18-goals-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.516,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-routes"
+    },
+    {
+      "case": "19-countdown-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.513,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null,
+      "evidence_directory": "fixed-v2-routes"
+    }
+  ],
+  "preserved_intermediate_interruptions": [
+    {
+      "phase": "fixed-v2",
+      "case": "runner-stop",
+      "status": "failed",
+      "error": "Habit-page pull failed to update Today data"
+    },
+    {
+      "phase": "fixed-v2-rest",
+      "case": "runner-stop",
+      "status": "failed",
+      "error": "Validation app is not foreground"
+    },
+    {
+      "phase": "fixed-v2-final",
+      "case": "runner-stop",
+      "status": "failed",
+      "error": "No observed route return control: \n待办清单\n\n批量操作\n\n新建任务\n\n四象限\n第 1 个标签，共 3 个\n\n列表\n第 2 个标签，共 3 个\n\n看板\n第 3 个标签，共 3 个\n\n自定义视图 · 3/3\n\n清空\n\n重要且紧急\n3\n马上做\n同步基线任务\n远端新增·下拉验证\n跨页面下拉·全局已同步\n\n重要不紧急\n计划做\n暂无任务\n\n紧急不重要\n委托做\n暂无任务\n\n不重要不紧急\n减少做\n暂无任务"
+    }
+  ],
+  "log_scan": {
+    "pid": "1519",
+    "start": "11-06 16:36:12.000",
+    "patterns": [
+      "FATAL EXCEPTION",
+      "Fatal signal",
+      "Unhandled Exception",
+      "RenderFlex overflowed",
+      "Another exception was thrown"
+    ],
+    "app_error_findings": [],
+    "crash_or_anr_events": []
+  },
+  "preservation": {
+    "production_metadata_unchanged": true,
+    "production_apk_unchanged": true,
+    "density_unchanged": true,
+    "resolution_unchanged": true,
+    "font_scale_unchanged": true
+  },
+  "targeted_flutter_tests": 106,
+  "flutter_analysis": "No issues found in SHA-bound v2 copy",
+  "backend": "real FastAPI with isolated SQLite, USB reverse, SSE suppressed for manual-sync determinism, controlled delay and HTTP 503"
+}

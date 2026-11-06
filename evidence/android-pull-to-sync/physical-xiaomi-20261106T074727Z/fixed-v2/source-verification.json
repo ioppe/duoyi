@@ -1,0 +1,29 @@
+{
+  "files_verified_during_snapshot_copy": 1277,
+  "post_build_checked_files": [
+    "lib/main.dart",
+    "lib/providers/cloud_sync_provider.dart",
+    "lib/providers/sync_status_presenter.dart",
+    "lib/services/backend_sync_coordinator.dart",
+    "lib/widgets/app_pull_to_sync.dart",
+    "lib/widgets/brand_background.dart",
+    "test/services/manual_sync_refresh_test.dart",
+    "test/widgets/app_pull_to_sync_test.dart",
+    "test/widgets/sync_status_card_test.dart",
+    "pubspec.lock",
+    "pubspec.yaml",
+    "config/toolchain.json",
+    "config/deployment.json",
+    "backend/main.py",
+    "android/app/build.gradle.kts",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/AndroidManifest.xml"
+  ],
+  "post_build_mismatches": [],
+  "identity_changes": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/AndroidManifest.xml"
+  ],
+  "lockfile_equal": true
+}

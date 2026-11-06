@@ -1,0 +1,15 @@
+{
+  "package": "com.duoyi.duoyi.pullsynccheck",
+  "apk_sha256": "e5d5145205af4b942bbd63887dcbfb2b6d7c3b8622cb63af89ac6d697579ba0a",
+  "apk_bytes": 160529188,
+  "debug": true,
+  "base_commit": "4602528a49191b5e3bae2f32b8603fc8956f42ef",
+  "test_server": "http://127.0.0.1:18781",
+  "auto_sync_initially": false,
+  "source_manifest_sha256": "317b498fa18d0db82d8585fbb4412026353505e44e5bf2477776b1b59eae862d",
+  "version_name": "2.0.0",
+  "version_code": 140023,
+  "abis": "'arm64-v8a' 'armeabi-v7a' 'x86_64'",
+  "launchable_activity": "com.duoyi.duoyi.MainActivity",
+  "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3"
+}

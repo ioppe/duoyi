@@ -1,0 +1,15 @@
+{
+  "package": "com.duoyi.duoyi.pullsynccheck",
+  "apk_sha256": "04a48f180eb0b203c469781b1f6b4e5ef445cb5550a7055e0d0f777ea07df23a",
+  "apk_bytes": 160529512,
+  "version_name": "2.0.0",
+  "version_code": 140023,
+  "launchable_activity": "com.duoyi.duoyi.MainActivity",
+  "certificate_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+  "debug": true,
+  "base_commit": "4602528a49191b5e3bae2f32b8603fc8956f42ef",
+  "test_server": "http://127.0.0.1:18781",
+  "pid": "1519",
+  "device_log_start": "11-06 16:36:12.000",
+  "installed_at_utc": "2026-11-06T08:36:17.220496+00:00"
+}
