@@ -103,6 +103,7 @@ import 'screens/statistics_screen.dart';
 import 'screens/time_audit_screen.dart';
 import 'screens/today_detail_router.dart';
 import 'widgets/brand_background.dart';
+import 'widgets/app_pull_to_sync.dart';
 import 'widgets/force_update_gate.dart';
 import 'widgets/web_auth_gate.dart';
 import 'widgets/widget_brand_logo.dart';
@@ -4582,7 +4583,7 @@ class MainShellState extends State<MainShell> {
   }
 
   Widget _buildTab(int tab, List<int> safeVisibleTabs) {
-    return switch (tab) {
+    final page = switch (tab) {
       0 => TodayScreen(
         key: todayKey,
         showCaptureFab: context.read<PreferencesProvider>().quickCaptureFab,
@@ -4599,6 +4600,7 @@ class MainShellState extends State<MainShell> {
       ),
       _ => const SizedBox.shrink(),
     };
+    return AppPullToSync(child: page);
   }
 }
 

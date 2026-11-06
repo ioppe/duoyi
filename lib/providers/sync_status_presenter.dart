@@ -18,7 +18,7 @@ import 'cloud_sync_provider.dart';
 ///
 /// [requestSync] 的语义：
 /// - 未注入回调时安全空操作（[canSync] 为 false），不抛错；
-/// - 底层 provider 已在自己同步时同样合流为空操作（不重复触发回调）；
+/// - 底层 provider 已在同步时仍转交应用层，等待在途同步后兑现主动拉取；
 /// - single-flight：飞行中的请求复用同一个 Future，绝不并发触发第二次回调；
 /// - "同步中"覆盖整段回调耗时（[isSyncing] 同时反映手动回调与底层 provider）；
 /// - 回调失败只记录布尔标记 [syncRequestFailed]，不保留异常文本，避免服务端
@@ -111,13 +111,16 @@ class SyncStatusController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 是否可发起手动同步：注入了回调且当前不处于同步中。
-  bool get canSync => !_disposed && _onSyncRequested != null && !isSyncing;
+  /// 是否注入了手动同步动作；同步期间也保持下拉刷新组件挂载。
+  bool get hasSyncAction => !_disposed && _onSyncRequested != null;
+
+  /// 卡片是否可点击：有同步动作且当前不处于同步中。
+  bool get canSync => hasSyncAction && !isSyncing;
 
   /// 请求一次同步（经应用层注入的回调）。
   ///
-  /// 未注入回调、或底层 provider 已在自己同步时完成任务（不抛错、不重复触发
-  /// 回调）。同步进行中重复调用会合流到同一个 Future，因此不会并发触发回调。
+  /// 未注入回调时安全返回；底层同步中的请求由应用层等待后执行。
+  /// 重复调用会合流到同一个 Future，因此不会并发触发回调。
   /// 失败通过 [syncRequestFailed] 观察，异常本身不被转抛（其文本可能含服务器
   /// 地址 / token）。
   Future<void> requestSync() {
@@ -126,10 +129,6 @@ class SyncStatusController extends ChangeNotifier {
     if (inFlight != null) return inFlight;
     final request = _onSyncRequested;
     if (request == null) return Future<void>.value();
-    if (_source?.isSyncing ?? false) {
-      // 底层自动同步已在进行（UI 侧已禁用点击）：直接合流为空操作。
-      return Future<void>.value();
-    }
 
     final completer = Completer<void>();
     _requestInFlight = completer.future;

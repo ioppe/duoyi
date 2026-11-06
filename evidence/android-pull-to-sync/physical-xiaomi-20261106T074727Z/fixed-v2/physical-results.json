@@ -1,0 +1,76 @@
+{
+  "device": "2df52c4c",
+  "package": "com.duoyi.duoyi.pullsynccheck",
+  "results": [
+    {
+      "case": "05-today-remote-and-singleflight",
+      "status": "passed",
+      "sync_path": "/api/sync/item-delta",
+      "http_status": 200,
+      "elapsed": 7.011,
+      "duplicate_pull": true,
+      "spinner_observed": true,
+      "expected_record": "远端新增·下拉验证·fixed-v2"
+    },
+    {
+      "case": "06-repeat-without-local-edit",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "07-failure-feedback",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 503,
+      "elapsed": 1.503,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "08-retry-recovery",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": "远端新增·下拉验证·fixed-v2"
+    },
+    {
+      "case": "09-empty-goal-tab",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.506,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "10-horizontal-gesture",
+      "status": "passed",
+      "sync_requests": 0
+    },
+    {
+      "case": "11-habit-empty-global-sync",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.507,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "runner-stop",
+      "status": "failed",
+      "error": "Habit-page pull failed to update Today data"
+    }
+  ]
+}

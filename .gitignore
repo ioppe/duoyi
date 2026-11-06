@@ -80,3 +80,14 @@ backend/uploads/
 !.env.example
 config/*.local.json
 **/__pycache__/
+
+# Root-scoped generated output (build / last-run results are not committed)
+/web-artifacts/
+/test-results/
+
+# Root working-session notes (one-off analysis and handoff live in session scratch)
+/codex-*.md
+/*_REPORT*.md
+/*_SUMMARY*.md
+/*_ANALYSIS*.md
+/REFACTORING_PROGRESS.md

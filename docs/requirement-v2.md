@@ -176,6 +176,7 @@
 - R2.7 通知点击应能跳转到对应任务/目标/习惯详情，而不仅是 Tab。 **[已实现 - duoyi:// 深链]**
 - R2.8 失败的单条提醒不得中断整轮调度。 **[已实现 - try/catch 隔离]**
 - R2.9 位置提醒支持到达/离开触发，并可从任务详情创建关联提醒。 **[已实现 - LocationReminderEngine + TodoDetailScreen 任务关联 + Android 系统 geofence 调度 + 前台/后台位置授权引导；OEM 行为待真机验证]**
+- R2.10 新建提醒的默认时间取当前应用时间之后的最近半小时点（21:12 → 21:30，21:42 → 22:00），编辑已有提醒时保留其原时间。 **[已实现 - `nextHalfHourTimeOfDay` + `ReminderPlanEditor`；`test/widgets/reminder_plan_editor_test.dart` 覆盖 17:28→17:30、17:35→18:00]**
 
 **验收标准**
 

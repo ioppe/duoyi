@@ -1,0 +1,46 @@
+{
+  "device": "2df52c4c",
+  "package": "com.duoyi.duoyi.pullsynccheck",
+  "results": [
+    {
+      "case": "16-calendar-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.506,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "17-notes-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.51,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "18-goals-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.516,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "19-countdown-empty-route",
+      "status": "passed",
+      "sync_path": "/api/sync/pull",
+      "http_status": 200,
+      "elapsed": 1.513,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    }
+  ]
+}

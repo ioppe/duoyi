@@ -150,7 +150,16 @@ class BackendSyncCoordinator {
       return;
     }
     try {
-      await _cloud.syncNow();
+      final manualSync = force || _forceRequested;
+      if (manualSync) {
+        await _cloud.syncNowAndPull();
+      } else {
+        await _cloud.syncNow();
+        // 在业务同步过程中到来的手动操作也要兑现主动拉取。
+        if (_forceRequested && _isCurrent(generation, startClient)) {
+          await _cloud.syncNowAndPull();
+        }
+      }
     } catch (e, st) {
       // 同步失败由 provider 的 lastError 呈现；这里只记录，不丢本地数据、不清标记。
       debugPrint('[backend-sync] sync failed: $e\n$st');
