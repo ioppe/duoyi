@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/app_brand.dart';
 import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
+import 'app_pull_to_sync.dart';
 import 'surface_components.dart';
 
 /// Wraps any child with the active theme's background image and overlay.
@@ -88,7 +89,7 @@ class BrandRouteSurface extends StatelessWidget {
             child: AppSecondaryControlTheme(
               child: KeyedSubtree(
                 key: ValueKey<AppLocale>(locale),
-                child: child,
+                child: AppPullToSync(child: child),
               ),
             ),
           ),

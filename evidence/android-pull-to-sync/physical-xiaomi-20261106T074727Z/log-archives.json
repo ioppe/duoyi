@@ -1,0 +1,60 @@
+{
+  "archives": [
+    {
+      "original": "fixed-v2/build-and-analysis.log",
+      "archive": "fixed-v2/build-and-analysis.log.gz",
+      "uncompressed_sha256": "3047921029bb5c30ed0941a5195717f099eaac31d93a634b864148aad288acec",
+      "archive_sha256": "c2710041936d931ff8ad997c00ce76e1f685f828877543a7548581e08a40091d",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-after-device-fix-tests.log",
+      "archive": "pull-sync-after-device-fix-tests.log.gz",
+      "uncompressed_sha256": "6935bb2824cc688682a82991e8390229a41b5f35dfd33e34262c6923e2a4fe01",
+      "archive_sha256": "d420aa77e6e0a71b958cbafc0506e225811570b074428c64e972cdfa66c13680",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-device-cases.log",
+      "archive": "pull-sync-device-cases.log.gz",
+      "uncompressed_sha256": "ca23deb1c8cffcb7edaaedaf13e51579492ba5dd81d2df6f3c9a18ae8baa7613",
+      "archive_sha256": "d01d43b4820e2c01e632444e0ecc154befee737ff54ed47403b4fdbdffaa59a7",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-device-v2-cases.log",
+      "archive": "pull-sync-device-v2-cases.log.gz",
+      "uncompressed_sha256": "2d80032907536b7b6248a2958468934908a126677c3896da00b0f0dc6367ea33",
+      "archive_sha256": "80e42d5f3d45219ad73730ecacdb86a9494a27fa1a4070e380304cd76e99234e",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-device-v2-final.log",
+      "archive": "pull-sync-device-v2-final.log.gz",
+      "uncompressed_sha256": "b6c04f456a1afd5a117cdcc3f307ed644a4bb9d8515c25d63197a2fa9bfdcbfa",
+      "archive_sha256": "c0dbe57e1468a2beed9d2145ca92157f77a811d1053709de9b13009bcdbc5d4c",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-device-v2-rest.log",
+      "archive": "pull-sync-device-v2-rest.log.gz",
+      "uncompressed_sha256": "11d7e85a3352c822c13aab41d12557a2198d16b9c3725186d034839184c494f7",
+      "archive_sha256": "f62e536c79667f334dd3497d0e3b85e4269e172b8de4d1ce07fd73272396999b",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-device-v2-routes.log",
+      "archive": "pull-sync-device-v2-routes.log.gz",
+      "uncompressed_sha256": "a8e98805b9540e95f85fba3edc10001f5ac1020732145983322498f6ae029610",
+      "archive_sha256": "0d078be74da767eecd72996e4a09462539307753373933cf0053af320a499365",
+      "lossless": true
+    },
+    {
+      "original": "pull-sync-empty-template-before.log",
+      "archive": "pull-sync-empty-template-before.log.gz",
+      "uncompressed_sha256": "4f39ec958fb6fce02287b74c5e2df63400a198e3bb00d1032b1b4e06e3d15a3c",
+      "archive_sha256": "f5118126ceaf53b299d3420647ef494f743a364cb90a70dcd040e32e6f20d2f2",
+      "lossless": true
+    }
+  ]
+}

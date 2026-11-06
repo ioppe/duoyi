@@ -1,0 +1,31 @@
+{
+  "device": "2df52c4c",
+  "package": "com.duoyi.duoyi.pullsynccheck",
+  "results": [
+    {
+      "case": "05-today-remote-and-singleflight",
+      "status": "passed",
+      "sync_path": "/api/sync/delta",
+      "http_status": 200,
+      "elapsed": 7.023,
+      "duplicate_pull": true,
+      "spinner_observed": true,
+      "expected_record": "远端新增·下拉验证"
+    },
+    {
+      "case": "06-repeat-without-local-edit",
+      "status": "passed",
+      "sync_path": "/api/sync/delta",
+      "http_status": 200,
+      "elapsed": 1.511,
+      "duplicate_pull": false,
+      "spinner_observed": false,
+      "expected_record": null
+    },
+    {
+      "case": "runner-stop",
+      "status": "failed",
+      "error": "Unchanged local data did not use pull endpoint"
+    }
+  ]
+}

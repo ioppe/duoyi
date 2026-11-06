@@ -1,0 +1,350 @@
+--------- beginning of system
+11-06 16:36:12.242  1519  1519 I ActivityThread: Current dynamic renderEngine type=0
+11-06 16:36:12.250  1519 16584 D MiuiDownscaleImpl: set override inverted scale : 1.0
+11-06 16:36:12.379  1519 16600 I ActivityThread: TrafficStats init done
+11-06 16:36:12.382  1519 16600 W FlingPromotion: init cloud list failed
+11-06 16:36:12.382  1519 16600 I ActivityThread: Miui Feature Init done
+11-06 16:36:12.393  1519  1519 D FramePredict: FramePredict init: false
+11-06 16:36:12.394  1519 16600 I ActivityThread: HardwareRenderer preload  done
+11-06 16:36:12.394  1519 16637 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+11-06 16:36:12.963  1519  1519 D MiuiMultiWindowUtils: freeform resolution args raw data:{  "wide_default":{    "freeform_args": {        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":0.5643,"original_scale":0.74,"top_margin":0.168,"left_margin":0.484},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":0.5643,"original_scale":0.74,"top_margin":0.1222,"left_margin":0.59745},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":0.6992,"original_scale":0.604,"top_margin":0.2596,"left_margin":0.2624},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":0.6992,"original_scale":0.604,"top_margin":0.213,"left_margin":0.3758}    },    "mini_freeform_args":{        "vertical_portrait":{"original_ratio":0.147},        "horizontal_portrait":{"original_ratio":0.147},        "vertical_landscape":{"original_ratio":0.165},        "horizontal_landscape":{"original_ratio":0.165}    }  },  "narrow_default": {    "freeform_args": {        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":1,"original_scale":0.74,"top_margin":0.0753,"left_margin":-1},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":1,"original_scale":0.5756,"top_margin":-1,"left_margin":0.0753},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.587,"top_margin":0.0753,"left_margin":-1},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.587,"top_margin":-1,"left_margin":0.0753}    },    "mini_freeform_args":{        "vertical_portrait":{"original_ratio":0.26},        "horizontal_portrait":{"original_ratio":0.26},        "vertical_landscape":{"original_ratio":0.293},        "horizontal_landscape":{"original_ratio":0.293}    }  },  "regular_default": {    "freeform_args": {      "vertical_portrait":{"aspect_ratio":0.625, "original_ratio":1,"original_scale":0.7,"top_margin":0.109,"left_margin":-1},      "horizontal_portrait":{"aspect_ratio":0.6667, "original_ratio":1,"original_scale":0.6102,"top_margin":-1,"left_margin":0.026},      "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.5899,"top_margin":0.109,"left_margin":-1},      "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.5899,"top_margin":-1,"left_margin":0.026}    },    "mini_freeform_args":{      "vertical_portrait":{"original_ratio":0.25},      "horizontal_portrait":{"original_ratio":0.25},      "vertical_landscape":{"original_ratio":0.25},      "horizontal_landscape":{"original_ratio":0.25}    }  },  "pad_default": {    "freeform_args": {      "vertical_portrait":{"aspect_ratio":0.5625, "original_ratio":0.375,"original_scale":0.835,"top_margin":0.049,"left_margin":0.2775},      "horizontal_portrait":{"aspect_ratio":0.5625, "original_ratio":0.375,"original_scale":0.835,"top_margin":-1,"left_margin":0.6525},      "vertical_landscape":{"aspect_ratio":-1, "original_ratio":1,"original_scale":0.468,"top_margin":0.049,"left_margin":-1},      "horizontal_landscape":{"aspect_ratio":-1, "original_ratio":1,"original_scale":0.468,"top_margin":-1,"left_margin":0.4976}    },    "mini_freeform_args":{      "vertical_portrait":{"original_ratio":0.144},      "horizontal_portrait":{"original_ratio":0.144},      "vertical_landscape":{"original_ratio":0.2},      "horizontal_landscape":{"original_ratio":0.2}    }  }}
+11-06 16:36:12.964  1519  1519 D MiuiMultiWindowUtils: initFreeFormResolutionArgs failed, device is dada
+11-06 16:36:12.977  1519  1519 I NativeTurboSchedManager: Load libmiui_runtime
+11-06 16:36:12.977  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:12.979  1519  1519 W MessageMonitor: PerfMonitor: Slow Operation: Activity com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity onCreate took 578ms
+11-06 16:36:12.980  1519  1519 D Activity: Activity = ActivityInfo{e063681 com.duoyi.duoyi.MainActivity}, Resume onConfigurationChanged = {1.25 460mcc11mnc [zh_CN] ldltr sw369dp w369dp h822dp 520dpi nrml long hdr widecg port uimode=15 finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1200, 2670) mAppBounds=Rect(0, 0 - 1200, 2670) mMaxBounds=Rect(0, 0 - 1200, 2670) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0 mInSplitScreen=false letterBoxed=false foScaled=false isSpecificEmbedded=false embeddingScale=1.0} s.2 fontWeightAdjustment=0/dc themeChanged=0 themeChangedFlags=0 display=0 extraData = Bundle[{}] screenType=0c}
+11-06 16:36:12.981  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_status
+11-06 16:36:12.982  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_global_collect_status
+11-06 16:36:12.982  1519  1519 I InterceptorProxy-Helper: registerUIAgentListener ComponentInfo{com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity}, uid:10567
+11-06 16:36:12.982  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:13.110  1519  1519 D DecorViewImmersiveImpl: onAttachedToWindow. pkg: com.duoyi.duoyi.pullsynccheck
+11-06 16:36:13.110  1519  1519 D DecorViewImmersiveImpl: com.duoyi.duoyi.MainActivity@e6c6d14 already set forced E2E by app
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: onSurfaceViewAttached:
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: , vri:android.view.ViewRootImpl@1b31237, com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: , vri size:1200x2670
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: , surfaceView:io.flutter.embedding.android.FlutterSurfaceView{3d9fa6a V.E...... ......ID 0,0-1200,2670}, SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity]
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: , surfaceView size:1200x2670
+11-06 16:36:13.130  1519  1519 D ViewRootImplStubImpl: , surfaceControl:Surface(name=3d9fa6a SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity](BLAST)#496665)/@0x655b3a4
+11-06 16:36:13.149  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:13.243  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:13.247  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:14.902  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:16.904  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:16.929  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:36:22.865  1519  1519 E TurboSchedMonitor: failed to find setSchedAffinity method com.duoyi.duoyi.pullsynccheck
+11-06 16:38:17.358  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523601595, downTime=1523601595, phoneEventTime=1793954297345 } moveCount:0
+11-06 16:38:17.360  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:38:17.389  1519 16649 I ContentCatcher_TaplusBlackListHelper:  mActivities isEmpty
+11-06 16:38:17.390  1519 16649 I ContentCatcher_TaplusBlackListHelper:  blackList size: 12 package is com.duoyi.duoyi.pullsynccheck isInTaplusWhiteList: true
+11-06 16:38:17.998  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523602246, downTime=1523601595, phoneEventTime=1793954297995 } moveCount:48
+11-06 16:38:22.662  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523606905, downTime=1523606905, phoneEventTime=1793954302654 } moveCount:0
+11-06 16:38:22.662  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:38:23.309  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523607557, downTime=1523606905, phoneEventTime=1793954303306 } moveCount:78
+11-06 16:38:32.958  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523617203, downTime=1523617203, phoneEventTime=1793954312953 } moveCount:0
+11-06 16:38:32.958  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:38:33.611  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523617858, downTime=1523617203, phoneEventTime=1793954313607 } moveCount:78
+11-06 16:38:42.066  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523626313, downTime=1523626313, phoneEventTime=1793954322062 } moveCount:0
+11-06 16:38:42.067  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:38:42.720  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523626968, downTime=1523626313, phoneEventTime=1793954322717 } moveCount:78
+11-06 16:38:53.098  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523637343, downTime=1523637343, phoneEventTime=1793954333092 } moveCount:0
+11-06 16:38:53.098  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:38:53.748  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523637995, downTime=1523637343, phoneEventTime=1793954333744 } moveCount:78
+11-06 16:39:12.779  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523657028, downTime=1523657028, phoneEventTime=1793954352777 } moveCount:0
+11-06 16:39:12.780  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:12.794  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523657028, downTime=1523657028, phoneEventTime=1793954352777 } moveCount:0
+11-06 16:39:17.323  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523661564, downTime=1523661564, phoneEventTime=1793954357314 } moveCount:0
+11-06 16:39:17.323  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:17.977  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523662223, downTime=1523661564, phoneEventTime=1793954357972 } moveCount:75
+11-06 16:39:25.810  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523670060, downTime=1523670060, phoneEventTime=1793954365809 } moveCount:0
+11-06 16:39:25.810  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:25.818  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523670060, downTime=1523670060, phoneEventTime=1793954365809 } moveCount:0
+11-06 16:39:25.914  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523670156, downTime=1523670156, phoneEventTime=1793954365906 } moveCount:0
+11-06 16:39:25.914  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:26.557  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523670807, downTime=1523670156, phoneEventTime=1793954366556 } moveCount:78
+11-06 16:39:40.334  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523684582, downTime=1523684582, phoneEventTime=1793954380331 } moveCount:0
+11-06 16:39:40.334  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:40.340  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523684582, downTime=1523684582, phoneEventTime=1793954380331 } moveCount:0
+11-06 16:39:48.793  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523693042, downTime=1523693042, phoneEventTime=1793954388791 } moveCount:0
+11-06 16:39:48.793  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:39:49.448  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523693698, downTime=1523693042, phoneEventTime=1793954389447 } moveCount:78
+11-06 16:40:08.443  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1523712693, downTime=1523712693, phoneEventTime=1793954408442 } moveCount:0
+11-06 16:40:08.443  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:40:08.452  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1523712693, downTime=1523712693, phoneEventTime=1793954408442 } moveCount:0
+11-06 16:46:06.248  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524070497, downTime=1524070497, phoneEventTime=1793954766246 } moveCount:0
+11-06 16:46:06.249  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:46:06.268  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524070497, downTime=1524070497, phoneEventTime=1793954766246 } moveCount:0
+11-06 16:46:18.967  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524083217, downTime=1524083217, phoneEventTime=1793954778966 } moveCount:0
+11-06 16:46:18.968  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:46:18.970  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524083217, downTime=1524083217, phoneEventTime=1793954778966 } moveCount:0
+11-06 16:46:27.670  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524091918, downTime=1524091918, phoneEventTime=1793954787667 } moveCount:0
+11-06 16:46:27.671  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:46:28.319  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524092569, downTime=1524091918, phoneEventTime=1793954788318 } moveCount:78
+11-06 16:46:40.987  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524105237, downTime=1524105237, phoneEventTime=1793954800986 } moveCount:0
+11-06 16:46:40.988  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:46:40.990  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524105237, downTime=1524105237, phoneEventTime=1793954800986 } moveCount:0
+11-06 16:46:55.097  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524119346, downTime=1524119346, phoneEventTime=1793954815095 } moveCount:0
+11-06 16:46:55.098  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:46:55.102  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524119346, downTime=1524119346, phoneEventTime=1793954815095 } moveCount:0
+11-06 16:47:01.987  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524126236, downTime=1524126236, phoneEventTime=1793954821985 } moveCount:0
+11-06 16:47:01.987  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:47:02.642  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524126889, downTime=1524126236, phoneEventTime=1793954822638 } moveCount:78
+11-06 16:47:06.741  1519  1519 I InterceptorProxy-Helper: unregisterUIAgentListener ComponentInfo{com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity}, uid:10567
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: onSurfaceViewDetached:
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: , vri:android.view.ViewRootImpl@1b31237, com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: , vri size:1200x2670
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: , surfaceView:io.flutter.embedding.android.FlutterSurfaceView{3d9fa6a V.E...... ........ 0,0-1200,2670}, SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity]
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: , surfaceView size:1200x2670
+11-06 16:47:06.789  1519  1519 D ViewRootImplStubImpl: , surfaceControl:Surface(name=3d9fa6a SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity](BLAST)#496665)/@0x655b3a4
+11-06 16:47:06.796  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 1
+11-06 16:47:07.328  1519  1519 I VRI[MainActivity]: DisplayState - old: 1, new: 3
+11-06 16:48:47.790  1519  1519 I VRI[MainActivity]: DisplayState - old: 3, new: 3
+11-06 16:52:28.341  1519  1519 D Activity: Activity = ActivityInfo{e063681 com.duoyi.duoyi.MainActivity}, Resume onConfigurationChanged = {1.25 460mcc11mnc [zh_CN] ldltr sw369dp w369dp h822dp 520dpi nrml long hdr widecg port uimode=15 finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1200, 2670) mAppBounds=Rect(0, 0 - 1200, 2670) mMaxBounds=Rect(0, 0 - 1200, 2670) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0 mInSplitScreen=false letterBoxed=false foScaled=false isSpecificEmbedded=false embeddingScale=1.0} s.2 fontWeightAdjustment=0/dc themeChanged=0 themeChangedFlags=0 display=0 extraData = Bundle[{}] screenType=0c}
+11-06 16:52:28.351  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_status
+11-06 16:52:28.351  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_global_collect_status
+11-06 16:52:28.351  1519  1519 I InterceptorProxy-Helper: registerUIAgentListener ComponentInfo{com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity}, uid:10567
+11-06 16:52:28.362  1519 16649 I ContentCatcher_TaplusBlackListHelper:  mActivities isEmpty
+11-06 16:52:28.369  1519 16649 I ContentCatcher_TaplusBlackListHelper:  blackList size: 12 package is com.duoyi.duoyi.pullsynccheck isInTaplusWhiteList: true
+11-06 16:52:28.438  1519  1519 I VRI[MainActivity]: DisplayState - old: 3, new: 2
+11-06 16:52:28.438  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:52:28.438  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:52:28.438  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:52:28.439  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: onSurfaceViewAttached:
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: , vri:android.view.ViewRootImpl@1b31237, com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: , vri size:1200x2670
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: , surfaceView:io.flutter.embedding.android.FlutterSurfaceView{3d9fa6a V.E...... ......ID 0,0-1200,2670}, SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity]
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: , surfaceView size:1200x2670
+11-06 16:52:28.452  1519  1519 D ViewRootImplStubImpl: , surfaceControl:Surface(name=3d9fa6a SurfaceView[com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity](BLAST)#496886)/@0x38c3868
+11-06 16:52:28.487  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:52:28.487  1519  1519 I VRI[MainActivity]: DisplayState - old: 2, new: 2
+11-06 16:53:26.920  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524511167, downTime=1524511167, phoneEventTime=1793955206916 } moveCount:0
+11-06 16:53:26.920  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:53:26.984  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524511233, downTime=1524511167, phoneEventTime=1793955206983 } moveCount:0
+11-06 16:53:27.329  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:56:03.197  1519  1519 I InterceptorProxy-Helper: unregisterUIAgentListener ComponentInfo{com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity}, uid:10567
+11-06 16:56:03.200  1519  1519 D Activity: Activity = ActivityInfo{e063681 com.duoyi.duoyi.MainActivity}, Resume onConfigurationChanged = {1.25 460mcc11mnc [zh_CN] ldltr sw369dp w369dp h822dp 520dpi nrml long hdr widecg port uimode=15 finger -keyb/v/h -nav/h winConfig={ mBounds=Rect(0, 0 - 1200, 2670) mAppBounds=Rect(0, 0 - 1200, 2670) mMaxBounds=Rect(0, 0 - 1200, 2670) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0 mInSplitScreen=false letterBoxed=false foScaled=false isSpecificEmbedded=false embeddingScale=1.0} s.2 fontWeightAdjustment=0/dc themeChanged=0 themeChangedFlags=0 display=0 extraData = Bundle[{}] screenType=0c}
+11-06 16:56:03.201  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_status
+11-06 16:56:03.201  1519  1519 I InterceptorProxy-Helper: registerContentObserver success for com.duoyi.duoyi.MainActivity@e6c6d14, uri:content_catcher_global_collect_status
+11-06 16:56:03.201  1519  1519 I InterceptorProxy-Helper: registerUIAgentListener ComponentInfo{com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity}, uid:10567
+11-06 16:56:03.201  1519 16649 I ContentCatcher_TaplusBlackListHelper:  blackList size: 12 package is com.duoyi.duoyi.pullsynccheck isInTaplusWhiteList: true
+11-06 16:56:03.267  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:58:52.451  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524836692, downTime=1524836692, phoneEventTime=1793955532441 } moveCount:0
+11-06 16:58:52.452  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:58:52.452  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524836692, downTime=1524836692, phoneEventTime=1793955532441 } moveCount:0
+11-06 16:58:56.872  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524841121, downTime=1524841121, phoneEventTime=1793955536870 } moveCount:0
+11-06 16:58:56.872  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:58:56.876  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524841121, downTime=1524841121, phoneEventTime=1793955536870 } moveCount:0
+11-06 16:59:02.308  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524846557, downTime=1524846557, phoneEventTime=1793955542307 } moveCount:0
+11-06 16:59:02.308  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:02.311  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524846557, downTime=1524846557, phoneEventTime=1793955542306 } moveCount:0
+11-06 16:59:04.587  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524848836, downTime=1524848836, phoneEventTime=1793955544586 } moveCount:0
+11-06 16:59:04.587  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:05.138  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524849389, downTime=1524848836, phoneEventTime=1793955545138 } moveCount:66
+11-06 16:59:07.527  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524851777, downTime=1524851777, phoneEventTime=1793955547526 } moveCount:0
+11-06 16:59:07.527  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:07.979  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524852229, downTime=1524851777, phoneEventTime=1793955547978 } moveCount:54
+11-06 16:59:11.495  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524855744, downTime=1524855744, phoneEventTime=1793955551494 } moveCount:0
+11-06 16:59:11.495  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:12.145  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524856395, downTime=1524855744, phoneEventTime=1793955552144 } moveCount:78
+11-06 16:59:19.164  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524863414, downTime=1524863414, phoneEventTime=1793955559163 } moveCount:0
+11-06 16:59:19.165  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:19.167  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524863414, downTime=1524863414, phoneEventTime=1793955559163 } moveCount:0
+11-06 16:59:24.643  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524868892, downTime=1524868892, phoneEventTime=1793955564642 } moveCount:0
+11-06 16:59:24.643  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:24.646  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524868892, downTime=1524868892, phoneEventTime=1793955564641 } moveCount:0
+11-06 16:59:27.283  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1524871533, downTime=1524871533, phoneEventTime=1793955567282 } moveCount:0
+11-06 16:59:27.284  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 16:59:27.936  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1524872186, downTime=1524871533, phoneEventTime=1793955567936 } moveCount:78
+11-06 17:01:42.988  1519  1519 I MIUIInput: [KeyEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', KeyEvent { action=ACTION_DOWN, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=1525007229000000, downTime=1525007229000000, deviceId=-1, source=0x0, displayId=-1 }, phoneEventTime=1793955702979
+11-06 17:01:42.988  1519  1519 I MIUIInput: OnBackInvokedCallback is enabled, drop Back Key Event
+11-06 17:01:42.992  1519  1519 I MIUIInput: back key event finish by ViewPostImeInputStage, handled: true
+11-06 17:01:42.993  1519  1519 I MIUIInput: [KeyEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', KeyEvent { action=ACTION_UP, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x0, repeatCount=0, eventTime=1525007243000000, downTime=1525007229000000, deviceId=-1, source=0x0, displayId=-1 }, phoneEventTime=1793955702992
+11-06 17:01:42.993  1519  1519 I MIUIInput: OnBackInvokedCallback is enabled, drop Back Key Event
+11-06 17:01:42.998  1519  1519 W MIUIInput: Back key is intercepted by the app
+11-06 17:13:56.895  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525741145, downTime=1525741145, phoneEventTime=1793956436894 } moveCount:0
+11-06 17:13:56.895  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:13:56.898  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525741145, downTime=1525741145, phoneEventTime=1793956436894 } moveCount:0
+11-06 17:13:59.110  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525743359, downTime=1525743359, phoneEventTime=1793956439109 } moveCount:0
+11-06 17:13:59.110  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:13:59.760  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525744010, downTime=1525743359, phoneEventTime=1793956439759 } moveCount:78
+11-06 17:14:04.878  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525749128, downTime=1525749128, phoneEventTime=1793956444877 } moveCount:0
+11-06 17:14:04.878  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:04.881  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525749128, downTime=1525749128, phoneEventTime=1793956444877 } moveCount:0
+11-06 17:14:04.969  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:09.331  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525753580, downTime=1525753580, phoneEventTime=1793956449330 } moveCount:0
+11-06 17:14:09.331  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:09.333  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525753580, downTime=1525753580, phoneEventTime=1793956449329 } moveCount:0
+11-06 17:14:13.740  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525757990, downTime=1525757990, phoneEventTime=1793956453739 } moveCount:0
+11-06 17:14:13.740  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:13.746  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525757990, downTime=1525757990, phoneEventTime=1793956453739 } moveCount:0
+--------- beginning of main
+11-06 17:14:13.750  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:be9dadb6: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:13.750  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:13.750  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:be9dadb6: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:17.325  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525761575, downTime=1525761575, phoneEventTime=1793956457325 } moveCount:0
+11-06 17:14:17.325  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:17.977  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525762227, downTime=1525761575, phoneEventTime=1793956457976 } moveCount:78
+11-06 17:14:27.152  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525771397, downTime=1525771397, phoneEventTime=1793956467146 } moveCount:0
+11-06 17:14:27.153  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:27.153  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525771397, downTime=1525771397, phoneEventTime=1793956467146 } moveCount:0
+11-06 17:14:27.175  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:8601a98c: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:27.175  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:27.175  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:8601a98c: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:31.585  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525775832, downTime=1525775832, phoneEventTime=1793956471581 } moveCount:0
+11-06 17:14:31.585  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:31.586  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525775832, downTime=1525775832, phoneEventTime=1793956471581 } moveCount:0
+11-06 17:14:31.598  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:dde091d2: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:31.598  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:31.598  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:dde091d2: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:36.947  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525781193, downTime=1525781193, phoneEventTime=1793956476942 } moveCount:0
+11-06 17:14:36.947  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:36.948  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525781193, downTime=1525781193, phoneEventTime=1793956476943 } moveCount:0
+11-06 17:14:36.976  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:6655243f: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:36.976  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:36.976  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:6655243f: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:36.977  1519  1519 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@1ddeff1
+11-06 17:14:41.390  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525785640, downTime=1525785640, phoneEventTime=1793956481389 } moveCount:0
+11-06 17:14:41.391  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:41.394  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525785640, downTime=1525785640, phoneEventTime=1793956481389 } moveCount:0
+11-06 17:14:41.398  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:77ad93f6: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:41.398  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:41.398  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:77ad93f6: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:45.794  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525790044, downTime=1525790044, phoneEventTime=1793956485793 } moveCount:0
+11-06 17:14:45.795  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:45.797  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525790044, downTime=1525790044, phoneEventTime=1793956485793 } moveCount:0
+11-06 17:14:45.800  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:c4f5c100: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:45.800  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:45.800  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:c4f5c100: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:49.091  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525793341, downTime=1525793341, phoneEventTime=1793956489090 } moveCount:0
+11-06 17:14:49.092  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:49.742  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525793992, downTime=1525793341, phoneEventTime=1793956489742 } moveCount:78
+11-06 17:14:54.185  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525798435, downTime=1525798435, phoneEventTime=1793956494184 } moveCount:0
+11-06 17:14:54.186  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:54.188  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525798435, downTime=1525798435, phoneEventTime=1793956494184 } moveCount:0
+11-06 17:14:54.240  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:d58ef39: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:54.241  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:54.241  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:d58ef39: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:59.157  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525803407, downTime=1525803407, phoneEventTime=1793956499156 } moveCount:0
+11-06 17:14:59.158  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:59.161  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525803407, downTime=1525803407, phoneEventTime=1793956499156 } moveCount:0
+11-06 17:14:59.164  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:f92fa640: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:14:59.164  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:14:59.164  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:f92fa640: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:14:59.232  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:14:59.232  1519  1519 D FlutterJNI: Sending viewport metrics to the engine.
+11-06 17:15:02.445  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525806695, downTime=1525806695, phoneEventTime=1793956502444 } moveCount:0
+11-06 17:15:02.445  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:03.096  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525807347, downTime=1525806695, phoneEventTime=1793956503096 } moveCount:78
+11-06 17:15:11.912  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525816159, downTime=1525816159, phoneEventTime=1793956511908 } moveCount:0
+11-06 17:15:11.912  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:11.913  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525816159, downTime=1525816159, phoneEventTime=1793956511909 } moveCount:0
+11-06 17:15:11.926  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:5c5c25d5: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:11.926  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:11.926  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:5c5c25d5: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:11.974  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:11.975  1519  1519 D FlutterJNI: Sending viewport metrics to the engine.
+11-06 17:15:17.015  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525821263, downTime=1525821263, phoneEventTime=1793956517012 } moveCount:0
+11-06 17:15:17.015  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:17.016  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525821263, downTime=1525821263, phoneEventTime=1793956517012 } moveCount:0
+11-06 17:15:17.044  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:b713f8e: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:17.044  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:17.044  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:b713f8e: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:17.050  1519  1519 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@1ddeff1
+11-06 17:15:21.406  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525825656, downTime=1525825656, phoneEventTime=1793956521405 } moveCount:0
+11-06 17:15:21.406  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:21.409  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525825656, downTime=1525825656, phoneEventTime=1793956521405 } moveCount:0
+11-06 17:15:21.412  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:7fce4393: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:21.412  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:21.412  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:7fce4393: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:25.819  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525830068, downTime=1525830068, phoneEventTime=1793956525818 } moveCount:0
+11-06 17:15:25.819  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:25.821  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525830068, downTime=1525830068, phoneEventTime=1793956525817 } moveCount:0
+11-06 17:15:25.825  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:56c0cb2d: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:25.825  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:25.825  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:56c0cb2d: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:28.026  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525832276, downTime=1525832276, phoneEventTime=1793956528025 } moveCount:0
+11-06 17:15:28.026  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:28.678  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525832928, downTime=1525832276, phoneEventTime=1793956528678 } moveCount:78
+11-06 17:15:33.070  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525837320, downTime=1525837320, phoneEventTime=1793956533069 } moveCount:0
+11-06 17:15:33.071  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:33.073  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525837320, downTime=1525837320, phoneEventTime=1793956533069 } moveCount:0
+11-06 17:15:33.077  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:dada768a: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:33.077  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:33.077  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:dada768a: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:37.544  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525841794, downTime=1525841794, phoneEventTime=1793956537543 } moveCount:0
+11-06 17:15:37.545  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:37.547  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525841794, downTime=1525841794, phoneEventTime=1793956537543 } moveCount:0
+11-06 17:15:37.552  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:e92917ed: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:37.552  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:37.552  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:e92917ed: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:37.634  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:37.634  1519  1519 D FlutterJNI: Sending viewport metrics to the engine.
+11-06 17:15:40.203  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525844453, downTime=1525844453, phoneEventTime=1793956540202 } moveCount:0
+11-06 17:15:40.204  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:40.797  1519 16576 I i.pullsynccheck: This is sticky GC, maxfree is 33554432 minfree is 8388608
+11-06 17:15:40.797  1519 16576 W i.pullsynccheck: Reducing the number of considered missed Gc histogram windows from 136 to 100
+11-06 17:15:40.854  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525845105, downTime=1525844453, phoneEventTime=1793956540854 } moveCount:78
+11-06 17:15:49.935  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525854181, downTime=1525854181, phoneEventTime=1793956549930 } moveCount:0
+11-06 17:15:49.935  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:49.936  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525854181, downTime=1525854181, phoneEventTime=1793956549930 } moveCount:0
+11-06 17:15:49.951  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:2647ae60: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:49.951  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:49.951  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:2647ae60: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:49.999  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:49.999  1519  1519 D FlutterJNI: Sending viewport metrics to the engine.
+11-06 17:15:55.318  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525859565, downTime=1525859565, phoneEventTime=1793956555314 } moveCount:0
+11-06 17:15:55.318  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:55.319  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525859565, downTime=1525859565, phoneEventTime=1793956555314 } moveCount:0
+11-06 17:15:55.352  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:df600975: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:55.352  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:55.352  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:df600975: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:15:55.360  1519  1519 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@1ddeff1
+11-06 17:15:59.783  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525864033, downTime=1525864033, phoneEventTime=1793956559782 } moveCount:0
+11-06 17:15:59.783  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:15:59.786  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525864033, downTime=1525864033, phoneEventTime=1793956559782 } moveCount:0
+11-06 17:15:59.852  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:54ad5897: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:15:59.852  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:15:59.852  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:54ad5897: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:05.148  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525869398, downTime=1525869398, phoneEventTime=1793956565147 } moveCount:0
+11-06 17:16:05.148  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:05.151  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525869398, downTime=1525869398, phoneEventTime=1793956565147 } moveCount:0
+11-06 17:16:05.220  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:d63ea49a: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:05.220  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:05.220  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:d63ea49a: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:07.351  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525871601, downTime=1525871601, phoneEventTime=1793956567350 } moveCount:0
+11-06 17:16:07.352  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:08.006  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525872256, downTime=1525871601, phoneEventTime=1793956568006 } moveCount:78
+11-06 17:16:13.189  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525877439, downTime=1525877439, phoneEventTime=1793956573188 } moveCount:0
+11-06 17:16:13.189  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:13.192  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525877439, downTime=1525877439, phoneEventTime=1793956573188 } moveCount:0
+11-06 17:16:13.195  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:e92eed75: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:13.195  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:13.195  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:e92eed75: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:17.626  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525881876, downTime=1525881876, phoneEventTime=1793956577625 } moveCount:0
+11-06 17:16:17.626  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:17.629  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525881876, downTime=1525881876, phoneEventTime=1793956577625 } moveCount:0
+11-06 17:16:17.633  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:c99d36d7: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:17.633  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:17.633  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:c99d36d7: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:20.300  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525884549, downTime=1525884549, phoneEventTime=1793956580298 } moveCount:0
+11-06 17:16:20.300  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:20.951  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525885201, downTime=1525884549, phoneEventTime=1793956580951 } moveCount:78
+11-06 17:16:30.411  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525894658, downTime=1525894658, phoneEventTime=1793956590408 } moveCount:0
+11-06 17:16:30.411  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:30.411  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525894658, downTime=1525894658, phoneEventTime=1793956590407 } moveCount:0
+11-06 17:16:30.424  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:901604c3: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:30.424  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:30.424  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:901604c3: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:35.426  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525899673, downTime=1525899673, phoneEventTime=1793956595422 } moveCount:0
+11-06 17:16:35.426  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:35.427  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525899673, downTime=1525899673, phoneEventTime=1793956595422 } moveCount:0
+11-06 17:16:35.431  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:b412c3b4: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:35.431  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:35.431  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:b412c3b4: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+11-06 17:16:35.458  1519  1519 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=io.flutter.embedding.android.FlutterActivity$1@1ddeff1
+11-06 17:16:39.907  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_DOWN, id[0]=0, pointerCount=1, eventTime=1525904157, downTime=1525904157, phoneEventTime=1793956599906 } moveCount:0
+11-06 17:16:39.908  1519  1519 D VRI[MainActivity]: getMiuiFreeformStackInfo mTmpFrames.miuiFreeFormStackInfo: null
+11-06 17:16:39.910  1519  1519 I MIUIInput: [MotionEvent] ViewRootImpl windowName 'com.duoyi.duoyi.pullsynccheck/com.duoyi.duoyi.MainActivity', { action=ACTION_UP, id[0]=0, pointerCount=1, eventTime=1525904157, downTime=1525904157, phoneEventTime=1793956599906 } moveCount:0
+11-06 17:16:39.913  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:a3bcf50a: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
+11-06 17:16:39.913  1519  1519 D InsetsController: hide(ime(), fromIme=false)
+11-06 17:16:39.913  1519  1519 I ImeTracker: com.duoyi.duoyi.pullsynccheck:a3bcf50a: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN

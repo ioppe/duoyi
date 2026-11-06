@@ -1,0 +1,13 @@
+{
+  "pid": "1519",
+  "start": "11-06 16:36:12.000",
+  "patterns": [
+    "FATAL EXCEPTION",
+    "Fatal signal",
+    "Unhandled Exception",
+    "RenderFlex overflowed",
+    "Another exception was thrown"
+  ],
+  "app_error_findings": [],
+  "crash_or_anr_events": []
+}

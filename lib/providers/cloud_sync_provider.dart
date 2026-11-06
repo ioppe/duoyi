@@ -158,6 +158,7 @@ class CloudSyncProvider extends ChangeNotifier {
   bool _pendingPreferencesFullSync = false;
   Future<void>? _preferenceMarkTail;
   String? _pendingQuickCaptureTemplatesUpdatedAt;
+  Completer<void>? _syncIdle;
 
   /// 按集合的解码缓存：原始存储内容不变时复用解码结果与哈希，
   /// 使每轮同步的重复负载构建（apply 末尾 rebuild）几乎零成本。
@@ -232,6 +233,10 @@ class CloudSyncProvider extends ChangeNotifier {
   }
 
   void _notifySyncStateChanged() {
+    if (!_isSyncing) {
+      _syncIdle?.complete();
+      _syncIdle = null;
+    }
     if (_notifyQueued) return;
     _notifyQueued = true;
     scheduleMicrotask(() {
@@ -1025,7 +1030,19 @@ class CloudSyncProvider extends ChangeNotifier {
     _notifySyncStateChanged();
   }
 
-  Future<void> syncNow() async {
+  Future<void> syncNow() => _syncNow();
+
+  /// 手动刷新等待在途同步；即使本地无改动也拉取远端，并等待页面回载。
+  Future<void> syncNowAndPull() async {
+    final generation = _accountGeneration;
+    while (_isSyncing && _isCurrentAccountGeneration(generation)) {
+      await (_syncIdle ??= Completer<void>()).future;
+    }
+    if (!_isCurrentAccountGeneration(generation)) return;
+    await _syncNow(pullRemote: true);
+  }
+
+  Future<void> _syncNow({bool pullRemote = false}) async {
     _autoSyncTimer?.cancel();
     // Req 12.6：关闭 cloud_sync_v2 时完全离线可用，不发出任何网络请求。
     if (!FeatureFlags.cloudSyncV2) {
@@ -1091,6 +1108,10 @@ class CloudSyncProvider extends ChangeNotifier {
       Map<String, dynamic> response;
       if (changedCollections == null) {
         response = await client.post('/api/sync', payload);
+      } else if (changedCollections.isEmpty && pullRemote) {
+        response = await client.post('/api/sync/pull', {
+          'collection_hashes': localHashes,
+        });
       } else if (changedCollections.isEmpty) {
         await _runAccountBoundWriteback(accountGenerationAtStart, () async {
           _lastCollectionHashes = localHashes;
@@ -1682,13 +1703,12 @@ class CloudSyncProvider extends ChangeNotifier {
         items = <dynamic>[];
       }
     }
-    return {
-      'updatedAt':
-          _pendingQuickCaptureTemplatesUpdatedAt ??
-          prefs.getString(_quickCaptureTemplatesUpdatedAtStorageKey) ??
-          '',
-      'items': items,
-    };
+    // 服务端合并会省略不存在的版本；空字符串会制造永久哈希差异。
+    final updatedAt =
+        _pendingQuickCaptureTemplatesUpdatedAt ??
+        prefs.getString(_quickCaptureTemplatesUpdatedAtStorageKey) ??
+        '';
+    return {if (updatedAt.isNotEmpty) 'updatedAt': updatedAt, 'items': items};
   }
 
   List<Map<String, dynamic>> _buildListGroupsPayload(SharedPreferences prefs) =>
@@ -2121,6 +2141,10 @@ class CloudSyncProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _accountGeneration++;
+    _syncSuspendedForAccountChange = true;
+    _syncIdle?.complete();
+    _syncIdle = null;
     _autoSyncTimer?.cancel();
     _remotePollTimer?.cancel();
     _remoteEventRetryTimer?.cancel();
