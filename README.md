@@ -4,7 +4,7 @@
 
 > Flutter 客户端 + 自托管 FastAPI 后端，开源、可自部署。
 
-配置入口、优先级和迁移说明见 [docs/configuration.md](docs/configuration.md)；当前自托管实例的构建命令见 [docs/self-hosting-skydrow.md](docs/self-hosting-skydrow.md)；分支汇总与发布核验见 [主线集成](docs/mainline-integration.md)。
+完整资料见 [文档索引](docs/README.md)。配置入口、优先级和迁移说明见 [配置说明](docs/configuration.md)；当前自托管实例的构建命令见 [自托管说明](docs/self-hosting-skydrow.md)；分支汇总与发布核验见 [主线集成](docs/mainline-integration.md)。
 
 安装端（Android、iOS、Windows、Linux、macOS）在登录页填写服务器地址和访问令牌；Web 默认连接当前站点后端。可先在网页版账号的“我的 → 个人资料 → 访问令牌”创建令牌，支持按设备命名、查看最近使用时间、设置有效期和单独撤销。安装端也保留账号密码登录入口。
 
@@ -54,14 +54,22 @@ lib/
 ├── models/                # Todo / Habit / Pomodoro / CalendarEvent / UserProfile
 ├── providers/             # Provider 状态管理
 ├── services/              # ApiClient / AiService / AppUpdateService / 桌面集成
-├── screens/               # 5 个 Tab + 详情页 + 登录/反馈/公告/AI 设置
+├── screens/               # 主页面、详情页与各功能设置页
 └── widgets/               # 复用 widget (eisenhower / heatmap / brand_background ...)
 
 backend/                   # FastAPI 后端 (auth / sync / announcements / feedback)
 android/app/src/main/      # MIUI 桌面小组件 (Kotlin AppWidgetProvider + XML)
 linux/                     # Linux 桌面入口 + .desktop
 macos/                     # macOS 原生入口 + 可拖动番茄悬浮窗
-assets/backgrounds/        # 7 张主题背景图
+ios/                       # iOS 客户端入口与 WidgetKit 源码
+web/                       # Web 启动页、图标与 PWA 配置
+assets/                    # 主题背景、字体和品牌资源
+config/                    # 公开部署配置与固定工具链版本
+scripts/                   # 构建、配置、资源与部署工具
+test/                      # Flutter 行为测试与静态守卫
+integration_test/          # 设备集成测试
+docs/                      # 需求、设计、功能契约与发布记录
+evidence/                  # 可追溯的设备验证与检查证据
 ```
 
 ## 快速开始
