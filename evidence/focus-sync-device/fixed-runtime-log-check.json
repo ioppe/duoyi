@@ -1,0 +1,12 @@
+{
+  "startedAtMs": 1793962497112,
+  "finishedAtMs": 1793962656107,
+  "testedPackage": "com.duoyi.duoyi.accountfocuscheck",
+  "checkedProcessLineCounts": {
+    "7722": 52,
+    "10182": 268,
+    "10798": 333
+  },
+  "matchedFatalOrFlutterErrors": [],
+  "scope": "fixed APK physical11case window; known old crash excluded"
+}

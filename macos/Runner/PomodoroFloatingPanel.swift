@@ -291,6 +291,9 @@ struct PomodoroFloatingPanelState {
   let windowTitle: String
   let appearance: PomodoroFloatingPanelAppearance
   let windowSize: PomodoroFloatingPanelSize
+  let controlSessionId: String
+  let controlRevision: Int
+  let controlState: String
 
   /// Returns nil when `timeText` is missing, which the channel reports back to
   /// Dart as `invalid_arguments`.
@@ -321,6 +324,9 @@ struct PomodoroFloatingPanelState {
     self.windowSize =
       PomodoroFloatingPanelSize(string: arguments["windowSize"] as? String)
       ?? PomodoroFloatingPanelSize.fallback
+    self.controlSessionId = arguments["controlSessionId"] as? String ?? ""
+    self.controlRevision = max(0, (arguments["controlRevision"] as? NSNumber)?.intValue ?? 0)
+    self.controlState = arguments["controlState"] as? String ?? ""
   }
 
   /// Label and symbol for the single shared play/pause control: paused wins
@@ -1118,6 +1124,16 @@ final class PomodoroFloatingPanelController {
 
   var isPanelVisible: Bool {
     panel?.isVisible ?? false
+  }
+
+  /// Bind a click to the state actually displayed by this native panel.
+  var toggleBinding: [String: Any]? {
+    guard let state = state, state.canToggle else { return nil }
+    return [
+      "sessionId": state.controlSessionId,
+      "revision": state.controlRevision,
+      "state": state.controlState,
+    ]
   }
 
   /// Applies the state first, then shows the panel. Creates the panel on demand

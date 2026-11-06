@@ -34,6 +34,7 @@ import '../widgets/surface_components.dart';
 import '../core/i18n.dart';
 import '../widgets/focus_distraction_app_picker.dart';
 import '../widgets/pomodoro_floating_window_host.dart';
+import '../widgets/focus_sync_status.dart';
 
 String _focusRoomErrorText(Object error) {
   final message = error is ApiException ? error.message : error.toString();
@@ -701,37 +702,65 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                       ],
                                       const SizedBox(width: 10),
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              typeLabel(state.type),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleMedium
-                                                  ?.copyWith(
-                                                    fontSize: tight ? 15 : 17,
-                                                    color: cs.onSurface,
-                                                    fontWeight: DesignTokens
-                                                        .fontWeightStrong,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              '${state.completedSessions} ${s.focusCompletedSuffix}',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    color: cs.onSurface
-                                                        .withValues(
-                                                          alpha: 0.68,
+                                            Flexible(
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    typeLabel(state.type),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleMedium
+                                                        ?.copyWith(
+                                                          fontSize: tight
+                                                              ? 15
+                                                              : 17,
+                                                          color: cs.onSurface,
+                                                          fontWeight: DesignTokens
+                                                              .fontWeightStrong,
                                                         ),
+                                                  ),
+                                                  const SizedBox(
+                                                    height:
+                                                        DesignTokens.spaceXxs,
+                                                  ),
+                                                  Text(
+                                                    '${state.completedSessions} ${s.focusCompletedSuffix}',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: cs.onSurface
+                                                              .withValues(
+                                                                alpha: 0.68,
+                                                              ),
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              width: DesignTokens.spaceXs,
+                                            ),
+                                            FocusSyncStatus(
+                                              provider: provider,
+                                              isLoggedIn: context
+                                                  .select<AuthProvider?, bool>(
+                                                    (auth) =>
+                                                        auth
+                                                            ?.state
+                                                            .isLoggedIn ??
+                                                        false,
                                                   ),
                                             ),
                                           ],
@@ -859,7 +888,13 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                             ),
                                             label: const Text('自由计时'),
                                             selected: state.isCountUp,
-                                            onSelected: state.isRunning
+                                            onSelected:
+                                                state.isRunning ||
+                                                    (provider
+                                                            .focusSyncEnabled &&
+                                                        (!provider
+                                                                .canControlFocus ||
+                                                            provider.isPaused))
                                                 ? null
                                                 : (_) => provider
                                                       .setCountUpMode(true),
@@ -880,7 +915,14 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                                       min * 60 &&
                                                   state.type ==
                                                       PomodoroType.focus,
-                                              onSelected: state.isRunning
+                                              onSelected:
+                                                  state.isRunning ||
+                                                      (provider
+                                                              .focusSyncEnabled &&
+                                                          (!provider
+                                                                  .canControlFocus ||
+                                                              provider
+                                                                  .isPaused))
                                                   ? null
                                                   : (_) {
                                                       provider.setCountUpMode(
@@ -1005,12 +1047,13 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       IconButton.filled(
-                                        onPressed: () =>
-                                            _confirmStrictFocusExit(
-                                              context,
-                                              FocusPenaltyReason.reset,
-                                              provider.resetTimer,
-                                            ),
+                                        onPressed: provider.canControlFocus
+                                            ? () => _confirmStrictFocusExit(
+                                                context,
+                                                FocusPenaltyReason.reset,
+                                                provider.resetTimer,
+                                              )
+                                            : null,
                                         icon: const Icon(Icons.refresh),
                                         style: IconButton.styleFrom(
                                           backgroundColor:
@@ -1023,7 +1066,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                         width: tight ? 50 : 58,
                                         height: tight ? 50 : 58,
                                         child: FloatingActionButton(
-                                          onPressed: provider.toggleTimer,
+                                          onPressed: provider.canControlFocus
+                                              ? provider.toggleTimer
+                                              : null,
                                           backgroundColor: color,
                                           child: Icon(
                                             state.isRunning
@@ -1036,7 +1081,9 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                       ),
                                       SizedBox(width: tight ? 14 : 18),
                                       IconButton.filled(
-                                        onPressed: state.isCountUp
+                                        onPressed: !provider.canControlFocus
+                                            ? null
+                                            : state.isCountUp
                                             ? provider.finishCurrentSession
                                             : () => _confirmStrictFocusExit(
                                                 context,

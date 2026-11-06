@@ -39,6 +39,11 @@ else:
     )
     from settings_defaults import DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL, build_settings_defaults
 
+if __package__:
+    from . import focus_runtime, login_session_store
+else:
+    import focus_runtime, login_session_store
+
 SETTINGS = load_settings()
 BUILD_GIT_SHA = SETTINGS.build_git_sha
 BUILD_TIME = SETTINGS.build_time
@@ -48,7 +53,7 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.7"
+API_CONTRACT_VERSION = "2026-06-01.8"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_code_login_gating": True,
@@ -60,6 +65,7 @@ API_CONTRACT_FEATURES = {
     "password_change": True,
     "auth_session": True,
     "persistent_login_sessions": True,
+    "multi_device_login_sessions": True,
     "access_tokens": True,
     "admin_coins": True,
     "admin_groups": True,
@@ -69,6 +75,7 @@ API_CONTRACT_FEATURES = {
     "focus_room_realtime": True,
     "theme_shop": True,
     "list_groups": True,
+    "focus_runtime_sync": True,
 }
 API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/config",
@@ -134,6 +141,9 @@ API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/focus-leaderboard/global",
     "GET /api/focus-leaderboard/global/events",
     "WS /ws/focus-leaderboard/global/events",
+    "GET /api/focus/runtime",
+    "POST /api/focus/runtime/commands",
+    "WS /ws/focus/runtime/events",
 ]
 API_CONTRACT_ROUTES_HASH = hashlib.sha256(
     "\n".join(API_CONTRACT_REQUIRED_ROUTES).encode("utf-8")
@@ -308,7 +318,7 @@ def _forget_cached_token(token: str) -> None:
 
 
 def _drop_session(user_id: str, db=None) -> None:
-    """Revoke the account's persistent login session and its cache alias."""
+    """Revoke all persistent login sessions for an account and its cache alias."""
     _clear_session_cache(user_id)
     own_connection = db is None
     if own_connection:
@@ -357,49 +367,38 @@ def _online_user_ids(
     if own_connection:
         db = get_db()
     try:
-        params = [_format_utc(cutoff)]
         user_filter = ""
+        ids_params = []
         if ids is not None:
-            user_filter = "AND u.id IN (" + ",".join("?" for _ in ids) + ")"
-            params.extend(ids)
-        # One batch for enabled users, their recent login session and recent PATs.
+            user_filter = "AND u.id IN (" + ",".join("?" for _ in ids) + ") "
+            ids_params = list(ids)
+        # UNION avoids multiplying every login session by every PAT. Each valid
+        # credential can establish presence independently of the cache alias.
+        recent = _format_utc(cutoff)
         rows = db.execute(
-            "SELECT u.id, t.last_used_at, t.expires_at, "
-            "s.last_used_at AS session_last_used_at, s.expires_at AS session_expires_at "
-            "FROM users u "
-            "LEFT JOIN access_tokens t ON t.user_id=u.id AND t.revoked_at IS NULL "
-            "AND t.last_used_at>=? "
-            "LEFT JOIN login_sessions s ON s.user_id=u.id "
-            "WHERE u.is_disabled=0 " + user_filter,
-            params,
+            "SELECT u.id, s.last_used_at, s.expires_at, 1 AS is_session, s.token_hash AS session_hash "
+            "FROM users u JOIN login_sessions s ON s.user_id=u.id "
+            "WHERE u.is_disabled=0 " + user_filter +
+            "UNION ALL SELECT u.id, t.last_used_at, t.expires_at, 0 AS is_session, NULL AS session_hash "
+            "FROM users u JOIN access_tokens t ON t.user_id=u.id "
+            "WHERE u.is_disabled=0 AND t.revoked_at IS NULL AND t.last_used_at>=? " + user_filter,
+            [*ids_params, recent, *ids_params],
         ).fetchall()
         online = set()
         for row in rows:
-            user_id = row["id"]
-            session_activity = TOKEN_LAST_ACTIVE.get(user_id)
-            if user_id in TOKENS:
-                # A cached alias stays authoritative for this process' live session.
-                if session_activity is not None and session_activity >= cutoff:
-                    online.add(user_id)
-                    continue
-            else:
-                # After a restart the persisted session carries recent activity.
-                session_last_used = _parse_server_time(row["session_last_used_at"])
-                session_expires = _parse_server_time(row["session_expires_at"])
-                if (
-                    session_last_used is not None
-                    and session_last_used >= cutoff
-                    and session_expires is not None
-                    and session_expires > now
-                ):
-                    online.add(user_id)
-                    continue
             last_used = _parse_server_time(row["last_used_at"])
+            if row["is_session"] and row["id"] in TOKENS:
+                cached_activity = TOKEN_LAST_ACTIVE.get(row["id"])
+                cached_hash = _hash_login_session_token(TOKENS[row["id"]])
+                if row["session_hash"] == cached_hash:
+                    last_used = cached_activity
+                elif last_used is None:
+                    last_used = cached_activity
             expires_at = _parse_server_time(row["expires_at"])
             if last_used is not None and last_used >= cutoff and (
                 row["expires_at"] is None or (expires_at is not None and expires_at > now)
             ):
-                online.add(user_id)
+                online.add(row["id"])
         return online
     finally:
         if own_connection:
@@ -1843,8 +1842,8 @@ def _initialize_database(conn, fresh_database: bool):
             FOREIGN KEY(friend_user_id) REFERENCES users(id) ON DELETE CASCADE
         );
         CREATE TABLE IF NOT EXISTS login_sessions (
-            user_id TEXT PRIMARY KEY,
-            token_hash TEXT UNIQUE NOT NULL,
+            user_id TEXT NOT NULL,
+            token_hash TEXT PRIMARY KEY,
             created_at TEXT NOT NULL,
             expires_at TEXT NOT NULL,
             last_used_at TEXT,
@@ -1858,6 +1857,10 @@ def _initialize_database(conn, fresh_database: bool):
     for statement in schema.split(";"):
         if statement.strip():
             conn.execute(statement)
+
+    # Private, account-scoped focus runtime (see docs/focus-runtime-sync.md).
+    focus_runtime.ensure_schema(conn)
+    login_session_store.migrate_login_sessions(conn)
 
     # Schema migrations
     for table, col, default in [
@@ -4605,6 +4608,8 @@ def admin_backup_wipe(user_id: str, actor: str = Depends(_require_admin)):
             "updated_at=datetime('now') WHERE user_id=?",
             (user_id,),
         )
+        # Clear private runtime fields while advancing the live revision clock.
+        focus_runtime.clear_user_data(db, user_id)
         _audit(
             db, actor, _get_username(db, actor),
             "backup.wipe", target=user_id,
@@ -6034,12 +6039,12 @@ def _auth_payload(data: dict) -> dict:
 
 
 def _issue_login_session(db, row, *, action: str, audit: bool = True) -> dict:
-    """Persist the account's single login session, then refresh the cache alias."""
+    """Persist an independent device login session, then refresh the cache alias."""
     token = secrets.token_hex(32)
     now = _utc_now()
     now_text = _format_utc(now)
     db.execute(
-        "INSERT OR REPLACE INTO login_sessions(user_id, token_hash, created_at, expires_at, last_used_at) "
+        "INSERT INTO login_sessions(user_id, token_hash, created_at, expires_at, last_used_at) "
         "VALUES(?,?,?,?,NULL)",
         (
             row["id"],
@@ -9380,6 +9385,9 @@ def _sync_impl(
                     detail=f"同步数据过大 ({payload_size // 1024}KB > {max_kb}KB)",
                 )
 
+        # Read, merge and the whole-row replace must share one write transaction:
+        # a server-side focus settlement may append history between them otherwise.
+        db.execute("BEGIN IMMEDIATE")
         _ensure_private_workspace(db, user_id)
         row = db.execute(
             "SELECT todos, habits, pomodoro_sessions, pomodoro_config, user_profile, "
@@ -12924,3 +12932,268 @@ def admin_audit_log(
         return _admin_page_response([dict(r) for r in rows], total, limit, offset)
     finally:
         db.close()
+
+
+# ---- Focus runtime sync (one live session per account) ----
+# Contract: docs/focus-runtime-sync.md.  All state changes commit before any
+# network message is sent, and every write path re-checks the credential.
+
+FOCUS_RUNTIME_CONNECTIONS: dict[str, set[WebSocket]] = {}
+FOCUS_RUNTIME_EXPIRY_TASK: Optional[asyncio.Task] = None
+FOCUS_RUNTIME_PROBE_SECONDS = 1.0
+FOCUS_RUNTIME_REAUTH_SECONDS = 15.0
+FOCUS_RUNTIME_SEND_TIMEOUT_SECONDS = 2.0
+FOCUS_RUNTIME_EXPIRY_BATCH = 50
+
+
+class FocusRuntimeCommandRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    commandId: str = Field(min_length=1, max_length=200)
+    deviceId: str = Field(min_length=1, max_length=200)
+    sessionId: str = Field(min_length=1, max_length=200)
+    expectedRevision: int
+    action: str = Field(min_length=1, max_length=40)
+    payload: Optional[dict] = None
+
+
+def _focus_runtime_read(user_id: str) -> tuple[dict, bool]:
+    """Read runtime and history consistently, settling due phases first."""
+    db = get_db()
+    try:
+        db.execute("BEGIN IMMEDIATE")
+        now = focus_runtime.now_ms()
+        changed = focus_runtime.advance_due(db, user_id, now)
+        envelope = focus_runtime.read_state(db, user_id, now)
+        db.commit()
+        return envelope, changed
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def _focus_runtime_apply(user_id: str, command: dict, token: str) -> dict:
+    """Recheck the exact credential and atomically apply a versioned command."""
+    db = get_db()
+    try:
+        db.execute("BEGIN IMMEDIATE")
+        _verify_token_in_db(db, token, expected_user_id=user_id)
+        focus_runtime.advance_due(db, user_id)
+        db.execute("SAVEPOINT focus_command")
+        try:
+            envelope = focus_runtime.handle_command(db, user_id, command)
+        except focus_runtime.FocusRuntimeError:
+            db.execute("ROLLBACK TO focus_command")
+            db.execute("RELEASE focus_command")
+            db.commit()  # Keep natural expiry even when the user command conflicts.
+            raise
+        db.execute("RELEASE focus_command")
+        db.commit()
+        return envelope
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def _focus_runtime_probe(user_id: str) -> tuple[int, bool]:
+    db = get_db()
+    try:
+        return focus_runtime.probe(db, user_id)
+    finally:
+        db.close()
+
+
+def _focus_runtime_due_users() -> list[str]:
+    db = get_db()
+    try:
+        return focus_runtime.due_user_ids(
+            db, focus_runtime.now_ms(), FOCUS_RUNTIME_EXPIRY_BATCH
+        )
+    finally:
+        db.close()
+
+
+def _focus_runtime_register(user_id: str, websocket: WebSocket) -> None:
+    FOCUS_RUNTIME_CONNECTIONS.setdefault(user_id, set()).add(websocket)
+
+
+def _focus_runtime_unregister(user_id: str, websocket: WebSocket) -> None:
+    connections = FOCUS_RUNTIME_CONNECTIONS.get(user_id)
+    if not connections:
+        return
+    connections.discard(websocket)
+    if not connections:
+        FOCUS_RUNTIME_CONNECTIONS.pop(user_id, None)
+
+
+async def _focus_runtime_send(websocket: WebSocket, envelope: dict) -> bool:
+    """Send one snapshot without letting a slow socket stall the batch."""
+    message = {"event": "focus.runtime", "data": envelope}
+    try:
+        try:
+            await asyncio.to_thread(_verify_focus_websocket, websocket)
+        except HTTPException:
+            await websocket.close(code=1008)
+            return False
+        await asyncio.wait_for(
+            websocket.send_json(message),
+            timeout=FOCUS_RUNTIME_SEND_TIMEOUT_SECONDS,
+        )
+        return True
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        return False
+
+
+async def _focus_runtime_broadcast(user_id: str, envelope: dict) -> None:
+    """Push a committed snapshot to every connection of the same account."""
+    targets = list(FOCUS_RUNTIME_CONNECTIONS.get(user_id) or ())
+    if not targets:
+        return
+    results = await asyncio.gather(
+        *(_focus_runtime_send(target, envelope) for target in targets),
+        return_exceptions=True,
+    )
+    for target, result in zip(targets, results):
+        if result is not True:
+            _focus_runtime_unregister(user_id, target)
+
+
+async def _focus_runtime_close_all() -> None:
+    connections = [
+        (user_id, websocket)
+        for user_id, sockets in list(FOCUS_RUNTIME_CONNECTIONS.items())
+        for websocket in list(sockets)
+    ]
+    FOCUS_RUNTIME_CONNECTIONS.clear()
+    for _, websocket in connections:
+        try:
+            await websocket.close(code=1001)
+        except Exception:
+            pass
+
+
+async def _focus_runtime_expiry_loop() -> None:
+    """Bounded background settlement so an idle worker still converges."""
+    while True:
+        await asyncio.sleep(FOCUS_RUNTIME_PROBE_SECONDS)
+        try:
+            user_ids = await asyncio.to_thread(_focus_runtime_due_users)
+        except Exception:
+            continue
+        for user_id in user_ids:
+            try:
+                envelope, changed = await asyncio.to_thread(
+                    _focus_runtime_read, user_id
+                )
+            except Exception:
+                continue
+            if changed:
+                await _focus_runtime_broadcast(user_id, envelope)
+
+
+@app.get("/api/focus/runtime")
+async def focus_runtime_snapshot(user_id: str = Depends(_verify_token)):
+    envelope, changed = await asyncio.to_thread(_focus_runtime_read, user_id)
+    if changed:
+        await _focus_runtime_broadcast(user_id, envelope)
+    return envelope
+
+
+@app.post("/api/focus/runtime/commands")
+async def focus_runtime_command(
+    req: FocusRuntimeCommandRequest,
+    user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
+):
+    command = req.model_dump()
+    token = authorization[7:] if isinstance(authorization, str) and authorization.lower().startswith("bearer ") else ""
+    try:
+        envelope = await asyncio.to_thread(_focus_runtime_apply, user_id, command, token)
+    except focus_runtime.FocusRuntimeConflict as exc:
+        raise HTTPException(status_code=409, detail=exc.detail) from exc
+    except focus_runtime.FocusRuntimeInvalid as exc:
+        raise HTTPException(status_code=422, detail=exc.detail) from exc
+    await _focus_runtime_broadcast(user_id, envelope)
+    return envelope
+
+
+@app.websocket("/ws/focus/runtime/events")
+async def focus_runtime_events_ws(websocket: WebSocket):
+    try:
+        user_id = _verify_focus_websocket(websocket)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
+    await websocket.accept()
+    _focus_runtime_register(user_id, websocket)
+    last_revision: Optional[int] = None
+    last_auth_check = asyncio.get_running_loop().time()
+    try:
+        envelope, _ = await asyncio.to_thread(_focus_runtime_read, user_id)
+        if not await _focus_runtime_send(websocket, envelope):
+            return
+        last_revision = int(envelope["runtime"]["revision"])
+        while True:
+            message = None
+            try:
+                message = await asyncio.wait_for(
+                    websocket.receive_json(),
+                    timeout=FOCUS_RUNTIME_PROBE_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                message = None
+            if message is not None:
+                # Any inbound frame (including `ping`) re-validates the credential.
+                try:
+                    await asyncio.to_thread(_verify_focus_websocket, websocket)
+                except HTTPException:
+                    await websocket.close(code=1008)
+                    return
+                envelope, _ = await asyncio.to_thread(_focus_runtime_read, user_id)
+                if not await _focus_runtime_send(websocket, envelope):
+                    return
+                last_revision = int(envelope["runtime"]["revision"])
+                last_auth_check = asyncio.get_running_loop().time()
+                continue
+            loop_now = asyncio.get_running_loop().time()
+            if loop_now - last_auth_check >= FOCUS_RUNTIME_REAUTH_SECONDS:
+                try:
+                    await asyncio.to_thread(_verify_focus_websocket, websocket)
+                except HTTPException:
+                    await websocket.close(code=1008)
+                    return
+                last_auth_check = loop_now
+            revision, due = await asyncio.to_thread(_focus_runtime_probe, user_id)
+            if due or revision != last_revision:
+                envelope, _ = await asyncio.to_thread(_focus_runtime_read, user_id)
+                if not await _focus_runtime_send(websocket, envelope):
+                    return
+                last_revision = int(envelope["runtime"]["revision"])
+    except WebSocketDisconnect:
+        return
+    except RuntimeError:
+        return
+    finally:
+        _focus_runtime_unregister(user_id, websocket)
+
+
+@app.on_event("startup")
+async def _start_focus_runtime_expiry_loop():
+    global FOCUS_RUNTIME_EXPIRY_TASK
+    if FOCUS_RUNTIME_EXPIRY_TASK is None or FOCUS_RUNTIME_EXPIRY_TASK.done():
+        FOCUS_RUNTIME_EXPIRY_TASK = asyncio.create_task(_focus_runtime_expiry_loop())
+
+
+@app.on_event("shutdown")
+async def _stop_focus_runtime_expiry_loop():
+    global FOCUS_RUNTIME_EXPIRY_TASK
+    if FOCUS_RUNTIME_EXPIRY_TASK is not None:
+        FOCUS_RUNTIME_EXPIRY_TASK.cancel()
+        FOCUS_RUNTIME_EXPIRY_TASK = None
+    await _focus_runtime_close_all()

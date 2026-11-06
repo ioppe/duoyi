@@ -561,8 +561,8 @@ class AccessTokenApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 401)
 
-    def test_creation_rechecks_session_after_logout_or_rotation(self):
-        for change in ("logout", "rotation"):
+    def test_creation_rechecks_session_after_logout_or_expiry(self):
+        for change in ("logout", "expiry"):
             with self.subTest(change=change):
                 login = self.client.post(
                     "/api/auth/login", json={"username": "token-owner", "password": "pass123456"}
@@ -572,9 +572,15 @@ class AccessTokenApiTest(unittest.TestCase):
 
                 def invalidate():
                     if change == "logout":
-                        api._drop_session(self.owner["user_id"])
+                        api.logout(
+                            user_id=self.owner["user_id"],
+                            authorization=f"Bearer {credential}",
+                        )
                     else:
-                        api.login(api.LoginRequest(username="token-owner", password="pass123456"))
+                        self._execute(
+                            "UPDATE login_sessions SET expires_at=? WHERE token_hash=?",
+                            (api._utc_now_text(), api._hash_login_session_token(credential)),
+                        )
 
                 response = self._create_after_dependency(credential, invalidate)
                 self.assertEqual(response.status_code, 401)
@@ -817,12 +823,15 @@ class AccessTokenApiTest(unittest.TestCase):
             self.assertEqual(login.status_code, 200)
             self.owner = login.json()
 
-    def test_ranking_sse_keeps_original_session_after_logout_and_relogin(self):
+    def test_ranking_sse_remains_bound_to_revoked_session_after_relogin(self):
         for scope in ("room", "global"):
             credential = self.owner["token"]
 
             def relogin():
-                api.logout(user_id=self.owner["user_id"])
+                api.logout(
+                    user_id=self.owner["user_id"],
+                    authorization=f"Bearer {credential}",
+                )
                 self.owner = api.login(api.LoginRequest(username="token-owner", password="pass123456"))
 
             asyncio.run(self._assert_sse_stops(scope, credential, relogin))

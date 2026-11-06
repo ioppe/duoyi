@@ -12,6 +12,7 @@ import '../core/iterable_extensions.dart';
 import '../core/local_timezone_resolver.dart';
 import '../core/platform_info.dart';
 import '../core/smart_todo_draft.dart';
+import '../models/focus_runtime.dart';
 import '../models/habit.dart' show HabitKind;
 import '../models/pomodoro.dart'
     show PomodoroType, PomodoroWidgetControlAction, PomodoroWidgetTimerState;
@@ -21,6 +22,7 @@ import '../providers/pomodoro_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/todo_provider.dart';
 import 'android_widget_manager.dart';
+import 'focus_runtime_background_control.dart';
 import 'home_widget_action.dart';
 import 'home_widget_action_bridge.dart';
 
@@ -883,6 +885,34 @@ class HomeWidgetService {
           '[HomeWidget] ${request.kind.name} skipped: ${blocked.name}',
         );
         return false;
+      }
+      if (cold && request.isFocusControl) {
+        final capturedAuth = prefs.getString('auth_state');
+        final result = await FocusRuntimeBackgroundControl.run(request, prefs);
+        if (result.handled) {
+          if (result.snapshot != null) {
+            final projected = await _loadColdProviders();
+            try {
+              final recheck = await _resolveBlockReason(
+                prefs,
+                request: request,
+              );
+              if (recheck != HomeWidgetActionBlockReason.none ||
+                  prefs.getString('auth_state') != capturedAuth) {
+                return false;
+              }
+              projected.pomodoro.applyFocusSyncMode(FocusSyncMode.remote);
+              projected.pomodoro.applyRemoteSnapshot(result.snapshot!);
+              await projected.pomodoro.flushPersistence();
+              await _refreshColdActionPayload(request.kind, projected);
+            } finally {
+              projected.pomodoro.dispose();
+              projected.todos.dispose();
+              projected.habits.dispose();
+            }
+          }
+          return result.changed;
+        }
       }
       final providers = live ?? await _loadColdProviders();
       // Provider 加载期间可能发生切号/登出：写盘前用最新 prefs 再判定一次。

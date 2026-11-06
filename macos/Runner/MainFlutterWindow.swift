@@ -67,7 +67,8 @@ final class PomodoroFloatingWindowChannel: NSObject, PomodoroFloatingPanelDelega
   // MARK: PomodoroFloatingPanelDelegate
 
   func pomodoroFloatingPanelDidRequestToggle() {
-    channel.invokeMethod("toggle", arguments: nil)
+    guard let binding = controller.toggleBinding else { return }
+    channel.invokeMethod("toggle", arguments: binding)
   }
 
   func pomodoroFloatingPanelDidClose() {

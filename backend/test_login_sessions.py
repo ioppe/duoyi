@@ -8,6 +8,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import uuid
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
@@ -139,12 +140,12 @@ class LoginSessionApiTest(unittest.TestCase):
         self.assertEqual(self._me(token).status_code, 200)
 
         rows = self._session_rows(self.owner["user_id"])
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["token_hash"], api._hash_login_session_token(token))
+        self.assertEqual(len(rows), 2)
+        row = next(row for row in rows if row["token_hash"] == api._hash_login_session_token(token))
         self.assertEqual(
-            rows[0]["token_hash"], hashlib.sha256(token.encode("utf-8")).hexdigest()
+            row["token_hash"], hashlib.sha256(token.encode("utf-8")).hexdigest()
         )
-        self.assertFalse(any(value == token for value in rows[0]))
+        self.assertFalse(any(value == token for row in rows for value in row))
         self.assertNotIn(token.encode("utf-8"), Path(api.DB_PATH).read_bytes())
         self.assertNotIn(b"pass123456", Path(api.DB_PATH).read_bytes())
         db = api.get_db()
@@ -188,26 +189,109 @@ class LoginSessionApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         email_token = response.json()["token"]
-        self.assertEqual(self._session_rows(self.owner["user_id"])[0]["token_hash"],
-                         api._hash_login_session_token(email_token))
+        self.assertEqual(
+            {row["token_hash"] for row in self._session_rows(self.owner["user_id"])},
+            {api._hash_login_session_token(token) for token in (registration_token, email_token)},
+        )
 
         self._restart()
         self.assertEqual(self._me(email_token).status_code, 200)
-        self.assertEqual(self._me(registration_token).status_code, 401)
+        self.assertEqual(self._me(registration_token).status_code, 200)
 
-    def test_new_login_replaces_previous_session_even_after_cache_clear(self):
-        old_token = self._login("session-owner")
-        new_token = self._login("session-owner")
+    def test_multiple_device_logins_remain_valid_across_restart(self):
+        phone_token = self._login("session-owner")
+        desktop_token = self._login("session-owner")
+        self.assertNotEqual(phone_token, desktop_token)
 
-        self.assertEqual(self._me(old_token).status_code, 401)
-        self.assertEqual(self._me(new_token).status_code, 200)
+        for token in (self.owner["token"], phone_token, desktop_token):
+            self.assertEqual(self._me(token).status_code, 200)
         self._restart()
-        self.assertEqual(self._me(old_token).status_code, 401)
-        self._assert_ws_rejected(old_token)
-        self.assertEqual(self._me(new_token).status_code, 200)
-        self.assertEqual(len(self._session_rows(self.owner["user_id"])), 1)
+        for token in (self.owner["token"], phone_token, desktop_token):
+            self.assertEqual(self._me(token).status_code, 200)
+            self._assert_ws_ok(token)
+        self.assertEqual(len(self._session_rows(self.owner["user_id"])), 3)
 
-    def test_old_logout_cannot_revoke_session_rotated_after_dependency_check(self):
+    def test_another_device_can_keep_account_online_independently(self):
+        phone = self._login("session-owner")
+        self._login("session-owner")  # latest cache alias belongs to the desktop
+        user_id = self.owner["user_id"]
+        now = api._utc_now()
+        stale = now - timedelta(seconds=api.SESSION_ONLINE_SECONDS + 1)
+        self._execute("UPDATE login_sessions SET last_used_at=? WHERE user_id=?", (
+            api._format_utc(stale), user_id,
+        ))
+        api.TOKEN_LAST_ACTIVE[user_id] = stale
+        self._execute("UPDATE login_sessions SET last_used_at=? WHERE token_hash=?", (
+            api._format_utc(now), api._hash_login_session_token(phone),
+        ))
+        self.assertEqual(api._online_user_ids([user_id]), {user_id})
+        api.logout(user_id=user_id, authorization=f"Bearer {phone}")
+        self.assertEqual(api._online_user_ids([user_id]), set())
+
+    def test_two_ordinary_logins_control_and_observe_shared_focus(self):
+        phone_token = self._login("session-owner")
+        desktop_token = self._login("session-owner")
+        path = "/ws/focus/runtime/events"
+
+        def receive_revision(websocket, revision):
+            for _ in range(20):
+                event = websocket.receive_json()
+                self.assertEqual(event["event"], "focus.runtime")
+                if event["data"]["runtime"]["revision"] >= revision:
+                    return event["data"]["runtime"]
+            self.fail("Shared focus revision did not reach both devices")
+
+        with self.client.websocket_connect(path, headers=self._headers(phone_token)) as phone:
+            with self.client.websocket_connect(path, headers=self._headers(desktop_token)) as desktop:
+                runtime = receive_revision(phone, 0)
+                self.assertEqual(receive_revision(desktop, 0)["sessionId"], runtime["sessionId"])
+
+                def command(token, action, payload=None):
+                    nonlocal runtime
+                    response = self.client.post(
+                        "/api/focus/runtime/commands",
+                        headers=self._headers(token),
+                        json={
+                            "commandId": str(uuid.uuid4()),
+                            "deviceId": "phone" if token == phone_token else "desktop",
+                            "sessionId": runtime["sessionId"],
+                            "expectedRevision": runtime["revision"],
+                            "action": action,
+                            "payload": payload or {},
+                        },
+                    )
+                    self.assertEqual(response.status_code, 200, response.text)
+                    runtime = response.json()["runtime"]
+                    for websocket in (phone, desktop):
+                        projected = receive_revision(websocket, runtime["revision"])
+                        self.assertEqual(projected["sessionId"], runtime["sessionId"])
+                        self.assertEqual(projected["status"], runtime["status"])
+
+                command(phone_token, "start", {
+                    "mode": "countdown", "config": {"focusDuration": 60},
+                    "taskName": "Shared work",
+                })
+                session_id = runtime["sessionId"]
+                command(desktop_token, "pause")
+                self.assertEqual(runtime["status"], "paused")
+                command(desktop_token, "update", {"taskName": "Renamed on desktop"})
+                self.assertEqual(runtime["taskName"], "Renamed on desktop")
+                command(phone_token, "resume")
+                self.assertEqual(runtime["sessionId"], session_id)
+                command(desktop_token, "reset")
+                self.assertEqual(runtime["status"], "idle")
+
+        self.assertEqual(self.client.post(
+            "/api/auth/logout", headers=self._headers(phone_token)
+        ).status_code, 200)
+        self.assertEqual(self.client.get(
+            "/api/focus/runtime", headers=self._headers(phone_token)
+        ).status_code, 401)
+        self.assertEqual(self.client.get(
+            "/api/focus/runtime", headers=self._headers(desktop_token)
+        ).status_code, 200)
+
+    def test_old_logout_cannot_revoke_session_issued_after_dependency_check(self):
         old_token = self._login("session-owner")
         rotated = []
 
@@ -244,8 +328,12 @@ class LoginSessionApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
         self.assertNotIn(self.owner["user_id"], api.TOKENS)
-        self.assertEqual(self._session_rows(self.owner["user_id"]), [])
+        self.assertEqual(
+            [row["token_hash"] for row in self._session_rows(self.owner["user_id"])],
+            [api._hash_login_session_token(self.owner["token"])],
+        )
         self.assertEqual(self._me(session_token).status_code, 401)
+        self.assertEqual(self._me(self.owner["token"]).status_code, 200)
         self.assertEqual(self._me(pat).status_code, 200)
 
         self._restart()
@@ -269,6 +357,7 @@ class LoginSessionApiTest(unittest.TestCase):
     def _assert_security_change_revokes_everything(self, change):
         user = self._register(f"victim-{change}")
         session_token = self._login(f"victim-{change}")
+        other_session = self._login(f"victim-{change}")
         pat = self._pat(session_token, "laptop")
         admin = self._admin_headers(f"admin-{change}")
         user_id = user["user_id"]
@@ -293,13 +382,13 @@ class LoginSessionApiTest(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 200)
 
-        for credential in (session_token, pat):
+        for credential in (user["token"], session_token, other_session, pat):
             self.assertEqual(self._me(credential).status_code, 401)
             self._assert_ws_rejected(credential)
         self.assertEqual(self._session_rows(user_id), [])
 
         self._restart()
-        for credential in (session_token, pat):
+        for credential in (user["token"], session_token, other_session, pat):
             self.assertEqual(self._me(credential).status_code, 401)
             self._assert_ws_rejected(credential)
         self.assertEqual(self._session_rows(user_id), [])
@@ -314,7 +403,10 @@ class LoginSessionApiTest(unittest.TestCase):
         with patch.object(api, "_utc_now", return_value=now):
             token = self._login("session-owner")
 
-        row = self._session_rows(self.owner["user_id"])[0]
+        row = next(
+            row for row in self._session_rows(self.owner["user_id"])
+            if row["token_hash"] == api._hash_login_session_token(token)
+        )
         self.assertEqual(api._parse_server_time(row["created_at"]), now)
         self.assertEqual(
             api._parse_server_time(row["expires_at"]), now + timedelta(days=30)
@@ -434,6 +526,7 @@ class LoginSessionApiTest(unittest.TestCase):
         payload = self.client.get("/api/config").json()
         self.assertEqual(payload["api_contract_version"], api.API_CONTRACT_VERSION)
         self.assertTrue(payload["features"]["persistent_login_sessions"])
+        self.assertTrue(payload["features"]["multi_device_login_sessions"])
         self.assertTrue(payload["features"]["access_tokens"])
 
     def test_session_survives_real_process_restart(self):

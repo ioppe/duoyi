@@ -3516,6 +3516,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get focusPause => '暂停';
 
   @override
+  String get focusSyncConnecting => '正在连接多端专注';
+
+  @override
+  String get focusSyncConnected => '多端专注已同步';
+
+  @override
+  String get focusSyncLoginRequired => '登录后同步多端专注';
+
+  @override
+  String get focusSyncPending => '正在同步操作…';
+
+  @override
+  String get focusSyncOffline => '离线未同步';
+
+  @override
+  String get focusSyncError => '操作未确认，请重试';
+
+  @override
   String get focusFloatingOpen => '打开番茄悬浮窗';
 
   @override

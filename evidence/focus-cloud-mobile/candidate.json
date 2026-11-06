@@ -1,0 +1,11 @@
+{
+  "apkSha256": "aa710eb114fbec56ce316d41e92d2d66c5b9ef5dd037d7ae1cba8a9b2143b928",
+  "apkBytes": 160600628,
+  "package": "com.duoyi.duoyi.accountfocuscheck",
+  "versionName": "2.0.0",
+  "versionCode": 140023,
+  "sourceManifestSha256": "7be7a9e3bcf72cc5bed62dd5b8e2727958507c9eac1f59a88b4aac7c82dddb39",
+  "screenSha256": "caf54d4e3414ec024fe87d57e7fdea68d70d5dca80d636516ce27bdd7e3a3074",
+  "widgetSha256": "dc881eaf72805a1333b37e6ded2cd2ecf079bdfc22913d2a18df5cb0459d911b",
+  "nativeFixSha256": "8de302e121e013ee7898ad43a3660a1f8a6f142bd815d300d83240d2c5735130"
+}

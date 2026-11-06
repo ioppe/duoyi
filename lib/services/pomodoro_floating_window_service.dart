@@ -55,6 +55,8 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
 
   bool _visible = false;
   bool _desiredVisible = false;
+  String? _autoShownSessionId;
+  String? _dismissedRemoteSessionId;
 
   /// 每次显隐/身份/可用性变化都递增，用于丢弃迟到的原生成功回调。
   int _generation = 0;
@@ -87,6 +89,8 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
   void detach() {
     _detachListeners();
     _provider = null;
+    _autoShownSessionId = null;
+    _dismissedRemoteSessionId = null;
     if (_desiredVisible || _visible) {
       _requestHide();
       return;
@@ -136,12 +140,17 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
     }
     _windowSize = windowSize;
 
+    if (identityChanged) {
+      _autoShownSessionId = _provider?.remoteFocusSessionId;
+      _dismissedRemoteSessionId = null;
+    }
     if ((availabilityChanged && !available) || identityChanged) {
       // 锁定/强更/切换账号或服务器：仅隐藏，恢复后由用户重新打开。
       _requestHide();
     }
     // 隐藏时也要同步状态，原生据此决定是否抑制 App Nap。
     _pushSnapshot();
+    _maybeAutoOpenRemoteSession();
   }
 
   /// 打开或刷新面板。`show` 总是携带调用时刻的最新快照。
@@ -173,6 +182,7 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
   /// 仅隐藏面板，不暂停计时。
   Future<bool> hide() async {
     if (_disposed) return false;
+    _dismissedRemoteSessionId = _provider?.remoteFocusSessionId;
     final wasVisible = _visible;
     _desiredVisible = false;
     final generation = ++_generation;
@@ -218,7 +228,7 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
   Future<Object?> handleNativeCall(MethodCall call) async {
     switch (call.method) {
       case 'toggle':
-        _handleToggle();
+        _handleToggle(call.arguments);
         return null;
       case 'closed':
         _handleClosed();
@@ -244,21 +254,83 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
     super.dispose();
   }
 
-  void _handleToggle() {
+  void _handleToggle(Object? arguments) {
     final provider = _provider;
-    if (provider == null || !_available || !_visible) return;
-    // 严格模式暂停记录、声音、持久化都在 Provider 内完成。
+    if (provider == null ||
+        !_available ||
+        !_visible ||
+        !provider.canControlFocus) {
+      return;
+    }
+    if (arguments is Map) {
+      if (arguments['sessionId'] != provider.focusControlSessionId ||
+          arguments['revision'] != provider.focusControlRevision ||
+          arguments['state'] != provider.focusTimerState.wireName) {
+        return;
+      }
+    } else if (provider.focusSyncEnabled) {
+      // 同步模式要求原生回传显示时的绑定；旧窗口不能操作新的共享阶段。
+      return;
+    }
+    // 用户动作交给 Provider；应用远端快照不走这里。
     provider.toggleTimer();
     _pushSnapshot(provider: provider);
   }
 
   void _handleClosed() {
+    _dismissedRemoteSessionId = _provider?.remoteFocusSessionId;
     _desiredVisible = false;
     _generation++;
     _setVisible(false);
   }
 
-  void _handleProviderChanged() => _pushSnapshot();
+  void _handleProviderChanged() {
+    _pushSnapshot();
+    _maybeAutoOpenRemoteSession();
+  }
+
+  void _maybeAutoOpenRemoteSession() {
+    final provider = _provider;
+    if (_disposed ||
+        !_supported ||
+        provider == null ||
+        !provider.focusSyncEnabled ||
+        !provider.focusSyncReady ||
+        _sessionIdentity == null ||
+        !provider.state.isRunning) {
+      return;
+    }
+    final sessionId = provider.remoteFocusSessionId;
+    if (sessionId == null ||
+        sessionId.isEmpty ||
+        sessionId == _autoShownSessionId ||
+        sessionId == _dismissedRemoteSessionId) {
+      return;
+    }
+    // 锁屏/强更期间收到的阶段不在恢复时强制弹出，保留手动打开入口。
+    _autoShownSessionId = sessionId;
+    if (!_available) return;
+    final generation = _generation;
+    void showIfCurrent() {
+      if (_disposed ||
+          !_available ||
+          _generation != generation ||
+          !identical(_provider, provider) ||
+          provider.remoteFocusSessionId != sessionId ||
+          (!provider.state.isRunning && !provider.isPaused)) {
+        return;
+      }
+      unawaited(open());
+    }
+
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => showIfCurrent());
+    } else {
+      showIfCurrent();
+    }
+  }
 
   void _handleTimerTick() => _pushSnapshot();
 
@@ -273,9 +345,12 @@ class PomodoroFloatingWindowService extends ChangeNotifier {
     return <String, Object?>{
       'timeText': formatTime(state.remainingSeconds),
       'isRunning': state.isRunning,
-      'canToggle': _available,
+      'canToggle': _available && provider.canControlFocus,
       'isBreak': state.type != PomodoroType.focus,
       'isPaused': isPaused,
+      'controlSessionId': provider.focusControlSessionId,
+      'controlRevision': provider.focusControlRevision,
+      'controlState': provider.focusTimerState.wireName,
       'stateLabel': state.isRunning
           ? phaseLabel
           : isPaused

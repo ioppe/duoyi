@@ -1,0 +1,15 @@
+{
+  "status": "FAIL",
+  "startedAtMs": 1793960919885,
+  "finishedAtMs": 1793960928799,
+  "cases": [
+    {
+      "case": "01-independent-logins-and-connected-ui",
+      "status": "PASS",
+      "atMs": 1793960925618,
+      "display": "25:00"
+    }
+  ],
+  "error": "1500000",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus_device_acceptance.py\", line 116, in <module>\n    assert running['durationMs']==60000,running['durationMs']\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1500000\n"
+}

@@ -40,6 +40,24 @@ class FocusTimerForegroundService : Service() {
     private var expiryRunnable: Runnable? = null
     private var tickRunnable: Runnable? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        // Android starts its foreground deadline before onStartCommand. Rapid
+        // stop/sync calls during account restoration must not leave a queued
+        // foreground start without promotion, even if its payload expires.
+        ensureChannel(defaultChannelName)
+        val starting = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_stat_duoyi)
+            .setContentTitle(getString(R.string.app_name))
+            .setOngoing(true)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+        if (!startForegroundSafely(starting)) stopSelf()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             actionStop -> {
@@ -304,13 +322,12 @@ class FocusTimerForegroundService : Service() {
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, FocusTimerForegroundService::class.java)
-                .setAction(actionStop)
-            runCatching { context.startService(intent) }
-                .onFailure { error ->
-                    Log.w(tag, "focus timer stop request failed", error)
-                    context.stopService(Intent(context, FocusTimerForegroundService::class.java))
-                }
+            // A stop request must never create an unpromoted service instance.
+            runCatching {
+                context.stopService(Intent(context, FocusTimerForegroundService::class.java))
+            }.onFailure { error ->
+                Log.w(tag, "focus timer stop request failed", error)
+            }
         }
 
         private fun startServiceCompat(context: Context, intent: Intent) {

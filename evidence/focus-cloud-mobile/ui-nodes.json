@@ -1,0 +1,1430 @@
+{
+  "initial": [
+    {
+      "text": "",
+      "content-desc": "番茄专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        52,
+        218,
+        300,
+        293
+      ],
+      "center": [
+        176,
+        255
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "计时\n第 1 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        91,
+        358,
+        252,
+        507
+      ],
+      "center": [
+        171,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "记录\n第 2 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        252,
+        358,
+        414,
+        507
+      ],
+      "center": [
+        333,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自习室\n第 3 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        414,
+        358,
+        617,
+        507
+      ],
+      "center": [
+        515,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注中\n0 次专注\n已暂停\n24:37\n计时 · 0 次专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        0,
+        520,
+        1200,
+        2449
+      ],
+      "center": [
+        600,
+        1484
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "多端专注已同步",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        485,
+        590,
+        618,
+        723
+      ],
+      "center": [
+        551,
+        656
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "98",
+      "class": "android.widget.ProgressBar",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        420,
+        775,
+        780,
+        1135
+      ],
+      "center": [
+        600,
+        955
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "SYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        371,
+        1257,
+        829,
+        1346
+      ],
+      "center": [
+        600,
+        1301
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自由计时",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        172,
+        1371,
+        460,
+        1481
+      ],
+      "center": [
+        316,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "15 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        476,
+        1371,
+        677,
+        1481
+      ],
+      "center": [
+        576,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "25 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        693,
+        1371,
+        894,
+        1481
+      ],
+      "center": [
+        793,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "30 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        911,
+        1371,
+        1028,
+        1481
+      ],
+      "center": [
+        969,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注任务\nSYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1526,
+        589,
+        1664
+      ],
+      "center": [
+        394,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "白噪音\n无白噪音",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        611,
+        1526,
+        1001,
+        1664
+      ],
+      "center": [
+        806,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注勿扰\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1686,
+        1001,
+        1836
+      ],
+      "center": [
+        600,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1706,
+        984,
+        1816
+      ],
+      "center": [
+        906,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "严格专注\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1858,
+        1001,
+        2008
+      ],
+      "center": [
+        600,
+        1933
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1877,
+        984,
+        1988
+      ],
+      "center": [
+        906,
+        1932
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注自习室\n深度工作自习室\n本轮完成后计入排行榜",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        2030,
+        1001,
+        2163
+      ],
+      "center": [
+        600,
+        2096
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        337,
+        2226,
+        470,
+        2359
+      ],
+      "center": [
+        403,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        520,
+        2213,
+        680,
+        2373
+      ],
+      "center": [
+        600,
+        2293
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        730,
+        2226,
+        863,
+        2359
+      ],
+      "center": [
+        796,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "今日\n第 1 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        0,
+        2449,
+        300,
+        2670
+      ],
+      "center": [
+        150,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "习惯\n第 2 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        300,
+        2449,
+        600,
+        2670
+      ],
+      "center": [
+        450,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注\n第 3 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        600,
+        2449,
+        900,
+        2670
+      ],
+      "center": [
+        750,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "我的\n第 4 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        900,
+        2449,
+        1200,
+        2670
+      ],
+      "center": [
+        1050,
+        2559
+      ]
+    }
+  ],
+  "afterTap": [
+    {
+      "text": "",
+      "content-desc": "番茄专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        52,
+        218,
+        300,
+        293
+      ],
+      "center": [
+        176,
+        255
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "计时\n第 1 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        91,
+        358,
+        252,
+        507
+      ],
+      "center": [
+        171,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "记录\n第 2 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        252,
+        358,
+        414,
+        507
+      ],
+      "center": [
+        333,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自习室\n第 3 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        414,
+        358,
+        617,
+        507
+      ],
+      "center": [
+        515,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注中\n0 次专注\n已暂停\n24:37\n计时 · 0 次专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        0,
+        520,
+        1200,
+        2449
+      ],
+      "center": [
+        600,
+        1484
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "多端专注已同步",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        485,
+        590,
+        618,
+        723
+      ],
+      "center": [
+        551,
+        656
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "98",
+      "class": "android.widget.ProgressBar",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        420,
+        775,
+        780,
+        1135
+      ],
+      "center": [
+        600,
+        955
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "SYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        371,
+        1257,
+        829,
+        1346
+      ],
+      "center": [
+        600,
+        1301
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自由计时",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        172,
+        1371,
+        460,
+        1481
+      ],
+      "center": [
+        316,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "15 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        476,
+        1371,
+        677,
+        1481
+      ],
+      "center": [
+        576,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "25 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        693,
+        1371,
+        894,
+        1481
+      ],
+      "center": [
+        793,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "30 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        911,
+        1371,
+        1028,
+        1481
+      ],
+      "center": [
+        969,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注任务\nSYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1526,
+        589,
+        1664
+      ],
+      "center": [
+        394,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "白噪音\n无白噪音",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        611,
+        1526,
+        1001,
+        1664
+      ],
+      "center": [
+        806,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注勿扰\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1686,
+        1001,
+        1836
+      ],
+      "center": [
+        600,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1706,
+        984,
+        1816
+      ],
+      "center": [
+        906,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "严格专注\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1858,
+        1001,
+        2008
+      ],
+      "center": [
+        600,
+        1933
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1877,
+        984,
+        1988
+      ],
+      "center": [
+        906,
+        1932
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注自习室\n深度工作自习室\n本轮完成后计入排行榜",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        2030,
+        1001,
+        2163
+      ],
+      "center": [
+        600,
+        2096
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        337,
+        2226,
+        470,
+        2359
+      ],
+      "center": [
+        403,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        520,
+        2213,
+        680,
+        2373
+      ],
+      "center": [
+        600,
+        2293
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        730,
+        2226,
+        863,
+        2359
+      ],
+      "center": [
+        796,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "多端专注已同步",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        0,
+        2228,
+        1200,
+        2449
+      ],
+      "center": [
+        600,
+        2338
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "今日\n第 1 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        0,
+        2449,
+        300,
+        2670
+      ],
+      "center": [
+        150,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "习惯\n第 2 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        300,
+        2449,
+        600,
+        2670
+      ],
+      "center": [
+        450,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注\n第 3 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        600,
+        2449,
+        900,
+        2670
+      ],
+      "center": [
+        750,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "我的\n第 4 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        900,
+        2449,
+        1200,
+        2670
+      ],
+      "center": [
+        1050,
+        2559
+      ]
+    }
+  ],
+  "final": [
+    {
+      "text": "",
+      "content-desc": "番茄专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        52,
+        218,
+        300,
+        293
+      ],
+      "center": [
+        176,
+        255
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "计时\n第 1 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        91,
+        358,
+        252,
+        507
+      ],
+      "center": [
+        171,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "记录\n第 2 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        252,
+        358,
+        414,
+        507
+      ],
+      "center": [
+        333,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自习室\n第 3 个标签，共 3 个",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        414,
+        358,
+        617,
+        507
+      ],
+      "center": [
+        515,
+        432
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注中\n0 次专注\n已暂停\n24:37\n计时 · 0 次专注",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        0,
+        520,
+        1200,
+        2449
+      ],
+      "center": [
+        600,
+        1484
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "多端专注已同步",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        485,
+        590,
+        618,
+        723
+      ],
+      "center": [
+        551,
+        656
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "98",
+      "class": "android.widget.ProgressBar",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "true",
+      "bounds": [
+        420,
+        775,
+        780,
+        1135
+      ],
+      "center": [
+        600,
+        955
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "SYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        371,
+        1257,
+        829,
+        1346
+      ],
+      "center": [
+        600,
+        1301
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "自由计时",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        172,
+        1371,
+        460,
+        1481
+      ],
+      "center": [
+        316,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "15 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        476,
+        1371,
+        677,
+        1481
+      ],
+      "center": [
+        576,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "25 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        693,
+        1371,
+        894,
+        1481
+      ],
+      "center": [
+        793,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "30 分钟",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "false",
+      "enabled": "false",
+      "bounds": [
+        911,
+        1371,
+        1028,
+        1481
+      ],
+      "center": [
+        969,
+        1426
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注任务\nSYNC-REMOTE-TASK",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1526,
+        589,
+        1664
+      ],
+      "center": [
+        394,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "白噪音\n无白噪音",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        611,
+        1526,
+        1001,
+        1664
+      ],
+      "center": [
+        806,
+        1595
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注勿扰\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1686,
+        1001,
+        1836
+      ],
+      "center": [
+        600,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1706,
+        984,
+        1816
+      ],
+      "center": [
+        906,
+        1761
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "严格专注\n手动开启",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        1858,
+        1001,
+        2008
+      ],
+      "center": [
+        600,
+        1933
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Switch",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        829,
+        1877,
+        984,
+        1988
+      ],
+      "center": [
+        906,
+        1932
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注自习室\n深度工作自习室\n本轮完成后计入排行榜",
+      "class": "android.view.View",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        199,
+        2030,
+        1001,
+        2163
+      ],
+      "center": [
+        600,
+        2096
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        337,
+        2226,
+        470,
+        2359
+      ],
+      "center": [
+        403,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        520,
+        2213,
+        680,
+        2373
+      ],
+      "center": [
+        600,
+        2293
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        730,
+        2226,
+        863,
+        2359
+      ],
+      "center": [
+        796,
+        2292
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "今日\n第 1 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        0,
+        2449,
+        300,
+        2670
+      ],
+      "center": [
+        150,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "习惯\n第 2 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        300,
+        2449,
+        600,
+        2670
+      ],
+      "center": [
+        450,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "专注\n第 3 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        600,
+        2449,
+        900,
+        2670
+      ],
+      "center": [
+        750,
+        2559
+      ]
+    },
+    {
+      "text": "",
+      "content-desc": "我的\n第 4 个标签，共 4 个",
+      "class": "android.widget.Button",
+      "resource-id": "",
+      "clickable": "true",
+      "enabled": "true",
+      "bounds": [
+        900,
+        2449,
+        1200,
+        2670
+      ],
+      "center": [
+        1050,
+        2559
+      ]
+    }
+  ]
+}

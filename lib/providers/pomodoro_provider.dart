@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/app_clock.dart';
 import '../core/domain_event_bus.dart';
 import '../core/focus_sound_catalog.dart';
+import '../models/focus_runtime.dart';
 import '../models/pomodoro.dart';
 import '../services/focus_distraction_service.dart';
 import '../services/focus_dnd_service.dart';
@@ -24,6 +25,14 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// 与 [runningSnapshotKey] 分开保存：运行快照只表达“进程被杀时在跑”，
   /// 暂停后的剩余时长必须能跨重启与冷/热切换继续。
   static const String widgetControlKey = 'pomodoro_widget_control';
+
+  /// 远端权威模式的持久标记：进程重启后即使还没连上服务器，也绝不把旧的
+  /// 本地运行快照当成自己的运行态去逾期结算。
+  static const String focusRemoteMarkerKey = 'pomodoro_focus_remote_mode';
+
+  /// [remoteClock] 仅测试注入；生产用服务端时钟校准 + 单调 Stopwatch 推进。
+  PomodoroProvider({FocusRuntimeClock? remoteClock})
+    : _remoteClock = remoteClock ?? FocusRuntimeClock();
 
   PomodoroState _state = PomodoroState(
     remainingSeconds: 1500,
@@ -46,6 +55,24 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? _lastDate;
   NotificationService? _notifier;
   TimeAuditProvider? _timeAudit;
+
+  // --- 同账号多端专注（远端权威投影） ---
+
+  final FocusRuntimeClock _remoteClock;
+  FocusRuntimeController? _focusRuntimeController;
+  FocusRuntimeSnapshot? _remoteSnapshot;
+  String? _remoteSessionId;
+  int _remoteRevision = -1;
+  FocusSyncMode _focusSyncMode = FocusSyncMode.local;
+
+  /// 运行中任务/标签/房间的本地未确认草稿：权威回执不得覆盖用户刚改的值。
+  Map<String, Object?>? _remotePendingTaskFields;
+
+  /// 本地已知的历史墓碑（`sync_deleted_items`），远端回填不得复活被删记录。
+  final Set<String> _deletedSessionIds = <String>{};
+  bool _tombstonesLoaded = false;
+  Future<void>? _remoteStorageLoad;
+  bool? _remoteIdleCountUp;
 
   /// 运行态时间锚点（epoch ms）：倒计时 = 预计结束时刻 `endsAt`，
   /// 正计时 = 本次累计的开始时刻。暂停/停止/完成/重置后置空。
@@ -115,6 +142,126 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get focusDistractionAppScanFailed => _distractionScanFailed;
   ValueListenable<int> get timerTicks => _timerTicks;
 
+  // --- 同账号多端专注：公开投影状态（供 UI / 悬浮窗 / 小组件接线） ---
+
+  /// 由 [FocusSyncCoordinator] 在根级绑定；传 null 表示回到纯本地模式。
+  void attachFocusRuntimeController(FocusRuntimeController? controller) {
+    _focusRuntimeController = controller;
+    final nextMode = controller?.mode ?? FocusSyncMode.local;
+    if (nextMode != _focusSyncMode) applyFocusSyncMode(nextMode);
+  }
+
+  FocusRuntimeController? get focusRuntimeController => _focusRuntimeController;
+
+  /// 当前是否把服务端运行态当作权威投影（含“已登录但权威状态还在探测”）。
+  ///
+  /// 访客、明确无能力的旧后端或未绑定协调器时为 false，保持既有本地行为。
+  bool get focusSyncEnabled => _focusSyncMode != FocusSyncMode.local;
+
+  /// 已拿到权威快照（可以显示真实锚点，不允许本地结算）。
+  bool get focusSyncReady =>
+      focusSyncEnabled && (_focusRuntimeController?.ready ?? false);
+
+  /// 实时通道已连上（断线时可继续显示最后确认状态，但不能跨端控制）。
+  bool get focusSyncConnected =>
+      focusSyncEnabled && (_focusRuntimeController?.connected ?? false);
+
+  /// 有在途命令（重复点击必须被拒绝）。
+  bool get focusSyncBusy =>
+      focusSyncEnabled && (_focusRuntimeController?.busy ?? false);
+
+  /// 本地/远端统一控制闸门：远端必须在已就绪、已连接且不在途时才可控制。
+  bool get canControlFocus =>
+      !focusSyncEnabled ||
+      (focusSyncReady && focusSyncConnected && !focusSyncBusy);
+
+  Object? get focusSyncError =>
+      focusSyncEnabled ? _focusRuntimeController?.error : null;
+
+  String? get remoteFocusSessionId => _remoteSessionId;
+
+  int? get remoteFocusRevision => _remoteRevision < 0 ? null : _remoteRevision;
+
+  FocusSyncMode get focusSyncMode => _focusSyncMode;
+
+  FocusRuntimeSnapshot? get focusRuntimeSnapshot => _remoteSnapshot;
+
+  /// 本机无凭证设备 ID（strict 监控只在发起设备生效）。
+  String? get focusDeviceId => _focusRuntimeController?.deviceId;
+
+  bool get _remoteLocked => _focusSyncMode != FocusSyncMode.local;
+
+  bool get _remoteControlEnabled => _focusSyncMode == FocusSyncMode.remote;
+
+  /// strict 监控只在“本机就是本阶段发起设备”时记处罚。
+  bool get _remoteIsLocalSource {
+    final deviceId = _focusRuntimeController?.deviceId?.trim();
+    final source = _remoteSnapshot?.runtime.sourceDeviceId.trim();
+    return deviceId != null && deviceId.isNotEmpty && deviceId == source;
+  }
+
+  /// 协调器在连接/权威/忙碌状态变化时调用；不改变投影本身。
+  void notifyFocusSyncStateChanged() {
+    notifyListeners();
+  }
+
+  /// 切换同步模式。remote/unknown 期间本地 tick、原生到期与本地完成一律停用。
+  void applyFocusSyncMode(FocusSyncMode mode) {
+    final previous = _focusSyncMode;
+    if (previous == mode) {
+      if (mode != FocusSyncMode.local) _persistRemoteMarker();
+      return;
+    }
+    _focusSyncMode = mode;
+    _storageGeneration++;
+    _remoteStorageLoad = null;
+    if (mode != FocusSyncMode.local) {
+      _cancelTimer();
+      _activeAnchorMs = null;
+      _state = _state.copyWith(isRunning: false);
+      _clearRunningSnapshot();
+      _persistRemoteMarker();
+      unawaited(_sound.stop());
+      _syncDndToState();
+      _syncDistractionMonitorToState();
+    } else if (mode == FocusSyncMode.local) {
+      _remoteSnapshot = null;
+      _remoteSessionId = null;
+      _remoteRevision = -1;
+      _remotePendingTaskFields = null;
+      _remoteIdleCountUp = null;
+      _remoteClock.reset();
+      _clearRemoteMarker();
+      _cancelTimer();
+      _timerTicks.value = 0;
+      _initState();
+      // 远端身份作废：旧按钮不能再控制本地计时。
+      _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
+      _syncFocusTimerNotification();
+    }
+    notifyListeners();
+  }
+
+  /// 账号切换/协调器销毁：清投影、停远端 tick，不写任何完成记录或处罚。
+  void clearRemoteRuntime() {
+    _storageGeneration++;
+    _remoteStorageLoad = null;
+    _remoteSnapshot = null;
+    _remoteSessionId = null;
+    _remoteRevision = -1;
+    _remotePendingTaskFields = null;
+    _remoteIdleCountUp = null;
+    _remoteClock.reset();
+    _clearRemoteMarker();
+    _cancelTimer();
+    _activeAnchorMs = null;
+    _state = _state.copyWith(isRunning: false);
+    unawaited(_sound.stop());
+    _syncDndToState();
+    _syncDistractionMonitorToState();
+    unawaited(_focusTimer.stop());
+  }
+
   /// 小组件控制身份：不透明 session id + 单调 revision + 当前状态；
   /// `idle` 也持久化，停止后旧 start 绑定会因 session 失配被拒绝。
   String _widgetSessionId = '';
@@ -182,6 +329,10 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Hydrate history before the first remote upsert so existing records survive.
+  Future<void> prepareRemoteHistory() =>
+      _remoteStorageLoad ??= loadFromStorage();
+
   Future<void> loadFromStorage() async {
     final generation = _storageGeneration;
     final prefs = await SharedPreferences.getInstance();
@@ -209,8 +360,31 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
     _sessionCountToday = prefs.getInt('pomodoro_count_today') ?? 0;
     _lastDate = prefs.getString('pomodoro_last_date');
+    _loadDeletedSessionIds(prefs);
     // 先过跨天重置再恢复/结算，保证逾期补结算的当日计数归属恢复当天。
     _checkDayReset();
+    // 远端权威模式（含“上次是远端、这次还没连上服务器”）：只加载历史与配置，
+    // 不恢复本地运行快照、不恢复小组件控制身份、不 initState，也绝不走本地
+    // 逾期结算——权威状态只能来自协调器随后拉到的快照。
+    final markerPresent = prefs.getBool(focusRemoteMarkerKey) == true;
+    final remoteRestore =
+        _remoteLocked || (markerPresent && _focusRuntimeController == null);
+    if (remoteRestore) {
+      if (markerPresent && _focusRuntimeController == null && !_remoteLocked) {
+        _focusSyncMode = FocusSyncMode.unknown;
+      }
+      if (_remoteSnapshot != null) {
+        _projectRemoteState();
+        if (_remoteSnapshot!.runtime.status.isRunning) _startRemoteTicker();
+      } else {
+        _cancelTimer();
+      }
+      _persistedRevision++;
+      notifyListeners();
+      _syncFocusTimerNotification();
+      return;
+    }
+    if (markerPresent) _clearRemoteMarker();
     final snapshotHandled = await _restoreRunningFromSnapshot(prefs);
     // 控制身份/暂停态：暂停后重启或冷/主切换要能继续同一剩余时长。
     final pausedRestored = _restoreWidgetControl(
@@ -240,6 +414,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   void resetLocalState() {
     _storageGeneration++;
     _cancelTimer();
+    // 账号代际已推进：远端投影、设备效果与远端 tick 一并清理，
+    // 不写完成记录/处罚，也不保留旧账号的会话身份。
+    clearRemoteRuntime();
     _clearRunningSnapshot();
     // 新 idle 身份：换号/重置后旧小组件按钮的 session + revision 一律失效。
     _resetWidgetControlIdentity(PomodoroWidgetTimerState.idle);
@@ -247,6 +424,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _config = PomodoroConfig();
     _sessions = [];
     _penalties = [];
+    _deletedSessionIds.clear();
+    _tombstonesLoaded = false;
     _sessionCountToday = 0;
     _lastDate = null;
     _persistedRevision++;
@@ -328,15 +507,14 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _saveSessions() async {
+    final generation = _storageGeneration;
+    final sessions = List<PomodoroSession>.of(_sessions);
     final prefs = await SharedPreferences.getInstance();
-    // 大列表的 JSON 编码会阻塞主 isolate，挪到后台 isolate 执行（对齐
-    // todo_provider 的做法）；小列表直接同步编码，省去 isolate 往返。
-    final data = _sessions.length >= _isolateEncodeMinItems
-        ? await compute(
-            _encodePomodoroSessionsPayload,
-            List<PomodoroSession>.of(_sessions),
-          )
-        : json.encode(_sessions.map((e) => e.toJson()).toList());
+    if (generation != _storageGeneration) return;
+    final data = sessions.length >= _isolateEncodeMinItems
+        ? await compute(_encodePomodoroSessionsPayload, sessions)
+        : json.encode(sessions.map((e) => e.toJson()).toList());
+    if (generation != _storageGeneration) return;
     await prefs.setString('pomodoro_sessions', data);
   }
 
@@ -358,7 +536,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _savePenaltyList(List<PomodoroFocusPenalty> penalties) async {
+    final generation = _storageGeneration;
     final prefs = await SharedPreferences.getInstance();
+    if (generation != _storageGeneration) return;
     await prefs.setString(
       'pomodoro_focus_penalties',
       json.encode(penalties.map((e) => e.toJson()).toList()),
@@ -369,7 +549,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 串行执行快照落盘操作；失败静默降级，不影响计时主流程。
   void _queueSnapshotOp(Future<void> Function(SharedPreferences) op) {
-    _snapshotOps.add(op);
+    final generation = _storageGeneration;
+    _snapshotOps.add((prefs) async {
+      if (generation != _storageGeneration) return;
+      await op(prefs);
+    });
     if (_snapshotDraining) return;
     _snapshotDraining = true;
     _snapshotDrainDone = Completer<void>();
@@ -406,6 +590,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     'subtaskId': _state.subtaskId,
     'todoTitle': _state.todoTitle,
     'tag': _state.tag,
+    // 远端权威模式下标记来源：重启时即使还没连上服务器，也绝不把这条
+    // 本地快照当成可结算的本地运行态。
+    'remote': _remoteLocked,
   };
 
   /// 把当前运行态写入快照。在启动与每个计时 tick 调用；锚点不变时
@@ -442,6 +629,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final decoded = json.decode(raw);
       if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+      // 远端权威模式写下的快照只用于显示，重启时绝不当成本地运行态结算。
+      if (data != null && data['remote'] == true) {
+        await prefs.remove(runningSnapshotKey);
+        return false;
+      }
     } on FormatException {
       data = null;
     }
@@ -563,6 +755,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (idx < 0) return false;
 
     final removed = _sessions.removeAt(idx);
+    _deletedSessionIds.add(removed.id);
     await CloudSyncProvider.recordDeletedItem('pomodoro_sessions', removed.id);
     if (removed.type == PomodoroType.focus &&
         _isSameDay(removed.startTime, AppClock.now())) {
@@ -628,9 +821,346 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _saveMeta();
   }
 
+  // --- 远端权威投影（服务端快照 → 本地显示，不产生任何本地结算） ---
+
+  /// 应用权威快照。[FocusSyncCoordinator] 每条新事件/轮询/命令回执调用。
+  ///
+  /// 只接受当前身份的新 revision：同 revision 仅重新校准时间（不重置
+  /// widgetRevision、不重复回填历史），旧 revision 直接忽略。返回是否有
+  /// 新的历史记录（lastSession / lastPenalty）被幂等回填。
+  bool applyRemoteSnapshot(FocusRuntimeSnapshot snapshot) {
+    if (_focusSyncMode != FocusSyncMode.remote) return false;
+    final runtime = snapshot.runtime;
+    final sameSession = _remoteSessionId == runtime.sessionId;
+    if (runtime.revision < _remoteRevision) return false;
+    if (runtime.revision == _remoteRevision &&
+        _remoteSnapshot != null &&
+        (snapshot.serverNowMs < _remoteSnapshot!.serverNowMs ||
+            snapshot.syncVersion < _remoteSnapshot!.syncVersion)) {
+      return false;
+    }
+    final isNewRevision = runtime.revision > _remoteRevision;
+    if (!sameSession && _remoteSessionId != null) {
+      _remotePendingTaskFields = null;
+      _remoteIdleCountUp = null;
+    }
+    _remoteClock.calibrate(snapshot.serverNowMs);
+    _remoteSnapshot = snapshot;
+    if (isNewRevision) {
+      _remoteSessionId = runtime.sessionId;
+      _remoteRevision = runtime.revision;
+      // widget 身份镜像远端：迟到按钮在本地即失配，服务端还会再校验一次。
+      _widgetSessionId = runtime.sessionId;
+      _widgetRevision = runtime.revision;
+    }
+    _clearAcknowledgedRemoteDrafts(runtime);
+    _projectRemoteState();
+    if (isNewRevision) {
+      _persistRemoteMarker();
+      unawaited(_writeWidgetControl());
+    }
+    // 历史幂等回填：不发布完成领域事件、不写时间足迹、不覆盖本地未同步历史。
+    if (!_tombstonesLoaded) unawaited(_ensureTombstonesLoaded());
+    final sessionChanged = _upsertRemoteSession(snapshot.sessionRecord);
+    final penaltyChanged = _upsertRemotePenalty(snapshot.penaltyRecord);
+    unawaited(_syncSoundToState());
+    _syncDndToState();
+    _syncDistractionMonitorToState();
+    _syncFocusTimerNotification();
+    if (runtime.status.isRunning) {
+      _startRemoteTicker();
+    } else {
+      _stopRemoteTicker();
+    }
+    notifyListeners();
+    return sessionChanged || penaltyChanged;
+  }
+
+  /// 投影为 [PomodoroState]：倒计时剩余 ceil，正计时已用 floor，暂停冻结。
+  void _projectRemoteState() {
+    final snapshot = _remoteSnapshot;
+    if (snapshot == null) return;
+    final runtime = snapshot.runtime;
+    final serverNowMs = _remoteClock.nowMs;
+    final hasIdleDraft = runtime.status.isIdle && _remoteIdleCountUp != null;
+    final isCountUp = hasIdleDraft
+        ? _remoteIdleCountUp!
+        : runtime.mode.isCountUp;
+    final elapsedMs = runtime.effectiveElapsedMs(serverNowMs);
+    final durationMs = hasIdleDraft
+        ? (isCountUp ? 0 : _config.focusDuration * 1000)
+        : runtime.durationMs;
+    final int remainingSeconds;
+    final int totalSeconds;
+    if (isCountUp) {
+      remainingSeconds = runtime.status.isIdle ? 0 : elapsedMs ~/ 1000;
+      totalSeconds = 0;
+    } else {
+      final remainingMs = runtime.status.isIdle
+          ? durationMs
+          : (durationMs - elapsedMs).clamp(0, durationMs);
+      remainingSeconds = (remainingMs + 999) ~/ 1000;
+      totalSeconds = (durationMs / 1000).round();
+    }
+    final draft = _remotePendingTaskFields;
+    String? draftValue(String key, String? fallback) =>
+        draft == null ? fallback : draft[key] as String?;
+    _state = PomodoroState(
+      remainingSeconds: remainingSeconds,
+      totalSeconds: totalSeconds,
+      isRunning: runtime.status.isRunning,
+      isCountUp: isCountUp,
+      type: hasIdleDraft ? PomodoroType.focus : runtime.phase.pomodoroType,
+      completedSessions: runtime.completedSessions,
+      taskName: draftValue('taskName', runtime.taskName),
+      todoId: draftValue('todoId', runtime.todoId),
+      subtaskId: draftValue('subtaskId', runtime.subtaskId),
+      todoTitle: draftValue('todoTitle', runtime.todoTitle),
+      whiteNoiseSound: _config.whiteNoiseSound,
+      tag: draftValue('tag', runtime.tag),
+      focusRoomId: draftValue('focusRoomId', runtime.focusRoomId),
+    );
+    _pausedRuntime = null;
+    _isPaused = runtime.status.isPaused;
+    _widgetTimerState = switch (runtime.status) {
+      FocusRuntimeStatus.running => PomodoroWidgetTimerState.running,
+      FocusRuntimeStatus.paused => PomodoroWidgetTimerState.paused,
+      FocusRuntimeStatus.idle => PomodoroWidgetTimerState.idle,
+    };
+    // 原生通知/小组件要的是本地 epoch 锚点：按当前换算结果反推。
+    if (!runtime.status.isRunning) {
+      _activeAnchorMs = null;
+    } else {
+      final localNow = DateTime.now().millisecondsSinceEpoch;
+      if (isCountUp) {
+        _activeAnchorMs = localNow - elapsedMs;
+      } else {
+        final remainingMs = durationMs - elapsedMs;
+        _activeAnchorMs = localNow + (remainingMs < 0 ? 0 : remainingMs);
+      }
+    }
+  }
+
+  void _startRemoteTicker() {
+    if (_timer?.isActive == true) return;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _onRemoteTick());
+  }
+
+  void _stopRemoteTicker() {
+    if (_focusSyncMode != FocusSyncMode.remote) return;
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  /// 每秒只用“服务器时钟 + 单调时钟”重算，不做 ++/-- 累加，因此不漂移。
+  void _onRemoteTick() {
+    final snapshot = _remoteSnapshot;
+    if (snapshot == null || _focusSyncMode != FocusSyncMode.remote) return;
+    final runtime = snapshot.runtime;
+    if (runtime.status.isIdle) return;
+    _projectRemoteState();
+    _notifyTimerTick();
+    if (runtime.status.isRunning &&
+        !runtime.mode.isCountUp &&
+        (runtime.isExpired(_remoteClock.nowMs) ||
+            _state.remainingSeconds <= 1)) {
+      // 同步模式绝不在本地结算/自动轮转，只请求服务端快照。
+      _requestRemoteRefresh();
+    }
+  }
+
+  int? _lastRemoteRefreshAtMs;
+
+  void _requestRemoteRefresh() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final last = _lastRemoteRefreshAtMs;
+    if (last != null && now - last < 5000) return;
+    _lastRemoteRefreshAtMs = now;
+    _focusRuntimeController?.requestRefresh();
+  }
+
+  /// 远端控制入口：网络动作只发显式命令，投影等服务端确认后再变。
+  void _sendRemoteControl(
+    FocusRuntimeAction action, {
+    Map<String, dynamic>? payload,
+  }) {
+    unawaited(_sendRemoteControlAwaited(action, payload: payload));
+  }
+
+  Future<bool> _sendRemoteControlAwaited(
+    FocusRuntimeAction action, {
+    Map<String, dynamic>? payload,
+  }) async {
+    final controller = _focusRuntimeController;
+    if (controller == null) return false;
+    if (!canControlFocus) {
+      controller.requestRefresh();
+      return false;
+    }
+    try {
+      return await controller.send(action, payload: payload);
+    } catch (_) {
+      // 协调器内部已捕获错误；这里兜底，绝不留下未处理 Future。
+      return false;
+    }
+  }
+
+  void _sendRemoteToggle() {
+    final status = _remoteSnapshot?.runtime.status;
+    if (status == null) {
+      _focusRuntimeController?.requestRefresh();
+      return;
+    }
+    switch (status) {
+      case FocusRuntimeStatus.running:
+        _sendRemoteControl(FocusRuntimeAction.pause);
+      case FocusRuntimeStatus.paused:
+        _sendRemoteControl(FocusRuntimeAction.resume);
+      case FocusRuntimeStatus.idle:
+        _sendRemoteControl(
+          FocusRuntimeAction.start,
+          payload: _remoteStartPayload(),
+        );
+    }
+  }
+
+  /// start 载荷：计时模式 + 本机会话配置 + 任务字段（idle 草稿在这里带上）。
+  Map<String, dynamic> _remoteStartPayload() =>
+      FocusRuntimeCommand.startPayload(
+        mode: _state.isCountUp
+            ? FocusRuntimeMode.countup
+            : FocusRuntimeMode.countdown,
+        config: _config.toJson(),
+        phase: FocusRuntimePhase.fromPomodoroType(_state.type),
+        taskName: _state.taskName,
+        todoId: _state.todoId,
+        subtaskId: _state.subtaskId,
+        todoTitle: _state.todoTitle,
+        tag: _state.tag,
+        focusRoomId: _state.focusRoomId,
+      );
+
+  /// 运行中的任务/标签/房间编辑 → update 命令；idle 草稿留本地。
+  void _maybeSendRemoteTaskUpdate() {
+    if (!_remoteControlEnabled) return;
+    final runtime = _remoteSnapshot?.runtime;
+    if (runtime == null) return;
+    final payload = FocusRuntimeCommand.updatePayload(
+      taskName: _state.taskName,
+      todoId: _state.todoId,
+      subtaskId: _state.subtaskId,
+      todoTitle: _state.todoTitle,
+      tag: _state.tag,
+      focusRoomId: _state.focusRoomId,
+    );
+    final draft = Map<String, Object?>.from(payload);
+    _remotePendingTaskFields = draft;
+    if (runtime.status.isIdle) return;
+    final generation = _storageGeneration;
+    unawaited(() async {
+      await _sendRemoteControlAwaited(
+        FocusRuntimeAction.update,
+        payload: payload,
+      );
+      if (generation != _storageGeneration ||
+          !identical(_remotePendingTaskFields, draft)) {
+        return;
+      }
+      _remotePendingTaskFields = null;
+      _projectRemoteState();
+      notifyListeners();
+    }());
+  }
+
+  /// 回执已经等于本地草稿时清除保护，之后的权威值可以正常覆盖。
+  void _clearAcknowledgedRemoteDrafts(FocusRuntimeState runtime) {
+    final draft = _remotePendingTaskFields;
+    if (draft == null) return;
+    final matches =
+        (draft['taskName'] as String?) == runtime.taskName &&
+        (draft['todoId'] as String?) == runtime.todoId &&
+        (draft['subtaskId'] as String?) == runtime.subtaskId &&
+        (draft['todoTitle'] as String?) == runtime.todoTitle &&
+        (draft['tag'] as String?) == runtime.tag &&
+        (draft['focusRoomId'] as String?) == runtime.focusRoomId;
+    if (matches) _remotePendingTaskFields = null;
+  }
+
+  void _persistRemoteMarker() {
+    _queueSnapshotOp((prefs) => prefs.setBool(focusRemoteMarkerKey, true));
+  }
+
+  void _clearRemoteMarker() {
+    _queueSnapshotOp((prefs) => prefs.remove(focusRemoteMarkerKey));
+  }
+
+  // --- 远端历史幂等回填（不产生完成事件/时间足迹） ---
+
+  void _loadDeletedSessionIds(SharedPreferences prefs) {
+    if (_tombstonesLoaded) return;
+    _tombstonesLoaded = true;
+    try {
+      final raw = prefs.getString(CloudSyncProvider.deletedItemsStorageKey);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = json.decode(raw);
+      if (decoded is! Map) return;
+      final bucket = decoded['pomodoro_sessions'];
+      if (bucket is! Map) return;
+      for (final key in bucket.keys) {
+        final id = key.toString().trim();
+        if (id.isNotEmpty) _deletedSessionIds.add(id);
+      }
+    } catch (_) {
+      // 墓碑解析失败按“无墓碑”处理，不阻塞历史加载。
+    }
+  }
+
+  Future<void> _ensureTombstonesLoaded() async {
+    if (_tombstonesLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _loadDeletedSessionIds(prefs);
+    } catch (_) {}
+  }
+
+  /// 按 id + updatedAt 幂等 upsert；尊重墓碑，不删本地其它历史。
+  bool _upsertRemoteSession(PomodoroSession? session) {
+    if (session == null) return false;
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    if (index >= 0) {
+      if (!session.updatedAt.isAfter(_sessions[index].updatedAt)) return false;
+      _sessions[index] = session;
+    } else {
+      if (_deletedSessionIds.contains(session.id)) return false;
+      _sessions.add(session);
+      _trimSessions();
+    }
+    _sessionCountToday = todayFocusSessions.length;
+    unawaited(_saveSessions());
+    _persistedRevision++;
+    return true;
+  }
+
+  bool _upsertRemotePenalty(PomodoroFocusPenalty? penalty) {
+    if (penalty == null) return false;
+    if (_penalties.any((p) => p.id == penalty.id)) return false;
+    _penalties = <PomodoroFocusPenalty>[
+      penalty,
+      ..._penalties,
+    ].take(100).toList();
+    unawaited(_savePenaltyList(_penalties));
+    _persistedRevision++;
+    return true;
+  }
+
   // --- Timer controls ---
 
   void toggleTimer() {
+    if (_remoteLocked) {
+      // 同步模式：只发显式命令，投影等服务端确认。
+      _sendRemoteToggle();
+      return;
+    }
     if (_state.isRunning) {
       unawaited(_recordStrictFocusPenalty(FocusPenaltyReason.pause));
       _pauseTimer();
@@ -640,11 +1170,22 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void startIfIdle() {
+    if (_remoteLocked) {
+      if ((_remoteSnapshot?.runtime.status ?? FocusRuntimeStatus.idle) ==
+          FocusRuntimeStatus.idle) {
+        _sendRemoteControl(
+          FocusRuntimeAction.start,
+          payload: _remoteStartPayload(),
+        );
+      }
+      return;
+    }
     if (_state.isRunning) return;
     _startTimer();
   }
 
   void _startTimer() {
+    if (_remoteLocked) return;
     _isPaused = false;
     if (_timer?.isActive ?? false) {
       if (!_state.isRunning) {
@@ -702,6 +1243,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _pauseTimer() {
+    if (_remoteLocked) return;
     _cancelTimer();
     _isPaused = true;
     // 暂停前先记录完整相位：重启/冷热切换后可继续同一剩余时长。
@@ -763,6 +1305,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _completeSession() {
+    if (_remoteLocked) {
+      // 同步模式绝不本地结算/自动轮转：只补拉权威快照。
+      _requestRemoteRefresh();
+      return;
+    }
     _cancelTimer();
     // 结算即清旧快照（自然完成与崩溃后的逾期补结算共用）；若按
     // autoStart 续跑，_startTimer 会以新相位锚点重新落盘。
@@ -909,6 +1456,10 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void skipSession() {
+    if (_remoteLocked) {
+      _sendRemoteControl(FocusRuntimeAction.skip);
+      return;
+    }
     _cancelTimer();
     _clearRunningSnapshot();
     unawaited(_recordStrictFocusPenalty(FocusPenaltyReason.skip));
@@ -938,6 +1489,10 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void resetTimer() {
+    if (_remoteLocked) {
+      _sendRemoteControl(FocusRuntimeAction.reset);
+      return;
+    }
     _cancelTimer();
     _clearRunningSnapshot();
     unawaited(_recordStrictFocusPenalty(FocusPenaltyReason.reset));
@@ -959,6 +1514,12 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void finishCurrentSession() {
+    if (_remoteLocked) {
+      final status = _remoteSnapshot?.runtime.status;
+      if (status == null || status.isIdle) return;
+      _sendRemoteControl(FocusRuntimeAction.finish);
+      return;
+    }
     if (_state.type != PomodoroType.focus) return;
     if (_state.isCountUp && !_state.isRunning && _state.remainingSeconds <= 0) {
       return;
@@ -967,6 +1528,19 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void setCountUpMode(bool enabled) {
+    if (_remoteLocked) {
+      final runtime = _remoteSnapshot?.runtime;
+      if (!_remoteControlEnabled ||
+          !canControlFocus ||
+          runtime == null ||
+          !runtime.status.isIdle) {
+        return;
+      }
+      _remoteIdleCountUp = enabled;
+      _projectRemoteState();
+      notifyListeners();
+      return;
+    }
     if (_state.isRunning) return;
     _cancelTimer();
     _state = _state.copyWith(
@@ -991,7 +1565,12 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _config = cfg;
     await _touchAndSaveConfig();
     _persistedRevision++;
-    if (!_state.isRunning) {
+    // 远端权威期间计时/总时长由服务端快照决定，本机配置只作为下一次 start 的载荷。
+    if (_remoteLocked && _remoteSnapshot?.runtime.status.isIdle == true) {
+      _remoteIdleCountUp ??= _state.isCountUp;
+      _projectRemoteState();
+    }
+    if (!_state.isRunning && !_remoteLocked) {
       _state = _state.copyWith(
         remainingSeconds: _state.isCountUp ? 0 : cfg.focusDuration,
         totalSeconds: _state.isCountUp ? 0 : cfg.focusDuration,
@@ -1119,6 +1698,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _persistRunningSnapshot();
     // 通知里的关联任务名同步跟随。
     _syncFocusTimerNotification();
+    _maybeSendRemoteTaskUpdate();
   }
 
   /// 待办 / 子任务选择入口：一次性写入父任务 id、父任务名称快照与
@@ -1150,6 +1730,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     // 运行中选择任务需要立刻落盘，保证崩溃重启后恢复出同一关联。
     _syncFocusTimerNotification();
     _persistRunningSnapshot();
+    _maybeSendRemoteTaskUpdate();
   }
 
   void setTag(String? tag) {
@@ -1159,6 +1740,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       clearTag: clean == null || clean.isEmpty,
     );
     notifyListeners();
+    _maybeSendRemoteTaskUpdate();
   }
 
   Future<void> setFocusRoomId(String? roomId) async {
@@ -1175,6 +1757,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     await _touchAndSaveConfig();
     _persistedRevision++;
     notifyListeners();
+    // 运行中改房间 → update 命令；idle 草稿本地保留，下次 start 带上。
+    _maybeSendRemoteTaskUpdate();
   }
 
   /// 重读原生授权/拦截/前台状态，并消费可能错过的原生拦截事件。
@@ -1325,7 +1909,18 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
         _state.type != PomodoroType.focus) {
       return;
     }
+    if (_remoteLocked) {
+      // 同步模式：pause / skip / reset 的处罚由后端按命令一次记录，
+      // Provider 不再重复记；设备本地 strict（离开应用/分心应用）只在
+      // 本机就是本阶段发起设备时生效，远端 follow 不后台计处罚。
+      if (reason != FocusPenaltyReason.leaveApp &&
+          reason != FocusPenaltyReason.distractingApp) {
+        return;
+      }
+      if (!_remoteIsLocalSource) return;
+    }
     // 先快照状态：解析应用名是异步的，不能被期间的状态变化污染。
+    final storageGeneration = _storageGeneration;
     final stateSnapshot = _state;
     final generation = _distractionSyncGeneration;
     final now = DateTime.now();
@@ -1355,6 +1950,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     );
     final nextPenalties = [penalty, ..._penalties].take(100).toList();
     await _savePenaltyList(nextPenalties);
+    if (storageGeneration != _storageGeneration) return;
     _penalties = nextPenalties;
     _persistedRevision++;
     notifyListeners();
@@ -1382,6 +1978,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     final generation = ++_distractionSyncGeneration;
     final shouldMonitor =
         _config.strictFocusMode &&
+        (!_remoteLocked || _remoteIsLocalSource) &&
         _config.monitorDistractingApps &&
         _state.isRunning &&
         _state.type == PomodoroType.focus;
@@ -1611,6 +2208,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 原生通知倒计时先到期：Dart 计时器可能被系统延迟，这里补一次结算。
   Future<void> _handleNativeFocusTimerExpired() async {
+    if (_remoteLocked) {
+      // 同步模式：原生到期只提示补拉，服务端才结算/轮转。
+      _requestRemoteRefresh();
+      return;
+    }
     if (!_state.isRunning || _state.isCountUp) return;
     if (_state.remainingSeconds > 1) return;
     _completeSession();
@@ -1651,6 +2253,11 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (revision < 0 || revision != _widgetRevision) return false;
     if (expectedState != _widgetTimerState) return false;
     final current = _widgetTimerState;
+    if (_remoteLocked) {
+      // 先过本地 session/revision/state 校验，再映射到远端 expected 会话版本；
+      // 迟到按钮在本地就失配，服务端还会用 expectedRevision 再拒一次。
+      return _applyRemoteWidgetControl(action: action, current: current);
+    }
     switch (action) {
       case PomodoroWidgetControlAction.start:
         // start 只接受 idle / paused；运行中重复 start 不改状态。
@@ -1677,6 +2284,40 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
     if (generation != _storageGeneration) return false;
     await _writeWidgetControl();
+    await flushPersistence();
+    return true;
+  }
+
+  /// 小组件控制 → 远端显式命令；服务端确认后投影才变化。
+  Future<bool> _applyRemoteWidgetControl({
+    required PomodoroWidgetControlAction action,
+    required PomodoroWidgetTimerState current,
+  }) async {
+    final runtime = _remoteSnapshot?.runtime;
+    if (runtime == null || !_remoteControlEnabled) return false;
+    final FocusRuntimeAction remoteAction;
+    switch (action) {
+      case PomodoroWidgetControlAction.start:
+        if (current == PomodoroWidgetTimerState.running) return false;
+        remoteAction = current == PomodoroWidgetTimerState.paused
+            ? FocusRuntimeAction.resume
+            : FocusRuntimeAction.start;
+      case PomodoroWidgetControlAction.pause:
+        if (current != PomodoroWidgetTimerState.running) return false;
+        remoteAction = FocusRuntimeAction.pause;
+      case PomodoroWidgetControlAction.stop:
+        if (current == PomodoroWidgetTimerState.idle) return false;
+        remoteAction = FocusRuntimeAction.stop;
+    }
+    final generation = _storageGeneration;
+    final accepted = await _sendRemoteControlAwaited(
+      remoteAction,
+      payload: remoteAction == FocusRuntimeAction.start
+          ? _remoteStartPayload()
+          : null,
+    );
+    if (!accepted) return false;
+    if (generation != _storageGeneration) return false;
     await flushPersistence();
     return true;
   }
@@ -1767,9 +2408,12 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   /// 后台动作 ACK 前等待当前控制记录与运行快照全部落盘。
   Future<void> flushPersistence() async {
+    // 账号代际在等待期间可能已推进：旧代际的落盘结果不再作为本次 ACK 依据。
+    final generation = _storageGeneration;
     await _widgetControlWrites;
     final pendingSnapshot = _snapshotDrainDone;
     if (pendingSnapshot != null) await pendingSnapshot.future;
+    if (generation != _storageGeneration) return;
   }
 
   /// 启动时恢复控制身份；返回是否已从暂停态恢复出 [state]（调用方不要再 init）。

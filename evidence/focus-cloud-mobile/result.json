@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "startedAtMs": 1793968891867,
+  "finishedAtMs": 1793968916889,
+  "package": "com.duoyi.duoyi.accountfocuscheck",
+  "apkSha256": "aa710eb114fbec56ce316d41e92d2d66c5b9ef5dd037d7ae1cba8a9b2143b928",
+  "physicalResolution": [
+    1200,
+    2670
+  ],
+  "densityDpi": 520,
+  "fontScale": 1.25,
+  "crop": {
+    "topPx": 160,
+    "reason": "exclude unrelated system notification/status bar",
+    "deliveredImageSize": [
+      1200,
+      2510
+    ],
+    "originalsInScratch": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-mobile-layout-final-raw"
+  },
+  "cloudButtonBoundsUncroppedPx": [
+    485,
+    590,
+    618,
+    723
+  ],
+  "cloudIsAboveTimer": true,
+  "constantBottomSyncLabelCount": 0,
+  "hintNodeCountAfterTap": 2,
+  "horizontalOptionsBefore": [
+    "自由计时",
+    "15 分钟",
+    "25 分钟",
+    "30 分钟"
+  ],
+  "horizontalOptionsAfter": [
+    "30 分钟",
+    "45 分钟",
+    "60 分钟",
+    "90 分钟"
+  ],
+  "images": [
+    "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-focus-sync-feature/evidence/screenshots/focus-cloud-mobile/phone-layout.png",
+    "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-focus-sync-feature/evidence/screenshots/focus-cloud-mobile/cloud-hint.png",
+    "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-focus-sync-feature/evidence/screenshots/focus-cloud-mobile/duration-options-scrolled.png",
+    "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-focus-sync-feature/evidence/screenshots/focus-cloud-mobile/final-layout.png"
+  ],
+  "finalCloudLabels": [
+    "多端专注已同步"
+  ]
+}

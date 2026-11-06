@@ -22,6 +22,26 @@ void main() {
     }
   });
 
+  test(
+    'focus device identity survives while running account snapshots are cleared',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'duoyi_focus_sync_device_id': 'this-device',
+        'pomodoro_running_snapshot': '{"sessionId":"old-account-session"}',
+        'pomodoro_focus_remote_mode': true,
+        'pomodoro_widget_control': '{"sessionId":"old-widget"}',
+      });
+
+      await AccountLocalDataCleaner.clearSharedPreferences();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('duoyi_focus_sync_device_id'), 'this-device');
+      expect(prefs.containsKey('pomodoro_running_snapshot'), isFalse);
+      expect(prefs.containsKey('pomodoro_focus_remote_mode'), isFalse);
+      expect(prefs.containsKey('pomodoro_widget_control'), isFalse);
+    },
+  );
+
   test('clears dynamic account-scoped prefixes', () async {
     SharedPreferences.setMockInitialValues({
       for (final prefix in AccountLocalDataCleaner.accountScopedPrefixes)

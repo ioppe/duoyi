@@ -7010,6 +7010,42 @@ abstract class AppLocalizations {
   /// **'暂停'**
   String get focusPause;
 
+  /// No description provided for @focusSyncConnecting.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在连接多端专注'**
+  String get focusSyncConnecting;
+
+  /// No description provided for @focusSyncConnected.
+  ///
+  /// In zh, this message translates to:
+  /// **'多端专注已同步'**
+  String get focusSyncConnected;
+
+  /// No description provided for @focusSyncLoginRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录后同步多端专注'**
+  String get focusSyncLoginRequired;
+
+  /// No description provided for @focusSyncPending.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在同步操作…'**
+  String get focusSyncPending;
+
+  /// No description provided for @focusSyncOffline.
+  ///
+  /// In zh, this message translates to:
+  /// **'离线未同步'**
+  String get focusSyncOffline;
+
+  /// No description provided for @focusSyncError.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作未确认，请重试'**
+  String get focusSyncError;
+
   /// No description provided for @focusFloatingOpen.
   ///
   /// In zh, this message translates to:

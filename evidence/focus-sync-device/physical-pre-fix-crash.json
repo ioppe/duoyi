@@ -1,0 +1,51 @@
+{
+  "status": "FAIL",
+  "startedAtMs": 1793961378401,
+  "finishedAtMs": 1793961427634,
+  "cases": [
+    {
+      "case": "01-independent-logins-and-connected-ui",
+      "status": "PASS",
+      "atMs": 1793961386590,
+      "display": "25:00"
+    },
+    {
+      "case": "02-phone-start-broadcast-to-second-client",
+      "status": "PASS",
+      "atMs": 1793961394885,
+      "sessionId": "dc5978e4-0026-4950-8f67-ac0cf7ca8aa8",
+      "revision": 6,
+      "display": "00:56"
+    },
+    {
+      "case": "03-remote-pause-freezes-phone",
+      "status": "PASS",
+      "atMs": 1793961408160,
+      "display": "00:55",
+      "frozenSeconds": 8,
+      "revision": 7
+    },
+    {
+      "case": "04-remote-task-update-visible-on-phone",
+      "status": "PASS",
+      "atMs": 1793961410798,
+      "revision": 8
+    },
+    {
+      "case": "05-phone-resume-preserves-session",
+      "status": "PASS",
+      "atMs": 1793961413532,
+      "sessionId": "dc5978e4-0026-4950-8f67-ac0cf7ca8aa8",
+      "revision": 9
+    },
+    {
+      "case": "06-phone-reset-without-completion",
+      "status": "PASS",
+      "atMs": 1793961416658,
+      "revision": 10,
+      "historyCount": 0
+    }
+  ],
+  "error": "['topResumedActivity=ActivityRecord{80542944 u0 com.miui.home/.launcher.Launcher t2}']",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus_device_acceptance.py\", line 159, in <module>\n    restored=enter_focus('15-restart-restored')\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus_device_acceptance.py\", line 85, in enter_focus\n    obs=observe(name+'-initial')\n        ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus_device_acceptance.py\", line 65, in observe\n    assert any(phone.PACKAGE in line for line in obs['foreground']),obs['foreground']\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ['topResumedActivity=ActivityRecord{80542944 u0 com.miui.home/.launcher.Launcher t2}']\n"
+}

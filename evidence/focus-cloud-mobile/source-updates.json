@@ -1,0 +1,109 @@
+{
+  "generated_for": "isolated Android debug candidate, post cloud-icon/compact-layout update",
+  "candidate_root": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-device-candidate",
+  "original_source_root": "/Users/sky/Documents/项目工程/个人项目/America-server/duoyi-focus-sync-feature",
+  "baseline": "feature/account-focus-sync snapshot baseline4602528 (hashed copy, not a git repo)",
+  "layered_bindings": {
+    "baseline_manifest": {
+      "path": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-device-candidate-source-manifest.json",
+      "sha256": "1624767dbc2cf817a3ae20fecbc8d3538888a8a7615c9a73359253195b61f6bb",
+      "files": "1290 baseline snapshot files"
+    },
+    "fixed_native_manifest": {
+      "path": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-device-fixed-source-manifest.json",
+      "sha256": "c4edbbe9157f330a227b026ff31c57571297845e9525bdca219a996f2c17591d"
+    },
+    "native_fix_override": {
+      "path": "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerForegroundService.kt",
+      "sha256": "8de302e121e013ee7898ad43a3660a1f8a6f142bd815d300d83240d2c5735130"
+    },
+    "layout_current_overrides": {
+      "source": "original worktree, copied this session, sha256-verified equal",
+      "files": {
+        "lib/widgets/focus_sync_status.dart": {
+          "sha256": "dc881eaf72805a1333b37e6ded2cd2ecf079bdfc22913d2a18df5cb0459d911b",
+          "candidate_sha256": "dc881eaf72805a1333b37e6ded2cd2ecf079bdfc22913d2a18df5cb0459d911b",
+          "match": true
+        },
+        "lib/screens/pomodoro_screen.dart": {
+          "sha256": "caf54d4e3414ec024fe87d57e7fdea68d70d5dca80d636516ce27bdd7e3a3074",
+          "candidate_sha256": "caf54d4e3414ec024fe87d57e7fdea68d70d5dca80d636516ce27bdd7e3a3074",
+          "match": true
+        },
+        "lib/core/i18n.dart": {
+          "sha256": "50cd24fa10ffa08dd1a4548781ad203615290694f279e83fc429d0a9c2edfa6f",
+          "candidate_sha256": "50cd24fa10ffa08dd1a4548781ad203615290694f279e83fc429d0a9c2edfa6f",
+          "match": true
+        },
+        "lib/l10n/app_zh.arb": {
+          "sha256": "d41fb742abce68be7cf0a4b5546723437e62597ab07655efa5de3f6e0fbcba30",
+          "candidate_sha256": "d41fb742abce68be7cf0a4b5546723437e62597ab07655efa5de3f6e0fbcba30",
+          "match": true
+        },
+        "lib/l10n/app_en.arb": {
+          "sha256": "daba4acf11dedaf462fbf7713a115a7942b1d4eb80ec7bee3911ca3f67303935",
+          "candidate_sha256": "daba4acf11dedaf462fbf7713a115a7942b1d4eb80ec7bee3911ca3f67303935",
+          "match": true
+        },
+        "lib/l10n/generated/app_localizations.dart": {
+          "sha256": "444b4e8b9909b85478e6cbf2c7e12ebb5e24a62548592bce08d8e89945b3a431",
+          "candidate_sha256": "444b4e8b9909b85478e6cbf2c7e12ebb5e24a62548592bce08d8e89945b3a431",
+          "match": true
+        },
+        "lib/l10n/generated/app_localizations_zh.dart": {
+          "sha256": "55273526fd483e676b3f877ed36413d09e9b601286728c97df9d7a9cbd7148c2",
+          "candidate_sha256": "55273526fd483e676b3f877ed36413d09e9b601286728c97df9d7a9cbd7148c2",
+          "match": true
+        },
+        "lib/l10n/generated/app_localizations_en.dart": {
+          "sha256": "774d7bcfedd790e9e167ca9d1130f88d7fe1120396bf994131a5272456118b9d",
+          "candidate_sha256": "774d7bcfedd790e9e167ca9d1130f88d7fe1120396bf994131a5272456118b9d",
+          "match": true
+        }
+      }
+    }
+  },
+  "pubspec_lock": {
+    "sha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+    "expected": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+    "match": true
+  },
+  "identity": {
+    "applicationId": "com.duoyi.duoyi.accountfocuscheck",
+    "label": "多仪·同步验证",
+    "uri_scheme": "duoyi-account-focus-check",
+    "native_namespace": "com.duoyi.duoyi"
+  },
+  "build": {
+    "command": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-device-venv/bin/python scripts/flutter_with_config.py --flutter-bin /Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter build apk --debug --target-platform android-arm64 --no-pub --dart-define=DUOYI_SERVER_URL=http://127.0.0.1:18791",
+    "config": "default (deployment profile rejected: DUOYI_BACKEND_RUNNER must be systemd or docker)",
+    "env": {
+      "JAVA_HOME": "/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home",
+      "ANDROID_SDK_ROOT": "/Users/sky/Library/Android/sdk",
+      "GRADLE_USER_HOME": "/Users/sky/Library/Developer/duoyi/gradle",
+      "FLUTTER_STORAGE_BASE_URL": "https://storage.flutter-io.cn"
+    },
+    "log": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-mobile-layout-build.log",
+    "failed_attempt_logs": [
+      "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-mobile-layout-build-attempt1.log",
+      "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-mobile-layout-build-attempt2.log",
+      "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-mobile-layout-build-attempt3.log"
+    ],
+    "cache_repairs": [
+      "removed build/app/intermediates/project_dex_archive/debug/dexBuilderDebug + dex/debug/mergeProjectDexDebug (stale 'FocusTimerForegroundService$Companion 2.dex' duplicate)",
+      "removed build/app/intermediates/flutter/debug + assets/debug (265 stale '* 2' asset duplicates from earlier stalled copy)",
+      "removed build/app/outputs/apk/debug + intermediates/apk (zip holes: 95 MB orphaned deleted-entry payload)"
+    ]
+  },
+  "apk": {
+    "path": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-device-candidate/build/app/outputs/flutter-apk/app-debug.apk",
+    "sha256": "aa710eb114fbec56ce316d41e92d2d66c5b9ef5dd037d7ae1cba8a9b2143b928",
+    "bytes": 160600628,
+    "package": "com.duoyi.duoyi.accountfocuscheck",
+    "versionName": "2.0.0",
+    "versionCode": 140023,
+    "signer_cert_sha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "verifies": "v2",
+    "superseded_apk_archive": "/Users/sky/Documents/.pi-desktop/data/scratch/cf8558ae-af22-4dd3-9d15-b31403d975d3/focus-before-cloud-377aa209.apk"
+  }
+}

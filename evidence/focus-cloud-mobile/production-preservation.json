@@ -1,0 +1,20 @@
+{
+  "unchanged": true,
+  "before": {
+    "apkPaths": [
+      "package:/data/app/~~d3YTCabuhIr5T99PJuyUsA==/com.duoyi.duoyi-YgWWHBUrEHvEhJ6yaVF35w==/base.apk"
+    ],
+    "versionCode": "142023",
+    "versionName": "2.0.0",
+    "lastUpdateTime": "2026-11-04 19:21:34"
+  },
+  "after": {
+    "versionCode": "142023",
+    "versionName": "2.0.0",
+    "lastUpdateTime": "2026-11-04 19:21:34",
+    "apkPaths": [
+      "package:/data/app/~~d3YTCabuhIr5T99PJuyUsA==/com.duoyi.duoyi-YgWWHBUrEHvEhJ6yaVF35w==/base.apk"
+    ]
+  },
+  "privateDataRead": false
+}

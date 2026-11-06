@@ -1,0 +1,57 @@
+{
+  "branch": "feature/account-focus-sync",
+  "baseCommit": "4602528a49191b5e3bae2f32b8603fc8956f42ef",
+  "sourceManifestSha256": "c4edbbe9157f330a227b026ff31c57571297845e9525bdca219a996f2c17591d",
+  "apkSha256": "377aa209fb8a12df7e35988a106c93ed97edc049c91e748187da17c8bfdff7be",
+  "apkBytes": 160626934,
+  "validationPackage": "com.duoyi.duoyi.accountfocuscheck",
+  "validationVersionName": "2.0.0",
+  "validationVersionCode": 140023,
+  "signerSha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+  "nativeActivity": "com.duoyi.duoyi.MainActivity",
+  "identityOnlySourceDifferences": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/AndroidManifest.xml"
+  ],
+  "device": {
+    "serial": "2df52c4c",
+    "manufacturer": "Xiaomi",
+    "model": "24129PN74C",
+    "androidRelease": "16",
+    "sdk": "36",
+    "abi": "arm64-v8a",
+    "resolution": "Physical size: 1200x2670",
+    "density": "Physical density: 520",
+    "fontScale": "1.25",
+    "packages": {
+      "com.duoyi.duoyi": {
+        "apkPaths": [
+          "package:/data/app/~~d3YTCabuhIr5T99PJuyUsA==/com.duoyi.duoyi-YgWWHBUrEHvEhJ6yaVF35w==/base.apk"
+        ],
+        "versionCode": "142023",
+        "versionName": "2.0.0",
+        "firstInstallTime": "2026-10-23 14:39:35",
+        "lastUpdateTime": "2026-11-04 19:21:34"
+      },
+      "com.duoyi.duoyi.accountfocuscheck": {
+        "apkPaths": []
+      }
+    },
+    "keyguardIndicators": [
+      "showing=false",
+      "inputRestricted=false"
+    ]
+  },
+  "productionApkSha256Before": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+  "runtimeDependencyFix": "backend/requirements.txt adds websockets==15.0.1; local real Uvicorn WS handshake verified",
+  "macosFullAppAvailable": false,
+  "secondClient": "source-matched Flutter Web on local origin http://127.0.0.1:18791",
+  "baselineCandidateApkSha256": "89a8581411e093289c4570a800ea8e864bbf26629fcbd0fdb6f630d72280742a",
+  "verifiedSourceUpdates": {
+    "android/app/src/main/kotlin/com/duoyi/duoyi/services/FocusTimerForegroundService.kt": "8de302e121e013ee7898ad43a3660a1f8a6f142bd815d300d83240d2c5735130",
+    "backend/requirements.txt": "378abf75d23e110af664efcdc05ae600aac0d7e45943a1e591c12506280b83b0",
+    "docs/focus-runtime-sync.md": "35134bf119c49e43a06ad2e949e7780e8c4801a43518df7321beb19d79500b4f"
+  },
+  "sourceBindingMethod": "Layered snapshot: original1290filemanifest plus3verifiedupdates; originalAPKarchived"
+}

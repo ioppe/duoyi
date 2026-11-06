@@ -655,6 +655,9 @@ class WorkspaceApiTest(unittest.TestCase):
                 "GET /api/auth/tokens",
                 "POST /api/auth/tokens",
                 "DELETE /api/auth/tokens/{token_id}",
+                "GET /api/focus/runtime",
+                "POST /api/focus/runtime/commands",
+                "WS /ws/focus/runtime/events",
             ):
                 self.assertIn(route, payload["required_routes"])
             self.assertIn("PATCH /api/me/profile", payload["required_routes"])
@@ -685,6 +688,8 @@ class WorkspaceApiTest(unittest.TestCase):
             self.assertTrue(payload["features"]["admin_coins"])
             self.assertTrue(payload["features"]["mobile_update"])
             self.assertTrue(payload["features"]["access_tokens"])
+            self.assertTrue(payload["features"]["focus_runtime_sync"])
+            self.assertTrue(payload["features"]["multi_device_login_sessions"])
 
     def test_api_contract_required_routes_are_registered(self):
         def route_matches(contract_route, registered_route):

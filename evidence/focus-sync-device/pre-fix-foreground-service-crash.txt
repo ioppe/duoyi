@@ -1,0 +1,14 @@
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: FATAL EXCEPTION: main
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: Process: com.duoyi.duoyi.accountfocuscheck, PID: 17045
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: android.app.RemoteServiceException$ForegroundServiceDidNotStartInTimeException: Context.startForegroundService() did not then call Service.startForeground(): ServiceRecord{f2853a0 u0 com.duoyi.duoyi.accountfocuscheck/com.duoyi.duoyi.services.FocusTimerForegroundService c:com.duoyi.duoyi.accountfocuscheck}
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.app.ActivityThread.generateForegroundServiceDidNotStartInTimeException(ActivityThread.java:2682)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.app.ActivityThread.throwRemoteServiceException(ActivityThread.java:2650)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.app.ActivityThread.-$$Nest$mthrowRemoteServiceException(Unknown Source:0)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:3036)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:114)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:274)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:369)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:10106)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:616)
+11-06 18:37:04.719 17045 17045 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1142)

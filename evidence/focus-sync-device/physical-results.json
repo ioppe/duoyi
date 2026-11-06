@@ -1,0 +1,84 @@
+{
+  "status": "PASS",
+  "startedAtMs": 1793962497112,
+  "finishedAtMs": 1793962656107,
+  "cases": [
+    {
+      "case": "01-independent-logins-and-connected-ui",
+      "status": "PASS",
+      "atMs": 1793962506106,
+      "display": "01:00"
+    },
+    {
+      "case": "02-phone-start-broadcast-to-second-client",
+      "status": "PASS",
+      "atMs": 1793962513663,
+      "sessionId": "ae3ae810-8166-4e4f-9141-94b84fd6a8a3",
+      "revision": 14,
+      "display": "00:57"
+    },
+    {
+      "case": "03-remote-pause-freezes-phone",
+      "status": "PASS",
+      "atMs": 1793962527605,
+      "display": "00:56",
+      "frozenSeconds": 8,
+      "revision": 15
+    },
+    {
+      "case": "04-remote-task-update-visible-on-phone",
+      "status": "PASS",
+      "atMs": 1793962530200,
+      "revision": 16
+    },
+    {
+      "case": "05-phone-resume-preserves-session",
+      "status": "PASS",
+      "atMs": 1793962533349,
+      "sessionId": "ae3ae810-8166-4e4f-9141-94b84fd6a8a3",
+      "revision": 17
+    },
+    {
+      "case": "06-phone-reset-without-completion",
+      "status": "PASS",
+      "atMs": 1793962538777,
+      "revision": 18,
+      "historyCount": 1
+    },
+    {
+      "case": "07-android-process-restart-restores-shared-session",
+      "status": "PASS",
+      "atMs": 1793962558863,
+      "sessionId": "bdf86362-211c-43e5-b4f2-a18adc81e596",
+      "display": "00:44"
+    },
+    {
+      "case": "08-natural-expiry-unique-history-and-time-footprint",
+      "status": "PASS",
+      "atMs": 1793962604137,
+      "completedSession": "bdf86362-211c-43e5-b4f2-a18adc81e596",
+      "nextPhase": "shortBreak",
+      "display": "01:00"
+    },
+    {
+      "case": "09-phone-countup-finish-unique-settlement",
+      "status": "PASS",
+      "atMs": 1793962625266,
+      "sessionId": "dd9c2b30-febd-4f25-8cf8-cf6ee5cd997d",
+      "durationSeconds": 12,
+      "display": "00:08"
+    },
+    {
+      "case": "10-offline-cold-start-blocks-independent-timer",
+      "status": "PASS",
+      "atMs": 1793962649871,
+      "revision": 22
+    },
+    {
+      "case": "11-reconnect-converges-without-replaying-controls",
+      "status": "PASS",
+      "atMs": 1793962656107,
+      "revision": 22
+    }
+  ]
+}

@@ -63,6 +63,7 @@ import 'services/account_local_data_cleaner.dart';
 import 'services/calendar_sync_service.dart';
 import 'services/deferred_web_font_service.dart';
 import 'services/focus_timer_notification_service.dart';
+import 'services/focus_sync_coordinator.dart';
 import 'services/deep_link_service.dart';
 import 'services/system_tray.dart';
 import 'services/home_widget_service.dart';
@@ -318,11 +319,24 @@ void main() async {
     currentVersionCode: AppVersion.build,
     backendBaseUrlGetter: () => authProvider.baseUrl,
   );
+  final focusSyncCoordinator = FocusSyncCoordinator(
+    auth: authProvider,
+    pomodoro: pomodoroProvider,
+    onHistoryChanged: () async {
+      if (authProvider.state.isLoggedIn &&
+          cloudSyncProvider.config.autoSync &&
+          !cloudSyncProvider.isSyncing) {
+        await cloudSyncProvider.syncNow();
+      }
+    },
+  );
   var cloudSyncStartSerial = 0;
 
   Future<void> clearAccountLocalData({required String reason}) async {
     debugPrint('[auth] clear local account data reason=$reason');
     cloudSyncStartSerial++;
+    // 先失效旧身份的请求/连接，账号清理本身不终止服务端共享专注。
+    await focusSyncCoordinator.resetForAccountChange();
     Object? criticalCleanupError;
     StackTrace? criticalCleanupStackTrace;
 
@@ -625,6 +639,8 @@ void main() async {
       () => cloudSyncProvider.loadFromStorage(),
     ]),
   );
+  // 实时专注先于延迟业务水合接管运行态，避免旧本地快照先行结算。
+  focusSyncCoordinator.start();
   // Local AI is a device connection and is never active for a remote account.
   aiService.setRemoteAccountActive(authProvider.state.isLoggedIn);
 
@@ -646,7 +662,7 @@ void main() async {
             ),
             () => _startupGuard(
               'pomodoro storage',
-              () => pomodoroProvider.loadFromStorage(),
+              () => pomodoroProvider.prepareRemoteHistory(),
             ),
             () => _startupGuard(
               'countdown storage',

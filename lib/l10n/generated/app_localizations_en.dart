@@ -3717,6 +3717,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get focusPause => 'Pause';
 
   @override
+  String get focusSyncConnecting => 'Connecting focus across devices';
+
+  @override
+  String get focusSyncConnected => 'Focus synced across devices';
+
+  @override
+  String get focusSyncLoginRequired => 'Sign in to sync focus across devices';
+
+  @override
+  String get focusSyncPending => 'Syncing your action…';
+
+  @override
+  String get focusSyncOffline => 'Offline. Focus not synced.';
+
+  @override
+  String get focusSyncError => 'Action not confirmed. Please try again.';
+
+  @override
   String get focusFloatingOpen => 'Open focus floating window';
 
   @override
