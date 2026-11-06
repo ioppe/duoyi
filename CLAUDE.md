@@ -111,7 +111,7 @@ The app version lives in **both** `pubspec.yaml` (`version: <name>+<build>`) and
 
 ### Documentation layout
 
-Canonical requirement/design/task docs live in `docs/` (`requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, `branding.md`, `configuration-persistence.md`, etc.). The many `*_REPORT.md` / `*_SUMMARY.md` files in the repo root are historical working-session notes — don't treat them as current guidance and don't add new ones there.
+Canonical requirement/design/task docs live in `docs/`; start at `docs/README.md` and follow it to `requirement-v2.md`, `design-v2.md`, `cloud-sync-v2-contract.md`, `branding.md`, `configuration-persistence.md`, etc. The project root keeps only `README.md`, `DEPLOY.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE` and project/config entry files. One-off analysis and session handoff notes go to the session scratch directory, never the repository. Verifiable evidence lives under `evidence/`; its historical hash manifests are history records — keep them and never rewrite them to hide removed legacy file names. Build and last-run output is not committed (see `.gitignore`). Old root documents stay reachable through git history instead of an `archive/` copy.
 
 ## Architecture
 
