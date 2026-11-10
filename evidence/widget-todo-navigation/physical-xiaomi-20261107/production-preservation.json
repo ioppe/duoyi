@@ -1,0 +1,20 @@
+{
+  "production_apk_path": "/data/app/~~d3YTCabuhIr5T99PJuyUsA==/com.duoyi.duoyi-YgWWHBUrEHvEhJ6yaVF35w==/base.apk",
+  "production_apk_sha256": "cfcd3d274020287a53118f184165b1e39e9b8a23bbc1976a980faf4cdf849a3b",
+  "production_metadata": [
+    "versionCode=142023 minSdk=24 targetSdk=36",
+    "versionName=2.0.0",
+    "lastUpdateTime=2026-11-04 19:21:34"
+  ],
+  "size": "Physical size: 1200x2670",
+  "density": "Physical density: 520",
+  "font_scale": "1.25",
+  "unchanged": {
+    "production_apk_path": true,
+    "production_apk_sha256": true,
+    "production_metadata": true,
+    "size": true,
+    "density": true,
+    "font_scale": true
+  }
+}

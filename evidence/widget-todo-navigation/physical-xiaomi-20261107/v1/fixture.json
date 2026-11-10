@@ -1,0 +1,121 @@
+{
+  "package": "com.duoyi.duoyi.widgetnavcheck",
+  "mode": "local_only",
+  "created_via": "app quick_todo action after first-run initialization",
+  "tasks": [
+    {
+      "id": "9052f400-2982-4b33-8c46-dea9c5fad64d",
+      "title": "Widget back test A",
+      "notes": "",
+      "isCompleted": false,
+      "quadrant": 1,
+      "priority": 0,
+      "kanbanColumnId": "pending",
+      "listGroupId": null,
+      "listGroupName": null,
+      "workspaceId": "private",
+      "createdBy": null,
+      "updatedBy": null,
+      "assigneeId": null,
+      "tags": [],
+      "attachments": [],
+      "dueDate": null,
+      "date": "2026-11-07T01:45:12.896408+0800",
+      "hasReminder": false,
+      "reminderAt": null,
+      "reminder": {
+        "enabled": false,
+        "kind": 0,
+        "hour": null,
+        "minute": null,
+        "daysBefore": 0,
+        "vibrate": true,
+        "fullScreen": false
+      },
+      "reminderPlan": {
+        "enabled": false,
+        "rules": []
+      },
+      "focusLink": {
+        "enabled": false,
+        "presetId": null,
+        "focusSeconds": null,
+        "whiteNoise": "none"
+      },
+      "timeTargetSeconds": null,
+      "postponeHistory": [],
+      "subtasks": [],
+      "autoToggleByChildren": true,
+      "sortOrder": 0,
+      "recurrence": {
+        "frequency": 0,
+        "interval": 1,
+        "byWeekdays": null,
+        "byMonthDay": null,
+        "endDate": null,
+        "maxOccurrences": null
+      },
+      "completedAt": null,
+      "isArchivedAfterRollover": false,
+      "createdAt": "2026-11-07T01:45:12.902036",
+      "updatedAt": "2026-11-07T01:45:12.902036"
+    },
+    {
+      "id": "cb531213-8127-4f56-95c4-6fc840e45400",
+      "title": "Widget back test B",
+      "notes": "",
+      "isCompleted": false,
+      "quadrant": 1,
+      "priority": 0,
+      "kanbanColumnId": "pending",
+      "listGroupId": null,
+      "listGroupName": null,
+      "workspaceId": "private",
+      "createdBy": null,
+      "updatedBy": null,
+      "assigneeId": null,
+      "tags": [],
+      "attachments": [],
+      "dueDate": null,
+      "date": "2026-11-07T01:45:45.728674+0800",
+      "hasReminder": false,
+      "reminderAt": null,
+      "reminder": {
+        "enabled": false,
+        "kind": 0,
+        "hour": null,
+        "minute": null,
+        "daysBefore": 0,
+        "vibrate": true,
+        "fullScreen": false
+      },
+      "reminderPlan": {
+        "enabled": false,
+        "rules": []
+      },
+      "focusLink": {
+        "enabled": false,
+        "presetId": null,
+        "focusSeconds": null,
+        "whiteNoise": "none"
+      },
+      "timeTargetSeconds": null,
+      "postponeHistory": [],
+      "subtasks": [],
+      "autoToggleByChildren": true,
+      "sortOrder": 0,
+      "recurrence": {
+        "frequency": 0,
+        "interval": 1,
+        "byWeekdays": null,
+        "byMonthDay": null,
+        "endDate": null,
+        "maxOccurrences": null
+      },
+      "completedAt": null,
+      "isArchivedAfterRollover": false,
+      "createdAt": "2026-11-07T01:45:45.730217",
+      "updatedAt": "2026-11-07T01:45:45.730217"
+    }
+  ]
+}

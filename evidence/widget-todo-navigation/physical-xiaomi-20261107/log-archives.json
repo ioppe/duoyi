@@ -1,0 +1,20 @@
+{
+  "archives": [
+    {
+      "original_path": "v1/cold-v1-process.log",
+      "original_sha256": "44e2af2a50e0ab8d7f729c00d9e8ab73b5079bbf1669b1471cfe854b55c74ba9",
+      "archive_path": "v1/cold-v1-process.log.gz",
+      "archive_sha256": "60253b22a59ced717dcfd8edab8831bbfd102fa6d7bd48a570d93502a318475a",
+      "decompressed_sha256": "44e2af2a50e0ab8d7f729c00d9e8ab73b5079bbf1669b1471cfe854b55c74ba9",
+      "reason": "Original .log is ignored; archive is lossless, historical hash entry retained."
+    },
+    {
+      "original_path": "v1/widget-binding-setup.txt",
+      "original_sha256": "6929ff878611da4197def4fb13ac2830f99c081e7ba5f172ce9c14d6fe77d4ad",
+      "archive_path": "v1/widget-binding-setup.txt.gz",
+      "archive_sha256": "c1ac9654322920f8bbf31ff19b35abc106fde698b3d69f0f8a68369ba7d6d794",
+      "decompressed_sha256": "6929ff878611da4197def4fb13ac2830f99c081e7ba5f172ce9c14d6fe77d4ad",
+      "reason": "Preserve original tool-output whitespace without a staged whitespace error; historical hash entry retained."
+    }
+  ]
+}

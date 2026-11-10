@@ -379,23 +379,21 @@ AndroidNotificationAction('snooze_30', '30分钟后'),
 已有 payload 格式 `duoyi://todo/{id}`、`duoyi://habit/{id}?confirm=1`、
 `duoyi://goal/{id}`、`duoyi://countdown/{id}`。
 
-新增 DeepLinkRouter 统一处理：
+通知与小组件链接由 `lib/main.dart` 的 `_handleWidgetUri` 统一处理，以下为路由示意：
 
 ```dart
-/// lib/services/deep_link_router.dart
+/// 路由示意；实际入口位于 lib/main.dart。
 class DeepLinkRouter {
   /// 从 notification tap 或 widget click 的 URI 导航到对应页面。
   static Future<void> handle(BuildContext context, Uri uri) async {
     switch (uri.host) {
       case 'todo':
-        final id = uri.pathSegments.firstOrNull;
-        if (id == null) return;
-        final confirm = uri.queryParameters['confirm'] == '1';
-        if (confirm) {
-          // 弹出确认完成对话框
-        } else {
-          await TodayDetailRouter.open(context, TodaySectionKind.todos, id: id);
-        }
+        // 普通清单作为详情的上一层，返回清单后可继续返回 App 主页面。
+        mainShellKey.currentState?.openTodoFromWidget(
+          id: uri.pathSegments.firstOrNull,
+          confirm: uri.queryParameters['confirm'] == '1',
+        );
+        break;
       case 'habit':
         // ...
       case 'goal':
@@ -410,7 +408,8 @@ class DeepLinkRouter {
 ```
 
 main.dart 中统一注册 notification tap handler 和 HomeWidget click handler，
-都路由到 DeepLinkRouter.handle。
+由 `_handleWidgetUri` 分发。待办入口复用 `openTodoFromWidget`，建立主页面 → 普通清单 → 详情/确认的返回链；重入时尊重编辑页的退出保护，不强制销毁未保存草稿。
+冷恢复时带 id 的入口须先等待本地待办加载，再判断任务是否存在；Android 收到新的 intent 后清除待取的旧初始链接，避免旧页面在新任务之后重新打开。相关返回与取消规则见 R8.2。
 
 ### D3: 通知健康补齐
 
@@ -1413,9 +1412,10 @@ enum DomainEventType {
 ## 附录 C：Deep-link URI Scheme 完整列表
 
 ```
-duoyi://tab/todo                  打开隐藏待办页，保留旧通知与小组件入口
-duoyi://todo/{id}                 打开待办详情
-duoyi://todo/{id}?confirm=1       弹出完成确认（闹钟场景）
+duoyi://tab/todo                  打开普通待办清单，返回到 App 主页面
+duoyi://todo                      打开普通待办清单，返回到 App 主页面
+duoyi://todo/{id}                 主页面 → 普通待办清单 → 任务详情，系统返回逐层退出
+duoyi://todo/{id}?confirm=1       在普通待办清单上弹出完成确认（闹钟场景）
 duoyi://habit/{id}                打开习惯详情
 duoyi://habit/{id}?confirm=1      弹出打卡确认
 duoyi://goal/{id}                 打开目标详情

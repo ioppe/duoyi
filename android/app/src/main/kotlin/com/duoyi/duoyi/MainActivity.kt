@@ -157,7 +157,14 @@ class MainActivity : FlutterActivity() {
             if (link != null) pendingInitialOAuthLink = link
             if (sharedText != null) pendingInitialSharedText = sharedText
         } else {
-            if (deepLink != null) channel.invokeMethod("onLink", deepLink)
+            // 最新的 intent 已经通过 onLink 实时转发给 Dart，此时若还留着
+            // 冷启动时记录的旧链接，takeInitialLink 会把它再重放一次（实测：
+            // 真实的 duoyi://todo/<id> 之后又冒出一条过期的 duoyi://widget）。
+            // 新 intent 取代旧冷启动 intent，所以先清待取链接再转发。
+            if (deepLink != null) {
+                pendingInitialDeepLink = null
+                channel.invokeMethod("onLink", deepLink)
+            }
             if (sharedText != null) channel.invokeMethod("onSharedText", sharedText)
         }
     }

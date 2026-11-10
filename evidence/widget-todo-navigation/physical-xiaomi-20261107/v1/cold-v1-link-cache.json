@@ -1,0 +1,444 @@
+{
+  "_recentWidgetActionUris": {
+    "type": "Instance",
+    "_vmType": "Map",
+    "class": {
+      "type": "@Class",
+      "fixedId": true,
+      "id": "classes/86",
+      "name": "_Map",
+      "_vmName": "_Map@3099033",
+      "location": {
+        "type": "SourceLocation",
+        "script": {
+          "type": "@Script",
+          "fixedId": true,
+          "id": "libraries/@3099033/scripts/dart%3A_compact_hash/0",
+          "uri": "dart:_compact_hash",
+          "_kind": "kernel"
+        },
+        "tokenPos": 13480,
+        "endTokenPos": 14281,
+        "line": 379,
+        "column": 1
+      },
+      "library": {
+        "type": "@Library",
+        "fixedId": true,
+        "id": "libraries/@3099033",
+        "name": "dart._compact_hash",
+        "uri": "dart:_compact_hash"
+      },
+      "typeParameters": [
+        {
+          "type": "@Instance",
+          "_vmType": "TypeParameter",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/52",
+            "name": "_TypeParameter",
+            "_vmName": "_TypeParameter@0150898",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Ftype_patch.dart/0",
+                "uri": "dart:core-patch/type_patch.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 1539,
+              "endTokenPos": 1684,
+              "line": 57,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 23835453,
+          "id": "objects/36/0",
+          "kind": "TypeParameter",
+          "name": "X0",
+          "parameterizedClass": {
+            "type": "@Instance",
+            "_vmType": "Class",
+            "class": {
+              "type": "@Class",
+              "fixedId": true,
+              "id": "classes/171",
+              "name": "Null",
+              "location": {
+                "type": "SourceLocation",
+                "script": {
+                  "type": "@Script",
+                  "fixedId": true,
+                  "id": "libraries/@0150898/scripts/dart%3Acore%2Fnull.dart/0",
+                  "uri": "dart:core/null.dart",
+                  "_kind": "kernel"
+                },
+                "tokenPos": 927,
+                "endTokenPos": 1173,
+                "line": 23,
+                "column": 1
+              },
+              "library": {
+                "type": "@Library",
+                "fixedId": true,
+                "id": "libraries/@0150898",
+                "name": "dart.core",
+                "uri": "dart:core"
+              }
+            },
+            "kind": "Null",
+            "fixedId": true,
+            "id": "objects/null",
+            "valueAsString": "null"
+          }
+        },
+        {
+          "type": "@Instance",
+          "_vmType": "TypeParameter",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/52",
+            "name": "_TypeParameter",
+            "_vmName": "_TypeParameter@0150898",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Ftype_patch.dart/0",
+                "uri": "dart:core-patch/type_patch.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 1539,
+              "endTokenPos": 1684,
+              "line": 57,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 391538451,
+          "id": "objects/37/0",
+          "kind": "TypeParameter",
+          "name": "X1",
+          "parameterizedClass": {
+            "type": "@Instance",
+            "_vmType": "Class",
+            "class": {
+              "type": "@Class",
+              "fixedId": true,
+              "id": "classes/171",
+              "name": "Null",
+              "location": {
+                "type": "SourceLocation",
+                "script": {
+                  "type": "@Script",
+                  "fixedId": true,
+                  "id": "libraries/@0150898/scripts/dart%3Acore%2Fnull.dart/0",
+                  "uri": "dart:core/null.dart",
+                  "_kind": "kernel"
+                },
+                "tokenPos": 927,
+                "endTokenPos": 1173,
+                "line": 23,
+                "column": 1
+              },
+              "library": {
+                "type": "@Library",
+                "fixedId": true,
+                "id": "libraries/@0150898",
+                "name": "dart.core",
+                "uri": "dart:core"
+              }
+            },
+            "kind": "Null",
+            "fixedId": true,
+            "id": "objects/null",
+            "valueAsString": "null"
+          }
+        }
+      ]
+    },
+    "size": 32,
+    "identityHashCode": 0,
+    "id": "objects/38/0",
+    "fields": [],
+    "kind": "Map",
+    "length": 2,
+    "associations": [
+      {
+        "key": {
+          "type": "@Instance",
+          "_vmType": "String",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/94",
+            "name": "_OneByteString",
+            "_vmName": "_OneByteString@0150898",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Fstring_patch.dart/0",
+                "uri": "dart:core-patch/string_patch.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 32158,
+              "endTokenPos": 44476,
+              "line": 1011,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 0,
+          "id": "objects/39/0",
+          "kind": "String",
+          "length": 49,
+          "valueAsString": "duoyi://todo/9052f400-2982-4b33-8c46-dea9c5fad64d"
+        },
+        "value": {
+          "type": "@Instance",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/195",
+            "name": "DateTime",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore%2Fdate_time.dart/0",
+                "uri": "dart:core/date_time.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 5040,
+              "endTokenPos": 32296,
+              "line": 136,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 823560208,
+          "id": "objects/40/0",
+          "kind": "PlainInstance",
+          "length": 3
+        }
+      },
+      {
+        "key": {
+          "type": "@Instance",
+          "_vmType": "String",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/94",
+            "name": "_OneByteString",
+            "_vmName": "_OneByteString@0150898",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Fstring_patch.dart/0",
+                "uri": "dart:core-patch/string_patch.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 32158,
+              "endTokenPos": 44476,
+              "line": 1011,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 0,
+          "id": "objects/41/0",
+          "kind": "String",
+          "length": 14,
+          "valueAsString": "duoyi://widget"
+        },
+        "value": {
+          "type": "@Instance",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/195",
+            "name": "DateTime",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore%2Fdate_time.dart/0",
+                "uri": "dart:core/date_time.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 5040,
+              "endTokenPos": 32296,
+              "line": 136,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 507005054,
+          "id": "objects/42/0",
+          "kind": "PlainInstance",
+          "length": 3
+        }
+      }
+    ]
+  },
+  "_pendingWidgetUris": {
+    "type": "Instance",
+    "_vmType": "GrowableObjectArray",
+    "class": {
+      "type": "@Class",
+      "fixedId": true,
+      "id": "classes/92",
+      "name": "_GrowableList",
+      "_vmName": "_GrowableList@0150898",
+      "location": {
+        "type": "SourceLocation",
+        "script": {
+          "type": "@Script",
+          "fixedId": true,
+          "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Fgrowable_array.dart/0",
+          "uri": "dart:core-patch/growable_array.dart",
+          "_kind": "kernel"
+        },
+        "tokenPos": 245,
+        "endTokenPos": 19896,
+        "line": 7,
+        "column": 1
+      },
+      "library": {
+        "type": "@Library",
+        "fixedId": true,
+        "id": "libraries/@0150898",
+        "name": "dart.core",
+        "uri": "dart:core"
+      },
+      "typeParameters": [
+        {
+          "type": "@Instance",
+          "_vmType": "TypeParameter",
+          "class": {
+            "type": "@Class",
+            "fixedId": true,
+            "id": "classes/52",
+            "name": "_TypeParameter",
+            "_vmName": "_TypeParameter@0150898",
+            "location": {
+              "type": "SourceLocation",
+              "script": {
+                "type": "@Script",
+                "fixedId": true,
+                "id": "libraries/@0150898/scripts/dart%3Acore-patch%2Ftype_patch.dart/0",
+                "uri": "dart:core-patch/type_patch.dart",
+                "_kind": "kernel"
+              },
+              "tokenPos": 1539,
+              "endTokenPos": 1684,
+              "line": 57,
+              "column": 1
+            },
+            "library": {
+              "type": "@Library",
+              "fixedId": true,
+              "id": "libraries/@0150898",
+              "name": "dart.core",
+              "uri": "dart:core"
+            }
+          },
+          "identityHashCode": 23835453,
+          "id": "objects/47/0",
+          "kind": "TypeParameter",
+          "name": "X0",
+          "parameterizedClass": {
+            "type": "@Instance",
+            "_vmType": "Class",
+            "class": {
+              "type": "@Class",
+              "fixedId": true,
+              "id": "classes/171",
+              "name": "Null",
+              "location": {
+                "type": "SourceLocation",
+                "script": {
+                  "type": "@Script",
+                  "fixedId": true,
+                  "id": "libraries/@0150898/scripts/dart%3Acore%2Fnull.dart/0",
+                  "uri": "dart:core/null.dart",
+                  "_kind": "kernel"
+                },
+                "tokenPos": 927,
+                "endTokenPos": 1173,
+                "line": 23,
+                "column": 1
+              },
+              "library": {
+                "type": "@Library",
+                "fixedId": true,
+                "id": "libraries/@0150898",
+                "name": "dart.core",
+                "uri": "dart:core"
+              }
+            },
+            "kind": "Null",
+            "fixedId": true,
+            "id": "objects/null",
+            "valueAsString": "null"
+          }
+        }
+      ]
+    },
+    "size": 32,
+    "identityHashCode": 0,
+    "id": "objects/48/0",
+    "fields": [],
+    "kind": "List",
+    "length": 0,
+    "elements": []
+  }
+}
