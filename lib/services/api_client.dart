@@ -9,7 +9,30 @@ import '../core/app_config.dart';
 /// 跨平台 HTTP 封装(web/android/linux 通用)。
 class ApiClient {
   static const String requiredApiContractVersion = '2026-06-01.3';
-  static const String requiredApiContractRoutesHash = '48881df2412c4ae0';
+  static const String requiredApiContractRoutesHash = 'ce1546700ea8ce32';
+  static const String _legacyApiContractRoutesHash = '48881df2412c4ae0';
+  static const String _focusRuntimeContractDate = '2026-06-01';
+  static const int _focusRuntimeContractRevision = 8;
+  static final RegExp _apiContractRevisionPattern = RegExp(
+    r'^(\d{4}-\d{2}-\d{2})\.(\d+)$',
+  );
+
+  /// 新摘要包含旧版必备路由；旧摘要仅用于专注同步路由加入前的版本。
+  static bool requiredApiContractRoutesHashMatches(
+    String contractVersion,
+    String routesHash,
+  ) {
+    if (routesHash == requiredApiContractRoutesHash) return true;
+    if (routesHash != _legacyApiContractRoutesHash) return false;
+    final match = _apiContractRevisionPattern.firstMatch(contractVersion);
+    if (match == null) return false;
+    final revision = int.tryParse(match.group(2)!);
+    final dateOrder = match.group(1)!.compareTo(_focusRuntimeContractDate);
+    return revision != null &&
+        revision > 0 &&
+        (dateOrder < 0 ||
+            (dateOrder == 0 && revision < _focusRuntimeContractRevision));
+  }
 
   String baseUrl;
   String? token;
@@ -431,7 +454,8 @@ class ApiClient {
           contractVersion.compareTo(requiredApiContractVersion) < 0;
       final missingRoutesHash = routesHash.isEmpty;
       final mismatchedRoutesHash =
-          routesHash.isNotEmpty && routesHash != requiredApiContractRoutesHash;
+          !missingRoutesHash &&
+          !requiredApiContractRoutesHashMatches(contractVersion, routesHash);
       if (!missingContract &&
           !outdatedContract &&
           !missingRoutesHash &&

@@ -642,8 +642,11 @@ class AppUpdateService extends ChangeNotifier {
             0;
     final missingRoutesHash = routesHash.isEmpty;
     final mismatchedRoutesHash =
-        routesHash.isNotEmpty &&
-        routesHash != ApiClient.requiredApiContractRoutesHash;
+        !missingRoutesHash &&
+        !ApiClient.requiredApiContractRoutesHashMatches(
+          contractVersion,
+          routesHash,
+        );
     if (!missingContract &&
         !outdatedContract &&
         !missingRoutesHash &&

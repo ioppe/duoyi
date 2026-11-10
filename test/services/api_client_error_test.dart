@@ -359,6 +359,76 @@ void main() {
     },
   );
 
+  const routeHashCases = [
+    (
+      'legacy revision accepts legacy route hash',
+      '2026-06-01.7',
+      '48881df2412c4ae0',
+      false,
+    ),
+    (
+      'legacy revision accepts the superset route hash',
+      '2026-06-01.7',
+      ApiClient.requiredApiContractRoutesHash,
+      false,
+    ),
+    (
+      'focus runtime revision accepts current route hash',
+      '2026-06-01.8',
+      ApiClient.requiredApiContractRoutesHash,
+      false,
+    ),
+    (
+      'focus runtime revision rejects legacy route hash',
+      '2026-06-01.8',
+      '48881df2412c4ae0',
+      true,
+    ),
+  ];
+  for (final (name, contractVersion, routesHash, mismatch) in routeHashCases) {
+    test(name, () async {
+      final seen = <String>[];
+      final client = ApiClient(
+        baseUrl: 'https://duoyi.test',
+        httpClient: MockClient((request) async {
+          seen.add('${request.method} ${request.url.path}');
+          if (request.url.path == '/api/config') {
+            return http.Response(
+              json.encode({
+                'api_contract_version': contractVersion,
+                'required_routes_hash': routesHash,
+                'version': '3.1.0',
+              }),
+              200,
+            );
+          }
+          return http.Response('{"detail":"Not Found"}', 404);
+        }),
+      );
+
+      final message = mismatch
+          ? allOf(
+              contains('当前后端未部署本版本接口：/api/me/email-code'),
+              contains(
+                '必备路由摘要 $routesHash 与客户端要求 '
+                '${ApiClient.requiredApiContractRoutesHash}',
+              ),
+            )
+          : allOf(
+              contains('Not Found'),
+              isNot(contains('当前后端未部署本版本接口')),
+              isNot(contains('必备路由摘要')),
+            );
+      await expectLater(
+        client.post('/api/me/email-code', {'email': 'u@example.com'}),
+        throwsA(
+          isA<ApiException>().having((e) => e.message, 'message', message),
+        ),
+      );
+      expect(seen, ['POST /api/me/email-code', 'GET /api/config']);
+    });
+  }
+
   test(
     'text and event stream helpers also diagnose stale backend routes',
     () async {

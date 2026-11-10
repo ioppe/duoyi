@@ -187,8 +187,10 @@ class FocusRuntimeApi {
     var prefix = rawPath.trim();
     if (prefix.isEmpty || prefix == '/') return '';
     prefix = prefix.replaceAll(RegExp(r'/+$'), '');
-    if (prefix.toLowerCase().endsWith('/api')) {
-      prefix = prefix.substring(0, prefix.length - 4);
+    final lastSlash = prefix.lastIndexOf('/');
+    if (lastSlash >= 0 &&
+        prefix.substring(lastSlash + 1).toLowerCase() == 'api') {
+      prefix = prefix.substring(0, lastSlash);
     }
     if (prefix.isEmpty || prefix == '/') return '';
     if (!prefix.startsWith('/')) prefix = '/$prefix';
