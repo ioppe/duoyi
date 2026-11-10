@@ -106,6 +106,49 @@ void main() {
     expect(main, contains('state.navigateTo(2, allowHidden: true)'));
     expect(main, contains('state.navigateTo(5, allowHidden: true)'));
     expect(main, contains('_pushHiddenWidgetFallbackRoute'));
+
+    // 小组件待办点击必须走 MainShellState.openTodoFromWidget 的返回链
+    // （主页面 → 清单 → 详情），不能在深链层直接切隐藏 tab 1 或直接压栈。
+    final todoBranchStart = main.indexOf("} else if (uri.host == 'todo'");
+    final todoBranchEnd = main.indexOf(
+      "} else if (uri.host == 'goal'",
+      todoBranchStart,
+    );
+    expect(todoBranchStart, greaterThanOrEqualTo(0));
+    expect(todoBranchEnd, greaterThan(todoBranchStart));
+    final todoBranch = main.substring(todoBranchStart, todoBranchEnd);
+    expect(todoBranch, contains('state.openTodoFromWidget('));
+    expect(
+      todoBranch,
+      contains(
+        'id: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null',
+      ),
+    );
+    expect(
+      todoBranch,
+      contains("confirm: uri.queryParameters['confirm'] == '1'"),
+    );
+    expect(todoBranch, isNot(contains('navigateTo(1')));
+    expect(
+      todoBranch,
+      isNot(contains('TodayDetailRouter.open')),
+      reason: '待办深链必须复用 openTodoFromWidget 的清单/详情栈，避免叠清单。',
+    );
+
+    final tabBranchStart = main.indexOf("if (uri.host == 'tab')");
+    final tabBranchEnd = main.indexOf(
+      "} else if (uri.host == 'oauth'",
+      tabBranchStart,
+    );
+    expect(tabBranchStart, greaterThanOrEqualTo(0));
+    expect(tabBranchEnd, greaterThan(tabBranchStart));
+    final tabBranch = main.substring(tabBranchStart, tabBranchEnd);
+    expect(tabBranch, contains('state.openTodoFromWidget();'));
+    expect(tabBranch, contains('state.navigateTo(idx, allowHidden: true);'));
+    expect(tabBranch, contains('if (idx == 1)'));
+
+    expect(main, contains('void openTodoFromWidget('));
+    expect(tabBranch, isNot(contains("state.navigateTo(1, allowHidden")));
     expect(
       main,
       contains('mainShellKey.currentState?.navigateTo(6, allowHidden: true)'),
@@ -265,6 +308,67 @@ void main() {
       );
     },
   );
+  test(
+    'android widget deep link: new intent replaces the pending initial link',
+    () {
+      final activity = File(
+        'android/app/src/main/kotlin/com/duoyi/duoyi/MainActivity.kt',
+      ).readAsStringSync();
+      final start = activity.indexOf(
+        'override fun onNewIntent(intent: Intent)',
+      );
+      final end = activity.indexOf(
+        'private fun scheduleWidgetRestoreAfterResume',
+        start,
+      );
+      expect(start, greaterThanOrEqualTo(0));
+      expect(end, greaterThan(start));
+      final onNewIntent = activity.substring(start, end);
+
+      final forward = onNewIntent.indexOf(
+        'channel.invokeMethod("onLink", deepLink)',
+      );
+      final clearPending = onNewIntent.indexOf('pendingInitialDeepLink = null');
+      expect(forward, greaterThanOrEqualTo(0));
+      expect(clearPending, greaterThanOrEqualTo(0));
+      expect(
+        clearPending,
+        lessThan(forward),
+        reason:
+            '新 intent 已经通过 onLink 实时转发给 Dart，冷启动时记录的旧链接必须'
+            '同时清掉，否则 takeInitialLink 会把过期深链再重放一次。',
+      );
+      // channel 还没创建（纯冷启动）时仍然只记录，等 Dart 主动来取。
+      expect(
+        onNewIntent,
+        contains('if (deepLink != null) pendingInitialDeepLink = deepLink'),
+      );
+    },
+  );
+
+  test('widget todo cold start waits for local hydration before open', () {
+    final main = File('lib/main.dart').readAsStringSync();
+    // 公共入口保持同步 void：调用方（深链/小组件）不依赖 Future。
+    expect(main, contains('void openTodoFromWidget('));
+    // 带 id 但未水合时先等一次本地读取，再开栈。
+    expect(main, contains('context.read<TodoProvider>().isHydrated'));
+    expect(
+      main,
+      contains('suppressDirtyMarkWhile(() => todos.loadFromStorage())'),
+      reason: '冷启动水合只是读盘，不能把读到的数据标成待上传的脏改动。',
+    );
+    // 等待期间的新导航与账号代际变化都必须让旧链接失效。
+    expect(
+      main,
+      contains('if (serial != _widgetTodoNavigationSerial) return;'),
+    );
+    expect(main, contains('isCurrentAccountDataGeneration(generation)'));
+    // 详情栈仍然由 TodayDetailRouter.open 打开，返回链规则不变。
+    expect(
+      main,
+      contains('TodayDetailRouter.open(ctx, TodaySectionKind.todos, id: id)'),
+    );
+  });
 }
 
 class _ProviderRouteCheck {

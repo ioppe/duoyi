@@ -1,0 +1,7 @@
+{
+  "case": "edit",
+  "status": "failed",
+  "device_started_at": "2026-11-07T02:23:32+08:00",
+  "error": "Expected ['任务详情', 'Widget back test B EDITED']; absent (); observed 任务详情\n保存\nWidget back test B \n添加子任务\n预览描述\n标题\n加粗\n斜体\n引用\n列表\n清单\n代码\n链接\n附件\n暂无附件\n选择文件\n添加链接\n清单类型\n未分类\n优先级\nQ2 重要不紧急",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_cases.py\", line 144, in <module>\n    CASES[name]()\n    ~~~~~~~~~~~^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_cases.py\", line 114, in edit\n    d.wait_for(['任务详情',changed],label='72-edit-keyboard-dismissed')\n    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_device.py\", line 118, in wait_for\n    raise AssertionError(f'Expected {expected}; absent {absent}; observed {last}')\nAssertionError: Expected ['任务详情', 'Widget back test B EDITED']; absent (); observed 任务详情\n保存\nWidget back test B \n添加子任务\n预览描述\n标题\n加粗\n斜体\n引用\n列表\n清单\n代码\n链接\n附件\n暂无附件\n选择文件\n添加链接\n清单类型\n未分类\n优先级\nQ2 重要不紧急\n"
+}

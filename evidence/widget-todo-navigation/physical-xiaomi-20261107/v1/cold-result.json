@@ -1,0 +1,7 @@
+{
+  "case": "cold",
+  "status": "failed",
+  "device_started_at": "2026-11-07T02:04:50+08:00",
+  "error": "",
+  "traceback": "Traceback (most recent call last):\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_cases.py\", line 143, in <module>\n    CASES[name]()\n    ~~~~~~~~~~~^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_cases.py\", line 62, in cold\n    d.tap(text=A);detail(A,'21-cold-detail')\n                  ~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/sky/Documents/.pi-desktop/data/scratch/a0361eaf-ab40-4ebe-a13b-11caddab0363/widget_nav_cases.py\", line 26, in detail\n    assert d.PACKAGE in d.foreground()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+}

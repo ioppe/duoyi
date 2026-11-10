@@ -1,0 +1,90 @@
+{
+  "status": "passed",
+  "passed": 8,
+  "total": 8,
+  "candidate": {
+    "source_head": "55e9bb634f30fbff1b9d71178b056d729f52265d",
+    "branch": "fix/widget-todo-back-navigation",
+    "apk_sha256": "08bbd337ae07ea1031fe70b70b6f19af7b1af9fe1f07503ba0ec999c1fb1ed41",
+    "apk_bytes": 160614468,
+    "package": "com.duoyi.duoyi.widgetnavcheck",
+    "activity": "com.duoyi.duoyi.MainActivity",
+    "version_name": "2.0.0",
+    "version_code": 140023,
+    "build_type": "debug",
+    "local_test_url": "http://127.0.0.1:18765",
+    "source_manifest_sha256": "a6cb6f8d28238755d895e259249afdcba937c3c3bf7347fbb78e4687f1a28613",
+    "identity_only_changes": [
+      "android/app/build.gradle.kts",
+      "android/app/src/main/res/values/strings.xml",
+      "android/app/src/main/AndroidManifest.xml"
+    ],
+    "installed_apk_sha256_matches": true,
+    "includes_cold_hydration_and_stale_initial_intent_fix": true,
+    "test_widget_id": 568
+  },
+  "cases": [
+    {
+      "case": "warm",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:20:29+08:00",
+      "device_finished_at": "2026-11-07T02:20:52+08:00"
+    },
+    {
+      "case": "cold",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:20:57+08:00",
+      "device_finished_at": "2026-11-07T02:21:25+08:00"
+    },
+    {
+      "case": "title",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:21:30+08:00",
+      "device_finished_at": "2026-11-07T02:21:51+08:00"
+    },
+    {
+      "case": "repeat",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:21:56+08:00",
+      "device_finished_at": "2026-11-07T02:22:28+08:00"
+    },
+    {
+      "case": "ordinary-list",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:22:33+08:00",
+      "device_finished_at": "2026-11-07T02:23:04+08:00"
+    },
+    {
+      "case": "missing",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:23:09+08:00",
+      "device_finished_at": "2026-11-07T02:23:24+08:00"
+    },
+    {
+      "case": "edit",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:28:15+08:00",
+      "device_finished_at": "2026-11-07T02:29:05+08:00"
+    },
+    {
+      "case": "confirm",
+      "status": "passed",
+      "device_started_at": "2026-11-07T02:29:12+08:00",
+      "device_finished_at": "2026-11-07T02:29:31+08:00"
+    }
+  ],
+  "report_links_verified": 38,
+  "source_changes_after_build": [
+    "docs/design-v2.md",
+    "docs/manual-regression-checklist.md",
+    "docs/requirement-v2.md"
+  ],
+  "product_source_unchanged_after_build": true,
+  "production_preserved": true,
+  "limitations": [
+    "isolated debug package and local test tasks",
+    "system KEYCODE_BACK only; predictive gesture not tested",
+    "legacy navigation preference migration and unsaved immediate reentry covered automatically only",
+    "no production account/backend or other ROM verification"
+  ]
+}

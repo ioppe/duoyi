@@ -1,0 +1,21 @@
+{
+  "source_head": "55e9bb634f30fbff1b9d71178b056d729f52265d",
+  "branch": "fix/widget-todo-back-navigation",
+  "apk_sha256": "08bbd337ae07ea1031fe70b70b6f19af7b1af9fe1f07503ba0ec999c1fb1ed41",
+  "apk_bytes": 160614468,
+  "package": "com.duoyi.duoyi.widgetnavcheck",
+  "activity": "com.duoyi.duoyi.MainActivity",
+  "version_name": "2.0.0",
+  "version_code": 140023,
+  "build_type": "debug",
+  "local_test_url": "http://127.0.0.1:18765",
+  "source_manifest_sha256": "a6cb6f8d28238755d895e259249afdcba937c3c3bf7347fbb78e4687f1a28613",
+  "identity_only_changes": [
+    "android/app/build.gradle.kts",
+    "android/app/src/main/res/values/strings.xml",
+    "android/app/src/main/AndroidManifest.xml"
+  ],
+  "installed_apk_sha256_matches": true,
+  "includes_cold_hydration_and_stale_initial_intent_fix": true,
+  "test_widget_id": 568
+}

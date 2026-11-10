@@ -3056,7 +3056,13 @@ void _handleWidgetUri(
       'mine' => 6,
       _ => 3,
     };
-    state.navigateTo(idx, allowHidden: true);
+    if (idx == 1) {
+      // 待办不再是可配置的一级入口：`duoyi://tab/todo` 与待办小组件共用
+      // 主页面 → 清单 → 详情 的返回链，不再露出隐藏页返回条。
+      state.openTodoFromWidget();
+    } else {
+      state.navigateTo(idx, allowHidden: true);
+    }
   } else if (uri.host == 'oauth' && ctx != null) {
     state.navigateTo(6, allowHidden: true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -3069,22 +3075,13 @@ void _handleWidgetUri(
         ),
       );
     });
-  } else if (uri.host == 'todo' && ctx != null) {
-    final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
-    if (id == null || id.isEmpty) {
-      state.navigateTo(1, allowHidden: true);
-      return;
-    }
-    state.navigateTo(1, allowHidden: true);
-    final confirm = uri.queryParameters['confirm'] == '1';
-    if (confirm) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showTodoCompletePrompt(ctx, id);
-      });
-    } else {
-      // ignore: discarded_futures
-      TodayDetailRouter.open(ctx, TodaySectionKind.todos, id: id);
-    }
+  } else if (uri.host == 'todo') {
+    // confirm=1 是小组件勾选按钮的“完成后确认”入口；栈规则统一由
+    // MainShellState.openTodoFromWidget 维护。
+    state.openTodoFromWidget(
+      id: uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null,
+      confirm: uri.queryParameters['confirm'] == '1',
+    );
   } else if (uri.host == 'goal' && ctx != null) {
     final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
     if (id == null || id.isEmpty) {
@@ -4192,6 +4189,12 @@ class MainShellState extends State<MainShell> {
   int _currentIndex = 0; // Today first
   bool _allowHiddenCurrentIndex = false;
   bool _hasExplicitNavigation = false;
+
+  /// 小组件待办深链的“最新一次请求”序号。
+  ///
+  /// 冷启动等水合是异步的：等待期间用户可能自己切页，或又来一条新的深链。
+  /// 任何导航都会递增该序号，让仍在等待的旧请求在落地前自行作废。
+  int _widgetTodoNavigationSerial = 0;
   final Set<int> _builtTabs = <int>{0};
 
   static final GlobalKey todayKey = GlobalKey();
@@ -4232,6 +4235,8 @@ class MainShellState extends State<MainShell> {
 
   void navigateTo(int index, {bool allowHidden = false}) {
     if (!mounted) return;
+    // 任何导航都让仍在等待待办水合的旧小组件请求作废。
+    _widgetTodoNavigationSerial++;
     final target = allowHidden
         ? index.clamp(0, _tabCount - 1)
         : _coerceTabIndex(index);
@@ -4242,6 +4247,88 @@ class MainShellState extends State<MainShell> {
       _allowHiddenCurrentIndex = allowHidden;
       _hasExplicitNavigation = true;
     });
+  }
+
+  /// 桌面小组件点击待办（`duoyi://todo[/<id>]`、`duoyi://tab/todo`）的统一入口。
+  ///
+  /// 返回栈固定为：主页面 → 待办清单（普通应用内 `TodoScreen`）→ 详情/兜底页。
+  /// 返回一次是清单，再返回一次回到主页面；不再出现“隐藏应用 / 返回我的”隐藏页。
+  ///
+  /// 冷启动（Android 进程已被杀但任务仍保留）时磁盘里的待办还没水合，同步按
+  /// id 查表会把真实任务误判成“这个待办不存在或已被删除”。所以带 id 且尚未
+  /// 水合时先等一次本地读取；已水合或无 id 仍然同步开栈，返回链规则不变。
+  void openTodoFromWidget({String? id, bool confirm = false}) {
+    if (!mounted) return;
+    // 本次请求立即占位：它在等待期间到达的新导航会让上面的序号继续增长。
+    _widgetTodoNavigationSerial++;
+    final hasId = id != null && id.isNotEmpty;
+    if (!hasId || context.read<TodoProvider>().isHydrated) {
+      _openTodoFromWidgetRoute(id: id, confirm: confirm);
+      return;
+    }
+    unawaited(_awaitTodoHydrationThenOpenRoute(id: id, confirm: confirm));
+  }
+
+  /// 等待待办本地水合后再开栈；序号、账号代际或组件生命周期失效即放弃。
+  Future<void> _awaitTodoHydrationThenOpenRoute({
+    required String id,
+    required bool confirm,
+  }) async {
+    final serial = _widgetTodoNavigationSerial;
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
+    final todos = context.read<TodoProvider>();
+    final cloudSync = context.read<CloudSyncProvider>();
+    try {
+      // 水合只是读盘，不是用户编辑：压住脏标记，避免冷启动直接触发一次上传。
+      await cloudSync.suppressDirtyMarkWhile(() => todos.loadFromStorage());
+    } catch (error, stackTrace) {
+      // 读盘失败保持当前页面，不把“读不到”显示成“任务不存在”。
+      debugPrint(
+        '[WidgetTodo] hydration before open failed: $error\n$stackTrace',
+      );
+      return;
+    }
+    if (!mounted) return;
+    // 等待期间用户已切页、或已到达更新的一条链接：旧链接不再开栈。
+    if (serial != _widgetTodoNavigationSerial) return;
+    if (!AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation)) {
+      return;
+    }
+    _openTodoFromWidgetRoute(id: id, confirm: confirm);
+  }
+
+  /// 同步开栈：主页面 → 待办清单 → 详情 / 完成确认 / 兜底页。
+  void _openTodoFromWidgetRoute({String? id, bool confirm = false}) {
+    if (!mounted) return;
+    final ctx = context;
+    // allowHidden: false 会把隐藏槽位归一化到当前可见标签，同时清掉隐藏
+    // 返回条；用户此前停在哪个主标签，返回时就回到哪个。
+    navigateTo(_currentIndex);
+    // 重复进入不叠加清单，但不能强制 pop 掉正在保存或保留草稿的编辑页。
+    // popUntil 本身不检查 PopScope，必须在谓词中尊重页面的退出保护。
+    var blockedByEditing = false;
+    Navigator.of(ctx).popUntil((route) {
+      if (route.isFirst) return true;
+      if (route.popDisposition == RoutePopDisposition.doNotPop) {
+        blockedByEditing = true;
+        return true;
+      }
+      return false;
+    });
+    if (blockedByEditing) return;
+    // 不能 await 清单的 open()：它的 Future 要等清单路由被 pop 才完成，
+    // await 会把详情拖到用户返回之后才打开。open() 在首个 await 之前就已
+    // 同步 push 清单，所以紧接着调用即可得到 清单 → 详情 的正确返回链。
+    unawaited(TodayDetailRouter.open(ctx, TodaySectionKind.todos));
+    if (id == null || id.isEmpty) return;
+    if (confirm) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_showTodoCompletePrompt(ctx, id));
+      });
+      return;
+    }
+    unawaited(TodayDetailRouter.open(ctx, TodaySectionKind.todos, id: id));
   }
 
   @override
@@ -4288,8 +4375,9 @@ class MainShellState extends State<MainShell> {
       });
     }
     // 槽位 1（待办）有意保留：allDestinations 与 _buildTab 的索引映射必须
-    // 稳定，旧深链 `duoyi://tab/todo` / `duoyi://todo/<id>` 仍按 1 打开；
-    // 它只是不再出现在 safeVisibleTabs，因此不渲染在底栏/rail 里。
+    // 稳定，小组件快捷动作（quick_todo / complete_todo）仍按 1 打开；普通
+    // 点击已改走 openTodoFromWidget 的清单/详情栈，且它不出现在
+    // safeVisibleTabs，因此不渲染在底栏/rail 里。
     final allDestinations = [
       NavigationDestination(
         icon: const Icon(Icons.today_outlined),

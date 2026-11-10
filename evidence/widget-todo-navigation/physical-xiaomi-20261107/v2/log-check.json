@@ -1,0 +1,22 @@
+{
+  "process_ids": [
+    "11092",
+    "20297"
+  ],
+  "device_start": "2026-11-07T02:20:00+08:00",
+  "device_end": "2026-11-07T02:30:59+08:00",
+  "fatal_patterns": {
+    "FATAL EXCEPTION": [],
+    "Fatal signal": [],
+    "Unhandled Exception": [],
+    "RenderFlex overflowed": [],
+    "Another exception was thrown": []
+  },
+  "test_package_crash_entries": [],
+  "observed_nonfatal_notes": [
+    "11-07 02:28:21.704 20297 20297 I flutter : [DuoyiApp] resume config failed: 无法获取服务器配置，请检查连接后重试",
+    "11-07 02:28:51.201 20297 20297 I flutter : [DuoyiApp] resume config failed: 无法获取服务器配置，请检查连接后重试",
+    "11-07 02:29:12.391 20297 20297 I flutter : [DuoyiApp] resume config failed: 无法获取服务器配置，请检查连接后重试"
+  ],
+  "local_test_backend": "127.0.0.1:18765 has no backend; config connection failure is expected for local-only fixture"
+}
