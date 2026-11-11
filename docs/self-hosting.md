@@ -1,15 +1,22 @@
-# 自托管构建：todo.skydrow.site
+# 自托管构建
 
-Fork：<https://github.com/ioppe/duoyi>。`main` 为集成主线，`self-hosted-skydrow` 保留为 Fork 工作分支；`origin` 指向本 Fork，`upstream` 指向原项目。
+Fork 项目到自己的 GitHub 仓库；`main` 为集成主线，在本地维护自己的部署分支。`origin` 指向自己的 Fork，需要同步原项目时配置 `upstream`。
 
-公开部署参数统一放在 `config/deployment.json`：
+公开部署参数默认从 `config/deployment.json` 读取。自托管时，先在仓库根目录复制示例配置，并按自己的环境修改：
 
-- 后端：`https://todo.skydrow.site`
-- 更新仓库：`ioppe/duoyi`
-- Web 路径：`/`
-- 后端运行器：Docker，容器名 `duoyi-backend`
+```bash
+cp config/deployment.example.json config/self-hosting.local.json
+export DUOYI_CONFIG_FILE=config/self-hosting.local.json
+```
 
-配置架构、优先级、密钥边界和迁移规则见 [configuration.md](configuration.md)。域名与更新源不再作为业务代码的默认字面量。
+- 后端地址：例如 `https://todo.example.com`，替换为自己的服务器地址。
+- 更新仓库：例如 `your-org/duoyi`，替换为自己的 GitHub 仓库。
+- Web 路径：按部署位置设置，根路径为 `/`。
+- 后端运行器：按实际部署方式选择 `systemd` 或 `docker`，并设置对应的服务或容器名。
+
+以下本地命令通过 `DUOYI_CONFIG_FILE` 使用这份本地配置。`config/*.local.json` 已被 Git 忽略；不要在公开文档中填写个人实例信息。
+
+配置架构、优先级、密钥边界和迁移规则见 [configuration.md](configuration.md)。域名与更新源由部署配置提供。
 
 ## 开发与验证
 
@@ -39,11 +46,11 @@ python3 scripts/flutter_with_config.py build apk --release
 
 GitHub Actions 需要在本仓库配置 `DUOYI_KEYSTORE_BASE64`、`DUOYI_KEYSTORE_PASSWORD`、`DUOYI_KEY_ALIAS`、`DUOYI_KEY_PASSWORD`。Secrets 不随 Fork 复制；后续 APK 应持续使用自己的同一份签名密钥。
 
-每次推送到 `main`、`self-hosted-skydrow`、`build/macos-dmg` 或 `fix/android-input-settings-device-test` 都会自动运行 `.github/workflows/build-apk.yml`：先校验共享配置、分析并测试，再从同一提交并行构建正式签名的通用/各 ABI Android APK、macOS 通用 DMG/ZIP，以及 Web 桌面/手机包 `duoyi-web`（分支推送默认仅上传 artifact；仅 `main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布，GitHub Pages 仍只部署 `main`）。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建；手动输入 `build_macos` 默认开启。macOS 子工作流不再独立响应 push，避免重复构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
+每次推送到 `.github/workflows/build-apk.yml` 配置的构建分支（含 `main`）都会自动运行构建：先校验共享配置、分析并测试，再从同一提交并行构建正式签名的通用/各 ABI Android APK、macOS 通用 DMG/ZIP，以及 Web 桌面/手机包 `duoyi-web`（分支推送默认仅上传 artifact；仅 `main` 的桌面 Web 包在服务端入口与唯一 Secret 配置完成后自动发布，GitHub Pages 仍只部署 `main`）。无需创建 tag，也可在 Actions → build → Run workflow 中选择分支手动构建；手动输入 `build_macos` 默认开启。macOS 子工作流不再独立响应 push，避免重复构建。同一分支连续推送时，新推送会取消仍在运行的旧构建。
 
 构建成功后，在该次主 `build` 运行的 Artifacts 中下载 `duoyi-android`、`duoyi-macos-universal-unsigned` 或 `duoyi-web`。Android 解压后安装通用包 `duoyi-<日期>-<提交>.apk` 或以 `-arm64-v8a.apk` 结尾的手机专用包；macOS 包含同一提交的 DMG、ZIP 与校验文件，当前仍未签名/公证，具体边界见 [macOS 客户端说明](macos.md)；`duoyi-web` 是同一提交/profile 的桌面与手机可用静态站点压缩包；`main` 的桌面 Web 包在发布配置完成后自动部署到自托管站点，其余仅作 artifact，不覆盖 GitHub Pages。产物保留 30 天并按提交区分；普通分支推送不创建正式 Release，`v*` tag 仍按原流程生成 AAB 并在各端构建全部成功后发布 GitHub Release。
 
-安装版登录页默认显示服务器地址和访问令牌。首次可在网页版登录并进入“我的 → 个人资料 → 访问令牌”创建令牌，再填写 `https://todo.skydrow.site` 和令牌连接。也可使用安装版的账号密码入口。服务器地址保存在本机，可在退出登录后修改，无需重新打包。
+安装版登录页默认显示服务器地址和访问令牌。首次可在自己部署的网页版登录并进入“我的 → 个人资料 → 访问令牌”创建令牌，再填写自己的服务器地址和令牌连接。也可使用安装版的账号密码入口。服务器地址保存在本机，可在退出登录后修改，无需重新打包。
 
 ## Web
 
@@ -61,8 +68,9 @@ python3 scripts/flutter_with_config.py build web --release \
   --dart-define=DUOYI_WEB_TARGET=mobile
 ```
 
-CI 同样使用部署配置；根路径自托管包和 GitHub Pages 子路径包分别构建，Pages 子路径包仅在 `main` 分支构建与部署。仓库 Variables 仍可覆盖部署参数，手动工作流的 `same_origin` 用来显式选择空后端地址。
-推送到 `main` 时，同一次运行的 `web` 作业成功后还会把桌面 Web 包自动发布到现有自托管站点；发布走服务器上受限的 `duoyi-web-deploy` 入口，线上校验失败会原子回滚。配置、单 Secret 与安装说明见 [Web 自动部署](web-auto-deploy.md)。
+CI 使用仓库内维护的公开部署配置或手动工作流选定的 `config_file`，不会读取被 Git 忽略的本地配置。根路径自托管包和 GitHub Pages 子路径包分别构建，Pages 子路径包仅在 `main` 分支构建与部署。仓库 Variables 仍可覆盖部署参数，手动工作流的 `same_origin` 用来显式选择空后端地址。
+
+推送到 `main` 时，同一次运行的 `web` 作业成功后还会把桌面 Web 包自动发布到配置的自托管站点；发布走服务器上受限的 `duoyi-web-deploy` 入口，线上校验失败会原子回滚。配置、单 Secret 与安装说明见 [Web 自动部署](web-auto-deploy.md)。
 
 ## 语言与应用时区
 
@@ -76,8 +84,8 @@ CI 同样使用部署配置；根路径自托管包和 GitHub Pages 子路径包
 
 验证时可把时区切到 `Asia/Tokyo`，在服务器仍处于前一天（例如 America/New_York 的 10 月 18 日）时，今日页与万年历应显示次日（10 月 19 日）。完整规则见 [configuration.md](configuration.md#语言与应用时区)。
 
-## 现有服务器
+## 更新已有部署
 
-打开 <https://todo.skydrow.site/>，在“我的 → 登录”使用自建服务器账号；管理员登录后向下滚动，进入“管理员后台”。
+打开自己部署的 Web 站点，在“我的 → 登录”使用自建服务器账号；管理员登录后向下滚动，进入“管理员后台”。
 
-服务器当前运行的后端与 Web 包不会因修改本地源码而自动更新。后续应将新配置模块、公开 profile、版本元数据和构建产物一起按发布流程部署；保留 `/opt/duoyi/data`、原 bootstrap 用户名和原密码 salt。已有数据库设置继续生效，不需要重新初始化数据库。
+服务器当前运行的后端与 Web 包不会因修改本地源码而自动更新。后续应将新配置模块、公开 profile、版本元数据和构建产物一起按发布流程部署；保留已有数据目录、原 bootstrap 用户名和原密码 salt。已有数据库设置继续生效，不需要重新初始化数据库。

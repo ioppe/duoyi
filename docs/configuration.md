@@ -31,7 +31,7 @@ Python 公共配置模块 `backend/deployment_config.py` 没有数据库或应�
 
 ## 公开部署参数
 
-本实例的 `config/deployment.json` 维护 `https://todo.skydrow.site` 和 `ioppe/duoyi`。其他实例可以复制 `config/deployment.example.json`，例如生成被 Git 忽略的 `config/staging.local.json`。
+`config/deployment.json` 用于维护部署实例的公开参数。自托管时填写自己的服务器地址和更新仓库；也可以复制 `config/deployment.example.json`，例如生成被 Git 忽略的 `config/staging.local.json`，再通过 `DUOYI_CONFIG_FILE` 指定。公开说明和示例统一使用占位域名与仓库名，具体构建步骤见 [自托管构建](self-hosting.md)。
 
 | 参数 | 含义 |
 | --- | --- |

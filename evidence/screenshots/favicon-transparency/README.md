@@ -25,7 +25,7 @@ Logo 红白固定，不因浏览器主题变色。透明外侧露出标签页自
 
 ## 公网发布与浏览器验收
 
-已将源码提交 `4b0cf45f8abd2c9cb03542ff3bb55d32fade3c97` 对应的同一构建发布到 `https://todo.skydrow.site`；提交后逐字节核对了 286 个构建输入，再绑定产物来源。新 release 为 `v1.1.47-4b0cf45-favicon-svg`，120 个运行时文件全部哈希匹配后原子切换，旧 release 与回滚记录完整保留。详见 [deployment.json](deployment.json)。
+已将源码提交 `4b0cf45f8abd2c9cb03542ff3bb55d32fade3c97` 对应的同一构建发布到自托管站点；提交后逐字节核对了 286 个构建输入，再绑定产物来源。新 release 为 `v1.1.47-4b0cf45-favicon-svg`，120 个运行时文件全部哈希匹配后原子切换，旧 release 与回滚记录完整保留。详见 [deployment.json](deployment.json)。
 
 第一次上传后，清单检查在切换前拦住了多出的 32 字节 Flutter 缓存标记 `.last_build_id`。确认所有清单文件均匹配后，仅排除该非运行时标记，再次校验并成功发布；没有修改已验收的运行时清单或放宽哈希校验。
 

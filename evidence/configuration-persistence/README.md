@@ -38,7 +38,7 @@ Web 产物包含 116 个文件，共 108,085,882 字节；启动 FontManifest �
 
 ## 生产发布
 
-修复提交 `dccb2c8571e4428e834c45ff46ce842f675f00a5` 已推送到 `build/macos-dmg`，并部署到 `https://todo.skydrow.site`。详情见 [production.json](production.json)。
+修复提交 `dccb2c8571e4428e834c45ff46ce842f675f00a5` 已推送到 `build/macos-dmg`，并部署到自托管站点。详情见 [production.json](production.json)。
 
 - 后端使用 `duoyi-backend:1.1.47-persistence-dccb2c8`，image ID 与通过三容器验证的候选完全相同；重建后健康，契约为 `2026-06-01.7`，`persistent_login_sessions=true`。
 - 76 项管理员设置和用户云偏好摘要与发布前一致；所有现有表记录数均未变化；`quick_check=ok`。
