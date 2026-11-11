@@ -2,7 +2,7 @@
 
 ## 复现（修复前，真实配置）
 
-实例：本机 18655，`ai_base_url=https://skydrow.site`，`ai_model=deepseek-v4.1-flash`，真实密钥（未写入任何文件或日志）。
+实例：本机 18655，AI 地址使用自配的 OpenAI 兼容服务，`ai_model=deepseek-v4.1-flash`，真实密钥（未写入任何文件或日志）。
 
 | 请求 | max_tokens | finish_reason | content | reasoning_tokens |
 |---|---|---|---|---|

@@ -1,6 +1,6 @@
 # Web 自动部署（自托管站点）
 
-现有站点 <https://todo.skydrow.site> 由自托管服务器提供。开启自动部署后，推送到 `main` 的 Web 构建会在同一次 GitHub Actions 运行中，把本次 `web` 作业产出的桌面包发布到该站点；发布失败不会改变线上 `current`，也不需要手工拷贝文件到服务器。
+生产站点是用户自己配置的自托管站点。开启自动部署后，推送到 `main` 的 Web 构建会在同一次 GitHub Actions 运行中，把本次 `web` 作业产出的桌面包发布到该站点；发布失败不会改变线上 `current`，也不需要手工拷贝文件到服务器。
 
 各开发分支合并进入 `main` 后，生产站点以主线的同次构建产物为准。此部署链只发布 Web 静态资源，不重建后端、不迁移数据库、不修改 Nginx；线上版本与提交以公开的 `duoyi-deployment.json` 和 `version.json` 为准。
 
@@ -51,13 +51,14 @@ Secrets 只用网页登录管理，不需要 GitHub token 或命令行 `gh`。Se
 3. 校验 `index.html`、`main.dart.js`、`version.json` 与 `index.html` 的 `<base href="/">`，`version.json` 的 `version`、`build_number` 必须有值；文件权限 644、目录 755，保证 Nginx 可读。
 4. 在 `/var/www/duoyi/releases/` 生成 `<完整SHA>-<哈希前缀>` 目录，写入公开清单 `duoyi-deployment.json`（commit、archive_sha256、version、build、UTC 时间）；不覆盖已有目录。同一 SHA 重跑时核对该目录清单与哈希，幂等成功。
 5. 先创建临时 symlink 再 `os.replace` 原子切换 `/var/www/duoyi/current`；旧版本目录保留，不清理。
-6. 通过 `https://todo.skydrow.site/duoyi-deployment.json?sha=<sha>`（校验 TLS、超时、有限重试）核对线上清单的 commit 与 archive hash，并检查首页 HTTP 200。任何在线校验失败都会原子切回旧 symlink，作业以非零退出。
+6. 通过配置 `public_url` 下的 `duoyi-deployment.json?sha=<sha>`（校验 TLS、超时、有限重试）核对线上清单的 commit 与 archive hash，并检查首页 HTTP 200。任何在线校验失败都会原子切回旧 symlink，作业以非零退出。
 
 成功后可手工核对：
 
 ```bash
-curl -fsS "https://todo.skydrow.site/duoyi-deployment.json?sha=<完整SHA>"
+curl -fsS "https://todo.example.com/duoyi-deployment.json?sha=<完整SHA>"
 ```
+示例中的 `todo.example.com` 只是占位域名，需要替换为自己的 `public_url`。
 
 返回的 `commit`、`archive_sha256`、`version`、`build` 应与本次运行一致。
 

@@ -41,7 +41,7 @@
 
 ## 公网部署复验
 
-已发布至 `https://todo.skydrow.site/`，release 目录 `v1.1.47-9332b18-webfonts`（实现提交 `9332b18`），保留旧 preload 目录回滚；后端容器未修改。
+已发布至自托管站点，release 目录 `v1.1.47-9332b18-webfonts`（实现提交 `9332b18`），保留旧 preload 目录回滚；后端容器未修改。
 
 - 公网 JS、bootstrap、FontManifest 和字体政策文件与本地构建 SHA-256 一致；HTML 仅多了 Cloudflare 注入脚本，没有完整字体 preload，响应 `no-store`。
 - 全新浏览器正常打开无查询参数首页：启动子集只请求 1 次，传输 1,470,060 B；Flutter 首帧标记 6.71 s，FCP 7.24 s。

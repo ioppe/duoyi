@@ -37,7 +37,7 @@
 
 ## 后续 Web 发布
 
-源码提交 `5ebb9b207d7ae6ef814978bc488d37eb595edd04` 已构建并部署到 `https://todo.skydrow.site`，版本仍为 `1.1.47+140013`。详见 [部署验证记录](web-deployment.json)。
+源码提交 `5ebb9b207d7ae6ef814978bc488d37eb595edd04` 已构建并部署到自托管站点，版本仍为 `1.1.47+140013`。详见 [部署验证记录](web-deployment.json)。
 
 - 新 release 为 `v1.1.47-5ebb9b2-approved-logo`，120 个文件上传后全部哈希匹配，再原子切换静态链接。公网 12 个关键文件（JS、启动脚本、字体策略、新 Logo、favicon 和 PWA 图标）与本次构建一致。
 - 旧 release `v1.1.47-persistence-dccb2c8` 的 116 个文件完整保留，备份记录位于服务器 `/opt/duoyi/web-backups/approved-logo-20261101T054957Z-5ebb9b2`，目录权限 700、状态文件 600。

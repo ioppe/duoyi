@@ -1,6 +1,6 @@
 # 配置抽离验证记录
 
-验证对象：`self-hosted-skydrow` 分支上的客户端、后端、CI 与部署配置重构。
+验证对象：客户端、后端、CI 与部署配置重构。
 
 工具链：Flutter 3.44.1、Dart 3.12.1、Python 3.13（本地后端测试），CI Python 版本由 `config/toolchain.json` 固定为 3.12。
 
@@ -10,7 +10,7 @@
 | 配置相关 Flutter 测试（含更新、权限、网络和设备脚本） | 124 项通过 |
 | Flutter analyze | 0 个问题 |
 | Web release 构建 | 成功，产物中包含自建后端与 Fork 更新源 |
-| Web 编译参数核对 | `https://todo.skydrow.site`、`ioppe/duoyi`、根路径 `/`；未包含旧后端地址 |
+| Web 编译参数核对 | 后端地址、Fork 更新源与部署配置一致，Web 使用根路径 `/`；未包含旧后端地址 |
 | GitHub Actions actionlint | 通过 |
 | Python / Shell 语法检查 | 通过 |
 | 部署脚本 `--check-config` | 通过，没有重启或覆盖服务 |

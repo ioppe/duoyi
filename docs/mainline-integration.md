@@ -8,7 +8,7 @@
 
 | 分支 | 集成的原始头提交 | 主要保留内容 |
 | --- | --- | --- |
-| `self-hosted-skydrow` | `2bb8fa9df214fb6edd943ce2329f637c1c32439a` | 任务详情自动保存、失败恢复、语言同步、本地 AI 与安全存储、安装包兼容修复 |
+| 自托管开发分支（历史） | `2bb8fa9df214fb6edd943ce2329f637c1c32439a` | 任务详情自动保存、失败恢复、语言同步、本地 AI 与安全存储、安装包兼容修复 |
 | `build/macos-dmg` | `e6dabd8fce7f2fc4461ba0c09e0d7dd087982964` | 批准 Logo、透明 macOS 图标、紧凑悬浮窗与跨屏几何、启动水合、持久会话、AI 周期档案、Web 延迟字体与受限部署 |
 | `fix/android-input-settings-device-test` | `ac73ff69fc961ac335d5590e722b79b6e4a67632` | 平台字号比例与预览、专注应用选择、Android 小组件本地切页/刷新/后台控制、系统日历入口、输入布局修复 |
 
@@ -24,7 +24,7 @@
 
 ## 构建与发布
 
-`.github/workflows/build-apk.yml` 是多平台构建入口。`main`、`self-hosted-skydrow`、`build/macos-dmg` 和 Android 测试分支 push 均保留安装包构建；Android、Web 与可复用 macOS 流程等待同一配置、分析与测试门禁。macOS 包仍未签名、未公证。
+`.github/workflows/build-apk.yml` 是多平台构建入口。`main` 等工作流配置的构建分支 push 均保留安装包构建；Android、Web 与可复用 macOS 流程等待同一配置、分析与测试门禁。macOS 包仍未签名、未公证。
 
 生产 Web 仅由 `main` 的 push 发布。部署任务下载同次 Actions 运行的桌面 Web 产物，验证完整提交 SHA 与压缩包 SHA-256，通过固定 SSH 主机密钥和受限发布器写入独立 release 目录，再原子切换 `current` 并进行 HTTPS 健康检查。标签和其他分支不发布生产 Web，GitHub Release 仍由版本标签触发。
 

@@ -38,7 +38,7 @@
 - [macOS 客户端与打包](macos.md)
 - [Web 字体加载](web-font-loading.md)、[Web 通知权限](web-notifications.md)
 - [主线集成与发布核验](mainline-integration.md)
-- [自托管构建与部署](self-hosting-skydrow.md)
+- [自托管构建与部署](self-hosting.md)
 - [受限 SSH Web 自动部署](web-auto-deploy.md)
 - [版本发布说明](releases/)
 
