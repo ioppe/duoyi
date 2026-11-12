@@ -38,11 +38,19 @@ class BackendSyncCoordinator {
   BackendSyncCoordinator({
     required AuthProvider auth,
     required CloudSyncProvider cloud,
+    Future<void> Function()? ensureLocalDataLoaded,
   }) : _auth = auth,
-       _cloud = cloud;
+       _cloud = cloud,
+       _ensureLocalDataLoaded = ensureLocalDataLoaded;
 
   final AuthProvider _auth;
   final CloudSyncProvider _cloud;
+
+  /// 业务同步完成后补齐本地水合（不产生任何额外网络请求）。
+  ///
+  /// 云同步在集合无变化时不会回调 `onSynced`，习惯等业务内存需要由它补齐。
+  /// 它的失败必须向上抛给调用方，不能被同步失败的 catch 吞成「同步成功」。
+  final Future<void> Function()? _ensureLocalDataLoaded;
 
   Future<void>? _inFlight;
   ApiClient? _inFlightClient;
@@ -147,25 +155,48 @@ class BackendSyncCoordinator {
     if (_auth.serverConfig['backup_enabled'] == false) {
       _cloud.stopRemotePolling();
       await _cloud.syncNow();
+      if (!_isCurrent(generation, startClient)) return;
+      // 备份关闭只停同步与轮询，本地内存仍需补齐。
+      await _ensureLocalDataLoaded?.call();
       return;
     }
+    final manualAtSyncStart = force || _forceRequested;
     try {
-      final manualSync = force || _forceRequested;
-      if (manualSync) {
-        await _cloud.syncNowAndPull();
-      } else {
-        await _cloud.syncNow();
-        // 在业务同步过程中到来的手动操作也要兑现主动拉取。
-        if (_forceRequested && _isCurrent(generation, startClient)) {
-          await _cloud.syncNowAndPull();
-        }
-      }
+      // 启动也主动拉取，不能因本地未编辑而等待轮询。
+      await _cloud.syncNowAndPull();
     } catch (e, st) {
       // 同步失败由 provider 的 lastError 呈现；这里只记录，不丢本地数据、不清标记。
       debugPrint('[backend-sync] sync failed: $e\n$st');
     }
     if (!_isCurrent(generation, startClient)) return;
     if (!_auth.state.isLoggedIn) return;
+    // 业务同步之后补齐业务本地水合；这一 await 在同步 catch 之外，
+    // loader 的失败会原样抛给 controller 标失败，而不是被当作同步成功。
+    try {
+      await _ensureLocalDataLoaded?.call();
+    } catch (_) {
+      // 本地一处缓存损坏仍需保留后续远端事件/轮询的恢复机会，
+      // 但当前刷新继续上报水合失败，不能冒充全部内容已就绪。
+      if (_isCurrent(generation, startClient) &&
+          _auth.state.isLoggedIn &&
+          _cloud.config.autoSync) {
+        _cloud.startRemotePolling();
+      }
+      rethrow;
+    }
+    if (!_isCurrent(generation, startClient)) return;
+    if (!_auth.state.isLoggedIn) return;
+    // 手动操作也可能在上面的本地水合等待期间到来。等业务数据就绪后再
+    // 检查升级请求，确保取得点击后的新快照，而不是只复用较早的后台结果。
+    if (!manualAtSyncStart && _forceRequested) {
+      try {
+        await _cloud.syncNowAndPull();
+      } catch (e, st) {
+        debugPrint('[backend-sync] sync failed: $e\n$st');
+      }
+      if (!_isCurrent(generation, startClient)) return;
+      if (!_auth.state.isLoggedIn) return;
+    }
     // 手动 force 之后若用户仍关闭 autoSync，只完成这一次，不启动轮询。
     if (!_cloud.config.autoSync) return;
     _cloud.startRemotePolling();

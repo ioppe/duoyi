@@ -647,92 +647,168 @@ void main() async {
 
   var deferredLocalStorageHydrated = false;
   Future<void>? deferredLocalStorageStartup;
+  int? deferredLocalStorageStartupGeneration;
+
+  /// 单个业务存储的真实读取。
+  ///
+  /// 失败必须向上抛：`_startupGuard` 的超时只是观察结束，真实读取可能仍在
+  /// 进行，不能把「观察结束」当成「水合完成」。
+  Future<void> loadDeferredLocalStorageItem(
+    int generation,
+    String label,
+    Future<void> Function() load,
+  ) async {
+    if (!AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation)) {
+      // 切号/清理后跳过剩余的旧代际任务，避免把旧账号数据读进新账号内存。
+      return;
+    }
+    try {
+      await load();
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[startup] local storage "$label" failed: $error\n$stackTrace',
+      );
+      rethrow;
+    }
+  }
+
   Future<void> ensureDeferredLocalStorageStartup() {
+    final generation = AccountLocalDataCleaner.accountDataGeneration;
     final existing = deferredLocalStorageStartup;
-    if (existing != null) return existing;
-    deferredLocalStorageStartup = cloudSyncProvider
-        .suppressDirtyMarkWhile(
-          () => _runSyncReloadTasksInBatches([
-            () => _startupGuard(
-              'todo storage',
-              () => todoProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'habit storage',
-              () => habitProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'pomodoro storage',
-              () => pomodoroProvider.prepareRemoteHistory(),
-            ),
-            () => _startupGuard(
-              'countdown storage',
-              () => countdownProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'anniversary storage',
-              () => anniversaryProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'diary storage',
-              () => diaryProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'goal storage',
-              () => goalProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'course storage',
-              () => courseProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'quick capture templates storage',
-              () => quickCaptureTemplateProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'list groups storage',
-              () => listGroupProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'time audit storage',
-              () => timeAuditProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'note storage',
-              () => noteProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'achievement storage',
-              () => achievementProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'custom focus sounds storage',
-              () => customFocusSoundProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'focus room storage',
-              () => focusRoomProvider.loadFromStorage(),
-            ),
-            () =>
-                _startupGuard('ai storage', () => aiService.loadFromStorage()),
-            () => _startupGuard(
-              'location reminders storage',
-              () => locationReminderProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'calendar subscriptions storage',
-              () => calendarSyncProvider.loadFromStorage(),
-            ),
-            () => _startupGuard(
-              'calendar local events',
-              () => calendarProvider.loadFromStorage(),
-            ),
-          ]),
-        )
-        .whenComplete(() {
-          deferredLocalStorageHydrated = true;
-        });
-    return deferredLocalStorageStartup!;
+    if (existing != null &&
+        deferredLocalStorageStartupGeneration == generation) {
+      // 同账号只读一次；账号数据代际变化后旧缓存不再复用。
+      return existing;
+    }
+    deferredLocalStorageHydrated = false;
+
+    // 脏标记抑制必须包住真实读取的整个生命周期，读取 notify 不能被当成
+    // 用户本地改动。
+    final startup = cloudSyncProvider.suppressDirtyMarkWhile(() async {
+      await _runSyncReloadTasksInBatches([
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'todo storage',
+          () => todoProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'habit storage',
+          () => habitProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'pomodoro storage',
+          () => pomodoroProvider.prepareRemoteHistory(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'countdown storage',
+          () => countdownProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'anniversary storage',
+          () => anniversaryProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'diary storage',
+          () => diaryProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'goal storage',
+          () => goalProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'course storage',
+          () => courseProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'quick capture templates storage',
+          () => quickCaptureTemplateProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'list groups storage',
+          () => listGroupProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'time audit storage',
+          () => timeAuditProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'note storage',
+          () => noteProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'achievement storage',
+          () => achievementProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'custom focus sounds storage',
+          () => customFocusSoundProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'focus room storage',
+          () => focusRoomProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'ai storage',
+          () => aiService.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'location reminders storage',
+          () => locationReminderProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'calendar subscriptions storage',
+          () => calendarSyncProvider.loadFromStorage(),
+        ),
+        () => loadDeferredLocalStorageItem(
+          generation,
+          'calendar local events',
+          () => calendarProvider.loadFromStorage(),
+        ),
+      ]);
+      if (!AccountLocalDataCleaner.isCurrentAccountDataGeneration(generation)) {
+        // 旧代际的完成不得把新代际标成已水合。
+        return;
+      }
+      deferredLocalStorageHydrated = true;
+    });
+    deferredLocalStorageStartup = startup;
+    deferredLocalStorageStartupGeneration = generation;
+    // 失败时释放缓存并保持未水合，允许后续手动重试；绝不能用 whenComplete
+    // 无条件把失败/超时观察当成成功水合。
+    unawaited(
+      startup.catchError((Object error, StackTrace stackTrace) {
+        debugPrint(
+          '[startup] deferred local storage failed: $error\n$stackTrace',
+        );
+        if (identical(deferredLocalStorageStartup, startup)) {
+          deferredLocalStorageStartup = null;
+          deferredLocalStorageStartupGeneration = null;
+        }
+        if (AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+          generation,
+        )) {
+          deferredLocalStorageHydrated = false;
+        }
+      }),
+    );
+    return startup;
   }
 
   Future<void>? deferredPlatformStartup;
@@ -1469,6 +1545,9 @@ void main() async {
   final backendSyncCoordinator = BackendSyncCoordinator(
     auth: authProvider,
     cloud: cloudSyncProvider,
+    // 业务同步完成后补齐本地水合：云同步没有 changes 时不会回调 onSynced，
+    // 习惯等数据仍要靠这里进入内存。
+    ensureLocalDataLoaded: ensureDeferredLocalStorageStartup,
   );
 
   var lastUpdateServer = authProvider.baseUrl;
@@ -1482,6 +1561,25 @@ void main() async {
     focusRoomProvider.apiClientGetter = () => authProvider.client;
   });
   cloudSyncProvider.onSynced = (changedCollections) async {
+    // 云响应可能早于首帧后的初始本地读取：先完成真实水合再回填集合，
+    // 否则晚完成的本地读会用旧快照覆盖刚写回的远端数据。
+    final accountDataGenerationAtStart =
+        AccountLocalDataCleaner.accountDataGeneration;
+    Object? initialLoadError;
+    StackTrace? initialLoadStack;
+    try {
+      await ensureDeferredLocalStorageStartup();
+    } catch (error, stackTrace) {
+      // 一处缓存损坏不能阻止远端已回写集合的内存回载；错误仍在全部
+      // 回载收尾后上报，不能显示成全部加载成功。
+      initialLoadError = error;
+      initialLoadStack = stackTrace;
+    }
+    if (!AccountLocalDataCleaner.isCurrentAccountDataGeneration(
+      accountDataGenerationAtStart,
+    )) {
+      return;
+    }
     // 同步完成后服务端回写可能覆盖本地数据；这段 reload 不应被当作“脏改动”。
     await cloudSyncProvider.suppressDirtyMarkWhile(() async {
       const achievementSyncCollections = <String>{
@@ -1498,6 +1596,13 @@ void main() async {
         'virtual_rewards',
       };
       final reloadTasks = <Future<void> Function()>[];
+      final loadError = initialLoadError;
+      final loadStack = initialLoadStack;
+      if (loadError != null && loadStack != null) {
+        reloadTasks.add(
+          () async => Error.throwWithStackTrace(loadError, loadStack),
+        );
+      }
       var shouldResyncReminders = false;
       final shouldRefreshAchievementsSilently = changedCollections.any(
         achievementSyncCollections.contains,
@@ -1917,6 +2022,15 @@ void main() async {
       startCloudSyncAfterAuth(
         reason: 'initial post-frame startup',
         delay: Duration.zero,
+      ),
+    );
+
+    // 完整业务列表在首帧后立即开始读取，不再等 14s 队列；下面的 14s 块
+    // 仍调用同一 helper 作为幂等 fallback（含小组件推送与通知补同步）。
+    unawaited(
+      _startupGuard(
+        'initial content storage',
+        ensureDeferredLocalStorageStartup,
       ),
     );
     unawaited(
