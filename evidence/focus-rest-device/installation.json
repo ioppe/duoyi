@@ -1,0 +1,27 @@
+{
+  "startedAtEpoch": 1794482568.329219,
+  "candidateVersion": "v2",
+  "target": "192.168.0.212:45073",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "hardwareSerial": "2df52c4c",
+  "beforeFocus": [
+    "mCurrentFocus=Window{99d598f u0 com.duoyi.duoyi/com.duoyi.duoyi.MainActivity}"
+  ],
+  "productionBefore": {
+    "metadata": [
+      "versionCode=142023 minSdk=24 targetSdk=36",
+      "versionName=2.0.0",
+      "lastUpdateTime=2026-11-11 15:27:49"
+    ],
+    "apkSha256": "2b87027ef4815c5d6b151e84c349a4e44f2096ced365df8a06b6ebe3933801b1"
+  },
+  "displayBefore": {
+    "fontScale": "1.25",
+    "density": "Physical density: 520",
+    "size": "Physical size: 1200x2670"
+  },
+  "installReply": "Performing Push Install\nSuccess",
+  "installedApkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "passed": true,
+  "finishedAtEpoch": 1794482574.462229
+}

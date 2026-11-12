@@ -24,6 +24,7 @@ void main() {
       addTearDown(tester.view.reset);
       final provider = PomodoroProvider();
       addTearDown(provider.dispose);
+      await provider.loadFromStorage();
       provider.setTaskTarget(
         todoId: 'task',
         todoTitle: '项目任务',

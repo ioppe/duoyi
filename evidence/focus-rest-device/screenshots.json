@@ -1,0 +1,534 @@
+{
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "transform": "(0,160,1200,2670), no scaling",
+  "screenshots": [
+    {
+      "name": "v1-save-7-20-3",
+      "caption": "旧 v1：保存后为 7 / 20 分钟、每 3 轮",
+      "candidate": "v1",
+      "rawFile": "1794478530550843000-C05-after-save.png",
+      "rawSha256": "ea85b76292c71cd2377c58450eec33a32b239abea0ea0596dfc5caa34302aaec",
+      "file": "../screenshots/focus-rest-device/v1-save-7-20-3.png",
+      "sha256": "565f7e3c7947885bea9068a0654493a06e7d91971320fb7b7efc5eb5210f5a0c",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v1-restart-defaults",
+      "caption": "旧 v1：快速重启回落 5 / 15 分钟、每 4 轮",
+      "candidate": "v1",
+      "rawFile": "1794478542218539000-C05-route-1.png",
+      "rawSha256": "13d997dc33a174f174b19eb5bd086a7d94e70cc9a05622279431f7f1512ce17f",
+      "file": "../screenshots/focus-rest-device/v1-restart-defaults.png",
+      "sha256": "33bf47347b090ac690f36bfdbb86f5c47d90f096a3c3e5e91d85fc939ec8f3d6",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-default",
+      "caption": "v2：默认休息安排与首屏操作",
+      "candidate": "v2",
+      "rawFile": "1794482660947326000-C01-before-tap.png",
+      "rawSha256": "c3f83b5741e82ff1198b65d41f02e1a54df6a358dea79a7fa3070a68f9f65536",
+      "file": "../screenshots/focus-rest-device/v2-default.png",
+      "sha256": "122d17e7966424bdf8a342fafd97a36cd4196b6d044cae3184ad01016b563a7b",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-cloud-hint",
+      "caption": "v2：游客同步云提示",
+      "candidate": "v2",
+      "rawFile": "1794482664933089000-C01-guest-cloud-hint.png",
+      "rawSha256": "fc2724fe76cab44d48e547f8d950a81545986fac75ea9699000e2874e555b5af",
+      "file": "../screenshots/focus-rest-device/v2-cloud-hint.png",
+      "sha256": "7d88e0f20040155a7c4bc48a372d6eba13b270550ec878c344acb3d18c4dd3c6",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-preset-60",
+      "caption": "v2：横向滚动选择 60 分钟",
+      "candidate": "v2",
+      "rawFile": "1794482691946398000-C02-preset-selected.png",
+      "rawSha256": "8f57dc189807565294801d7348aab176ffc848eb58abb6179d3770d8c048b4bc",
+      "file": "../screenshots/focus-rest-device/v2-preset-60.png",
+      "sha256": "de3d08b2c12b0e7b2bf77e59465afe81005c19131f2a27edfc2a39399b0a9b9e",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-keyboard",
+      "caption": "v2：真实数字键盘与固定保存区",
+      "candidate": "v2",
+      "rawFile": "1794482864788471000-C04-number-entered.png",
+      "rawSha256": "c375294020faf9d790c4102f7afd3bdef369af76635113dfd8a173e215290edc",
+      "file": "../screenshots/focus-rest-device/v2-keyboard.png",
+      "sha256": "ce2d06dc3f0c87a484f9d8457e46a3959e96c5e6f74382742464001245e9fa9c",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-invalid-interval",
+      "caption": "v2：非法 21 轮的错误提示",
+      "candidate": "v2",
+      "rawFile": "1794483004774503000-C04-invalid-error.png",
+      "rawSha256": "759226b1b3f358a87b73f01c2899e014a1de246c034e74ca5ce1e0b252b963f8",
+      "file": "../screenshots/focus-rest-device/v2-invalid-interval.png",
+      "sha256": "a028204bc0d85ffd39da7593ae5cea4c64bbf956fb549c42ec5685ec38a1d27b",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-saved-7-20-3",
+      "caption": "v2：保存 7 / 20 分钟、每 3 轮",
+      "candidate": "v2",
+      "rawFile": "1794483396576925000-C05-after-save.png",
+      "rawSha256": "6d0b66d058123f287efd73501c2f9a04772421551187f1b67a6d1de8f5b651ca",
+      "file": "../screenshots/focus-rest-device/v2-saved-7-20-3.png",
+      "sha256": "565f7e3c7947885bea9068a0654493a06e7d91971320fb7b7efc5eb5210f5a0c",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-restarted-7-20-3",
+      "caption": "v2：立即重启后仍为 7 / 20 分钟、每 3 轮",
+      "candidate": "v2",
+      "rawFile": "1794483407357717000-C05-route-1.png",
+      "rawSha256": "f280a229cdc4e171cec2d58376cd312447c32d733466e1380fb3b4da871c2592",
+      "file": "../screenshots/focus-rest-device/v2-restarted-7-20-3.png",
+      "sha256": "492c340116725772e3a21bcf66599db2f55f716deb07cde9c5f5edff5bfea68c",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-ratio-60-to-12",
+      "caption": "v2：联动 60 → 12 分钟，长休保持 20 分钟",
+      "candidate": "v2",
+      "rawFile": "1794483480820016000-C06-preset-selected.png",
+      "rawSha256": "bfa0d188592b3c3b9db6191cefffd3b4cfe0d80711ae20c0fda74d2d0016ad09",
+      "file": "../screenshots/focus-rest-device/v2-ratio-60-to-12.png",
+      "sha256": "c1e7a4c9953534f5c3db05d2d56c14eac2bbf9008ab37127240da43dcf9cb594",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-unlinked-9",
+      "caption": "v2：关闭联动后独立短休 9 分钟并重启保留",
+      "candidate": "v2",
+      "rawFile": "1794483570296283000-C06-route-1.png",
+      "rawSha256": "e44fa07086d2c925ae5a07709256bd57f1e00be2cc4e6b15b82a0681f3029bb5",
+      "file": "../screenshots/focus-rest-device/v2-unlinked-9.png",
+      "sha256": "c74ac121bd7df39f95d8f320bb1158e38e0dbb80e8f31e0772007f728cdf8f44",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-legacy-7",
+      "caption": "v2：旧配置缺失联动字段时保留 7 分钟",
+      "candidate": "v2",
+      "rawFile": "1794483595525906000-C07-before-open-1.png",
+      "rawSha256": "b7dbdbb1e03ab920ee0be3997749eb7a21a4cdc6c4e5e915c845840a20405140",
+      "file": "../screenshots/focus-rest-device/v2-legacy-7.png",
+      "sha256": "3cc30944302124310768b52cea8695108ac30820c7615a4961348fbdd6c04853",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-running",
+      "caption": "v2：阅读任务运行、时长选项禁用；C08 整项仍因重置步骤未通过",
+      "candidate": "v2",
+      "rawFile": "1794485144030988000-C08-running.png",
+      "rawSha256": "0be200134cca6859ea4b2a3fa6956dc41b04c9c4370833fca82d26b229d780cc",
+      "file": "../screenshots/focus-rest-device/v2-running.png",
+      "sha256": "24526d87f667e2840366b31350112d480c7ff56381e970a0b977a51455975500",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-paused",
+      "caption": "v2：暂停后保留当前任务与时间；C08 整项结果见报告",
+      "candidate": "v2",
+      "rawFile": "1794485237796561000-C08-paused.png",
+      "rawSha256": "2b2855b693a8b5c8ef325ac07ec0581222ae49a1e21e9c7bcacb5d88c0acdf20",
+      "file": "../screenshots/focus-rest-device/v2-paused.png",
+      "sha256": "3ff493d65770ad15acd14a128a4db46d8f0a44a9e3bdaab0211e56bde3faafed",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-reset-failure",
+      "caption": "v2：重置点击后仍运行的失败现场",
+      "candidate": "v2",
+      "rawFile": "1794485281955922000-C08-control-state-timeout.png",
+      "rawSha256": "caf85fc0ccab2f555d7ce92a040b5ecd4a0ce0390876b72f70b7d1457620f77d",
+      "file": "../screenshots/focus-rest-device/v2-reset-failure.png",
+      "sha256": "793343848773f0c896160d1aabf2a828cdea753f439af2e21caee91e1b89e24b",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-natural-1",
+      "caption": "v2：真实时间轮转 第一轮专注",
+      "candidate": "v2",
+      "rawFile": "1794486011054182000-C09-phase-0.png",
+      "rawSha256": "c8accb6d28e6cb136f9228aa1e616c4f266a28281ecc05437fd117d171684830",
+      "file": "../screenshots/focus-rest-device/v2-natural-1.png",
+      "sha256": "230019b6ade0370a2e8430dd8165a6024094acd7de132fb09fc942a4dd6040d1",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-natural-2",
+      "caption": "v2：真实时间轮转 自动短休息",
+      "candidate": "v2",
+      "rawFile": "1794486072302470000-C09-phase-1.png",
+      "rawSha256": "efb21a531032bf420163e3444672dce780618ac30c360db8b54d2b31097bd7f7",
+      "file": "../screenshots/focus-rest-device/v2-natural-2.png",
+      "sha256": "32b1fa3ed5df8e08818933fdc9e5733f1835d8481e22ce97a5347e522b2cf939",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-natural-3",
+      "caption": "v2：真实时间轮转 第二轮专注",
+      "candidate": "v2",
+      "rawFile": "1794486133415606000-C09-phase-0.png",
+      "rawSha256": "9400821b536d36220a2e99c9bc5040df0ba8659b6fc4bc91e6e6fc4000c33655",
+      "file": "../screenshots/focus-rest-device/v2-natural-3.png",
+      "sha256": "9e5fae9364497a804380845f7e0fc1f17d181ce139d11ac2cc3d510259ecca6c",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-natural-4",
+      "caption": "v2：真实时间轮转 自动长休息",
+      "candidate": "v2",
+      "rawFile": "1794486194404257000-C09-phase-2.png",
+      "rawSha256": "6a6398642e301706665095453128d700ed623490f9ec7c03ba508f8db7c3eea2",
+      "file": "../screenshots/focus-rest-device/v2-natural-4.png",
+      "sha256": "85c10e310f2faa57e5675ffc4f53b6c90c14860309c4e09f494f6f5b88b34ffe",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-font-selection-failure",
+      "caption": "v2：字号自动化仍停在 100%，未应用或验证 130%",
+      "candidate": "v2",
+      "rawFile": "1794486501281366000-C10-font130-selected.png",
+      "rawSha256": "fcaf2ba1b20022323a80c91e8818fce7a9af3f7e71bed3e66fe4e3487359cbba",
+      "file": "../screenshots/focus-rest-device/v2-font-selection-failure.png",
+      "sha256": "a7a49bb7e12926c27add2dce66c4e91dde254bb2f94bc2a6e1f38ddd64986cf1",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-notification-permission-block",
+      "caption": "v2：此前通知授权阻塞现场，后经用户明确授权解除",
+      "candidate": "v2",
+      "rawFile": "focus-rest-device-v2-permission-window.png",
+      "rawSha256": "ffb6ea8943a1a4a8de3ecf6cd92e36605e8fc7a95c45bf96e669e9a005304d66",
+      "file": "../screenshots/focus-rest-device/v2-notification-permission-block.png",
+      "sha256": "1e803b63bc53cb07aa60b11010522a585e202a8203ffc945827fadeb5d239cf2",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    },
+    {
+      "name": "v2-final-idle",
+      "caption": "v2：结束后恢复默认设置并空闲",
+      "candidate": "v2",
+      "rawFile": "1794486519616341000-cleanup-final-idle.png",
+      "rawSha256": "0a1e004f5d5e23c2e35d653b016a9275d8821fd2fea0db3d82513337f4b7f533",
+      "file": "../screenshots/focus-rest-device/v2-final-idle.png",
+      "sha256": "122d17e7966424bdf8a342fafd97a36cd4196b6d044cae3184ad01016b563a7b",
+      "rawSize": [
+        1200,
+        2670
+      ],
+      "crop": [
+        0,
+        160,
+        1200,
+        2670
+      ],
+      "outputSize": [
+        1200,
+        2510
+      ],
+      "rescale": false
+    }
+  ]
+}

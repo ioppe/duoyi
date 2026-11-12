@@ -1,0 +1,273 @@
+{
+  "collectedAtUtc": "2026-11-11T11:48:11.825491+00:00",
+  "baseHead": "5d1f816f0235ebad85038f2de4d61d93cdadd652",
+  "branch": "feature/focus-rest-layout",
+  "sourceManifestSha256": "afaf0c3d0620206b41c07a7e892c75970c875210878ba9cebb1914e23871a448",
+  "sourceFilesVerified": 1183,
+  "flutterVersion": "3.44.1",
+  "testFiles": [
+    "test/models/pomodoro_config_test.dart",
+    "test/providers/pomodoro_rest_settings_test.dart",
+    "test/widgets/focus_rest_settings_test.dart",
+    "test/screens/pomodoro_rest_layout_test.dart",
+    "test/providers/pomodoro_provider_test.dart",
+    "test/providers/pomodoro_remote_runtime_test.dart",
+    "test/services/focus_sync_coordinator_test.dart",
+    "test/widgets/focus_sync_status_test.dart",
+    "test/screens/pomodoro_focus_layout_static_test.dart",
+    "test/screens/pomodoro_strict_focus_static_test.dart",
+    "test/screens/pomodoro_task_link_test.dart",
+    "test/widgets/pomodoro_task_picker_test.dart",
+    "test/widgets/pomodoro_floating_window_host_test.dart",
+    "test/services/pomodoro_remote_floating_window_test.dart",
+    "test/services/pomodoro_floating_window_service_test.dart",
+    "test/widgets/app_modal_centered_presentation_test.dart",
+    "test/widgets/app_modal_sheet_layout_test.dart",
+    "test/widgets/app_modal_sheet_extent_test.dart",
+    "test/core/flutter_l10n_static_test.dart",
+    "test/core/i18n_test.dart",
+    "test/services/rounded_typography_static_test.dart",
+    "test/core/app_typography_test.dart"
+  ],
+  "uniqueTests": 222,
+  "unresolvedFailures": 0,
+  "batches": [
+    {
+      "scope": "22 related files",
+      "passed": 220,
+      "failed": 2,
+      "logSha256": "939c874114d36e728c239d4efd87eea8db416656383431ac206132d853d455af"
+    },
+    {
+      "scope": "two corrected UI files",
+      "passed": 19,
+      "failed": 0,
+      "logSha256": "acf1be5d58e43c2584775f79c7c714ac387f71773e377dec5156009830cc9641"
+    }
+  ],
+  "analysis": {
+    "command": "flutter analyze --no-pub",
+    "exitCode": 0,
+    "message": "No issues found!",
+    "logSha256": "1092b800d30fd0d68b14f9d079387ea3bdcc7440cd314b05a16f1b1afdd165b2"
+  },
+  "format": {
+    "files": [
+      "lib/core/design_tokens.dart",
+      "lib/core/i18n.dart",
+      "lib/models/pomodoro.dart",
+      "lib/providers/pomodoro_provider.dart",
+      "lib/screens/pomodoro_screen.dart",
+      "lib/widgets/pomodoro_timer_ring.dart",
+      "test/models/pomodoro_config_test.dart",
+      "test/screens/pomodoro_focus_layout_static_test.dart",
+      "lib/widgets/focus_rest_settings.dart",
+      "test/providers/pomodoro_rest_settings_test.dart",
+      "test/screens/pomodoro_rest_layout_test.dart",
+      "test/widgets/focus_rest_settings_test.dart"
+    ],
+    "exitCode": 0
+  },
+  "gitDiffCheck": {
+    "exitCode": 0
+  },
+  "visual": {
+    "command": "flutter test --no-pub --reporter expanded test/focus_rest_capture_test.dart",
+    "passed": true,
+    "captureFixtureSha256": "ca2ee9ff2805fc410b09274cbd3827aa8d3ab857ce501ff962297cc20f90cda6",
+    "logSha256": "bbca9171177bea4847559b0550e2aa4ad5ef9b0cb63206f453f3687af341db6b",
+    "geometry": {
+      "phoneSummary": {
+        "left": 34.0,
+        "top": 466.0,
+        "width": 322.0,
+        "height": 64.0,
+        "bottom": 530.0
+      },
+      "phonePrimary": {
+        "left": 121.0,
+        "top": 546.0,
+        "width": 148.0,
+        "height": 48.0,
+        "bottom": 594.0
+      },
+      "phoneSettings": {
+        "left": 0.0,
+        "top": 281.33333333333337,
+        "width": 390.0,
+        "height": 562.6666666666666,
+        "bottom": 844.0
+      },
+      "phoneSave": {
+        "left": 156.25,
+        "top": 778.0,
+        "width": 213.75,
+        "height": 48.0,
+        "bottom": 826.0
+      },
+      "keyboardSave": {
+        "left": 130.0,
+        "top": 354.0,
+        "width": 170.0,
+        "height": 48.0,
+        "bottom": 402.0
+      },
+      "desktopSummary": {
+        "left": 595.6585365853659,
+        "top": 288.0,
+        "width": 386.3414634146342,
+        "height": 64.0,
+        "bottom": 352.0
+      },
+      "desktopPrimary": {
+        "left": 362.0,
+        "top": 444.0,
+        "width": 145.65853658536588,
+        "height": 48.0,
+        "bottom": 492.0
+      },
+      "desktopModal": {
+        "left": 408.0,
+        "top": 76.63999999999999,
+        "width": 464.0,
+        "height": 646.72,
+        "bottom": 723.36
+      }
+    },
+    "screenshots": [
+      {
+        "file": "evidence/screenshots/focus-rest-layout/desktop-main.png",
+        "sha256": "1f3b6c7e905728470e8517c2e36b4c964bb1fea92ff64a70b858ac9af600b2b5",
+        "physicalPixels": [
+          2560,
+          1600
+        ],
+        "logicalPixels": [
+          1280,
+          800
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/desktop-settings.png",
+        "sha256": "6d0cb85f553478f9db1e805f1af96fa3684f648fa636339e537d618627c13154",
+        "physicalPixels": [
+          2560,
+          1600
+        ],
+        "logicalPixels": [
+          1280,
+          800
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-320-large-text.png",
+        "sha256": "846cabcfbd0a5b75f815664e2474055e39a596c9588a08baf87c4ca76c3ac823",
+        "physicalPixels": [
+          640,
+          1440
+        ],
+        "logicalPixels": [
+          320,
+          720
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-320-settings-keyboard.png",
+        "sha256": "e739e1640a954c05ba437bef0b70935a3d664aaa574b1255c47ccb0035b3668c",
+        "physicalPixels": [
+          640,
+          1440
+        ],
+        "logicalPixels": [
+          320,
+          720
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-320-settings-large-text.png",
+        "sha256": "8afe329cdbf9f6f5981aae9ab6fa6ae0063aded5ee965f4f6ea64470bc3f892c",
+        "physicalPixels": [
+          640,
+          1440
+        ],
+        "logicalPixels": [
+          320,
+          720
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-long-break.png",
+        "sha256": "212d416efb73bb9fc6ce65152e22c1c203ed4380bdabbe580b7885101850c1b0",
+        "physicalPixels": [
+          780,
+          1688
+        ],
+        "logicalPixels": [
+          390,
+          844
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-main.png",
+        "sha256": "eb25e1aa36b34330bd31af751f515ab66f01857b41264bc143e834fe75a77466",
+        "physicalPixels": [
+          780,
+          1688
+        ],
+        "logicalPixels": [
+          390,
+          844
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-settings-scrolled.png",
+        "sha256": "e857c17d24f20d525946ff7566530ac7aa79c011299411c8a2344674c61df355",
+        "physicalPixels": [
+          780,
+          1688
+        ],
+        "logicalPixels": [
+          390,
+          844
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-settings.png",
+        "sha256": "cee6d725c9d46c7b10e14a0b5192bf98419416d8ce0a78c606688404bcd9b6c9",
+        "physicalPixels": [
+          780,
+          1688
+        ],
+        "logicalPixels": [
+          390,
+          844
+        ]
+      },
+      {
+        "file": "evidence/screenshots/focus-rest-layout/phone-short-break.png",
+        "sha256": "ad2f2c8ea0daafb2f947bd5f29af0be3dd7a55c4fc51936982158c8d98361e4c",
+        "physicalPixels": [
+          780,
+          1688
+        ],
+        "logicalPixels": [
+          390,
+          844
+        ]
+      }
+    ]
+  },
+  "preservation": {
+    "originalMainHead": "5d1f816f0235ebad85038f2de4d61d93cdadd652",
+    "originalMainTrackedClean": true,
+    "untrackedFilesRetained": 180
+  },
+  "notRun": [
+    "full Flutter suite",
+    "E2E",
+    "Android physical device",
+    "complete native macOS application",
+    "release builds",
+    "push or deployment"
+  ]
+}

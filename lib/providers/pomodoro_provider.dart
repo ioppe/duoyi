@@ -51,6 +51,9 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<PomodoroFocusPenalty> _penalties = [];
   int _persistedRevision = 0;
   int _storageGeneration = 0;
+
+  /// 最近一次成功完成存储加载的代际；账号/模式代际推进后自动失效。
+  int _hydratedStorageGeneration = -1;
   int _sessionCountToday = 0;
   String? _lastDate;
   NotificationService? _notifier;
@@ -133,6 +136,15 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<PomodoroSession> get sessions => _sessions;
   List<PomodoroFocusPenalty> get penalties => List.unmodifiable(_penalties);
   int get persistedRevision => _persistedRevision;
+
+  /// 配置写入代际：UI 写入前捕获，账号切换/模式切换后旧写入必须被丢弃。
+  int get configStorageGeneration => _storageGeneration;
+
+  /// 当前代际的存储是否已成功加载完成。
+  ///
+  /// 账号切换/同步模式切换会推进 [configStorageGeneration]，因此这里自动回到
+  /// `false`，页面必须为新代际重新按需加载，绝不会把上一代际的水合结果当作就绪。
+  bool get storageHydrated => _hydratedStorageGeneration == _storageGeneration;
   int get sessionCountToday => todayFocusSessions.length;
   FocusDndStatus get focusDndStatus => _dndStatus;
   bool get focusDndActive => _dndActive;
@@ -330,8 +342,24 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Hydrate history before the first remote upsert so existing records survive.
-  Future<void> prepareRemoteHistory() =>
-      _remoteStorageLoad ??= loadFromStorage();
+  ///
+  /// 同代际只要成功加载过就直接返回，不再重读存储、不重置当前运行态；加载在飞
+  /// 期间所有调用方复用同一个 Future。失败或代际在加载途中推进则清掉缓存，允许
+  /// 下一次按需调用重试。清缓存前校验 Future 仍是当前这一个，旧失败不会清掉新代际
+  /// 已经开始的加载。
+  Future<void> prepareRemoteHistory() {
+    if (storageHydrated) return Future<void>.value();
+    final inFlight = _remoteStorageLoad;
+    if (inFlight != null) return inFlight;
+    final generation = _storageGeneration;
+    late final Future<void> tracked;
+    tracked = loadFromStorage().whenComplete(() {
+      if (generation == _storageGeneration && storageHydrated) return;
+      if (identical(_remoteStorageLoad, tracked)) _remoteStorageLoad = null;
+    });
+    _remoteStorageLoad = tracked;
+    return tracked;
+  }
 
   Future<void> loadFromStorage() async {
     final generation = _storageGeneration;
@@ -379,6 +407,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       } else {
         _cancelTimer();
       }
+      _hydratedStorageGeneration = generation;
       _persistedRevision++;
       notifyListeners();
       _syncFocusTimerNotification();
@@ -405,6 +434,7 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
       // 有快照但逾期且未续跑时，保留结算后的 break 相位，不重置。
       _initState();
     }
+    _hydratedStorageGeneration = generation;
     _persistedRevision++;
     notifyListeners();
     // 冷启动/热恢复后重新同步原生通知：运行态补上，无运行态清理僵尸通知。
@@ -413,6 +443,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void resetLocalState() {
     _storageGeneration++;
+    // 新代际必须重新按需加载：旧的完成 Future 不能当成新代际已水合。
+    _remoteStorageLoad = null;
     _cancelTimer();
     // 账号代际已推进：远端投影、设备效果与远端 tick 一并清理，
     // 不写完成记录/处罚，也不保留旧账号的会话身份。
@@ -496,9 +528,29 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     await prefs.setString('pomodoro_last_date', lastDate);
   }
 
-  Future<void> _saveConfig() async {
+  /// 写入配置：先同步编码当前值并捕获代际，`await` 之后若账号/模式已切换
+  /// 就不再落盘，避免旧账号的迟到写入覆盖新账号。
+  Future<void> _saveConfig({bool requireSuccess = false}) async {
+    final generation = _storageGeneration;
+    final payload = json.encode(_config.toJson());
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pomodoro_config', json.encode(_config.toJson()));
+    if (generation != _storageGeneration) return;
+    try {
+      final saved = await prefs.setString('pomodoro_config', payload);
+      if (requireSuccess && !saved) {
+        throw StateError('Could not persist focus rest settings');
+      }
+    } catch (_) {
+      if (requireSuccess) {
+        // SharedPreferences caches attempted values before the platform write.
+        // Restore its cache from durable storage so a reload cannot adopt a
+        // failed draft.
+        try {
+          await prefs.reload();
+        } catch (_) {}
+      }
+      rethrow;
+    }
   }
 
   Future<void> _touchAndSaveConfig() async {
@@ -1562,6 +1614,8 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
   // --- Config ---
 
   Future<void> setConfig(PomodoroConfig cfg) async {
+    // 联动开启时先按最新专注时长规范短休，UI 的 `config..focusDuration` 才有意义。
+    cfg.normalizeLinkedShortBreak();
     _config = cfg;
     await _touchAndSaveConfig();
     _persistedRevision++;
@@ -1582,6 +1636,72 @@ class PomodoroProvider extends ChangeNotifier with WidgetsBindingObserver {
     _syncDndToState();
     _syncDistractionMonitorToState();
     _syncFocusTimerNotification();
+  }
+
+  /// 只更新休息设置六项：合并进最新配置，保留其它选择与当前运行态。
+  ///
+  /// 不复用 [setConfig]（它会重置本地暂停态/剩余时长并触发投影），也不发任何
+  /// 远端计时命令。当前阶段不变；本地下一阶段读取新设置，远端下一次 start 携带新设置。
+  ///
+  /// [expectedStorageGeneration] 与 [configStorageGeneration] 不一致时返回
+  /// `false`（账号切换/模式切换后旧页面不得继续写入）。
+  Future<bool> updateRestSettings({
+    required int shortBreakDuration,
+    required int longBreakDuration,
+    required int sessionsPerLongBreak,
+    required bool linkShortBreakToFocus,
+    required bool autoStartBreaks,
+    required bool autoStartFocus,
+    required int expectedStorageGeneration,
+  }) async {
+    if (expectedStorageGeneration != _storageGeneration) return false;
+    for (final duration in <int>[shortBreakDuration, longBreakDuration]) {
+      if (duration < PomodoroConfig.minStoredDurationSeconds ||
+          duration > PomodoroConfig.maxStoredDurationSeconds) {
+        return false;
+      }
+    }
+    if (sessionsPerLongBreak < PomodoroConfig.minSessionsPerLongBreak ||
+        sessionsPerLongBreak > PomodoroConfig.maxSessionsPerLongBreak) {
+      return false;
+    }
+    // 从“最新配置”克隆：页面模态快照可能已过期，白噪音/DND/严格模式/
+    // 分心应用/房间/音量等不能被旧快照覆盖。
+    final previous = _config;
+    final next = PomodoroConfig.fromJson(previous.toJson());
+    next
+      ..shortBreakDuration = shortBreakDuration
+      ..longBreakDuration = longBreakDuration
+      ..sessionsPerLongBreak = sessionsPerLongBreak
+      ..linkShortBreakToFocus = linkShortBreakToFocus
+      ..autoStartBreaks = autoStartBreaks
+      ..autoStartFocus = autoStartFocus
+      // 联动开启时短休从最新专注时长推导，忽略传入的旧选项。
+      ..normalizeLinkedShortBreak();
+    next.touch();
+    _config = next;
+    try {
+      await _saveConfig(requireSuccess: true);
+    } catch (_) {
+      if (expectedStorageGeneration == _storageGeneration &&
+          identical(_config, next)) {
+        // Roll back only this draft's fields; preserve other settings edited
+        // during the platform write.
+        next
+          ..shortBreakDuration = previous.shortBreakDuration
+          ..longBreakDuration = previous.longBreakDuration
+          ..sessionsPerLongBreak = previous.sessionsPerLongBreak
+          ..linkShortBreakToFocus = previous.linkShortBreakToFocus
+          ..autoStartBreaks = previous.autoStartBreaks
+          ..autoStartFocus = previous.autoStartFocus;
+      }
+      rethrow;
+    }
+    if (expectedStorageGeneration != _storageGeneration) return false;
+    // 触发既有的云配置收集逻辑（监听 persistedRevision / notifyListeners）。
+    _persistedRevision++;
+    notifyListeners();
+    return true;
   }
 
   Future<void> setAutoEnableDnd(bool enabled) async {

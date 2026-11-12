@@ -37,13 +37,19 @@ class PomodoroConfig {
   /// 分心应用选择模式：勾选的包名视为无关应用，其余可启动应用都是分心应用。
   static const String distractionModeWhitelist = 'whitelist';
 
-  static const int _minStoredDurationSeconds = 60;
-  static const int _maxStoredDurationSeconds = 12 * 60 * 60;
+  /// 存储时长（秒）与轮次计数的合法区间：写入校验与恢复夹取共用。
+  static const int minStoredDurationSeconds = 60;
+  static const int maxStoredDurationSeconds = 12 * 60 * 60;
+  static const int minSessionsPerLongBreak = 1;
+  static const int maxSessionsPerLongBreak = 20;
 
   int focusDuration; // seconds, default 1500 (25min)
   int shortBreakDuration; // seconds, default 300 (5min)
   int longBreakDuration; // seconds, default 900 (15min)
   int sessionsPerLongBreak; // default 4
+
+  /// 短休时长联动专注时长（默认关闭，旧数据保持各自独立的选择）。
+  bool linkShortBreakToFocus;
   String whiteNoiseSound;
   bool autoStartBreaks;
   bool autoStartFocus;
@@ -68,6 +74,7 @@ class PomodoroConfig {
     this.whiteNoiseSound = 'none',
     this.autoStartBreaks = false,
     this.autoStartFocus = false,
+    this.linkShortBreakToFocus = false,
     this.autoEnableDnd = false,
     this.strictFocusMode = false,
     this.monitorDistractingApps = false,
@@ -86,9 +93,14 @@ class PomodoroConfig {
 
   Map<String, dynamic> toJson() => {
     'focusDuration': focusDuration,
-    'shortBreakDuration': shortBreakDuration,
+    // 联动开启时始终发送按专注时长推导的实际短休，避免服务端/其它端
+    // 读到与当前专注时长不一致的旧值。
+    'shortBreakDuration': linkShortBreakToFocus
+        ? linkedShortBreakDuration(focusDuration)
+        : shortBreakDuration,
     'longBreakDuration': longBreakDuration,
     'sessionsPerLongBreak': sessionsPerLongBreak,
+    'linkShortBreakToFocus': linkShortBreakToFocus,
     'whiteNoiseSound': whiteNoiseSound,
     'autoStartBreaks': autoStartBreaks,
     'autoStartFocus': autoStartFocus,
@@ -111,7 +123,7 @@ class PomodoroConfig {
       sound = 'rain'; // Fallback for old data
     }
 
-    return PomodoroConfig(
+    final config = PomodoroConfig(
       focusDuration: _storedDuration(
         json['focusDuration'],
         defaultFocusDuration,
@@ -124,7 +136,14 @@ class PomodoroConfig {
         json['longBreakDuration'],
         defaultLongBreakDuration,
       ),
-      sessionsPerLongBreak: _intInRange(json['sessionsPerLongBreak'], 4, 1, 20),
+      sessionsPerLongBreak: _intInRange(
+        json['sessionsPerLongBreak'],
+        4,
+        minSessionsPerLongBreak,
+        maxSessionsPerLongBreak,
+      ),
+      // 旧数据没有该字段：默认关闭，保持各自独立的短休选择。
+      linkShortBreakToFocus: json['linkShortBreakToFocus'] ?? false,
       whiteNoiseSound: _normalizeStoredFocusSound(sound),
       autoStartBreaks: json['autoStartBreaks'] ?? false,
       autoStartFocus: json['autoStartFocus'] ?? false,
@@ -153,6 +172,23 @@ class PomodoroConfig {
           DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
+    // 联动开启时恢复出的短休必须与专注时长一致；关闭时保留原值。
+    config.normalizeLinkedShortBreak();
+    return config;
+  }
+
+  /// 联动短休：短休分钟数 = 专注分钟数 / 5（四舍五入到整分钟），
+  /// 夹在 1..720 分钟并换算回秒。1500s→300s、3600s→720s、60s→60s。
+  static int linkedShortBreakDuration(int focusDurationSeconds) {
+    final rawMinutes = (focusDurationSeconds / 300).round();
+    final minutes = rawMinutes < 1 ? 1 : (rawMinutes > 720 ? 720 : rawMinutes);
+    return minutes * 60;
+  }
+
+  /// 联动开启时把 [shortBreakDuration] 规范为推导值；关闭时保留用户选择。
+  void normalizeLinkedShortBreak() {
+    if (!linkShortBreakToFocus) return;
+    shortBreakDuration = linkedShortBreakDuration(focusDuration);
   }
 
   /// 白名单模式：勾选项是无关应用，其余可启动应用都算分心。
@@ -201,8 +237,8 @@ class PomodoroConfig {
       _ => null,
     };
     if (value == null ||
-        value < _minStoredDurationSeconds ||
-        value > _maxStoredDurationSeconds) {
+        value < minStoredDurationSeconds ||
+        value > maxStoredDurationSeconds) {
       return fallback;
     }
     return value;

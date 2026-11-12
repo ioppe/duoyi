@@ -73,6 +73,18 @@ class DesignTokens {
   static const double modalSheetMaxHeightFactor = 2 / 3;
   static const double modalSheetDragThreshold = 24;
 
+  // ----- 专注页“休息安排”（计时卡与休息设置面板） -----
+  // 一张卡内单列 / 双栏的切换阈值：手机与平板保持单列，桌面宽卡左侧计时、
+  // 右侧时长与安排。卡片最宽与页面内容列同为 720，不新开全局页宽。
+  static const double focusRestCardMaxWidth = 720;
+  static const double focusRestTwoColumnMinWidth = 700;
+  static const double focusRestSummaryMinHeight = 64;
+  static const double focusRestSheetMaxWidth = 464;
+  static const double focusRestPhoneRingSize = 160;
+  static const double focusRestDesktopRingSize = 196;
+  static const double focusRestTimerFontSize = 40;
+  static const double focusRestRingStrokeWidth = 4;
+
   // ----- Modal 居中弹层（Web / macOS 桌面） -----
   // Web 与 native macOS 不渲染底部半屏面板：同一个 sharedAppModalSheet 内容
   // 改由居中对话框承载。宽度仍取调用点的 maxWidth（默认

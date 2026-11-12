@@ -9,6 +9,150 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get focusRestTimerReady => '准备开始';
+
+  @override
+  String get focusRestTimerFocus => '保持专注';
+
+  @override
+  String get focusRestTimerBreak => '放松一下';
+
+  @override
+  String get focusRestTimerPaused => '已暂停';
+
+  @override
+  String get focusRestTimerCountup => '正向计时';
+
+  @override
+  String get focusRestSummaryShort => '短休';
+
+  @override
+  String get focusRestSummaryLong => '长休';
+
+  @override
+  String get focusRestUnitMinutes => '分钟';
+
+  @override
+  String get focusRestUnitRounds => '轮';
+
+  @override
+  String get focusRestEvery => '每';
+
+  @override
+  String get focusRestRoundsLong => '轮长休息';
+
+  @override
+  String get focusRestAutoBreakSummary => '自动开始休息';
+
+  @override
+  String get focusRestAutoBreak => '自动开始休息';
+
+  @override
+  String get focusRestManualAfter => '完成后手动开始';
+
+  @override
+  String get focusRestCountupNote => '倒计时模式的休息安排';
+
+  @override
+  String get focusRestSettings => '设置';
+
+  @override
+  String get focusRestOpenSheet => '打开休息安排设置';
+
+  @override
+  String get focusRestTitle => '休息安排';
+
+  @override
+  String get focusRestCancel => '取消';
+
+  @override
+  String get focusRestSave => '保存设置';
+
+  @override
+  String get focusRestSaving => '正在保存…';
+
+  @override
+  String get focusRestShort => '短休息';
+
+  @override
+  String get focusRestShortHint => '每轮专注后的休息时长';
+
+  @override
+  String get focusRestLong => '长休息';
+
+  @override
+  String get focusRestLongHint => '完成一组专注后，多休息一会儿';
+
+  @override
+  String get focusRestInterval => '长休息间隔';
+
+  @override
+  String get focusRestIntervalHint => '每完成几轮专注，安排一次长休息';
+
+  @override
+  String get focusRestLink => '按 5∶1 联动短休息';
+
+  @override
+  String get focusRestLinkHint => '随专注时长计算，例如 25 分钟配 5 分钟';
+
+  @override
+  String get focusRestLinkActivePrefix => '由 ';
+
+  @override
+  String get focusRestLinkActiveSuffix => ' 分钟专注按 5∶1 计算';
+
+  @override
+  String get focusRestAutoBreakHint => '专注结束后立即开始休息计时';
+
+  @override
+  String get focusRestAutoFocus => '自动开始下一轮专注';
+
+  @override
+  String get focusRestAutoFocusHint => '休息结束后继续下一轮专注';
+
+  @override
+  String get focusRestDraftPrefix => '专注';
+
+  @override
+  String get focusRestDraftMiddle => '分钟，之后短休';
+
+  @override
+  String get focusRestSaveNoteIdle => '保存后用于接下来开始的专注。';
+
+  @override
+  String get focusRestSaveNoteRunning => '当前计时不受影响；之后开始的专注使用新设置。';
+
+  @override
+  String get focusRestErrorShort => '短休息请输入 1–720 的整数。';
+
+  @override
+  String get focusRestErrorLong => '长休息请输入 1–720 的整数。';
+
+  @override
+  String get focusRestErrorInterval => '长休息间隔请输入 1–20 的整数。';
+
+  @override
+  String get focusRestErrorStale => '账号或连接状态已变化，请重新打开后再保存。';
+
+  @override
+  String get focusRestErrorSave => '保存失败，请稍后再试。';
+
+  @override
+  String get focusRestNextFocus => '休息后专注';
+
+  @override
+  String get focusRestActionStartFocus => '开始专注';
+
+  @override
+  String get focusRestActionStartBreak => '开始休息';
+
+  @override
+  String get focusRestActionPause => '暂停';
+
+  @override
+  String get focusRestActionResume => '继续';
+
+  @override
   String get mineUpdateBackgroundDownloading => '正在后台下载更新包';
 
   @override

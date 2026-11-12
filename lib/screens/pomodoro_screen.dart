@@ -35,6 +35,7 @@ import '../core/i18n.dart';
 import '../widgets/focus_distraction_app_picker.dart';
 import '../widgets/pomodoro_floating_window_host.dart';
 import '../widgets/focus_sync_status.dart';
+import '../widgets/focus_rest_settings.dart';
 
 String _focusRoomErrorText(Object error) {
   final message = error is ApiException ? error.message : error.toString();
@@ -420,6 +421,42 @@ class _PomodoroProviderFallbackState extends State<_PomodoroProviderFallback> {
   }
 }
 
+/// 存储尚未就绪时的占位：不渲染默认计时、休息设置与主操作，避免用户操作到
+/// 尚未水合的配置并把默认值写回。
+class _PomodoroStorageGate extends StatelessWidget {
+  final bool failed;
+  final VoidCallback onRetry;
+
+  const _PomodoroStorageGate({required this.failed, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (!failed) {
+      return Center(
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
+      );
+    }
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            I18n.tr('state.load_failed'),
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: DesignTokens.spaceSm),
+          FilledButton(
+            onPressed: onRetry,
+            child: Text(I18n.tr('action.retry')),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PomodoroDialogBody extends StatelessWidget {
   final Widget child;
 
@@ -447,19 +484,100 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
 
+  /// 已发起按需存储加载的代际（同一代际只触发一次）。
+  int? _preparingStorageGeneration;
+
+  /// 加载失败、等待用户重试的代际。
+  int? _failedStorageGeneration;
+
+  /// 已完成“刷新免打扰 + 默认关联自习室”初始化的代际，每代最多一次。
+  int? _initializedStorageGeneration;
+
+  /// 本帧是否已排过按需加载的 post-frame 回调。
+  bool _storagePrepareScheduled = false;
+
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
+  }
+
+  /// build 只排程：真正的读盘、通知与配置写入都在帧后执行。
+  void _scheduleStoragePrepareAfterFrame() {
+    if (_storagePrepareScheduled) return;
+    _storagePrepareScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _storagePrepareScheduled = false;
       if (!mounted) return;
-      final pomodoro = context.read<PomodoroProvider>();
-      final rooms = context.read<FocusRoomProvider>();
-      pomodoro.refreshFocusDndStatus();
-      if (pomodoro.state.focusRoomId == null && rooms.activeRoomId != null) {
-        unawaited(pomodoro.setFocusRoomId(rooms.activeRoomId));
-      }
+      _scheduleStoragePrepare(context.read<PomodoroProvider>());
     });
+  }
+
+  /// 按 provider 代际做一次按需水合；已就绪的代际不再读盘、不重置运行态。
+  void _scheduleStoragePrepare(PomodoroProvider pomodoro) {
+    final generation = pomodoro.configStorageGeneration;
+    if (_initializedStorageGeneration == generation) return;
+    if (pomodoro.storageHydrated) {
+      // 启动批次或上一次进页已成功加载：直接补做原初始化，不重复读盘。
+      _preparingStorageGeneration = generation;
+      _failedStorageGeneration = null;
+      _initializeAfterHydration(pomodoro, generation);
+      return;
+    }
+    if (_preparingStorageGeneration == generation) return;
+    _preparingStorageGeneration = generation;
+    _failedStorageGeneration = null;
+    unawaited(_prepareStorage(pomodoro, generation));
+  }
+
+  Future<void> _prepareStorage(
+    PomodoroProvider pomodoro,
+    int generation,
+  ) async {
+    try {
+      await pomodoro.prepareRemoteHistory();
+    } catch (_) {
+      // 技术细节不进 UI：只显示既有的“加载失败 + 重试”文案。
+      if (!mounted || pomodoro.configStorageGeneration != generation) return;
+      setState(() => _failedStorageGeneration = generation);
+      return;
+    }
+    if (!mounted) return;
+    if (pomodoro.configStorageGeneration != generation) {
+      // 代际已推进：交给新代际重新按需加载，不执行旧代际的自动房间写。
+      setState(() {});
+      return;
+    }
+    if (!pomodoro.storageHydrated) {
+      setState(() => _failedStorageGeneration = generation);
+      return;
+    }
+    _initializeAfterHydration(pomodoro, generation);
+    setState(() {});
+  }
+
+  void _retryStoragePrepare() {
+    final pomodoro = context.read<PomodoroProvider>();
+    setState(() {
+      _failedStorageGeneration = null;
+      _preparingStorageGeneration = null;
+      _initializedStorageGeneration = null;
+    });
+    _scheduleStoragePrepare(pomodoro);
+  }
+
+  /// 原初始化区域：刷新免打扰状态并默认关联自习室；只在存储就绪、代际未变时执行。
+  void _initializeAfterHydration(PomodoroProvider pomodoro, int generation) {
+    if (pomodoro.configStorageGeneration != generation ||
+        !pomodoro.storageHydrated) {
+      return;
+    }
+    _initializedStorageGeneration = generation;
+    unawaited(pomodoro.refreshFocusDndStatus());
+    final rooms = context.read<FocusRoomProvider>();
+    if (pomodoro.state.focusRoomId == null && rooms.activeRoomId != null) {
+      unawaited(pomodoro.setFocusRoomId(rooms.activeRoomId));
+    }
   }
 
   @override
@@ -474,14 +592,15 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  Color _typeColor(PomodoroType t) {
+  /// 专注用主题主色，短/长休息统一用语义次色（默认主题即休息绿 #2F8F83），
+  /// 八个主题各自继承既有 colorScheme token，不在这里硬编码色值。
+  Color _typeColor(PomodoroType t, ColorScheme cs) {
     switch (t) {
       case PomodoroType.focus:
-        return const Color(0xFFE53935);
+        return cs.primary;
       case PomodoroType.shortBreak:
-        return const Color(0xFF4CAF50);
       case PomodoroType.longBreak:
-        return const Color(0xFF2196F3);
+        return cs.secondary;
     }
   }
 
@@ -574,229 +693,135 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                 ),
               ],
               Expanded(
-                child: TabBarView(
-                  controller: _tabCtrl,
-                  children: [
-                    Consumer<PomodoroProvider>(
-                      builder: (context, provider, _) {
-                        final state = provider.state;
-                        final themeProvider = context.watch<ThemeProvider>();
-                        final s = themeProvider.brand.strings;
-                        final focusBackdrop = themeProvider.activeFocusBackdrop;
-                        final color = _typeColor(state.type);
-                        return LayoutBuilder(
-                          builder: (context, constraints) {
-                            final availableHeight = constraints.maxHeight;
-                            final compact = availableHeight < 660;
-                            final tight = availableHeight < 560;
-                            final ringSize = tight
-                                ? 126.0
-                                : compact
-                                ? 148.0
-                                : 172.0;
-                            final appleLayout = usesApplePageLayout(context);
-                            final cardPadding = appleLayout
-                                ? EdgeInsets.all(
-                                    tight ? 14 : (compact ? 18 : 22),
+                child: Consumer<PomodoroProvider>(
+                  builder: (context, pomodoro, tabView) {
+                    _scheduleStoragePrepareAfterFrame();
+                    if (pomodoro.storageHydrated) return tabView!;
+                    return _PomodoroStorageGate(
+                      failed:
+                          _failedStorageGeneration ==
+                          pomodoro.configStorageGeneration,
+                      onRetry: _retryStoragePrepare,
+                    );
+                  },
+                  child: TabBarView(
+                    controller: _tabCtrl,
+                    children: [
+                      Consumer<PomodoroProvider>(
+                        builder: (context, provider, _) {
+                          final state = provider.state;
+                          final themeProvider = context.watch<ThemeProvider>();
+                          final s = themeProvider.brand.strings;
+                          final focusBackdrop =
+                              themeProvider.activeFocusBackdrop;
+                          final color = _typeColor(
+                            state.type,
+                            Theme.of(context).colorScheme,
+                          );
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final availableHeight = constraints.maxHeight;
+                              final compact = availableHeight < 660;
+                              final tight = availableHeight < 560;
+                              final ringSize =
+                                  constraints.maxWidth >=
+                                      DesignTokens.focusRestTwoColumnMinWidth +
+                                          24
+                                  ? DesignTokens.focusRestDesktopRingSize
+                                  : DesignTokens.focusRestPhoneRingSize;
+                              final appleLayout = usesApplePageLayout(context);
+                              final cardPadding = appleLayout
+                                  ? EdgeInsets.all(
+                                      tight ? 14 : (compact ? 18 : 22),
+                                    )
+                                  : tight
+                                  ? const EdgeInsets.all(10)
+                                  : compact
+                                  ? const EdgeInsets.all(12)
+                                  : const EdgeInsets.all(14);
+                              final contentWidth = (constraints.maxWidth - 24)
+                                  .clamp(
+                                    0.0,
+                                    DesignTokens.focusRestCardMaxWidth,
                                   )
-                                : tight
-                                ? const EdgeInsets.all(10)
-                                : compact
-                                ? const EdgeInsets.all(12)
-                                : const EdgeInsets.all(14);
-                            final contentWidth = (constraints.maxWidth - 24)
-                                .clamp(0.0, 720.0)
-                                .toDouble();
-                            final cs = Theme.of(context).colorScheme;
-                            // 默认主题：默认专注背景不再叠渐变噪声，只保留用户自选的
-                            // 非默认 focus backdrop 渐变。
-                            final Gradient? cardGradient =
-                                focusBackdrop.id ==
-                                    ThemeProvider.defaultFocusBackdropId
-                                ? (appleLayout
-                                      ? null
-                                      : LinearGradient(
-                                          colors: [
-                                            color.withValues(alpha: 0.14),
-                                            cs.surface,
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ))
-                                : LinearGradient(
-                                    colors: [
-                                      focusBackdrop.colors.first.withValues(
-                                        alpha: 0.22,
-                                      ),
-                                      focusBackdrop.colors.last.withValues(
-                                        alpha: 0.14,
-                                      ),
-                                      cs.surface,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  );
-
-                            final card = AppSurfaceCard(
-                              padding: cardPadding,
-                              gradient: cardGradient,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: tight ? 38 : 44,
-                                        height: tight ? 38 : 44,
-                                        decoration: BoxDecoration(
-                                          color: color.withValues(alpha: 0.14),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.timer_outlined,
-                                          color: color,
-                                          size: tight ? 22 : 24,
-                                        ),
-                                      ),
-                                      if (focusBackdrop.id !=
-                                          ThemeProvider
-                                              .defaultFocusBackdropId) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: tight ? 7 : 9,
-                                            vertical: tight ? 4 : 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: focusBackdrop.colors.first
-                                                .withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                focusBackdrop.icon,
-                                                size: 13,
-                                                color:
-                                                    focusBackdrop.colors.first,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                focusBackdrop.name,
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: focusBackdrop
-                                                      .colors
-                                                      .first,
-                                                ),
-                                              ),
+                                  .toDouble();
+                              final cs = Theme.of(context).colorScheme;
+                              // 默认主题：默认专注背景不再叠渐变噪声，只保留用户自选的
+                              // 非默认 focus backdrop 渐变。
+                              final Gradient? cardGradient =
+                                  focusBackdrop.id ==
+                                      ThemeProvider.defaultFocusBackdropId
+                                  ? (appleLayout
+                                        ? null
+                                        : LinearGradient(
+                                            colors: [
+                                              color.withValues(alpha: 0.14),
+                                              cs.surface,
                                             ],
-                                          ),
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ))
+                                  : LinearGradient(
+                                      colors: [
+                                        focusBackdrop.colors.first.withValues(
+                                          alpha: 0.22,
                                         ),
+                                        focusBackdrop.colors.last.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                        cs.surface,
                                       ],
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Flexible(
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    typeLabel(state.type),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleMedium
-                                                        ?.copyWith(
-                                                          fontSize: tight
-                                                              ? 15
-                                                              : 17,
-                                                          color: cs.onSurface,
-                                                          fontWeight: DesignTokens
-                                                              .fontWeightStrong,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(
-                                                    height:
-                                                        DesignTokens.spaceXxs,
-                                                  ),
-                                                  Text(
-                                                    '${state.completedSessions} ${s.focusCompletedSuffix}',
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall
-                                                        ?.copyWith(
-                                                          color: cs.onSurface
-                                                              .withValues(
-                                                                alpha: 0.68,
-                                                              ),
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: DesignTokens.spaceXs,
-                                            ),
-                                            FocusSyncStatus(
-                                              provider: provider,
-                                              isLoggedIn: context
-                                                  .select<AuthProvider?, bool>(
-                                                    (auth) =>
-                                                        auth
-                                                            ?.state
-                                                            .isLoggedIn ??
-                                                        false,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: tight ? 8 : 10,
-                                          vertical: tight ? 4 : 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: color.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          state.isRunning ? '进行中' : '已暂停',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight:
-                                                DesignTokens.fontWeightStrong,
-                                            color: color,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: tight ? 6 : 10),
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    );
+
+                              final focusMinutes =
+                                  provider.config.focusDuration ~/ 60;
+                              final timerCaption = state.isRunning
+                                  ? I18n.tr(
+                                      state.type == PomodoroType.focus
+                                          ? 'focus.rest.timer_focus'
+                                          : 'focus.rest.timer_break',
+                                    )
+                                  : provider.isPaused
+                                  ? I18n.tr('focus.rest.timer_paused')
+                                  : state.type != PomodoroType.focus
+                                  ? '${I18n.tr('focus.rest.next_focus')} '
+                                        '$focusMinutes '
+                                        '${I18n.tr('focus.rest.unit_minutes')}'
+                                  : I18n.tr(
+                                      state.isCountUp
+                                          ? 'focus.rest.timer_countup'
+                                          : 'focus.rest.timer_ready',
+                                    );
+                              // 运行中或暂停中都不允许改时长；跨端只读态同样禁用。
+                              final durationLocked =
+                                  state.isRunning ||
+                                  provider.isPaused ||
+                                  (provider.focusSyncEnabled &&
+                                      (!provider.canControlFocus ||
+                                          provider.isPaused));
+                              final primaryLabel = state.isRunning
+                                  ? I18n.tr('focus.rest.action.pause')
+                                  : provider.isPaused
+                                  ? I18n.tr('focus.rest.action.resume')
+                                  : state.type == PomodoroType.focus
+                                  ? I18n.tr('focus.rest.action.start_focus')
+                                  : I18n.tr('focus.rest.action.start_break');
+                              // 宽卡双栏：左计时与操作，右时长、休息安排与辅助选项。
+                              final twoColumn =
+                                  contentWidth >=
+                                  DesignTokens.focusRestTwoColumnMinWidth;
+
+                              final timerSection = Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
                                   _PomodoroLiveTimer(
                                     provider: provider,
                                     color: color,
                                     ringSize: ringSize,
                                     tight: tight,
-                                    completedSuffix: s.focusCompletedSuffix,
-                                    timerLabel: s.focusTabTimer,
+                                    caption: timerCaption,
                                     textColor: cs.onSurface.withValues(
                                       alpha: 0.64,
                                     ),
@@ -808,339 +833,630 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                       padding: EdgeInsets.only(
                                         top: tight ? 5 : 7,
                                       ),
-                                      child: Center(
-                                        child: GestureDetector(
-                                          onTap: () => _editTaskName(
-                                            context,
-                                            provider,
-                                            state.taskName!,
+                                      child: GestureDetector(
+                                        onTap: () => _editTaskName(
+                                          context,
+                                          provider,
+                                          state.taskName!,
+                                        ),
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxWidth:
+                                                MediaQuery.of(
+                                                  context,
+                                                ).size.width -
+                                                96,
                                           ),
-                                          child: ConstrainedBox(
-                                            constraints: BoxConstraints(
-                                              maxWidth:
-                                                  MediaQuery.of(
-                                                    context,
-                                                  ).size.width -
-                                                  96,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: tight ? 8 : 10,
+                                              vertical: tight ? 4 : 6,
                                             ),
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: tight ? 8 : 10,
-                                                vertical: tight ? 4 : 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: cs
-                                                    .surfaceContainerHighest
-                                                    .withValues(alpha: 0.75),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.assignment_outlined,
-                                                    size: 14,
-                                                    color: cs.onSurface
-                                                        .withValues(
-                                                          alpha: 0.64,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Flexible(
-                                                    child: Text(
-                                                      state.taskLabel!,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                        color: cs.onSurface
-                                                            .withValues(
-                                                              alpha: 0.72,
-                                                            ),
-                                                        fontSize: 12,
-                                                        fontWeight: DesignTokens
-                                                            .fontWeightStrong,
-                                                      ),
+                                            decoration: BoxDecoration(
+                                              color: cs.surfaceContainerHighest
+                                                  .withValues(alpha: 0.75),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.assignment_outlined,
+                                                  size: 14,
+                                                  color: cs.onSurface
+                                                      .withValues(alpha: 0.64),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                  child: Text(
+                                                    state.taskLabel!,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      color: cs.onSurface
+                                                          .withValues(
+                                                            alpha: 0.72,
+                                                          ),
+                                                      fontSize: 12,
+                                                      fontWeight: DesignTokens
+                                                          .fontWeightStrong,
                                                     ),
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  SizedBox(height: tight ? 6 : 9),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      children: [
-                                        Padding(
+                                ],
+                              );
+
+                              final durationRow = ChipTheme(
+                                data: ChipTheme.of(context).copyWith(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      DesignTokens.radiusControl,
+                                    ),
+                                  ),
+                                  side: BorderSide(
+                                    color: cs.outlineVariant.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                  selectedColor: cs.primary.withValues(
+                                    alpha: 0.14,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                  labelStyle: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        fontWeight:
+                                            DesignTokens.fontWeightMedium,
+                                      ),
+                                  secondaryLabelStyle: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: cs.primary,
+                                        fontWeight:
+                                            DesignTokens.fontWeightMedium,
+                                      ),
+                                ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 6,
+                                        ),
+                                        child: ChoiceChip(
+                                          visualDensity: VisualDensity.standard,
+                                          avatar: const Icon(
+                                            Icons.timer_outlined,
+                                            size: 16,
+                                          ),
+                                          label: const Text('自由计时'),
+                                          selected: state.isCountUp,
+                                          onSelected: durationLocked
+                                              ? null
+                                              : (_) => provider.setCountUpMode(
+                                                  true,
+                                                ),
+                                        ),
+                                      ),
+                                      ...[15, 25, 30, 45, 60, 90].map(
+                                        (min) => Padding(
                                           padding: const EdgeInsets.only(
                                             right: 6,
                                           ),
                                           child: ChoiceChip(
                                             visualDensity:
-                                                VisualDensity.compact,
-                                            avatar: const Icon(
-                                              Icons.timer_outlined,
-                                            ),
-                                            label: const Text('自由计时'),
-                                            selected: state.isCountUp,
-                                            onSelected:
-                                                state.isRunning ||
-                                                    (provider
-                                                            .focusSyncEnabled &&
-                                                        (!provider
-                                                                .canControlFocus ||
-                                                            provider.isPaused))
+                                                VisualDensity.standard,
+                                            label: Text('$min 分钟'),
+                                            selected:
+                                                !state.isCountUp &&
+                                                state.totalSeconds ==
+                                                    min * 60 &&
+                                                state.type ==
+                                                    PomodoroType.focus,
+                                            onSelected: durationLocked
                                                 ? null
-                                                : (_) => provider
-                                                      .setCountUpMode(true),
+                                                : (_) {
+                                                    provider.setCountUpMode(
+                                                      false,
+                                                    );
+                                                    provider.setConfig(
+                                                      provider.config
+                                                        ..focusDuration =
+                                                            min * 60,
+                                                    );
+                                                  },
                                           ),
-                                        ),
-                                        ...[15, 25, 30, 45, 60, 90].map(
-                                          (min) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 6,
-                                            ),
-                                            child: ChoiceChip(
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              label: Text('$min 分钟'),
-                                              selected:
-                                                  !state.isCountUp &&
-                                                  state.totalSeconds ==
-                                                      min * 60 &&
-                                                  state.type ==
-                                                      PomodoroType.focus,
-                                              onSelected:
-                                                  state.isRunning ||
-                                                      (provider
-                                                              .focusSyncEnabled &&
-                                                          (!provider
-                                                                  .canControlFocus ||
-                                                              provider
-                                                                  .isPaused))
-                                                  ? null
-                                                  : (_) {
-                                                      provider.setCountUpMode(
-                                                        false,
-                                                      );
-                                                      provider.setConfig(
-                                                        provider.config
-                                                          ..focusDuration =
-                                                              min * 60,
-                                                      );
-                                                    },
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // 默认主题：任务 / 白噪音 / 免打扰 / 严格专注 / 自习室收进
-                                  // 一张轻量组面；其他主题原样透传，不额外包容器。
-                                  AppleGroup(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      10,
-                                      8,
-                                      10,
-                                      8,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        SizedBox(height: tight ? 6 : 8),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: _FocusControlTile(
-                                                icon: Icons.assignment_outlined,
-                                                label: '专注任务',
-                                                subtitle:
-                                                    state
-                                                            .taskName
-                                                            ?.isNotEmpty ==
-                                                        true
-                                                    ? state.taskLabel!
-                                                    : '选择本轮内容',
-                                                color: color,
-                                                compact: tight,
-                                                onTap: () =>
-                                                    _showTaskPresetPicker(
-                                                      context,
-                                                      provider,
-                                                    ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: _WhiteNoiseControlTile(
-                                                sound: state.whiteNoiseSound,
-                                                color:
-                                                    state.whiteNoiseSound !=
-                                                        'none'
-                                                    ? color
-                                                    : cs.onSurfaceVariant,
-                                                compact: tight,
-                                                onTap: () => _showSoundPicker(
-                                                  context,
-                                                  provider,
-                                                  state.whiteNoiseSound,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        if (provider
-                                            .focusDndStatus
-                                            .supported) ...[
-                                          SizedBox(height: tight ? 6 : 8),
-                                          _FocusDndTile(
-                                            enabled:
-                                                provider.config.autoEnableDnd,
-                                            active: provider.focusDndActive,
-                                            accessGranted: provider
-                                                .focusDndStatus
-                                                .accessGranted,
-                                            supported: provider
-                                                .focusDndStatus
-                                                .supported,
-                                            compact: tight,
-                                            color: color,
-                                            onChanged:
-                                                provider.setAutoEnableDnd,
-                                            onTap: () => _showDndSheet(context),
-                                          ),
-                                        ],
-                                        SizedBox(height: tight ? 6 : 8),
-                                        _StrictFocusTile(
-                                          enabled:
-                                              provider.config.strictFocusMode,
-                                          todayCount:
-                                              provider.todayPenalties.length,
-                                          compact: tight,
-                                          color: color,
-                                          onChanged:
-                                              provider.setStrictFocusMode,
-                                          onTap: () =>
-                                              _showStrictFocusSheet(context),
-                                        ),
-                                        SizedBox(height: tight ? 6 : 8),
-                                        _ActiveFocusRoomTile(
-                                          focusRoomId: state.focusRoomId,
-                                          compact: tight,
-                                          onTap: () => _showFocusRoomPicker(
-                                            context,
-                                            provider,
-                                            context.read<FocusRoomProvider>(),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: tight ? 8 : 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      IconButton.filled(
-                                        onPressed: provider.canControlFocus
-                                            ? () => _confirmStrictFocusExit(
-                                                context,
-                                                FocusPenaltyReason.reset,
-                                                provider.resetTimer,
-                                              )
-                                            : null,
-                                        icon: const Icon(Icons.refresh),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor:
-                                              cs.surfaceContainerHighest,
-                                          foregroundColor: cs.onSurface,
-                                        ),
-                                      ),
-                                      SizedBox(width: tight ? 14 : 18),
-                                      SizedBox(
-                                        width: tight ? 50 : 58,
-                                        height: tight ? 50 : 58,
-                                        child: FloatingActionButton(
-                                          onPressed: provider.canControlFocus
-                                              ? provider.toggleTimer
-                                              : null,
-                                          backgroundColor: color,
-                                          child: Icon(
-                                            state.isRunning
-                                                ? Icons.pause
-                                                : Icons.play_arrow,
-                                            size: tight ? 28 : 30,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: tight ? 14 : 18),
-                                      IconButton.filled(
-                                        onPressed: !provider.canControlFocus
-                                            ? null
-                                            : state.isCountUp
-                                            ? provider.finishCurrentSession
-                                            : () => _confirmStrictFocusExit(
-                                                context,
-                                                FocusPenaltyReason.skip,
-                                                provider.skipSession,
-                                              ),
-                                        icon: Icon(
-                                          state.isCountUp
-                                              ? Icons.stop
-                                              : Icons.skip_next,
-                                        ),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor:
-                                              cs.surfaceContainerHighest,
-                                          foregroundColor: cs.onSurface,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            );
+                                ),
+                              );
 
-                            final topPadding = compact ? 6.0 : 8.0;
-                            final bottomPadding = compact ? 8.0 : 12.0;
-                            final fitHeight =
-                                (availableHeight - topPadding - bottomPadding)
-                                    .clamp(0.0, double.infinity)
-                                    .toDouble();
-                            return Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                12,
-                                topPadding,
-                                12,
-                                bottomPadding,
-                              ),
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: fitHeight,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.topCenter,
-                                  child: SizedBox(
-                                    width: contentWidth,
+                              final restSummary = FocusRestPlanSummary(
+                                shortBreakDuration:
+                                    provider.config.shortBreakDuration,
+                                longBreakDuration:
+                                    provider.config.longBreakDuration,
+                                sessionsPerLongBreak:
+                                    provider.config.sessionsPerLongBreak,
+                                autoStartBreaks:
+                                    provider.config.autoStartBreaks,
+                                isCountUp: state.isCountUp,
+                                onTap: () => showFocusRestSettingsSheet(
+                                  context: context,
+                                  provider: provider,
+                                ),
+                              );
+
+                              final timerActions = Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: tight ? 2 : 4,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      tooltip: '重置计时',
+                                      onPressed: provider.canControlFocus
+                                          ? () => _confirmStrictFocusExit(
+                                              context,
+                                              FocusPenaltyReason.reset,
+                                              provider.resetTimer,
+                                            )
+                                          : null,
+                                      icon: const Icon(Icons.refresh, size: 20),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor:
+                                            cs.surfaceContainerHighest,
+                                        foregroundColor: cs.onSurface,
+                                        minimumSize: const Size(
+                                          DesignTokens.controlMinHeight,
+                                          DesignTokens.controlMinHeight,
+                                        ),
+                                        maximumSize: const Size(
+                                          DesignTokens.controlMinHeight,
+                                          DesignTokens.controlMinHeight,
+                                        ),
+                                        shape: const CircleBorder(),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: contentWidth < 360 || tight
+                                          ? 12
+                                          : 16,
+                                    ),
+                                    Flexible(
+                                      child: FilledButton.icon(
+                                        onPressed: provider.canControlFocus
+                                            ? provider.toggleTimer
+                                            : null,
+                                        icon: Icon(
+                                          state.isRunning
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                          size: 20,
+                                        ),
+                                        label: Text(primaryLabel),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: color,
+                                          foregroundColor: Colors.white,
+                                          disabledBackgroundColor: color
+                                              .withValues(alpha: 0.38),
+                                          disabledForegroundColor: Colors.white
+                                              .withValues(alpha: 0.9),
+                                          minimumSize: const Size(148, 48),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                          textStyle: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                fontWeight: DesignTokens
+                                                    .fontWeightMedium,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: contentWidth < 360 || tight
+                                          ? 12
+                                          : 16,
+                                    ),
+                                    IconButton(
+                                      tooltip: state.isCountUp
+                                          ? '结束本轮自由计时'
+                                          : '跳过当前阶段',
+                                      onPressed: !provider.canControlFocus
+                                          ? null
+                                          : state.isCountUp
+                                          ? provider.finishCurrentSession
+                                          : () => _confirmStrictFocusExit(
+                                              context,
+                                              FocusPenaltyReason.skip,
+                                              provider.skipSession,
+                                            ),
+                                      icon: Icon(
+                                        state.isCountUp
+                                            ? Icons.stop
+                                            : Icons.skip_next,
+                                        size: 22,
+                                      ),
+                                      style: IconButton.styleFrom(
+                                        backgroundColor:
+                                            cs.surfaceContainerHighest,
+                                        foregroundColor: cs.onSurface,
+                                        minimumSize: const Size(
+                                          DesignTokens.controlMinHeight,
+                                          DesignTokens.controlMinHeight,
+                                        ),
+                                        maximumSize: const Size(
+                                          DesignTokens.controlMinHeight,
+                                          DesignTokens.controlMinHeight,
+                                        ),
+                                        shape: const CircleBorder(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              // 默认主题：任务 / 白噪音 / 免打扰 / 严格专注 / 自习室
+                              // 收进一张轻量组面；其他主题原样透传，不额外包容器。
+                              final dndTile = _FocusDndTile(
+                                enabled: provider.config.autoEnableDnd,
+                                active: provider.focusDndActive,
+                                accessGranted:
+                                    provider.focusDndStatus.accessGranted,
+                                supported: provider.focusDndStatus.supported,
+                                compact: tight,
+                                color: color,
+                                onChanged: provider.setAutoEnableDnd,
+                                onTap: () => _showDndSheet(context),
+                              );
+                              final strictTile = _StrictFocusTile(
+                                enabled: provider.config.strictFocusMode,
+                                todayCount: provider.todayPenalties.length,
+                                compact: tight,
+                                color: color,
+                                onChanged: provider.setStrictFocusMode,
+                                onTap: () => _showStrictFocusSheet(context),
+                              );
+                              final utilities = Container(
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: cs.outlineVariant.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _FocusControlTile(
+                                            icon: Icons.assignment_outlined,
+                                            label: '专注任务',
+                                            subtitle:
+                                                state.taskName?.isNotEmpty ==
+                                                    true
+                                                ? state.taskLabel!
+                                                : '选择本轮内容',
+                                            color: color,
+                                            compact: tight,
+                                            onTap: () => _showTaskPresetPicker(
+                                              context,
+                                              provider,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _WhiteNoiseControlTile(
+                                            sound: state.whiteNoiseSound,
+                                            color:
+                                                state.whiteNoiseSound != 'none'
+                                                ? color
+                                                : cs.onSurfaceVariant,
+                                            compact: tight,
+                                            onTap: () => _showSoundPicker(
+                                              context,
+                                              provider,
+                                              state.whiteNoiseSound,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (appleLayout) ...[
+                                      const Divider(height: 1),
+                                      Row(
+                                        children: [
+                                          if (provider
+                                              .focusDndStatus
+                                              .supported) ...[
+                                            Expanded(child: dndTile),
+                                            const SizedBox(
+                                              width: DesignTokens.spaceSm,
+                                            ),
+                                          ],
+                                          Expanded(child: strictTile),
+                                        ],
+                                      ),
+                                      const Divider(height: 1),
+                                    ] else ...[
+                                      if (provider
+                                          .focusDndStatus
+                                          .supported) ...[
+                                        SizedBox(height: tight ? 6 : 8),
+                                        dndTile,
+                                      ],
+                                      SizedBox(height: tight ? 6 : 8),
+                                      strictTile,
+                                      SizedBox(height: tight ? 6 : 8),
+                                    ],
+                                    _ActiveFocusRoomTile(
+                                      focusRoomId: state.focusRoomId,
+                                      compact: tight,
+                                      onTap: () => _showFocusRoomPicker(
+                                        context,
+                                        provider,
+                                        context.read<FocusRoomProvider>(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              final card = AppSurfaceCard(
+                                padding: cardPadding,
+                                gradient: cardGradient,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: tight ? 38 : 44,
+                                          height: tight ? 38 : 44,
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(
+                                              alpha: 0.14,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.timer_outlined,
+                                            color: color,
+                                            size: tight ? 22 : 24,
+                                          ),
+                                        ),
+                                        if (focusBackdrop.id !=
+                                            ThemeProvider
+                                                .defaultFocusBackdropId) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: tight ? 7 : 9,
+                                              vertical: tight ? 4 : 5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: focusBackdrop.colors.first
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  focusBackdrop.icon,
+                                                  size: 13,
+                                                  color: focusBackdrop
+                                                      .colors
+                                                      .first,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  focusBackdrop.name,
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: focusBackdrop
+                                                        .colors
+                                                        .first,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              Flexible(
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      typeLabel(state.type),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                            fontSize: tight
+                                                                ? 15
+                                                                : 17,
+                                                            color: cs.onSurface,
+                                                            fontWeight: DesignTokens
+                                                                .fontWeightStrong,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(
+                                                      height:
+                                                          DesignTokens.spaceXxs,
+                                                    ),
+                                                    Text(
+                                                      '${state.completedSessions} ${s.focusCompletedSuffix}',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                            color: cs.onSurface
+                                                                .withValues(
+                                                                  alpha: 0.68,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: DesignTokens.spaceXs,
+                                              ),
+                                              FocusSyncStatus(
+                                                provider: provider,
+                                                isLoggedIn: context
+                                                    .select<
+                                                      AuthProvider?,
+                                                      bool
+                                                    >(
+                                                      (auth) =>
+                                                          auth
+                                                              ?.state
+                                                              .isLoggedIn ??
+                                                          false,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: tight ? 10 : 14),
+                                    if (!twoColumn) ...[
+                                      timerSection,
+                                      SizedBox(height: tight ? 8 : 12),
+                                      durationRow,
+                                      SizedBox(height: tight ? 8 : 12),
+                                      restSummary,
+                                      SizedBox(height: tight ? 8 : 12),
+                                      timerActions,
+                                      SizedBox(height: tight ? 10 : 14),
+                                      utilities,
+                                    ] else
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            flex: 85,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                timerSection,
+                                                const SizedBox(
+                                                  height: DesignTokens.spaceLg,
+                                                ),
+                                                timerActions,
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                            width: DesignTokens.spaceXxl,
+                                          ),
+                                          Expanded(
+                                            flex: 120,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                durationRow,
+                                                const SizedBox(
+                                                  height: DesignTokens.spaceMd,
+                                                ),
+                                                restSummary,
+                                                const SizedBox(
+                                                  height: DesignTokens.spaceMd,
+                                                ),
+                                                utilities,
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              );
+
+                              final topPadding = compact ? 6.0 : 8.0;
+                              final bottomPadding = compact ? 8.0 : 12.0;
+                              // 短屏不缩小正文：整列可滚动，休息摘要与主操作仍在首屏。
+                              return SingleChildScrollView(
+                                padding: EdgeInsets.fromLTRB(
+                                  12,
+                                  topPadding,
+                                  12,
+                                  bottomPadding,
+                                ),
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: contentWidth,
+                                    ),
                                     child: card,
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    // History tab
-                    _HistoryTab(),
-                    const _FocusRoomTab(),
-                  ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      // History tab
+                      _HistoryTab(),
+                      const _FocusRoomTab(),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -2034,13 +2350,21 @@ class _ActiveFocusRoomTile extends StatelessWidget {
           colorValue: activeRoom?.accentColor ?? fallbackColor.toARGB32(),
         );
       },
-      builder: (context, state, _) => _FocusRoomTile(
-        roomName: state.roomName,
-        subtitle: state.subtitle,
-        color: Color(state.colorValue),
-        compact: compact,
-        onTap: onTap,
-      ),
+      builder: (context, state, _) => usesApplePageLayout(context)
+          ? FocusUtilityTile(
+              icon: Icons.meeting_room_outlined,
+              label: '自习室',
+              subtitle: state.roomName,
+              onTap: onTap,
+              inline: true,
+            )
+          : _FocusRoomTile(
+              roomName: state.roomName,
+              subtitle: state.subtitle,
+              color: Color(state.colorValue),
+              compact: compact,
+              onTap: onTap,
+            ),
     );
   }
 }
@@ -2097,6 +2421,16 @@ class _StrictFocusTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final effectiveColor = enabled ? color : cs.onSurfaceVariant;
+    if (usesApplePageLayout(context)) {
+      return FocusUtilityToggle(
+        icon: Icons.lock_clock_outlined,
+        label: '严格专注',
+        help: enabled ? '今日 $todayCount 次中断' : '手动开启',
+        value: enabled,
+        onChanged: onChanged,
+        onTap: onTap,
+      );
+    }
     final subtitle = enabled
         ? todayCount > 0
               ? '今日 $todayCount 次中断'
@@ -2293,8 +2627,10 @@ class _PomodoroLiveTimer extends StatelessWidget {
   final Color color;
   final double ringSize;
   final bool tight;
-  final String completedSuffix;
-  final String timerLabel;
+
+  /// 已由调用点按阶段组织好的说明文案：专注 / 自由计时显示完成次数，
+  /// 短/长休息显示“休息后专注 N 分钟”，不再在计时环内自行拼接。
+  final String caption;
   final Color textColor;
   final String Function(int seconds) formatTime;
 
@@ -2303,8 +2639,7 @@ class _PomodoroLiveTimer extends StatelessWidget {
     required this.color,
     required this.ringSize,
     required this.tight,
-    required this.completedSuffix,
-    required this.timerLabel,
+    required this.caption,
     required this.textColor,
     required this.formatTime,
   });
@@ -2315,30 +2650,17 @@ class _PomodoroLiveTimer extends StatelessWidget {
       valueListenable: provider.timerTicks,
       builder: (context, _, _) {
         final state = provider.state;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Center(
-              child: RepaintBoundary(
-                child: PomodoroTimerRing(
-                  progress: state.progress,
-                  timeText: formatTime(state.remainingSeconds),
-                  color: color,
-                  size: ringSize,
-                  countUp: state.isCountUp,
-                ),
-              ),
+        return Center(
+          child: RepaintBoundary(
+            child: PomodoroTimerRing(
+              progress: state.progress,
+              timeText: formatTime(state.remainingSeconds),
+              color: color,
+              size: ringSize,
+              countUp: state.isCountUp,
+              statusLabel: caption,
             ),
-            SizedBox(height: tight ? 4 : 6),
-            Center(
-              child: Text(
-                state.isCountUp
-                    ? '自由计时 · ${state.completedSessions} $completedSuffix'
-                    : '$timerLabel · ${state.completedSessions} $completedSuffix',
-                style: TextStyle(color: textColor, fontSize: tight ? 12 : 13),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -4151,6 +4473,16 @@ class _FocusDndTile extends StatelessWidget {
         ? '需要系统授权'
         : '手动开启';
     final effectiveColor = enabled ? color : cs.onSurfaceVariant;
+    if (usesApplePageLayout(context)) {
+      return FocusUtilityToggle(
+        icon: Icons.do_not_disturb_on_outlined,
+        label: '专注勿扰',
+        help: subtitle,
+        value: enabled,
+        onChanged: supported ? onChanged : null,
+        onTap: onTap,
+      );
+    }
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -4256,6 +4588,14 @@ class _FocusControlTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    if (usesApplePageLayout(context)) {
+      return FocusUtilityTile(
+        icon: icon,
+        label: label,
+        subtitle: subtitle,
+        onTap: onTap,
+      );
+    }
     return Material(
       color: Colors.transparent,
       child: InkWell(

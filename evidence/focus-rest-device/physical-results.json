@@ -1,0 +1,2359 @@
+{
+  "candidateVersion": "v2",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "sourceManifestSha256": "7c303bb565e7629a986c0e09f4ec86dd0e3cb5d503fb5e17c262c02c43fb40f4",
+  "scope": "Isolated local/offline Android physical checks; no INTERNET permission, no production account/timer operations",
+  "device": {
+    "hardwareSerial": "2df52c4c",
+    "model": "24129PN74C",
+    "transport": "wireless ADB",
+    "systemFontScale": 1.25,
+    "densityDpi": 520,
+    "resolution": [
+      1200,
+      2670
+    ]
+  },
+  "fixturePrerequisite": {
+    "duoyi_local_account_v1": true,
+    "authToken": false,
+    "focusRuntime": "local",
+    "description": "Only isolated test-package preferences; explicit local-account marker prevents unowned guest-data cleanup on restart."
+  },
+  "cases": [
+    {
+      "case": "C01",
+      "status": "PASS",
+      "epoch": 1794482668.310762,
+      "seconds": 22.12,
+      "assertions": [
+        {
+          "defaults": {
+            "focusDuration": 1500,
+            "shortBreakDuration": 300,
+            "longBreakDuration": 900,
+            "sessionsPerLongBreak": 4,
+            "linkShortBreakToFocus": false,
+            "whiteNoiseSound": "none",
+            "autoStartBreaks": false,
+            "autoStartFocus": false,
+            "autoEnableDnd": false,
+            "strictFocusMode": false,
+            "monitorDistractingApps": false,
+            "distractingAppPackages": [],
+            "distractingAppSelectionMode": "blacklist",
+            "focusRoomId": "deep_work_room",
+            "focusSoundVolume": 0.6,
+            "playSoundInBreak": false,
+            "updatedAt": "2026-11-12T06:24:06.190104-05:00"
+          },
+          "density": 3.25,
+          "summaryBounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "primaryBounds": [
+            360,
+            1814,
+            841,
+            1970
+          ],
+          "cloudBounds": [
+            466,
+            598,
+            622,
+            754
+          ],
+          "checks": "25/5/15/4 flagsOFF; readable first screen; summary above primary; three targets >=44dp; guest cloud click displayed separate message."
+        }
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482653.03535
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482657.037123
+        },
+        {
+          "label": "登录后同步多端专注",
+          "bounds": [
+            466,
+            598,
+            622,
+            754
+          ],
+          "inputPoint": [
+            544,
+            676
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482664.6162188
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794482649352050000-C01-route-0.png",
+        "focus-rest-device-run/1794482653844529000-C01-route-1.png",
+        "focus-rest-device-run/1794482657852364000-C01-route-2.png",
+        "focus-rest-device-run/1794482660947326000-C01-before-tap.png",
+        "focus-rest-device-run/1794482664933089000-C01-guest-cloud-hint.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C02",
+      "status": "PASS",
+      "epoch": 1794482717.194195,
+      "seconds": 48.88,
+      "assertions": [
+        "Fresh horizontal duration-row gestures exposed 60/90; each selected preset changed both visible timer and persisted focus seconds; restored25."
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482679.594084
+        },
+        {
+          "label": "60 分钟",
+          "bounds": [
+            536,
+            1359,
+            800,
+            1515
+          ],
+          "inputPoint": [
+            668,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482691.650939
+        },
+        {
+          "label": "90 分钟",
+          "bounds": [
+            819,
+            1359,
+            1083,
+            1515
+          ],
+          "inputPoint": [
+            951,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482699.646841
+        },
+        {
+          "label": "25 分钟",
+          "bounds": [
+            753,
+            1359,
+            1017,
+            1515
+          ],
+          "inputPoint": [
+            885,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482711.189397
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794482668377068000-C02-recover.png",
+        "focus-rest-device-run/1794482676593750000-C02-route-0.png",
+        "focus-rest-device-run/1794482680377643000-C02-route-1.png",
+        "focus-rest-device-run/1794482683425235000-C02-duration-row.png",
+        "focus-rest-device-run/1794482688457600000-C02-duration-row.png",
+        "focus-rest-device-run/1794482691946398000-C02-preset-selected.png",
+        "focus-rest-device-run/1794482695522789000-C02-duration-row.png",
+        "focus-rest-device-run/1794482699941733000-C02-preset-selected.png",
+        "focus-rest-device-run/1794482703543111000-C02-duration-row.png",
+        "focus-rest-device-run/1794482708294992000-C02-duration-row.png",
+        "focus-rest-device-run/1794482711458311000-C02-preset-selected.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C03",
+      "status": "PASS",
+      "epoch": 1794482843.2201521,
+      "seconds": 126.03,
+      "assertions": [
+        "Three independent edited drafts dismissed by cancel, close and native modal barrier; complete stored config unchanged."
+      ],
+      "actions": [
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482723.485019
+        },
+        {
+          "field": "短休息",
+          "value": 7,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482749.4536698
+        },
+        {
+          "label": "取消",
+          "bounds": [
+            65,
+            2456,
+            457,
+            2612
+          ],
+          "inputPoint": [
+            261,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482760.895249
+        },
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482768.0505862
+        },
+        {
+          "field": "短休息",
+          "value": 8,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482787.553183
+        },
+        {
+          "label": "关闭",
+          "bounds": [
+            979,
+            994,
+            1135,
+            1150
+          ],
+          "inputPoint": [
+            1057,
+            1072
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482795.533419
+        },
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482803.5726058
+        },
+        {
+          "field": "短休息",
+          "value": 9,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482829.353641
+        },
+        {
+          "label": "纱罩",
+          "bounds": [
+            0,
+            0,
+            1200,
+            890
+          ],
+          "inputPoint": [
+            600,
+            445
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482839.4189131
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794482717400425000-C03-before-open-0.png",
+        "focus-rest-device-run/1794482724196752000-C03-before-open-1.png",
+        "focus-rest-device-run/1794482728641066000-C03-before-number.png",
+        "focus-rest-device-run/1794482733403626000-C03-number-focused.png",
+        "focus-rest-device-run/1794482740891910000-C03-number-entered.png",
+        "focus-rest-device-run/1794482745458060000-C03-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482749789187000-C03-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482755724065000-C03-before-tap.png",
+        "focus-rest-device-run/1794482761321868000-C03-draft-dismissed.png",
+        "focus-rest-device-run/1794482764512485000-C03-before-open-0.png",
+        "focus-rest-device-run/1794482768854157000-C03-before-open-1.png",
+        "focus-rest-device-run/1794482772383532000-C03-before-number.png",
+        "focus-rest-device-run/1794482775959805000-C03-number-focused.png",
+        "focus-rest-device-run/1794482781029810000-C03-number-entered.png",
+        "focus-rest-device-run/1794482784533289000-C03-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482787881845000-C03-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482791488890000-C03-before-tap.png",
+        "focus-rest-device-run/1794482795865426000-C03-draft-dismissed.png",
+        "focus-rest-device-run/1794482799444592000-C03-before-open-0.png",
+        "focus-rest-device-run/1794482804407595000-C03-before-open-1.png",
+        "focus-rest-device-run/1794482808588342000-C03-before-number.png",
+        "focus-rest-device-run/1794482813221003000-C03-number-focused.png",
+        "focus-rest-device-run/1794482820751024000-C03-number-entered.png",
+        "focus-rest-device-run/1794482825293804000-C03-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482829657112000-C03-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482836287080000-C03-before-tap.png",
+        "focus-rest-device-run/1794482839695884000-C03-draft-dismissed.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C04",
+      "status": "PASS",
+      "epoch": 1794483036.893141,
+      "seconds": 193.67,
+      "assertions": [
+        {
+          "keyboardField": "短休息",
+          "saveBounds": [
+            482,
+            1460,
+            1135,
+            1616
+          ],
+          "keyboardShown": true
+        },
+        {
+          "keyboardField": "长休息",
+          "saveBounds": [
+            482,
+            1460,
+            1135,
+            1616
+          ],
+          "keyboardShown": true
+        },
+        {
+          "keyboardField": "长休息间隔",
+          "saveBounds": [
+            482,
+            1460,
+            1135,
+            1616
+          ],
+          "keyboardShown": true
+        },
+        "0min short /721min long /21 rounds rejected with matching field errors, no persisted changes; actual numeric keyboard and save action observed."
+      ],
+      "actions": [
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482848.489453
+        },
+        {
+          "field": "短休息",
+          "value": 0,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482872.537765
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482879.762818
+        },
+        {
+          "field": "短休息",
+          "value": 5,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482905.912394
+        },
+        {
+          "field": "长休息",
+          "value": 721,
+          "inputPoint": [
+            788,
+            1856
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482933.886351
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482945.922142
+        },
+        {
+          "field": "长休息",
+          "value": 15,
+          "inputPoint": [
+            788,
+            1502
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482976.0697951
+        },
+        {
+          "field": "长休息间隔",
+          "value": 21,
+          "inputPoint": [
+            830,
+            1749
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794482996.292942
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483004.392098
+        },
+        {
+          "field": "长休息间隔",
+          "value": 4,
+          "inputPoint": [
+            830,
+            1749
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483028.4961321
+        },
+        {
+          "label": "取消",
+          "bounds": [
+            65,
+            2456,
+            457,
+            2612
+          ],
+          "inputPoint": [
+            261,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483036.682647
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794482843379458000-C04-before-open-0.png",
+        "focus-rest-device-run/1794482849247371000-C04-before-open-1.png",
+        "focus-rest-device-run/1794482852666394000-C04-before-number.png",
+        "focus-rest-device-run/1794482858322102000-C04-number-focused.png",
+        "focus-rest-device-run/1794482864788471000-C04-number-entered.png",
+        "focus-rest-device-run/1794482869456124000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482872809880000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482876491362000-C04-before-tap.png",
+        "focus-rest-device-run/1794482880038885000-C04-invalid-error.png",
+        "focus-rest-device-run/1794482884423672000-C04-before-number.png",
+        "focus-rest-device-run/1794482889009512000-C04-number-focused.png",
+        "focus-rest-device-run/1794482893792693000-C04-number-entered.png",
+        "focus-rest-device-run/1794482900669901000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482906170724000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482911507405000-C04-before-number.png",
+        "focus-rest-device-run/1794482916889139000-C04-number-focused.png",
+        "focus-rest-device-run/1794482921122679000-C04-number-entered.png",
+        "focus-rest-device-run/1794482924775654000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482934186284000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482937625793000-C04-before-tap.png",
+        "focus-rest-device-run/1794482946201438000-C04-invalid-error.png",
+        "focus-rest-device-run/1794482952579392000-C04-before-number.png",
+        "focus-rest-device-run/1794482956254097000-C04-number-focused.png",
+        "focus-rest-device-run/1794482968204107000-C04-number-entered.png",
+        "focus-rest-device-run/1794482971865221000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482976349821000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794482979811864000-C04-before-number.png",
+        "focus-rest-device-run/1794482984854965000-C04-number-focused.png",
+        "focus-rest-device-run/1794482989692461000-C04-number-entered.png",
+        "focus-rest-device-run/1794482993128824000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794482996564072000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483000127475000-C04-before-tap.png",
+        "focus-rest-device-run/1794483004774503000-C04-invalid-error.png",
+        "focus-rest-device-run/1794483008224964000-C04-before-number.png",
+        "focus-rest-device-run/1794483012614279000-C04-number-focused.png",
+        "focus-rest-device-run/1794483016600318000-C04-number-entered.png",
+        "focus-rest-device-run/1794483024395145000-C04-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794483028832448000-C04-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483032314840000-C04-before-tap.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C05",
+      "status": "PASS",
+      "epoch": 1794483410.5661771,
+      "seconds": 150.98,
+      "assertions": [
+        {
+          "savedConfig": {
+            "focusDuration": 1500,
+            "shortBreakDuration": 420,
+            "longBreakDuration": 1200,
+            "sessionsPerLongBreak": 3,
+            "linkShortBreakToFocus": false,
+            "whiteNoiseSound": "none",
+            "autoStartBreaks": true,
+            "autoStartFocus": false,
+            "autoEnableDnd": false,
+            "strictFocusMode": false,
+            "monitorDistractingApps": false,
+            "distractingAppPackages": [],
+            "distractingAppSelectionMode": "blacklist",
+            "focusRoomId": "deep_work_room",
+            "focusSoundVolume": 0.6,
+            "playSoundInBreak": false,
+            "updatedAt": "2026-11-12T19:36:36.839942"
+          }
+        },
+        {
+          "restoredConfig": {
+            "focusDuration": 1500,
+            "shortBreakDuration": 420,
+            "longBreakDuration": 1200,
+            "sessionsPerLongBreak": 3,
+            "linkShortBreakToFocus": false,
+            "whiteNoiseSound": "none",
+            "autoStartBreaks": true,
+            "autoStartFocus": false,
+            "autoEnableDnd": false,
+            "strictFocusMode": false,
+            "monitorDistractingApps": false,
+            "distractingAppPackages": [],
+            "distractingAppSelectionMode": "blacklist",
+            "focusRoomId": "deep_work_room",
+            "focusSoundVolume": 0.6,
+            "playSoundInBreak": false,
+            "updatedAt": "2026-11-12T19:36:36.839942"
+          },
+          "restoredImage": "<scratch>/focus-rest-device-run/1794483407357717000-C05-route-1.png"
+        },
+        "UI saved7/20min, every3 rounds, auto-breakon/auto-focusoff; footer stayed fixed while scrolling; exact config survived process restart under explicit local-account fixture."
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483269.637834
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483277.8414772
+        },
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483285.777953
+        },
+        {
+          "field": "短休息",
+          "value": 7,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483312.888056
+        },
+        {
+          "field": "长休息",
+          "value": 20,
+          "inputPoint": [
+            788,
+            1889
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483338.0284019
+        },
+        {
+          "field": "长休息间隔",
+          "value": 3,
+          "inputPoint": [
+            830,
+            1749
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483364.020898
+        },
+        {
+          "label": "自动开始休息\n专注结束后立即开始休息计时",
+          "bounds": [
+            65,
+            1874,
+            1135,
+            2085
+          ],
+          "inputPoint": [
+            1057,
+            1979
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483377.246928
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483396.2718751
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483406.610593
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794483262791297000-C05-route-0.png",
+        "focus-rest-device-run/1794483270304496000-C05-route-1.png",
+        "focus-rest-device-run/1794483278560056000-C05-route-2.png",
+        "focus-rest-device-run/1794483281952546000-C05-before-open-0.png",
+        "focus-rest-device-run/1794483286480442000-C05-before-open-1.png",
+        "focus-rest-device-run/1794483292610509000-C05-before-number.png",
+        "focus-rest-device-run/1794483298125877000-C05-number-focused.png",
+        "focus-rest-device-run/1794483305389544000-C05-number-entered.png",
+        "focus-rest-device-run/1794483309253207000-C05-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794483313157898000-C05-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483317819466000-C05-before-number.png",
+        "focus-rest-device-run/1794483324369922000-C05-number-focused.png",
+        "focus-rest-device-run/1794483329399840000-C05-number-entered.png",
+        "focus-rest-device-run/1794483333846367000-C05-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794483338310202000-C05-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483344251610000-C05-before-number.png",
+        "focus-rest-device-run/1794483348551033000-C05-number-focused.png",
+        "focus-rest-device-run/1794483354532962000-C05-number-entered.png",
+        "focus-rest-device-run/1794483358003065000-C05-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794483364294264000-C05-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483368931959000-C05-footer-before-scroll.png",
+        "focus-rest-device-run/1794483373884102000-C05-scroll-find.png",
+        "focus-rest-device-run/1794483377516488000-C05-switch-set.png",
+        "focus-rest-device-run/1794483380800536000-C05-scroll-find.png",
+        "focus-rest-device-run/1794483384842360000-C05-switch-set.png",
+        "focus-rest-device-run/1794483387848540000-C05-footer-after-scroll.png",
+        "focus-rest-device-run/1794483391884876000-C05-before-tap.png",
+        "focus-rest-device-run/1794483396576925000-C05-after-save.png",
+        "focus-rest-device-run/1794483403234069000-C05-route-0.png",
+        "focus-rest-device-run/1794483407357717000-C05-route-1.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C06",
+      "status": "PASS",
+      "epoch": 1794483577.615406,
+      "seconds": 167.03,
+      "assertions": [
+        "Optional ratio25→5 and60→12, long break stayed20; disabling allowed9min independent rest and persisted across25min selection/restart."
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483417.6903832
+        },
+        {
+          "label": "25 分钟",
+          "bounds": [
+            753,
+            1359,
+            1017,
+            1515
+          ],
+          "inputPoint": [
+            885,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483427.4293509
+        },
+        {
+          "label": "短休 7 分钟 · 长休 20 分钟，每3轮长休息 · 自动开始休息，打开休息安排设置\n短休 7 分钟 · 长休 20 分钟\n每3轮长休息 · 自动开始休息\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483436.503484
+        },
+        {
+          "label": "按 5∶1 联动短休息\n随专注时长计算，例如 25 分钟配 5 分钟",
+          "bounds": [
+            65,
+            1556,
+            1135,
+            1768
+          ],
+          "inputPoint": [
+            1057,
+            1662
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483449.816531
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483462.03231
+        },
+        {
+          "label": "60 分钟",
+          "bounds": [
+            536,
+            1359,
+            800,
+            1515
+          ],
+          "inputPoint": [
+            668,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483480.540225
+        },
+        {
+          "label": "短休 12 分钟 · 长休 20 分钟，每3轮长休息 · 自动开始休息，打开休息安排设置\n短休 12 分钟 · 长休 20 分钟\n每3轮长休息 · 自动开始休息\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483488.58053
+        },
+        {
+          "label": "按 5∶1 联动短休息\n随专注时长计算，例如 25 分钟配 5 分钟",
+          "bounds": [
+            65,
+            1586,
+            1135,
+            1797
+          ],
+          "inputPoint": [
+            1057,
+            1691
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483497.8272
+        },
+        {
+          "field": "短休息",
+          "value": 9,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483525.851739
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483537.0692449
+        },
+        {
+          "label": "25 分钟",
+          "bounds": [
+            753,
+            1359,
+            1017,
+            1515
+          ],
+          "inputPoint": [
+            885,
+            1437
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483558.21645
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483569.615318
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794483413990251000-C06-route-0.png",
+        "focus-rest-device-run/1794483418378324000-C06-route-1.png",
+        "focus-rest-device-run/1794483424201806000-C06-duration-row.png",
+        "focus-rest-device-run/1794483427765677000-C06-preset-selected.png",
+        "focus-rest-device-run/1794483432330915000-C06-before-open-0.png",
+        "focus-rest-device-run/1794483437271918000-C06-before-open-1.png",
+        "focus-rest-device-run/1794483444586738000-C06-scroll-find.png",
+        "focus-rest-device-run/1794483450125150000-C06-switch-set.png",
+        "focus-rest-device-run/1794483456684349000-C06-before-tap.png",
+        "focus-rest-device-run/1794483462365613000-C06-after-save.png",
+        "focus-rest-device-run/1794483470540341000-C06-duration-row.png",
+        "focus-rest-device-run/1794483475634105000-C06-duration-row.png",
+        "focus-rest-device-run/1794483480820016000-C06-preset-selected.png",
+        "focus-rest-device-run/1794483484605759000-C06-before-open-0.png",
+        "focus-rest-device-run/1794483489278062000-C06-before-open-1.png",
+        "focus-rest-device-run/1794483493413860000-C06-scroll-find.png",
+        "focus-rest-device-run/1794483498122593000-C06-switch-set.png",
+        "focus-rest-device-run/1794483502370061000-C06-before-number.png",
+        "focus-rest-device-run/1794483506295358000-C06-number-focused.png",
+        "focus-rest-device-run/1794483517159508000-C06-number-entered.png",
+        "focus-rest-device-run/1794483520660011000-C06-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794483526190554000-C06-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794483532363245000-C06-before-tap.png",
+        "focus-rest-device-run/1794483537385614000-C06-after-save.png",
+        "focus-rest-device-run/1794483544975660000-C06-duration-row.png",
+        "focus-rest-device-run/1794483553759554000-C06-duration-row.png",
+        "focus-rest-device-run/1794483558535334000-C06-preset-selected.png",
+        "focus-rest-device-run/1794483566355284000-C06-route-0.png",
+        "focus-rest-device-run/1794483570296283000-C06-route-1.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C07",
+      "status": "PASS",
+      "epoch": 1794483603.079448,
+      "seconds": 25.46,
+      "assertions": [
+        "Legacy config without the new flag retained420s short break and rendered link switchOFF after restart."
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483586.806412
+        },
+        {
+          "label": "短休 7 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 7 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1554,
+            1103,
+            1762
+          ],
+          "inputPoint": [
+            600,
+            1658
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483594.82757
+        },
+        {
+          "label": "取消",
+          "bounds": [
+            65,
+            2456,
+            457,
+            2612
+          ],
+          "inputPoint": [
+            261,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794483602.876364
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794483580897723000-C07-route-0.png",
+        "focus-rest-device-run/1794483587491308000-C07-route-1.png",
+        "focus-rest-device-run/1794483590716459000-C07-before-open-0.png",
+        "focus-rest-device-run/1794483595525906000-C07-before-open-1.png",
+        "focus-rest-device-run/1794483598634241000-C07-before-tap.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C08",
+      "status": "FAIL",
+      "epoch": 1794485285.947464,
+      "seconds": 176.87,
+      "assertions": [
+        {
+          "controlReceipt": "paused",
+          "waitSeconds": 0.251,
+          "control": {
+            "sessionId": "focus-1794485110999855",
+            "revision": 2,
+            "state": "paused",
+            "paused": {
+              "type": 0,
+              "remainingSeconds": 1443,
+              "totalSeconds": 1500,
+              "isCountUp": false,
+              "completedSessions": 0,
+              "taskName": "阅读",
+              "todoId": null,
+              "subtaskId": null,
+              "todoTitle": null,
+              "tag": null
+            }
+          }
+        },
+        {
+          "controlReceipt": "running",
+          "waitSeconds": 0.222,
+          "control": {
+            "sessionId": "focus-1794485110999855",
+            "revision": 3,
+            "state": "running",
+            "paused": {
+              "type": 0,
+              "remainingSeconds": 1443,
+              "totalSeconds": 1500,
+              "isCountUp": false,
+              "completedSessions": 0,
+              "taskName": "阅读",
+              "todoId": null,
+              "subtaskId": null,
+              "todoTitle": null,
+              "tag": null
+            }
+          }
+        },
+        {
+          "expectedControlState": "idle",
+          "actualPrefs": {
+            "duoyi_local_account_v1": true,
+            "pomodoro_count_today": 0,
+            "pomodoro_focus_penalties": [],
+            "pomodoro_running_snapshot": {
+              "isRunning": true,
+              "type": 0,
+              "isCountUp": false,
+              "totalSeconds": 1500,
+              "endsAtMs": 1794486688851,
+              "completedSessions": 0,
+              "taskName": "阅读",
+              "todoId": null,
+              "subtaskId": null,
+              "todoTitle": null,
+              "tag": null,
+              "remote": false
+            },
+            "pomodoro_widget_control": {
+              "sessionId": "focus-1794485110999855",
+              "revision": 3,
+              "state": "running",
+              "paused": {
+                "type": 0,
+                "remainingSeconds": 1443,
+                "totalSeconds": 1500,
+                "isCountUp": false,
+                "completedSessions": 0,
+                "taskName": "阅读",
+                "todoId": null,
+                "subtaskId": null,
+                "todoTitle": null,
+                "tag": null
+              }
+            },
+            "pomodoro_sessions": [],
+            "pomodoro_config": {
+              "focusDuration": 1500,
+              "shortBreakDuration": 480,
+              "longBreakDuration": 1320,
+              "sessionsPerLongBreak": 4,
+              "linkShortBreakToFocus": false,
+              "whiteNoiseSound": "none",
+              "autoStartBreaks": false,
+              "autoStartFocus": false,
+              "autoEnableDnd": false,
+              "strictFocusMode": false,
+              "monitorDistractingApps": false,
+              "distractingAppPackages": [],
+              "distractingAppSelectionMode": "blacklist",
+              "focusRoomId": "deep_work_room",
+              "focusSoundVolume": 0.6,
+              "playSoundInBreak": false,
+              "updatedAt": "2026-11-12T20:07:14.759792"
+            }
+          }
+        },
+        {
+          "exception": "AssertionError",
+          "traceback": "Traceback (most recent call last):\n  File \"<scratch>/focus_rest_device_batch.py\", line 416, in <module>\n    fn();status='PASS';error=''\n    ~~^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 343, in c08\n    count=resumed.get('pomodoro_count_today',0);tap('重置计时',exact=True);last=wait_control_state('idle');assert last['pomodoro_widget_control']['state']=='idle' and last.get('pomodoro_count_today',0)==count\n                                                                                ~~~~~~~~~~~~~~~~~~^^^^^^^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 321, in wait_control_state\n    raise AssertionError('Control persistence did not reach '+expected+' within5s; actual='+str((last.get('pomodoro_widget_control') or {}).get('state')))\nAssertionError: Control persistence did not reach idle within5s; actual=running\n"
+        }
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485117.319137
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485121.721987
+        },
+        {
+          "label": "专注任务\n选择本轮内容",
+          "bounds": [
+            98,
+            2032,
+            587,
+            2197
+          ],
+          "inputPoint": [
+            342,
+            2114
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485129.204193
+        },
+        {
+          "label": "阅读",
+          "bounds": [
+            352,
+            2072,
+            542,
+            2228
+          ],
+          "inputPoint": [
+            447,
+            2150
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485133.14543
+        },
+        {
+          "label": "开始专注",
+          "bounds": [
+            360,
+            1941,
+            841,
+            2097
+          ],
+          "inputPoint": [
+            600,
+            2019
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485142.6607769
+        },
+        {
+          "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1681,
+            1103,
+            1889
+          ],
+          "inputPoint": [
+            600,
+            1785
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485158.46138
+        },
+        {
+          "field": "短休息",
+          "value": 8,
+          "inputPoint": [
+            788,
+            1446
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485179.293247
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485188.1105359
+        },
+        {
+          "label": "暂停",
+          "bounds": [
+            360,
+            1941,
+            841,
+            2097
+          ],
+          "inputPoint": [
+            600,
+            2019
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485200.0726159
+        },
+        {
+          "label": "短休 8 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 8 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+          "bounds": [
+            98,
+            1681,
+            1103,
+            1889
+          ],
+          "inputPoint": [
+            600,
+            1785
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485205.7841501
+        },
+        {
+          "field": "长休息",
+          "value": 22,
+          "inputPoint": [
+            788,
+            1889
+          ],
+          "focusVerified": true,
+          "keyboardShown": true
+        },
+        {
+          "label": "休息安排",
+          "bounds": [
+            65,
+            701,
+            979,
+            779
+          ],
+          "inputPoint": [
+            522,
+            740
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485226.072292
+        },
+        {
+          "label": "保存设置",
+          "bounds": [
+            482,
+            2456,
+            1135,
+            2612
+          ],
+          "inputPoint": [
+            808,
+            2534
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485234.201378
+        },
+        {
+          "label": "继续",
+          "bounds": [
+            360,
+            1941,
+            841,
+            2097
+          ],
+          "inputPoint": [
+            600,
+            2019
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485245.30333
+        },
+        {
+          "label": "重置计时",
+          "bounds": [
+            165,
+            1941,
+            321,
+            2097
+          ],
+          "inputPoint": [
+            243,
+            2019
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485276.6276858
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794485112699237000-C08-route-0.png",
+        "focus-rest-device-run/1794485118024124000-C08-route-1.png",
+        "focus-rest-device-run/1794485122415122000-C08-route-2.png",
+        "focus-rest-device-run/1794485125375626000-C08-before-tap.png",
+        "focus-rest-device-run/1794485129486038000-C08-task-picker.png",
+        "focus-rest-device-run/1794485133481071000-C08-task-picked.png",
+        "focus-rest-device-run/1794485137602016000-C08-before-tap.png",
+        "focus-rest-device-run/1794485144030988000-C08-running.png",
+        "focus-rest-device-run/1794485154332384000-C08-before-open-0.png",
+        "focus-rest-device-run/1794485159159698000-C08-before-open-1.png",
+        "focus-rest-device-run/1794485162516145000-C08-before-number.png",
+        "focus-rest-device-run/1794485166214388000-C08-number-focused.png",
+        "focus-rest-device-run/1794485171358207000-C08-number-entered.png",
+        "focus-rest-device-run/1794485175469150000-C08-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794485179615946000-C08-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794485184246076000-C08-before-tap.png",
+        "focus-rest-device-run/1794485188482246000-C08-after-save.png",
+        "focus-rest-device-run/1794485192429527000-C08-before-tap.png",
+        "focus-rest-device-run/1794485200710364000-C08-before-open-0.png",
+        "focus-rest-device-run/1794485206489109000-C08-before-open-1.png",
+        "focus-rest-device-run/1794485209490802000-C08-before-number.png",
+        "focus-rest-device-run/1794485213059638000-C08-number-focused.png",
+        "focus-rest-device-run/1794485218567351000-C08-number-entered.png",
+        "focus-rest-device-run/1794485222497072000-C08-before-keyboard-dismiss.png",
+        "focus-rest-device-run/1794485226412261000-C08-keyboard-dismissed-outside.png",
+        "focus-rest-device-run/1794485231016753000-C08-before-tap.png",
+        "focus-rest-device-run/1794485234549191000-C08-after-save.png",
+        "focus-rest-device-run/1794485237796561000-C08-paused.png",
+        "focus-rest-device-run/1794485241326769000-C08-before-tap.png",
+        "focus-rest-device-run/1794485259025151000-C08-route-0.png",
+        "focus-rest-device-run/1794485263202240000-C08-before-tap.png",
+        "focus-rest-device-run/1794485281955922000-C08-control-state-timeout.png"
+      ],
+      "note": "Control persistence did not reach idle within5s; actual=running"
+    },
+    {
+      "case": "C09",
+      "status": "PASS",
+      "epoch": 1794486210.110503,
+      "seconds": 218.8,
+      "assertions": [
+        {
+          "realNaturalRotation": [
+            {
+              "type": 0,
+              "elapsedRealSeconds": 0.59,
+              "snapshot": {
+                "isRunning": true,
+                "type": 0,
+                "isCountUp": false,
+                "totalSeconds": 60,
+                "endsAtMs": 1794486071259,
+                "completedSessions": 0,
+                "taskName": null,
+                "todoId": null,
+                "subtaskId": null,
+                "todoTitle": null,
+                "tag": null,
+                "remote": false
+              },
+              "control": {
+                "sessionId": "focus-1794485993224964",
+                "revision": 1,
+                "state": "running"
+              },
+              "history": [],
+              "count": 0
+            },
+            {
+              "type": 1,
+              "elapsedRealSeconds": 61.85,
+              "snapshot": {
+                "isRunning": true,
+                "type": 1,
+                "isCountUp": false,
+                "totalSeconds": 60,
+                "endsAtMs": 1794486131268,
+                "completedSessions": 1,
+                "taskName": null,
+                "todoId": null,
+                "subtaskId": null,
+                "todoTitle": null,
+                "tag": null,
+                "remote": false
+              },
+              "control": {
+                "sessionId": "focus-1794486071270152",
+                "revision": 0,
+                "state": "running"
+              },
+              "history": [
+                {
+                  "id": "1794486071266443",
+                  "startTime": "2026-11-12T20:20:11.266443",
+                  "endTime": "2026-11-12T20:21:11.266443",
+                  "durationSeconds": 60,
+                  "type": 0,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:21:11.266443"
+                }
+              ],
+              "count": 1
+            },
+            {
+              "type": 0,
+              "elapsedRealSeconds": 122.93,
+              "snapshot": {
+                "isRunning": true,
+                "type": 0,
+                "isCountUp": false,
+                "totalSeconds": 60,
+                "endsAtMs": 1794486191276,
+                "completedSessions": 1,
+                "taskName": null,
+                "todoId": null,
+                "subtaskId": null,
+                "todoTitle": null,
+                "tag": null,
+                "remote": false
+              },
+              "control": {
+                "sessionId": "focus-1794486131277274",
+                "revision": 0,
+                "state": "running"
+              },
+              "history": [
+                {
+                  "id": "1794486071266443",
+                  "startTime": "2026-11-12T20:20:11.266443",
+                  "endTime": "2026-11-12T20:21:11.266443",
+                  "durationSeconds": 60,
+                  "type": 0,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:21:11.266443"
+                },
+                {
+                  "id": "1794486131276645",
+                  "startTime": "2026-11-12T20:21:11.276645",
+                  "endTime": "2026-11-12T20:22:11.276645",
+                  "durationSeconds": 60,
+                  "type": 1,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:22:11.276645"
+                }
+              ],
+              "count": 1
+            },
+            {
+              "type": 2,
+              "elapsedRealSeconds": 183.92,
+              "snapshot": {
+                "isRunning": true,
+                "type": 2,
+                "isCountUp": false,
+                "totalSeconds": 120,
+                "endsAtMs": 1794486311283,
+                "completedSessions": 2,
+                "taskName": null,
+                "todoId": null,
+                "subtaskId": null,
+                "todoTitle": null,
+                "tag": null,
+                "remote": false
+              },
+              "control": {
+                "sessionId": "focus-1794486191283727",
+                "revision": 0,
+                "state": "running"
+              },
+              "history": [
+                {
+                  "id": "1794486071266443",
+                  "startTime": "2026-11-12T20:20:11.266443",
+                  "endTime": "2026-11-12T20:21:11.266443",
+                  "durationSeconds": 60,
+                  "type": 0,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:21:11.266443"
+                },
+                {
+                  "id": "1794486131276645",
+                  "startTime": "2026-11-12T20:21:11.276645",
+                  "endTime": "2026-11-12T20:22:11.276645",
+                  "durationSeconds": 60,
+                  "type": 1,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:22:11.276645"
+                },
+                {
+                  "id": "1794486191283123",
+                  "startTime": "2026-11-12T20:22:11.283123",
+                  "endTime": "2026-11-12T20:23:11.283123",
+                  "durationSeconds": 60,
+                  "type": 0,
+                  "taskName": null,
+                  "todoId": null,
+                  "subtaskId": null,
+                  "todoTitle": null,
+                  "whiteNoiseSound": "none",
+                  "tag": null,
+                  "focusRoomId": "deep_work_room",
+                  "updatedAt": "2026-11-12T20:23:11.283123"
+                }
+              ],
+              "count": 2
+            }
+          ],
+          "checks": "60s focus→60s short→60s focus→120s long, automatic running, two completed focus sessions, three unique records, no device-clock change."
+        }
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794485998.011777
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486002.359652
+        },
+        {
+          "label": "开始专注",
+          "bounds": [
+            360,
+            1814,
+            841,
+            1970
+          ],
+          "inputPoint": [
+            600,
+            1892
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486010.706837
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486201.915071
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486206.2755241
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794485994754076000-C09-route-0.png",
+        "focus-rest-device-run/1794485998707546000-C09-route-1.png",
+        "focus-rest-device-run/1794486003058545000-C09-route-2.png",
+        "focus-rest-device-run/1794486007093876000-C09-before-tap.png",
+        "focus-rest-device-run/1794486011054182000-C09-phase-0.png",
+        "focus-rest-device-run/1794486072302470000-C09-phase-1.png",
+        "focus-rest-device-run/1794486133415606000-C09-phase-0.png",
+        "focus-rest-device-run/1794486194404257000-C09-phase-2.png",
+        "focus-rest-device-run/1794486198384886000-C09-route-0.png",
+        "focus-rest-device-run/1794486202639289000-C09-route-1.png",
+        "focus-rest-device-run/1794486206968189000-C09-route-2.png"
+      ],
+      "note": ""
+    },
+    {
+      "case": "C10",
+      "status": "FAIL",
+      "epoch": 1794486506.157569,
+      "seconds": 59.77,
+      "assertions": [
+        {
+          "exception": "AssertionError",
+          "traceback": "Traceback (most recent call last):\n  File \"<scratch>/focus_rest_device_batch.py\", line 421, in <module>\n    fn();status='PASS';error=''\n    ~~^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 402, in c10\n    fixture();set_scale130();obs=observe('large-main')\n              ~~~~~~~~~~~~^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 392, in set_scale130\n    selected=observe('font130-selected');assert has(selected,'130%'),'Slider did not select130%'\n                                                ~~~^^^^^^^^^^^^^^^^^\nAssertionError: Slider did not select130%\n"
+        }
+      ],
+      "actions": [
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486454.056695
+        },
+        {
+          "label": "专注\n第 3 个标签，共 4 个",
+          "bounds": [
+            600,
+            2449,
+            900,
+            2670
+          ],
+          "inputPoint": [
+            750,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486458.0742102
+        },
+        {
+          "label": "我的\n第 4 个标签，共 4 个",
+          "bounds": [
+            900,
+            2449,
+            1200,
+            2670
+          ],
+          "inputPoint": [
+            1050,
+            2559
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486466.052871
+        },
+        {
+          "label": "设置\n偏好、通知、安全与数据",
+          "bounds": [
+            39,
+            1940,
+            1161,
+            2132
+          ],
+          "inputPoint": [
+            600,
+            2036
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486477.360241
+        },
+        {
+          "label": "个性设置",
+          "bounds": [
+            39,
+            475,
+            1161,
+            631
+          ],
+          "inputPoint": [
+            600,
+            553
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486484.627347
+        },
+        {
+          "label": "显示与行为\n语言、日期、默认入口、交互和归档",
+          "bounds": [
+            91,
+            878,
+            1109,
+            1073
+          ],
+          "inputPoint": [
+            600,
+            975
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486492.290875
+        },
+        {
+          "label": "应用字体大小\n只调整多仪内文字，不改变手机其他应用\n标准（100%）",
+          "bounds": [
+            91,
+            2178,
+            1109,
+            2539
+          ],
+          "inputPoint": [
+            600,
+            2358
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486496.579179
+        },
+        {
+          "label": "标准（100%）, 100%",
+          "bounds": [
+            522,
+            2433,
+            678,
+            2589
+          ],
+          "inputPoint": [
+            600,
+            2511
+          ],
+          "pressDurationMs": 80,
+          "epoch": 1794486500.63413
+        }
+      ],
+      "files": [
+        "focus-rest-device-run/1794486449944268000-C10-route-0.png",
+        "focus-rest-device-run/1794486454752195000-C10-route-1.png",
+        "focus-rest-device-run/1794486458774940000-C10-route-2.png",
+        "focus-rest-device-run/1794486462271117000-C10-before-tap.png",
+        "focus-rest-device-run/1794486466330223000-C10-mine.png",
+        "focus-rest-device-run/1794486469857335000-C10-scroll-find.png",
+        "focus-rest-device-run/1794486473508371000-C10-scroll-find.png",
+        "focus-rest-device-run/1794486477714244000-C10-mine-settings-menu.png",
+        "focus-rest-device-run/1794486481149298000-C10-scroll-find.png",
+        "focus-rest-device-run/1794486484929380000-C10-preferences.png",
+        "focus-rest-device-run/1794486488536121000-C10-scroll-find.png",
+        "focus-rest-device-run/1794486492674609000-C10-scroll-find.png",
+        "focus-rest-device-run/1794486496912719000-C10-font-options.png",
+        "focus-rest-device-run/1794486501281366000-C10-font130-selected.png"
+      ],
+      "note": "Slider did not select130%"
+    }
+  ],
+  "navigationCorrection": "Native EditText semantics cover the whole stepper row. Numeric input is located between freshly observed minus/plus buttons, then actual focus and text are verified.",
+  "runStartedAtEpoch": 1794486446.3188128,
+  "explicitCaseSelections": [
+    {
+      "cases": [
+        "C09",
+        "C10"
+      ],
+      "epoch": 1794485517.186361,
+      "note": "Run independent named cases; all prior case outcomes are retained and complete still requires ten PASS results."
+    },
+    {
+      "cases": [
+        "C09",
+        "C10"
+      ],
+      "epoch": 1794485991.309601,
+      "note": "Run independent named cases; all prior case outcomes are retained and complete still requires ten PASS results."
+    },
+    {
+      "cases": [
+        "C10"
+      ],
+      "epoch": 1794486446.392288,
+      "note": "Run independent named cases; all prior case outcomes are retained and complete still requires ten PASS results."
+    }
+  ],
+  "naturalRotationProgress": [
+    {
+      "type": 0,
+      "elapsedRealSeconds": 0.59,
+      "snapshot": {
+        "isRunning": true,
+        "type": 0,
+        "isCountUp": false,
+        "totalSeconds": 60,
+        "endsAtMs": 1794486071259,
+        "completedSessions": 0,
+        "taskName": null,
+        "todoId": null,
+        "subtaskId": null,
+        "todoTitle": null,
+        "tag": null,
+        "remote": false
+      },
+      "control": {
+        "sessionId": "focus-1794485993224964",
+        "revision": 1,
+        "state": "running"
+      },
+      "history": [],
+      "count": 0
+    },
+    {
+      "type": 1,
+      "elapsedRealSeconds": 61.85,
+      "snapshot": {
+        "isRunning": true,
+        "type": 1,
+        "isCountUp": false,
+        "totalSeconds": 60,
+        "endsAtMs": 1794486131268,
+        "completedSessions": 1,
+        "taskName": null,
+        "todoId": null,
+        "subtaskId": null,
+        "todoTitle": null,
+        "tag": null,
+        "remote": false
+      },
+      "control": {
+        "sessionId": "focus-1794486071270152",
+        "revision": 0,
+        "state": "running"
+      },
+      "history": [
+        {
+          "id": "1794486071266443",
+          "startTime": "2026-11-12T20:20:11.266443",
+          "endTime": "2026-11-12T20:21:11.266443",
+          "durationSeconds": 60,
+          "type": 0,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:21:11.266443"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "type": 0,
+      "elapsedRealSeconds": 122.93,
+      "snapshot": {
+        "isRunning": true,
+        "type": 0,
+        "isCountUp": false,
+        "totalSeconds": 60,
+        "endsAtMs": 1794486191276,
+        "completedSessions": 1,
+        "taskName": null,
+        "todoId": null,
+        "subtaskId": null,
+        "todoTitle": null,
+        "tag": null,
+        "remote": false
+      },
+      "control": {
+        "sessionId": "focus-1794486131277274",
+        "revision": 0,
+        "state": "running"
+      },
+      "history": [
+        {
+          "id": "1794486071266443",
+          "startTime": "2026-11-12T20:20:11.266443",
+          "endTime": "2026-11-12T20:21:11.266443",
+          "durationSeconds": 60,
+          "type": 0,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:21:11.266443"
+        },
+        {
+          "id": "1794486131276645",
+          "startTime": "2026-11-12T20:21:11.276645",
+          "endTime": "2026-11-12T20:22:11.276645",
+          "durationSeconds": 60,
+          "type": 1,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:22:11.276645"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "type": 2,
+      "elapsedRealSeconds": 183.92,
+      "snapshot": {
+        "isRunning": true,
+        "type": 2,
+        "isCountUp": false,
+        "totalSeconds": 120,
+        "endsAtMs": 1794486311283,
+        "completedSessions": 2,
+        "taskName": null,
+        "todoId": null,
+        "subtaskId": null,
+        "todoTitle": null,
+        "tag": null,
+        "remote": false
+      },
+      "control": {
+        "sessionId": "focus-1794486191283727",
+        "revision": 0,
+        "state": "running"
+      },
+      "history": [
+        {
+          "id": "1794486071266443",
+          "startTime": "2026-11-12T20:20:11.266443",
+          "endTime": "2026-11-12T20:21:11.266443",
+          "durationSeconds": 60,
+          "type": 0,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:21:11.266443"
+        },
+        {
+          "id": "1794486131276645",
+          "startTime": "2026-11-12T20:21:11.276645",
+          "endTime": "2026-11-12T20:22:11.276645",
+          "durationSeconds": 60,
+          "type": 1,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:22:11.276645"
+        },
+        {
+          "id": "1794486191283123",
+          "startTime": "2026-11-12T20:22:11.283123",
+          "endTime": "2026-11-12T20:23:11.283123",
+          "durationSeconds": 60,
+          "type": 0,
+          "taskName": null,
+          "todoId": null,
+          "subtaskId": null,
+          "todoTitle": null,
+          "whiteNoiseSound": "none",
+          "tag": null,
+          "focusRoomId": "deep_work_room",
+          "updatedAt": "2026-11-12T20:23:11.283123"
+        }
+      ],
+      "count": 2
+    }
+  ],
+  "finalState": {
+    "duoyi_local_account_v1": true,
+    "pomodoro_count_today": 0,
+    "pomodoro_focus_penalties": [],
+    "pomodoro_widget_control": {
+      "sessionId": "focus-1794486508077450",
+      "revision": 0,
+      "state": "idle"
+    },
+    "pomodoro_sessions": [],
+    "pomodoro_config": {
+      "focusDuration": 1500,
+      "shortBreakDuration": 300,
+      "longBreakDuration": 900,
+      "sessionsPerLongBreak": 4,
+      "linkShortBreakToFocus": false,
+      "whiteNoiseSound": "none",
+      "autoStartBreaks": false,
+      "autoStartFocus": false,
+      "autoEnableDnd": false,
+      "strictFocusMode": false,
+      "monitorDistractingApps": false,
+      "distractingAppPackages": [],
+      "distractingAppSelectionMode": "blacklist",
+      "focusRoomId": "deep_work_room",
+      "focusSoundVolume": 0.6,
+      "playSoundInBreak": false,
+      "updatedAt": "2026-11-12T07:28:26.159825-05:00"
+    }
+  },
+  "finalObservation": "<scratch>/focus-rest-device-run/1794486519616341000-cleanup-final-idle.png",
+  "complete": false
+}

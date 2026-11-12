@@ -98,6 +98,294 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @focusRestTimerReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'准备开始'**
+  String get focusRestTimerReady;
+
+  /// No description provided for @focusRestTimerFocus.
+  ///
+  /// In zh, this message translates to:
+  /// **'保持专注'**
+  String get focusRestTimerFocus;
+
+  /// No description provided for @focusRestTimerBreak.
+  ///
+  /// In zh, this message translates to:
+  /// **'放松一下'**
+  String get focusRestTimerBreak;
+
+  /// No description provided for @focusRestTimerPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'已暂停'**
+  String get focusRestTimerPaused;
+
+  /// No description provided for @focusRestTimerCountup.
+  ///
+  /// In zh, this message translates to:
+  /// **'正向计时'**
+  String get focusRestTimerCountup;
+
+  /// No description provided for @focusRestSummaryShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'短休'**
+  String get focusRestSummaryShort;
+
+  /// No description provided for @focusRestSummaryLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'长休'**
+  String get focusRestSummaryLong;
+
+  /// No description provided for @focusRestUnitMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟'**
+  String get focusRestUnitMinutes;
+
+  /// No description provided for @focusRestUnitRounds.
+  ///
+  /// In zh, this message translates to:
+  /// **'轮'**
+  String get focusRestUnitRounds;
+
+  /// No description provided for @focusRestEvery.
+  ///
+  /// In zh, this message translates to:
+  /// **'每'**
+  String get focusRestEvery;
+
+  /// No description provided for @focusRestRoundsLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'轮长休息'**
+  String get focusRestRoundsLong;
+
+  /// No description provided for @focusRestAutoBreakSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动开始休息'**
+  String get focusRestAutoBreakSummary;
+
+  /// No description provided for @focusRestAutoBreak.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动开始休息'**
+  String get focusRestAutoBreak;
+
+  /// No description provided for @focusRestManualAfter.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成后手动开始'**
+  String get focusRestManualAfter;
+
+  /// No description provided for @focusRestCountupNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒计时模式的休息安排'**
+  String get focusRestCountupNote;
+
+  /// No description provided for @focusRestSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置'**
+  String get focusRestSettings;
+
+  /// No description provided for @focusRestOpenSheet.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开休息安排设置'**
+  String get focusRestOpenSheet;
+
+  /// No description provided for @focusRestTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息安排'**
+  String get focusRestTitle;
+
+  /// No description provided for @focusRestCancel.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get focusRestCancel;
+
+  /// No description provided for @focusRestSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存设置'**
+  String get focusRestSave;
+
+  /// No description provided for @focusRestSaving.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在保存…'**
+  String get focusRestSaving;
+
+  /// No description provided for @focusRestShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'短休息'**
+  String get focusRestShort;
+
+  /// No description provided for @focusRestShortHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'每轮专注后的休息时长'**
+  String get focusRestShortHint;
+
+  /// No description provided for @focusRestLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'长休息'**
+  String get focusRestLong;
+
+  /// No description provided for @focusRestLongHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成一组专注后，多休息一会儿'**
+  String get focusRestLongHint;
+
+  /// No description provided for @focusRestInterval.
+  ///
+  /// In zh, this message translates to:
+  /// **'长休息间隔'**
+  String get focusRestInterval;
+
+  /// No description provided for @focusRestIntervalHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'每完成几轮专注，安排一次长休息'**
+  String get focusRestIntervalHint;
+
+  /// No description provided for @focusRestLink.
+  ///
+  /// In zh, this message translates to:
+  /// **'按 5∶1 联动短休息'**
+  String get focusRestLink;
+
+  /// No description provided for @focusRestLinkHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'随专注时长计算，例如 25 分钟配 5 分钟'**
+  String get focusRestLinkHint;
+
+  /// No description provided for @focusRestLinkActivePrefix.
+  ///
+  /// In zh, this message translates to:
+  /// **'由 '**
+  String get focusRestLinkActivePrefix;
+
+  /// No description provided for @focusRestLinkActiveSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **' 分钟专注按 5∶1 计算'**
+  String get focusRestLinkActiveSuffix;
+
+  /// No description provided for @focusRestAutoBreakHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'专注结束后立即开始休息计时'**
+  String get focusRestAutoBreakHint;
+
+  /// No description provided for @focusRestAutoFocus.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动开始下一轮专注'**
+  String get focusRestAutoFocus;
+
+  /// No description provided for @focusRestAutoFocusHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息结束后继续下一轮专注'**
+  String get focusRestAutoFocusHint;
+
+  /// No description provided for @focusRestDraftPrefix.
+  ///
+  /// In zh, this message translates to:
+  /// **'专注'**
+  String get focusRestDraftPrefix;
+
+  /// No description provided for @focusRestDraftMiddle.
+  ///
+  /// In zh, this message translates to:
+  /// **'分钟，之后短休'**
+  String get focusRestDraftMiddle;
+
+  /// No description provided for @focusRestSaveNoteIdle.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存后用于接下来开始的专注。'**
+  String get focusRestSaveNoteIdle;
+
+  /// No description provided for @focusRestSaveNoteRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前计时不受影响；之后开始的专注使用新设置。'**
+  String get focusRestSaveNoteRunning;
+
+  /// No description provided for @focusRestErrorShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'短休息请输入 1–720 的整数。'**
+  String get focusRestErrorShort;
+
+  /// No description provided for @focusRestErrorLong.
+  ///
+  /// In zh, this message translates to:
+  /// **'长休息请输入 1–720 的整数。'**
+  String get focusRestErrorLong;
+
+  /// No description provided for @focusRestErrorInterval.
+  ///
+  /// In zh, this message translates to:
+  /// **'长休息间隔请输入 1–20 的整数。'**
+  String get focusRestErrorInterval;
+
+  /// No description provided for @focusRestErrorStale.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号或连接状态已变化，请重新打开后再保存。'**
+  String get focusRestErrorStale;
+
+  /// No description provided for @focusRestErrorSave.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败，请稍后再试。'**
+  String get focusRestErrorSave;
+
+  /// No description provided for @focusRestNextFocus.
+  ///
+  /// In zh, this message translates to:
+  /// **'休息后专注'**
+  String get focusRestNextFocus;
+
+  /// No description provided for @focusRestActionStartFocus.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始专注'**
+  String get focusRestActionStartFocus;
+
+  /// No description provided for @focusRestActionStartBreak.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始休息'**
+  String get focusRestActionStartBreak;
+
+  /// No description provided for @focusRestActionPause.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停'**
+  String get focusRestActionPause;
+
+  /// No description provided for @focusRestActionResume.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get focusRestActionResume;
+
   /// No description provided for @mineUpdateBackgroundDownloading.
   ///
   /// In zh, this message translates to:

@@ -1,0 +1,56 @@
+{
+  "candidateVersion": "v2",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "epoch": 1794485725.314514,
+  "permissionText": [
+    {
+      "text": "允许“多仪·休息布局验证”发送通知？",
+      "description": "",
+      "class": "android.widget.TextView",
+      "bounds": "[147,1950][1053,2121]"
+    },
+    {
+      "text": "包括消息推送、桌面图标角标、声音和振动提醒等，可在“设置”中修改。",
+      "description": "",
+      "class": "android.widget.TextView",
+      "bounds": "[123,2170][1077,2334]"
+    },
+    {
+      "text": "拒绝",
+      "description": "",
+      "class": "android.widget.Button",
+      "bounds": "[110,2407][582,2560]"
+    },
+    {
+      "text": "始终允许",
+      "description": "",
+      "class": "android.widget.Button",
+      "bounds": "[618,2407][1090,2560]"
+    }
+  ],
+  "inputSent": false,
+  "hold": {
+    "held": true,
+    "reason": "Focused window is foreign or unknown; wait for explicit phone-ownership recovery",
+    "createdAtEpoch": 1794485597.357835
+  },
+  "screenshot": "../screenshots/focus-rest-device/v2-notification-permission-block.png",
+  "rawSha256": "ffb6ea8943a1a4a8de3ecf6cd92e36605e8fc7a95c45bf96e669e9a005304d66",
+  "sha256": "1e803b63bc53cb07aa60b11010522a585e202a8203ffc945827fadeb5d239cf2",
+  "crop": [
+    0,
+    160,
+    1200,
+    2670
+  ],
+  "status": "C09 blocked by notification permission prompt; no permission choice made by automation; C10 not executed",
+  "resolution": {
+    "authorization": "用户明确选择：允许验证包通知，继续收尾",
+    "status": "already-granted-verified-no-agent-click",
+    "agentPermissionClicks": 0,
+    "verifiedAtEpoch": 1794485956.4894998,
+    "permissionState": [
+      "android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]"
+    ]
+  }
+}

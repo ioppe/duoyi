@@ -1,0 +1,120 @@
+{
+  "candidateVersion": "v2",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "resultFileSha256": "62cf26115088809f0f02eb3a33ffa9c9cac3984e12e5857f1d3ff4b3c5e819ae",
+  "blockingCase": {
+    "case": "C05",
+    "status": "BLOCKED",
+    "epoch": 1794483120.858283,
+    "seconds": 83.96,
+    "assertions": [
+      {
+        "exception": "RuntimeError",
+        "traceback": "Traceback (most recent call last):\n  File \"<scratch>/focus_rest_phone.py\", line 86, in observe\n    raise RuntimeError('No fresh hierarchy')\nRuntimeError: No fresh hierarchy\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<scratch>/focus_rest_device_batch.py\", line 402, in <module>\n    fn();status='PASS';error=''\n    ~~^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 281, in c05\n    open_panel();number('短休息',7);hide_keyboard();number('长休息',20);hide_keyboard();number('长休息间隔',3);hide_keyboard()\n                                                                                        ~~~~~~^^^^^^^^^^^^^^^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 128, in number\n    focus=observe('number-focused')\n  File \"<scratch>/focus_rest_device_batch.py\", line 37, in observe\n    value = p.observe(CASE + '-' + suffix)\n  File \"<scratch>/focus_rest_phone.py\", line 92, in observe\n    raise RuntimeError('Hierarchy unavailable; no input sent: ' + str(error))\nRuntimeError: Hierarchy unavailable; no input sent: No fresh hierarchy\n"
+      }
+    ],
+    "actions": [
+      {
+        "label": "专注\n第 3 个标签，共 4 个",
+        "bounds": [
+          600,
+          2449,
+          900,
+          2670
+        ],
+        "inputPoint": [
+          750,
+          2559
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483044.391078
+      },
+      {
+        "label": "短休 5 分钟 · 长休 15 分钟，每4轮长休息 · 完成后手动开始，打开休息安排设置\n短休 5 分钟 · 长休 15 分钟\n每4轮长休息 · 完成后手动开始\n设置",
+        "bounds": [
+          98,
+          1554,
+          1103,
+          1762
+        ],
+        "inputPoint": [
+          600,
+          1658
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483052.447274
+      },
+      {
+        "field": "短休息",
+        "value": 7,
+        "inputPoint": [
+          788,
+          1446
+        ],
+        "focusVerified": true,
+        "keyboardShown": true
+      },
+      {
+        "label": "休息安排",
+        "bounds": [
+          65,
+          701,
+          979,
+          779
+        ],
+        "inputPoint": [
+          522,
+          740
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483078.4454951
+      },
+      {
+        "field": "长休息",
+        "value": 20,
+        "inputPoint": [
+          788,
+          1889
+        ],
+        "focusVerified": true,
+        "keyboardShown": true
+      },
+      {
+        "label": "休息安排",
+        "bounds": [
+          65,
+          701,
+          979,
+          779
+        ],
+        "inputPoint": [
+          522,
+          740
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483100.775567
+      }
+    ],
+    "files": [
+      "focus-rest-device-run/1794483039948146000-C05-route-0.png",
+      "focus-rest-device-run/1794483045215600000-C05-route-1.png",
+      "focus-rest-device-run/1794483048405294000-C05-before-open-0.png",
+      "focus-rest-device-run/1794483053155369000-C05-before-open-1.png",
+      "focus-rest-device-run/1794483056256489000-C05-before-number.png",
+      "focus-rest-device-run/1794483060952241000-C05-number-focused.png",
+      "focus-rest-device-run/1794483070051833000-C05-number-entered.png",
+      "focus-rest-device-run/1794483074633293000-C05-before-keyboard-dismiss.png",
+      "focus-rest-device-run/1794483078724803000-C05-keyboard-dismissed-outside.png",
+      "focus-rest-device-run/1794483084383228000-C05-before-number.png",
+      "focus-rest-device-run/1794483088892883000-C05-number-focused.png",
+      "focus-rest-device-run/1794483094025275000-C05-number-entered.png",
+      "focus-rest-device-run/1794483097589937000-C05-before-keyboard-dismiss.png",
+      "focus-rest-device-run/1794483101070927000-C05-keyboard-dismissed-outside.png",
+      "focus-rest-device-run/1794483105587724000-C05-before-number.png"
+    ],
+    "note": "Hierarchy unavailable; no input sent: No fresh hierarchy"
+  },
+  "cleanupError": "Hierarchy unavailable; no input sent: No fresh hierarchy",
+  "classification": "Fresh UIAutomator hierarchy unavailable after field-focus click; no numeric input/save/restart for that field. This does not prove a transport or product failure.",
+  "recovery": "Read-only foreground/hardware check matched the isolated package and device; a new UIAutomator dump returned XML. The case restarted from its own fixture and subsequently passed."
+}
