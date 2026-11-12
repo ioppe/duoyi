@@ -41,7 +41,7 @@ void main() {
       expect(
         main,
         contains('const Duration(seconds: 14)'),
-        reason: 'todo 之外的重模块本地存储仍在首帧后错峰补载，不能和首屏渲染立即抢资源。',
+        reason: '14s 块保留为完整业务本地读取的幂等 fallback（小组件推送/通知补同步同批）。',
       );
       expect(main, contains('delay: const Duration(milliseconds: 2400)'));
       expect(main, contains('delay: const Duration(milliseconds: 1100)'));
@@ -119,10 +119,31 @@ void main() {
         lessThan(heavyStorageDelayIndex),
         reason: 'todo 不再等 14s 重模块批次，升级后首帧即可看到任务。',
       );
+      final initialContentStorageIndex = startupTasks.indexOf(
+        "'initial content storage'",
+      );
+      expect(
+        initialContentStorageIndex,
+        greaterThanOrEqualTo(0),
+        reason: '完整业务本地读取须在首帧后启动，不能只存在于 14s fallback。',
+      );
+      expect(
+        initialContentStorageIndex,
+        lessThan(heavyStorageDelayIndex),
+        reason: 'initial content storage 首帧后启动，不依赖 14s fallback 或 75s 空闲队列。',
+      );
+      expect(
+        RegExp(
+          r"unawaited\(\s*_startupGuard\(\s*'initial content storage',\s*"
+          r'ensureDeferredLocalStorageStartup,',
+        ).hasMatch(startupTasks),
+        isTrue,
+        reason: '完整业务读取必须 unawaited 启动，不能阻塞首帧后的配置/同步入口。',
+      );
       expect(
         heavyStorageDelayIndex,
         lessThan(deferredStorageCallIndex),
-        reason: '其余 17 个 provider 的重模块读取仍在 14s 后错峰，不能被一并提前。',
+        reason: '14s 块仍调用同一 helper 作为幂等 fallback，保持小组件与通知补同步时机。',
       );
       expect(
         RegExp("'initial todo storage'").allMatches(main).length,

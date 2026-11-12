@@ -66,6 +66,7 @@ class _Harness {
   static Future<_Harness> create({
     bool loggedIn = true,
     bool autoSync = true,
+    Future<void> Function()? ensureLocalDataLoaded,
   }) async {
     SharedPreferences.setMockInitialValues({'sync_auto': autoSync});
     final harness = _Harness();
@@ -88,6 +89,7 @@ class _Harness {
     harness.coordinator = BackendSyncCoordinator(
       auth: harness.auth,
       cloud: harness.cloud,
+      ensureLocalDataLoaded: ensureLocalDataLoaded,
     );
     addTearDown(() {
       harness.coordinator.dispose();
@@ -234,5 +236,40 @@ void main() {
     expect(harness.syncCount, 2);
     expect(harness.cloud.lastError, isNull);
     expect(harness.cloud.hasEverSynced, isTrue);
+  });
+
+  test('业务同步完成后等待本地水合回调，再结束后台刷新', () async {
+    final loadStarted = Completer<void>();
+    final loadGate = Completer<void>();
+    final harness = await _Harness.create(
+      ensureLocalDataLoaded: () {
+        if (!loadStarted.isCompleted) loadStarted.complete();
+        return loadGate.future;
+      },
+    );
+    var refreshDone = false;
+    final refresh = harness.coordinator.refresh().whenComplete(() {
+      refreshDone = true;
+    });
+    await loadStarted.future;
+    expect(refreshDone, isFalse, reason: '水合未完成时后台刷新不能算完成。');
+    loadGate.complete();
+    await refresh;
+    expect(refreshDone, isTrue);
+    expect(harness.cloud.hasEverSynced, isTrue);
+  });
+
+  test('本地水合失败向上抛给调用方，不被同步失败分支吞成成功', () async {
+    final harness = await _Harness.create(
+      ensureLocalDataLoaded: () =>
+          Future<void>.error(StateError('fixture hydrate failed')),
+    );
+    await expectLater(
+      harness.coordinator.refresh(),
+      throwsA(isA<StateError>()),
+    );
+    // 当前刷新应失败，但仍保持后续远端变更到达的恢复通道。
+    await Future<void>.delayed(Duration.zero);
+    expect(harness.requests, contains('GET /api/sync/events'));
   });
 }
