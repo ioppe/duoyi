@@ -1,0 +1,9 @@
+{
+  "epoch": 1794484648.1643252,
+  "nativeRunnerJarSha256": "5720e25818205e273c9775ea59948402d37825880fc895dbd520bcbd8c10e0b6",
+  "sourceSha256": {
+    "RestHierarchyDump.java": "82aab7f63891749cdad652fd73c9a7955c3ac7e3abcbb7faa5fa1a308725fe9d",
+    "RestHierarchyProbe.java": "7d83cb55c5050a219c38e7bef65521319ab3b99737cdab5139299ebb0221ea27"
+  },
+  "scope": "read-only test package hierarchy; root AND meaningful app semantics required within3s; no input APIs; no idle wait"
+}

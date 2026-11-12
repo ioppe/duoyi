@@ -264,4 +264,62 @@ void main() {
       FocusPenaltyReason.distractingApp,
     );
   });
+
+  test('linked short break defaults off and keeps legacy choices', () {
+    final legacy = PomodoroConfig.fromJson(<String, dynamic>{
+      'focusDuration': 1500,
+      'shortBreakDuration': 420,
+      'longBreakDuration': 1200,
+      'sessionsPerLongBreak': 3,
+    });
+
+    expect(legacy.linkShortBreakToFocus, isFalse);
+    expect(legacy.shortBreakDuration, 420);
+    expect(legacy.toJson()['linkShortBreakToFocus'], isFalse);
+    expect(legacy.toJson()['shortBreakDuration'], 420);
+  });
+
+  test('linked short break round-trips the derived effective value', () {
+    final config = PomodoroConfig(
+      focusDuration: 3600,
+      shortBreakDuration: 900,
+      linkShortBreakToFocus: true,
+    );
+
+    final json = config.toJson();
+    expect(json['linkShortBreakToFocus'], isTrue);
+    expect(json['shortBreakDuration'], 720);
+
+    final restored = PomodoroConfig.fromJson(json);
+    expect(restored.linkShortBreakToFocus, isTrue);
+    expect(restored.shortBreakDuration, 720);
+  });
+
+  test('linked short break derivation follows focus presets', () {
+    // 25 分钟专注 → 5 分钟短休；60 分钟专注 → 12 分钟短休。
+    expect(PomodoroConfig.linkedShortBreakDuration(1500), 300);
+    expect(PomodoroConfig.linkedShortBreakDuration(3600), 720);
+    // 不足一分钟按 1 分钟计；12 小时专注仍在存储合法区间内。
+    expect(PomodoroConfig.linkedShortBreakDuration(60), 60);
+    expect(PomodoroConfig.linkedShortBreakDuration(43200), 8640);
+    expect(
+      PomodoroConfig.linkedShortBreakDuration(43200),
+      lessThanOrEqualTo(PomodoroConfig.maxStoredDurationSeconds),
+    );
+  });
+
+  test('linked normalization only rewrites while enabled', () {
+    final linked = PomodoroConfig(
+      focusDuration: 3600,
+      shortBreakDuration: 420,
+      linkShortBreakToFocus: true,
+    )..normalizeLinkedShortBreak();
+    expect(linked.shortBreakDuration, 720);
+
+    final unlinked = PomodoroConfig(
+      focusDuration: 3600,
+      shortBreakDuration: 420,
+    )..normalizeLinkedShortBreak();
+    expect(unlinked.shortBreakDuration, 420);
+  });
 }

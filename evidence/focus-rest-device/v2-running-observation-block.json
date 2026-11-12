@@ -1,0 +1,122 @@
+{
+  "candidateVersion": "v2",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "case": {
+    "case": "C08",
+    "status": "BLOCKED",
+    "epoch": 1794483643.237567,
+    "seconds": 40.16,
+    "assertions": [
+      {
+        "exception": "RuntimeError",
+        "traceback": "Traceback (most recent call last):\n  File \"<scratch>/focus_rest_phone.py\", line 86, in observe\n    raise RuntimeError('No fresh hierarchy')\nRuntimeError: No fresh hierarchy\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<scratch>/focus_rest_device_batch.py\", line 402, in <module>\n    fn();status='PASS';error=''\n    ~~^^\n  File \"<scratch>/focus_rest_device_batch.py\", line 319, in c08\n    run=observe('running');chips=[n for n in run['nodes'] if label(n)=='25 分钟'];assert chips and all(n['enabled']=='false' for n in chips)\n  File \"<scratch>/focus_rest_device_batch.py\", line 37, in observe\n    value = p.observe(CASE + '-' + suffix)\n  File \"<scratch>/focus_rest_phone.py\", line 92, in observe\n    raise RuntimeError('Hierarchy unavailable; no input sent: ' + str(error))\nRuntimeError: Hierarchy unavailable; no input sent: No fresh hierarchy\n"
+      }
+    ],
+    "actions": [
+      {
+        "label": "专注\n第 3 个标签，共 4 个",
+        "bounds": [
+          600,
+          2449,
+          900,
+          2670
+        ],
+        "inputPoint": [
+          750,
+          2559
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483610.4117062
+      },
+      {
+        "label": "专注任务\n选择本轮内容",
+        "bounds": [
+          98,
+          2032,
+          587,
+          2197
+        ],
+        "inputPoint": [
+          342,
+          2114
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483617.47589
+      },
+      {
+        "label": "阅读",
+        "bounds": [
+          352,
+          2072,
+          542,
+          2228
+        ],
+        "inputPoint": [
+          447,
+          2150
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483622.676995
+      },
+      {
+        "label": "开始专注",
+        "bounds": [
+          360,
+          1941,
+          841,
+          2097
+        ],
+        "inputPoint": [
+          600,
+          2019
+        ],
+        "pressDurationMs": 80,
+        "epoch": 1794483629.899885
+      }
+    ],
+    "files": [
+      "focus-rest-device-run/1794483606489987000-C08-route-0.png",
+      "focus-rest-device-run/1794483611097937000-C08-route-1.png",
+      "focus-rest-device-run/1794483614200515000-C08-before-tap.png",
+      "focus-rest-device-run/1794483617756799000-C08-task-picker.png",
+      "focus-rest-device-run/1794483622941620000-C08-task-picked.png",
+      "focus-rest-device-run/1794483626524428000-C08-before-tap.png"
+    ],
+    "note": "Hierarchy unavailable; no input sent: No fresh hierarchy"
+  },
+  "classification": "UIAutomator returned no fresh hierarchy after starting the isolated local Reading timer; later rest-save assertions were not executed.",
+  "cleanup": {
+    "error": null,
+    "finalState": {
+      "duoyi_local_account_v1": true,
+      "pomodoro_count_today": 0,
+      "pomodoro_focus_penalties": [],
+      "pomodoro_widget_control": {
+        "sessionId": "focus-1794483645019652",
+        "revision": 0,
+        "state": "idle"
+      },
+      "pomodoro_sessions": [],
+      "pomodoro_config": {
+        "focusDuration": 1500,
+        "shortBreakDuration": 300,
+        "longBreakDuration": 900,
+        "sessionsPerLongBreak": 4,
+        "linkShortBreakToFocus": false,
+        "whiteNoiseSound": "none",
+        "autoStartBreaks": false,
+        "autoStartFocus": false,
+        "autoEnableDnd": false,
+        "strictFocusMode": false,
+        "monitorDistractingApps": false,
+        "distractingAppPackages": [],
+        "distractingAppSelectionMode": "blacklist",
+        "focusRoomId": "deep_work_room",
+        "focusSoundVolume": 0.6,
+        "playSoundInBreak": false,
+        "updatedAt": "2026-11-12T06:40:43.238207-05:00"
+      }
+    }
+  },
+  "driverRecovery": "Observation only: at most two fresh hierarchy acquisitions, each deleting old XML and checking unique foreground; no repeated input; diagnostic dump replies retained."
+}

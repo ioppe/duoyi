@@ -1,0 +1,35 @@
+{
+  "scope": "Historical physical Android candidate v1; these passes do not certify candidate v2",
+  "package": "com.duoyi.duoyi.restlayoutcheck",
+  "apkSha256": "aebe4dfa745a866eb9d6b1a0ce7761beecf1cb3197f8596f95918d0dfa4db0dc",
+  "cases": {
+    "C01": "PASS: defaults, first-screen geometry and guest cloud entry",
+    "C02": "PASS: horizontal duration presets",
+    "C03": "PASS: cancel, close and barrier discard drafts",
+    "C04": "PASS: invalid ranges, numeric keyboard and fixed footer",
+    "C05": "FAIL: saved 7/20 minutes, every 3 rounds, then fast restart showed 5/15/4",
+    "C06": "NOT RUN",
+    "C07": "NOT RUN",
+    "C08": "NOT RUN",
+    "C09": "NOT RUN",
+    "C10": "NOT RUN"
+  },
+  "restartFinding": {
+    "savedObservation": "1794478530550843000-C05-after-save",
+    "restartedObservation": "1794478542218539000-C05-route-1",
+    "saved": {"shortBreakDuration": 420, "longBreakDuration": 1200, "sessionsPerLongBreak": 3, "autoStartBreaks": true},
+    "fastRestart": {"shortBreakDuration": 300, "longBreakDuration": 900, "sessionsPerLongBreak": 4, "autoStartBreaks": false},
+    "controlledOldSourceRegression": {
+      "test": "test/screens/pomodoro_rest_startup_prefix_test.dart",
+      "case": "快速重启未预先水合时进入专注页，已保存的休息设置不被默认值覆盖",
+      "exitCode": 1,
+      "expectedShortBreakSeconds": 420,
+      "actualShortBreakSeconds": 300,
+      "seconds": 3.64,
+      "log": "logs/prefix-regression.log.gz"
+    },
+    "cause": "The global startup batch waits 14 seconds. Entering focus earlier allowed automatic room association to save the default config before saved pomodoro state was loaded.",
+    "fixScope": "Hydrate the current storage generation on demand before enabling focus/rest controls or automatic room association; preserve the global startup delay, current running/paused state and account generation guards."
+  },
+  "evidencePolicy": "Transport failures, ambiguous native control targeting and uncertain input delivery are retained as blocked or invalid diagnostics; they are not counted as product passes. Raw screenshots and operational logs remain in session scratch."
+}

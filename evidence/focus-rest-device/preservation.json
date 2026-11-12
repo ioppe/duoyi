@@ -1,0 +1,77 @@
+{
+  "checkedAtEpoch": 1794486638.9328809,
+  "candidateVersion": "v2",
+  "apkSha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+  "checks": {
+    "productionUnchanged": true,
+    "displayUnchanged": true,
+    "installedCandidateMatches": true,
+    "finalDefaultsIdle": true
+  },
+  "errors": [],
+  "device": {
+    "hardwareSerial": "2df52c4c",
+    "model": "24129PN74C"
+  },
+  "productionAfter": {
+    "metadata": [
+      "versionCode=142023 minSdk=24 targetSdk=36",
+      "versionName=2.0.0",
+      "lastUpdateTime=2026-11-11 15:27:49"
+    ],
+    "apkSha256": "2b87027ef4815c5d6b151e84c349a4e44f2096ced365df8a06b6ebe3933801b1"
+  },
+  "displayAfter": {
+    "fontScale": "1.25",
+    "density": "Physical density: 520",
+    "size": "Physical size: 1200x2670"
+  },
+  "candidateAfter": {
+    "package": "com.duoyi.duoyi.restlayoutcheck",
+    "sha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1"
+  },
+  "finalState": {
+    "duoyi_local_account_v1": true,
+    "pomodoro_count_today": 0,
+    "pomodoro_focus_penalties": [],
+    "pomodoro_widget_control": {
+      "sessionId": "focus-1794486508077450",
+      "revision": 0,
+      "state": "idle"
+    },
+    "pomodoro_sessions": [],
+    "pomodoro_config": {
+      "focusDuration": 1500,
+      "shortBreakDuration": 300,
+      "longBreakDuration": 900,
+      "sessionsPerLongBreak": 4,
+      "linkShortBreakToFocus": false,
+      "whiteNoiseSound": "none",
+      "autoStartBreaks": false,
+      "autoStartFocus": false,
+      "autoEnableDnd": false,
+      "strictFocusMode": false,
+      "monitorDistractingApps": false,
+      "distractingAppPackages": [],
+      "distractingAppSelectionMode": "blacklist",
+      "focusRoomId": "deep_work_room",
+      "focusSoundVolume": 0.6,
+      "playSoundInBreak": false,
+      "updatedAt": "2026-11-12T07:28:26.159825-05:00"
+    }
+  },
+  "logcat": {
+    "uid": "10574",
+    "sinceEpoch": 1794482645.190762,
+    "readableLines": 1752,
+    "bytes": 326015,
+    "file": "<scratch>/focus-rest-device-v2-uid-logcat.log",
+    "coverage": "nonzero UID/time-scoped coverage",
+    "suspectLines": []
+  },
+  "foregroundAfter": [
+    "mCurrentFocus=Window{7b2a671 u0 com.duoyi.duoyi.restlayoutcheck/com.duoyi.duoyi.MainActivity}"
+  ],
+  "passed": true,
+  "finishedAtEpoch": 1794486640.307991
+}

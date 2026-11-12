@@ -1,0 +1,189 @@
+{
+  "candidate": "<scratch>/focus-rest-device-candidate-v2",
+  "startedAtEpoch": 1794482196.821697,
+  "checks": [
+    {
+      "name": "pub-get",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+        "pub",
+        "get",
+        "--offline",
+        "--enforce-lockfile"
+      ],
+      "exitCode": 0,
+      "seconds": 1.47,
+      "log": "<scratch>/focus-rest-device-v2-pub-get.log"
+    },
+    {
+      "name": "format",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/dart",
+        "format",
+        "--output=none",
+        "--set-exit-if-changed",
+        "lib/providers/pomodoro_provider.dart",
+        "lib/screens/pomodoro_screen.dart",
+        "test/providers/pomodoro_rest_settings_test.dart",
+        "test/screens/pomodoro_rest_startup_test.dart"
+      ],
+      "exitCode": 0,
+      "seconds": 0.29,
+      "log": "<scratch>/focus-rest-device-v2-format.log"
+    },
+    {
+      "name": "targeted-tests",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+        "test",
+        "--no-pub",
+        "--reporter",
+        "expanded",
+        "test/screens/pomodoro_rest_startup_test.dart",
+        "test/providers/pomodoro_rest_settings_test.dart",
+        "test/providers/pomodoro_provider_test.dart",
+        "test/providers/pomodoro_remote_runtime_test.dart",
+        "test/providers/pomodoro_notification_control_test.dart",
+        "test/services/focus_sync_coordinator_test.dart",
+        "test/services/pomodoro_remote_floating_window_test.dart",
+        "test/services/pomodoro_floating_window_service_test.dart",
+        "test/screens/pomodoro_rest_layout_test.dart",
+        "test/screens/pomodoro_focus_layout_static_test.dart",
+        "test/screens/pomodoro_task_link_test.dart",
+        "test/screens/pomodoro_strict_focus_static_test.dart",
+        "test/services/startup_performance_static_test.dart",
+        "test/widgets/focus_rest_settings_test.dart",
+        "test/widgets/focus_sync_status_test.dart",
+        "test/models/pomodoro_config_test.dart"
+      ],
+      "exitCode": 1,
+      "seconds": 15.48,
+      "log": "<scratch>/focus-rest-device-v2-targeted-tests.log"
+    },
+    {
+      "name": "fixture-format",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/dart",
+        "format",
+        "--output=none",
+        "--set-exit-if-changed",
+        "test/screens/pomodoro_rest_startup_test.dart",
+        "test/screens/pomodoro_focus_layout_static_test.dart",
+        "test/screens/pomodoro_task_link_test.dart"
+      ],
+      "exitCode": 0,
+      "seconds": 0.24,
+      "log": "<scratch>/focus-rest-device-v2-fixture-format.log"
+    },
+    {
+      "name": "targeted-rerun",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+        "test",
+        "--no-pub",
+        "--reporter",
+        "expanded",
+        "test/screens/pomodoro_rest_startup_test.dart",
+        "test/screens/pomodoro_focus_layout_static_test.dart",
+        "test/screens/pomodoro_task_link_test.dart"
+      ],
+      "exitCode": 0,
+      "seconds": 4.4,
+      "log": "<scratch>/focus-rest-device-v2-targeted-rerun.log"
+    },
+    {
+      "name": "analysis",
+      "command": [
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+        "analyze",
+        "--no-pub"
+      ],
+      "exitCode": 0,
+      "seconds": 9.65,
+      "log": "<scratch>/focus-rest-device-v2-analysis.log"
+    },
+    {
+      "name": "apk-build",
+      "command": [
+        "python3",
+        "scripts/flutter_with_config.py",
+        "--flutter-bin",
+        "/Users/sky/Library/Developer/duoyi/flutter-3.44.1/bin/flutter",
+        "build",
+        "apk",
+        "--debug",
+        "--no-pub",
+        "--target-platform",
+        "android-arm64",
+        "--dart-define=DUOYI_SERVER_URL=http://127.0.0.1:9"
+      ],
+      "exitCode": 0,
+      "seconds": 72.1,
+      "log": "<scratch>/focus-rest-device-v2-apk-build.log"
+    }
+  ],
+  "passed": true,
+  "verifiedCopyFiles": 1264,
+  "sourceManifestSha256": "7c303bb565e7629a986c0e09f4ec86dd0e3cb5d503fb5e17c262c02c43fb40f4",
+  "stage": "complete",
+  "testFiles": [
+    "test/screens/pomodoro_rest_startup_test.dart",
+    "test/providers/pomodoro_rest_settings_test.dart",
+    "test/providers/pomodoro_provider_test.dart",
+    "test/providers/pomodoro_remote_runtime_test.dart",
+    "test/providers/pomodoro_notification_control_test.dart",
+    "test/services/focus_sync_coordinator_test.dart",
+    "test/services/pomodoro_remote_floating_window_test.dart",
+    "test/services/pomodoro_floating_window_service_test.dart",
+    "test/screens/pomodoro_rest_layout_test.dart",
+    "test/screens/pomodoro_focus_layout_static_test.dart",
+    "test/screens/pomodoro_task_link_test.dart",
+    "test/screens/pomodoro_strict_focus_static_test.dart",
+    "test/services/startup_performance_static_test.dart",
+    "test/widgets/focus_rest_settings_test.dart",
+    "test/widgets/focus_sync_status_test.dart",
+    "test/models/pomodoro_config_test.dart"
+  ],
+  "resumedAtEpoch": 1794482375.022824,
+  "rerunTestFiles": [
+    "test/screens/pomodoro_rest_startup_test.dart",
+    "test/screens/pomodoro_focus_layout_static_test.dart",
+    "test/screens/pomodoro_task_link_test.dart"
+  ],
+  "initialBatchFailuresResolvedBy": "targeted-rerun: all three affected files, original assertions retained",
+  "lockfileSha256": "f8d521ef9f8b6a0673d1e8ec51064f71b1a71dcfa8253fe4cee25df6c409db7b",
+  "apk": {
+    "path": "<scratch>/focus-rest-device-candidate-v2/build/app/outputs/flutter-apk/app-debug.apk",
+    "sha256": "e87fdbd8f195234e07bbe525cb3d7a1d639b47cc26119b514129d87e6748b8d1",
+    "bytes": 160671472,
+    "certificateSha256": "b4ea31fb7e30de9c25dea0f0ddc4252b357f0cb9e3a7a1e353250c4188c2b1d3",
+    "badging": [
+      "package: name='com.duoyi.duoyi.restlayoutcheck' versionCode='140023' versionName='2.0.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+      "sdkVersion:'24'",
+      "targetSdkVersion:'36'",
+      "application-label:'多仪·休息布局验证'",
+      "launchable-activity: name='com.duoyi.duoyi.MainActivity'  label='' icon=''",
+      "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'"
+    ],
+    "schemes": [
+      "A: android:scheme(0x01010027)=\"duoyi-rest-layout-check\" (Raw: \"duoyi-rest-layout-check\")"
+    ],
+    "internetPermission": false
+  },
+  "finishedAtEpoch": 1794482463.032795,
+  "seconds": 266.21,
+  "acceptance": {
+    "uniqueTests": 155,
+    "files": 16,
+    "initialBatch": {
+      "passed": 150,
+      "failed": 5
+    },
+    "affectedFileRerun": {
+      "files": 3,
+      "passed": 10,
+      "failed": 0
+    },
+    "interpretation": "The initial batch and scoped rerun together resolve all 155 unique cases; no claim of one all-green 155-case batch."
+  }
+}

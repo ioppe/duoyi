@@ -24,6 +24,7 @@
 
 - [AI 待办拆解](ai-todo-breakdown.md)
 - [同账号多端专注运行态](focus-runtime-sync.md)
+- [专注页与休息安排](focus-rest-settings.md)
 - [任务详情与设置](task-detail-settings.md)
 - [自定义清单选择器](list-group-picker.md)
 - [统计周期与时区](statistics-periods.md)

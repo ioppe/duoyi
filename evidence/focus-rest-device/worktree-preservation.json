@@ -1,0 +1,11 @@
+{
+  "epoch": 1794486491.354317,
+  "originalMainHead": "5d1f816f0235ebad85038f2de4d61d93cdadd652",
+  "originalMainUntrackedCount": 180,
+  "originalMainTrackedDiffExit": 0,
+  "featureBranch": "feature/focus-rest-layout",
+  "featureHead": "5d1f816f0235ebad85038f2de4d61d93cdadd652",
+  "globalStartupMainDartDiff": "",
+  "diffCheckExit": 0,
+  "diffCheckOutput": ""
+}

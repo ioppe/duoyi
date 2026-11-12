@@ -9,6 +9,157 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get focusRestTimerReady => 'Ready to start';
+
+  @override
+  String get focusRestTimerFocus => 'Stay focused';
+
+  @override
+  String get focusRestTimerBreak => 'Take a breath';
+
+  @override
+  String get focusRestTimerPaused => 'Paused';
+
+  @override
+  String get focusRestTimerCountup => 'Count up';
+
+  @override
+  String get focusRestSummaryShort => 'Short break';
+
+  @override
+  String get focusRestSummaryLong => 'Long break';
+
+  @override
+  String get focusRestUnitMinutes => 'min';
+
+  @override
+  String get focusRestUnitRounds => 'rounds';
+
+  @override
+  String get focusRestEvery => 'Long break every ';
+
+  @override
+  String get focusRestRoundsLong => ' rounds';
+
+  @override
+  String get focusRestAutoBreakSummary => 'Breaks start automatically';
+
+  @override
+  String get focusRestAutoBreak => 'Start breaks automatically';
+
+  @override
+  String get focusRestManualAfter => 'Start manually when ready';
+
+  @override
+  String get focusRestCountupNote => 'Rest plan applies to countdown focus';
+
+  @override
+  String get focusRestSettings => 'Settings';
+
+  @override
+  String get focusRestOpenSheet => 'Open rest settings';
+
+  @override
+  String get focusRestTitle => 'Rest plan';
+
+  @override
+  String get focusRestCancel => 'Cancel';
+
+  @override
+  String get focusRestSave => 'Save settings';
+
+  @override
+  String get focusRestSaving => 'Saving…';
+
+  @override
+  String get focusRestShort => 'Short break';
+
+  @override
+  String get focusRestShortHint => 'Rest length after each focus round';
+
+  @override
+  String get focusRestLong => 'Long break';
+
+  @override
+  String get focusRestLongHint => 'A longer rest after a full set';
+
+  @override
+  String get focusRestInterval => 'Long break interval';
+
+  @override
+  String get focusRestIntervalHint => 'Rounds before a long break';
+
+  @override
+  String get focusRestLink => 'Link short break at 5∶1';
+
+  @override
+  String get focusRestLinkHint =>
+      'Derived from focus length, e.g. 25 min → 5 min';
+
+  @override
+  String get focusRestLinkActivePrefix => 'Derived from ';
+
+  @override
+  String get focusRestLinkActiveSuffix => ' min focus at 5∶1';
+
+  @override
+  String get focusRestAutoBreakHint => 'Begin the break timer when focus ends';
+
+  @override
+  String get focusRestAutoFocus => 'Start next focus automatically';
+
+  @override
+  String get focusRestAutoFocusHint => 'Continue focusing when the break ends';
+
+  @override
+  String get focusRestDraftPrefix => 'Focus';
+
+  @override
+  String get focusRestDraftMiddle => 'min, then a short break of';
+
+  @override
+  String get focusRestSaveNoteIdle => 'Used for the next focus you start.';
+
+  @override
+  String get focusRestSaveNoteRunning =>
+      'The current timer is unaffected; new settings apply to later focus sessions.';
+
+  @override
+  String get focusRestErrorShort =>
+      'Short break must be a whole number from 1 to 720.';
+
+  @override
+  String get focusRestErrorLong =>
+      'Long break must be a whole number from 1 to 720.';
+
+  @override
+  String get focusRestErrorInterval =>
+      'Long break interval must be a whole number from 1 to 20.';
+
+  @override
+  String get focusRestErrorStale =>
+      'Your account or connection changed. Reopen this panel and try again.';
+
+  @override
+  String get focusRestErrorSave =>
+      'Could not save the rest plan. Try again later.';
+
+  @override
+  String get focusRestNextFocus => 'Next focus';
+
+  @override
+  String get focusRestActionStartFocus => 'Start focus';
+
+  @override
+  String get focusRestActionStartBreak => 'Start break';
+
+  @override
+  String get focusRestActionPause => 'Pause';
+
+  @override
+  String get focusRestActionResume => 'Resume';
+
+  @override
   String get mineUpdateBackgroundDownloading =>
       'Downloading the update in the background';
 

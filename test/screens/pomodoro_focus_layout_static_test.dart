@@ -8,9 +8,12 @@ import 'package:duoyi/screens/pomodoro_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('当前专注首屏使用自适应一屏布局，不回退成长滚动卡片', () {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('专注布局保留可读字号、横向时长选择与宽屏双栏', () {
     final source = File('lib/screens/pomodoro_screen.dart').readAsStringSync();
     final timerTabSource = source.split('// History tab').first;
 
@@ -22,13 +25,16 @@ void main() {
     expect(source, contains('unawaited(_pomodoro.loadFromStorage())'));
     expect(timerTabSource, contains('availableHeight < 660'));
     expect(timerTabSource, contains('availableHeight < 560'));
-    expect(timerTabSource, contains('FittedBox('));
+    expect(timerTabSource, isNot(contains('FittedBox(')));
     expect(timerTabSource, contains('_PomodoroLiveTimer('));
     expect(source, contains('ValueListenableBuilder<int>'));
     expect(source, contains('provider.timerTicks'));
     expect(source, isNot(contains('context.watch<PomodoroProvider>().state')));
     expect(timerTabSource, contains('_FocusControlTile'));
     expect(timerTabSource, contains('SingleChildScrollView('));
+    expect(timerTabSource, contains('FocusRestPlanSummary('));
+    expect(timerTabSource, contains('focusRestTwoColumnMinWidth'));
+    expect(timerTabSource, contains('scrollDirection: Axis.horizontal'));
     expect(timerTabSource, isNot(contains('ListView(')));
   });
 
@@ -111,10 +117,14 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('专注自习室'),
       220,
-      scrollable: find.descendant(
-        of: find.byKey(const PageStorageKey<String>('focus_room_tab_scroll')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byKey(
+              const PageStorageKey<String>('focus_room_tab_scroll'),
+            ),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     expect(find.text('专注自习室'), findsOneWidget);
     expect(tester.takeException(), isNull);
