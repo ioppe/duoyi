@@ -4580,6 +4580,12 @@ abstract class AppLocalizations {
   /// **'区间明细'**
   String get habitTrendBucketDetails;
 
+  /// No description provided for @habitTrendNoActiveDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'此区间没有生效日期'**
+  String get habitTrendNoActiveDays;
+
   /// No description provided for @habitTrendOneYear.
   ///
   /// In zh, this message translates to:

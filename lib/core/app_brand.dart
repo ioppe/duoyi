@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_motion.dart';
+import 'apple_button_style.dart';
 import 'brand_strings.dart';
 import 'design_tokens.dart';
 import 'i18n.dart';
@@ -269,6 +270,7 @@ ThemeData _withSharedControls(
 }) {
   final cs = theme.colorScheme;
   final isDark = theme.brightness == Brightness.dark;
+  final appleButtons = identical(feel, _SharedFeel.appleMinimal);
   final surface = cs.surface;
   final primaryForeground = _highContrastForeground(cs.primary, cs.onPrimary);
   final actionBackground = _buttonActionBackground(cs.primary, isDark: isDark);
@@ -541,7 +543,7 @@ ThemeData _withSharedControls(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
         textStyle: label,
-      ),
+      ).merge(AppleButtonStyle.borderless(theme, enabled: appleButtons)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -560,12 +562,12 @@ ThemeData _withSharedControls(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
         textStyle: label,
-      ),
+      ).merge(AppleButtonStyle.borderless(theme, enabled: appleButtons)),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: cs.onSurface,
-        side: BorderSide(color: actionBorder, width: 0.7),
+        side: appleButtons ? null : BorderSide(color: actionBorder, width: 0.7),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         minimumSize: const Size(0, DesignTokens.controlMinHeight),
         visualDensity: VisualDensity.standard,
@@ -574,7 +576,7 @@ ThemeData _withSharedControls(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
         textStyle: label,
-      ),
+      ).merge(AppleButtonStyle.outlined(theme, enabled: appleButtons)),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
@@ -587,7 +589,7 @@ ThemeData _withSharedControls(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
         textStyle: label,
-      ),
+      ).merge(AppleButtonStyle.borderless(theme, enabled: appleButtons)),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: ButtonStyle(
@@ -606,18 +608,20 @@ ThemeData _withSharedControls(
           }
           return cs.onSurfaceVariant;
         }),
-        side: WidgetStateProperty.resolveWith<BorderSide?>((states) {
-          if (states.contains(WidgetState.selected)) {
-            return BorderSide(
-              color: Color.alphaBlend(
-                cs.primary.withValues(alpha: isDark ? 0.44 : 0.38),
-                surface,
-              ),
-              width: 0.7,
-            );
-          }
-          return BorderSide(color: actionBorder, width: 0.6);
-        }),
+        side: appleButtons
+            ? AppleButtonStyle.border(theme)
+            : WidgetStateProperty.resolveWith<BorderSide?>((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return BorderSide(
+                    color: Color.alphaBlend(
+                      cs.primary.withValues(alpha: isDark ? 0.44 : 0.38),
+                      surface,
+                    ),
+                    width: 0.7,
+                  );
+                }
+                return BorderSide(color: actionBorder, width: 0.6);
+              }),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(feel.controlRadius),
@@ -633,7 +637,7 @@ ThemeData _withSharedControls(
           }
           return cs.onSurfaceVariant;
         }),
-      ),
+      ).merge(AppleButtonStyle.outlined(theme, enabled: appleButtons)),
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
@@ -645,7 +649,7 @@ ThemeData _withSharedControls(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(feel.controlRadius),
         ),
-      ),
+      ).merge(AppleButtonStyle.borderless(theme, enabled: appleButtons)),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: fill,
@@ -665,10 +669,12 @@ ThemeData _withSharedControls(
         fontWeight: DesignTokens.fontWeightMedium,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      side: BorderSide(
-        color: outline.withValues(alpha: isDark ? 0.64 : 0.58),
-        width: 0.4,
-      ),
+      side: appleButtons
+          ? AppleButtonStyle.chipBorder(theme)
+          : BorderSide(
+              color: outline.withValues(alpha: isDark ? 0.64 : 0.58),
+              width: 0.4,
+            ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       showCheckmark: false,
       iconTheme: IconThemeData(size: 18, color: cs.onSurfaceVariant),

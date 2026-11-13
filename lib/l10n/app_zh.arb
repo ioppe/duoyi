@@ -757,6 +757,7 @@
   "habitTrendLongestStreak": "最长连续",
   "habitTrendVsPrevious": "较上期",
   "habitTrendBucketDetails": "区间明细",
+  "habitTrendNoActiveDays": "此区间没有生效日期",
   "habitTrendOneYear": "一年",
   "habitDateRangeTitle": "习惯周期",
   "habitDateRangeStart": "开始日期",

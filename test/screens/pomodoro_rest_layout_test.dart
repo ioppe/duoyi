@@ -55,99 +55,123 @@ void main() {
     await font.load();
   });
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
-  testWidgets('320×720 手机 125% 文字：休息摘要与主操作在首屏且无溢出', (tester) async {
-    await _pumpScreen(tester, const Size(320, 720), textScale: 1.25);
+  testWidgets(
+    '320×720 手机 125% 文字：休息摘要与主操作在首屏且无溢出',
+    (tester) async {
+      await _pumpScreen(tester, const Size(320, 720), textScale: 1.25);
 
-    expect(tester.takeException(), isNull);
-    expect(find.text('准备开始'), findsOneWidget);
-    expect(find.text('100%'), findsNothing);
-    expect(find.byKey(FocusRestKeys.summary).hitTestable(), findsOneWidget);
-    expect(find.text('开始专注').hitTestable(), findsOneWidget);
-    expect(find.byTooltip('重置计时').hitTestable(), findsOneWidget);
-    expect(find.byTooltip('跳过当前阶段').hitTestable(), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      expect(find.text('准备开始'), findsOneWidget);
+      expect(find.text('100%'), findsNothing);
+      expect(find.byKey(FocusRestKeys.summary).hitTestable(), findsOneWidget);
+      expect(find.text('开始专注').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('重置计时').hitTestable(), findsOneWidget);
+      expect(find.byTooltip('跳过当前阶段').hitTestable(), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
-  testWidgets('390×844 手机：摘要紧跟在时长选项之后、主操作之前', (tester) async {
-    await _pumpScreen(tester, const Size(390, 844));
+  testWidgets(
+    '390×844 手机：摘要紧跟在时长选项之后、主操作之前',
+    (tester) async {
+      await _pumpScreen(tester, const Size(390, 844));
 
-    expect(tester.takeException(), isNull);
-    final chips = tester.getRect(find.widgetWithText(ChoiceChip, '25 分钟'));
-    final summary = tester.getRect(find.byKey(FocusRestKeys.summary));
-    final primary = tester.getRect(find.text('开始专注'));
+      expect(tester.takeException(), isNull);
+      final chips = tester.getRect(find.widgetWithText(ChoiceChip, '25 分钟'));
+      final summary = tester.getRect(find.byKey(FocusRestKeys.summary));
+      final primary = tester.getRect(find.text('开始专注'));
 
-    expect(summary.top, greaterThanOrEqualTo(chips.bottom));
-    expect(primary.top, greaterThanOrEqualTo(summary.bottom));
-    expect(summary.height, greaterThanOrEqualTo(64));
-  });
+      expect(summary.top, greaterThanOrEqualTo(chips.bottom));
+      expect(primary.top, greaterThanOrEqualTo(summary.bottom));
+      expect(summary.height, greaterThanOrEqualTo(64));
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
-  testWidgets('短屏 390×560 允许滚动，正文不被缩小', (tester) async {
-    await _pumpScreen(tester, const Size(390, 560));
+  testWidgets(
+    '短屏 390×560 允许滚动，正文不被缩小',
+    (tester) async {
+      await _pumpScreen(tester, const Size(390, 560));
 
-    expect(tester.takeException(), isNull);
-    final timerText = tester.widget<Text>(find.text('25:00'));
-    expect(timerText.style?.fontSize ?? 0, greaterThan(0));
-    await tester.drag(
-      find.byType(SingleChildScrollView).first,
-      const Offset(0, -220),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(find.text('严格专注'), findsOneWidget);
-  });
+      expect(tester.takeException(), isNull);
+      final timerText = tester.widget<Text>(find.text('25:00'));
+      expect(timerText.style?.fontSize ?? 0, greaterThan(0));
+      await tester.drag(
+        find.byType(SingleChildScrollView).first,
+        const Offset(0, -220),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('严格专注'), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
-  testWidgets('桌面 1280×800：双栏把时长与休息安排放到计时右侧', (tester) async {
-    await _pumpScreen(tester, const Size(1280, 800));
+  testWidgets(
+    '桌面 1280×800：双栏把时长与休息安排放到计时右侧',
+    (tester) async {
+      await _pumpScreen(tester, const Size(1280, 800));
 
-    expect(tester.takeException(), isNull);
-    final summary = tester.getRect(find.byKey(FocusRestKeys.summary));
-    final primary = tester.getRect(find.text('开始专注'));
-    expect(summary.left, greaterThan(primary.right));
-    expect(summary.width, lessThan(500));
-  });
+      expect(tester.takeException(), isNull);
+      final summary = tester.getRect(find.byKey(FocusRestKeys.summary));
+      final primary = tester.getRect(find.text('开始专注'));
+      expect(summary.left, greaterThan(primary.right));
+      expect(summary.width, lessThan(500));
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
-  testWidgets('运行中与暂停中时长选项禁用，休息摘要仍可打开面板', (tester) async {
-    await _pumpScreen(tester, const Size(390, 844));
-    final provider = Provider.of<PomodoroProvider>(
-      tester.element(find.byKey(FocusRestKeys.summary)),
-      listen: false,
-    );
+  testWidgets(
+    '运行中与暂停中时长选项禁用，休息摘要仍可打开面板',
+    (tester) async {
+      await _pumpScreen(tester, const Size(390, 844));
+      final provider = Provider.of<PomodoroProvider>(
+        tester.element(find.byKey(FocusRestKeys.summary)),
+        listen: false,
+      );
 
-    ChoiceChip chip() =>
-        tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '25 分钟'));
+      ChoiceChip chip() =>
+          tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '25 分钟'));
 
-    expect(chip().onSelected, isNotNull);
-    provider.toggleTimer();
-    await tester.pumpAndSettle();
-    expect(chip().onSelected, isNull);
+      expect(chip().onSelected, isNotNull);
+      provider.toggleTimer();
+      await tester.pumpAndSettle();
+      expect(chip().onSelected, isNull);
 
-    provider.toggleTimer();
-    await tester.pumpAndSettle();
-    expect(provider.isPaused, isTrue);
-    expect(chip().onSelected, isNull);
+      provider.toggleTimer();
+      await tester.pumpAndSettle();
+      expect(provider.isPaused, isTrue);
+      expect(chip().onSelected, isNull);
 
-    await tester.tap(find.byKey(FocusRestKeys.summary));
-    await tester.pumpAndSettle();
-    expect(find.byKey(FocusRestKeys.sheet), findsOneWidget);
-    expect(find.text('当前计时不受影响；之后开始的专注使用新设置。'), findsOneWidget);
-    await tester.tap(find.byKey(FocusRestKeys.cancel));
-    await tester.pumpAndSettle();
-    expect(find.byKey(FocusRestKeys.sheet), findsNothing);
-    provider.resetTimer();
-  });
+      await tester.tap(find.byKey(FocusRestKeys.summary));
+      await tester.pumpAndSettle();
+      expect(find.byKey(FocusRestKeys.sheet), findsOneWidget);
+      expect(find.text('当前计时不受影响；之后开始的专注使用新设置。'), findsOneWidget);
+      await tester.tap(find.byKey(FocusRestKeys.cancel));
+      await tester.pumpAndSettle();
+      expect(find.byKey(FocusRestKeys.sheet), findsNothing);
+      provider.resetTimer();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 
-  testWidgets('短休息状态用休息色显示剩余时间与下一轮专注时长', (tester) async {
-    await _pumpScreen(tester, const Size(390, 844));
-    final provider = Provider.of<PomodoroProvider>(
-      tester.element(find.byKey(FocusRestKeys.summary)),
-      listen: false,
-    );
+  testWidgets(
+    '短休息状态用休息色显示剩余时间与下一轮专注时长',
+    (tester) async {
+      await _pumpScreen(tester, const Size(390, 844));
+      final provider = Provider.of<PomodoroProvider>(
+        tester.element(find.byKey(FocusRestKeys.summary)),
+        listen: false,
+      );
 
-    provider.skipSession();
-    await tester.pumpAndSettle();
+      provider.skipSession();
+      await tester.pumpAndSettle();
 
-    expect(find.text('开始休息'), findsOneWidget);
-    expect(find.textContaining('休息后专注 25 分钟'), findsOneWidget);
-    expect(find.text('短休息'), findsOneWidget);
-    provider.resetTimer();
-  });
+      expect(find.text('开始休息'), findsOneWidget);
+      expect(find.textContaining('休息后专注 25 分钟'), findsOneWidget);
+      expect(find.text('短休息'), findsOneWidget);
+      provider.resetTimer();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
 }

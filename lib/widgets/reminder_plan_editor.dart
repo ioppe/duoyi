@@ -1,3 +1,4 @@
+import '../core/apple_button_style.dart';
 import '../core/app_clock.dart';
 import 'package:flutter/material.dart';
 
@@ -635,9 +636,15 @@ class _ReminderTimeField extends StatelessWidget {
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
-              color: cs.surface,
+              color: AppleButtonStyle.appliesTo(theme)
+                  ? AppleButtonStyle.outlined(
+                      theme,
+                    ).backgroundColor?.resolve({})
+                  : cs.surface,
               borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-              border: Border.all(color: borderColor, width: 0.45),
+              border: AppleButtonStyle.appliesTo(theme)
+                  ? null
+                  : Border.all(color: borderColor, width: 0.45),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),

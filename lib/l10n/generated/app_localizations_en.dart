@@ -2418,6 +2418,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitTrendBucketDetails => 'Period details';
 
   @override
+  String get habitTrendNoActiveDays => 'No active dates in this period';
+
+  @override
   String get habitTrendOneYear => '1 year';
 
   @override

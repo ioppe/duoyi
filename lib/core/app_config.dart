@@ -1,3 +1,4 @@
+import 'app_release_channel.dart';
 import 'client_deployment_config.dart';
 
 /// Public, immutable build configuration. Deployments live in
@@ -16,6 +17,7 @@ class AppConfig {
   );
   static const String _updateRepository = String.fromEnvironment(
     'DUOYI_UPDATE_REPOSITORY',
+    defaultValue: AppReleaseChannel.repository,
   );
   static const String _httpTimeout = String.fromEnvironment(
     'DUOYI_HTTP_TIMEOUT_SECONDS',
@@ -46,7 +48,10 @@ class AppConfig {
       });
 
   static String get bakedServerUrl => configuration.serverUrl;
-  static String get updateRepository => configuration.updateRepository;
+  static String get updateRepository =>
+      AppReleaseChannel.resolveConfiguredRepository(
+        configuration.updateRepository,
+      );
   static Duration get httpTimeout => configuration.httpTimeout;
   static Duration get fileTimeout => configuration.fileTimeout;
   static Duration get aiTimeout => configuration.aiTimeout;

@@ -26,7 +26,7 @@ final BrandStrings enDefaultBrand = BrandStrings(
   todoMatrixView: 'Quadrants',
   todoListView: 'List',
   todoEmpty: 'No tasks yet',
-  todoAddAction: 'Add your first task',
+  todoAddAction: 'Add task',
   todoCreateTitle: 'New task',
   quadrantQ1Label: 'Important & Urgent',
   quadrantQ1Sub: 'Do now',

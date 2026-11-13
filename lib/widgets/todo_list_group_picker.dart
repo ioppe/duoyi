@@ -1,3 +1,4 @@
+import '../core/apple_button_style.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -602,14 +603,20 @@ class _TodoListGroupPickerState extends State<TodoListGroupPicker> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: cs.surface,
+      color: AppleButtonStyle.appliesTo(Theme.of(context))
+          ? AppleButtonStyle.outlined(
+              Theme.of(context),
+            ).backgroundColor?.resolve({})
+          : cs.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-        side: BorderSide(
-          color: _expanded
-              ? cs.primary.withValues(alpha: 0.4)
-              : cs.outlineVariant,
-        ),
+        side: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? BorderSide.none
+            : BorderSide(
+                color: _expanded
+                    ? cs.primary.withValues(alpha: 0.4)
+                    : cs.outlineVariant,
+              ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

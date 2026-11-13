@@ -2,6 +2,7 @@ import '../core/app_clock.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -1121,10 +1122,12 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.22),
-          width: 0.45,
-        ),
+        border: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? null
+            : Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.22),
+                width: 0.45,
+              ),
       ),
       child: button,
     );
@@ -1138,10 +1141,12 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.24),
-          width: 0.45,
-        ),
+        border: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? null
+            : Border.all(
+                color: cs.outlineVariant.withValues(alpha: 0.24),
+                width: 0.45,
+              ),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
@@ -2721,10 +2726,18 @@ class _ReminderKindOptionButton extends StatelessWidget {
       button: true,
       selected: selected,
       child: Material(
-        color: selected ? cs.primary.withValues(alpha: 0.12) : cs.surface,
+        color: selected
+            ? cs.primary.withValues(alpha: 0.12)
+            : AppleButtonStyle.appliesTo(Theme.of(context))
+            ? AppleButtonStyle.outlined(
+                Theme.of(context),
+              ).backgroundColor?.resolve({})
+            : cs.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: borderColor, width: 0.45),
+          side: AppleButtonStyle.appliesTo(Theme.of(context))
+              ? BorderSide.none
+              : BorderSide(color: borderColor, width: 0.45),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -2900,12 +2913,14 @@ Widget _compactFilterChip(
     ),
     selectedColor: cs.primary.withValues(alpha: 0.12),
     backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.18),
-    side: BorderSide(
-      color: selected
-          ? cs.primary.withValues(alpha: 0.36)
-          : cs.outlineVariant.withValues(alpha: 0.36),
-      width: 0.45,
-    ),
+    side: AppleButtonStyle.appliesTo(Theme.of(context))
+        ? AppleButtonStyle.chipBorder(Theme.of(context))
+        : BorderSide(
+            color: selected
+                ? cs.primary.withValues(alpha: 0.36)
+                : cs.outlineVariant.withValues(alpha: 0.36),
+            width: 0.45,
+          ),
     onSelected: onSelected,
   );
 }
@@ -3312,12 +3327,14 @@ class _RingtoneVolumeButton extends StatelessWidget {
         color: selected ? cs.primary.withValues(alpha: 0.12) : cs.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(
-            color: selected
-                ? cs.primary.withValues(alpha: 0.36)
-                : cs.outlineVariant.withValues(alpha: 0.38),
-            width: 0.45,
-          ),
+          side: AppleButtonStyle.appliesTo(Theme.of(context))
+              ? BorderSide.none
+              : BorderSide(
+                  color: selected
+                      ? cs.primary.withValues(alpha: 0.36)
+                      : cs.outlineVariant.withValues(alpha: 0.38),
+                  width: 0.45,
+                ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

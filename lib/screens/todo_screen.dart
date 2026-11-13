@@ -1,6 +1,8 @@
 import '../widgets/app_create_fab.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
+import 'package:flutter/services.dart';
 import '../widgets/app_page_tabs.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -412,6 +414,20 @@ class _TodoScreenState extends State<TodoScreen> {
     final isCompactHeader =
         useHeaderCreate &&
         MediaQuery.widthOf(context) < DesktopTokens.breakpointTwoColumn;
+    // macOS 原生桌面：筛选默认收起成一行，展开后用 Wrap 完整呈现全部条件；
+    // 安卓窄屏仍走 isCompactHeader 的 compact 分支，互不影响。
+    final useDesktopCollapsedFilters =
+        !WebTarget.isWebBuild && defaultTargetPlatform == TargetPlatform.macOS;
+    // 原生桌面（含 macOS / Windows / Linux）：页头脱离内容列，内容按
+    // DesktopTokens 放宽；Web 仍保持 Apple 720 内容列。
+    final nativeDesktop =
+        !WebTarget.isWebBuild &&
+        (defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux);
+    final appleContentMaxWidth = nativeDesktop
+        ? DesktopTokens.maxContentWidth
+        : ApplePageFrame.maxContentWidth;
     // 保留最宽桌面档的单行四列，同时核对限宽与侧栏后的真实空间。
     // 至少预留 640px 给四张卡片，避免窗口虽宽而卡片内容被挤坏。
     final isWidestTier =
@@ -640,6 +656,7 @@ class _TodoScreenState extends State<TodoScreen> {
             onChanged: _setFilter,
             onClear: _clearFilter,
             compact: isCompactHeader,
+            collapsible: useDesktopCollapsedFilters,
           )
         : AppleControlBand(
             margin: const EdgeInsets.only(bottom: DesignTokens.spaceMd),
@@ -667,6 +684,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   onChanged: _setFilter,
                   onClear: _clearFilter,
                   compact: isCompactHeader,
+                  collapsible: useDesktopCollapsedFilters,
                 ),
                 if (useTopFilterLayout)
                   _TodoViewSwitcher(
@@ -679,72 +697,121 @@ class _TodoScreenState extends State<TodoScreen> {
 
     // 默认主题：没有 AppBar，标题 / 操作 / 控制带 / 结果区都在同一条内容流里。
     if (appleLayout) {
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          bottom: false,
-          child: Center(
-            // 只有窄屏内容列（含 Web / macOS 顶部筛选）沿用 Apple 限宽；
-            // native 宽屏侧栏布局不限宽，否则四象限会在 720 上限内被压成
-            // 每卡 30 余像素并溢出。
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isWidescreen
-                    ? double.infinity
-                    : ApplePageFrame.maxContentWidth,
+      final route = ModalRoute.of(context);
+      // 从「今日 / 我的」push 进入本页时可返回；首页内嵌 canPop=false，
+      // 因此不会出现无效返回键。
+      final canPop = route?.canPop ?? false;
+      // Keep the keyboard wrapper mounted while a popup owns focus. The
+      // callback checks the current route before returning from this page.
+      final header = Padding(
+        key: const ValueKey('todo_desktop_header'),
+        padding: EdgeInsets.fromLTRB(
+          ApplePageFrame.gutter,
+          ApplePageFrame.pageTop,
+          nativeDesktop ? ApplePageFrame.gutter : DesignTokens.spaceXs,
+          DesignTokens.spaceXs,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (canPop)
+              Padding(
+                padding: const EdgeInsets.only(right: DesignTokens.spaceXs),
+                child: BackButton(
+                  key: const ValueKey('todo_back_button'),
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      ApplePageFrame.gutter,
-                      ApplePageFrame.pageTop,
-                      DesignTokens.spaceXs,
-                      DesignTokens.spaceXs,
-                    ),
-                    child: ApplePageHeader(
-                      title: _batchMode
-                          ? '已选择 ${_selectedTodoIds.length} 项'
-                          : s.todoTitle,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: headerActions,
-                      ),
-                    ),
-                  ),
-                  if (baseTodos.isEmpty)
-                    Expanded(
-                      child: EmptyState(
-                        icon: Icons.check_circle_outline,
-                        message: s.todoEmpty,
-                        actionLabel: s.todoAddAction,
-                        onAction: _showAddDialog,
-                      ),
-                    )
-                  else if (isWidescreen && !_batchMode)
-                    Expanded(
-                      child: Padding(
-                        padding: appleFramePadding,
-                        child: widescreenBody,
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: ApplePageFrame(
-                        horizontalInset: ApplePageFrame.gutter,
-                        child: Column(
-                          children: [
-                            controlBand,
-                            Expanded(child: viewContent),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
+            Expanded(
+              child: ApplePageHeader(
+                title: _batchMode
+                    ? '已选择 ${_selectedTodoIds.length} 项'
+                    : s.todoTitle,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: headerActions,
+                ),
               ),
             ),
-          ),
+          ],
         ),
+      );
+
+      final Widget contentSlot = baseTodos.isEmpty
+          ? Expanded(
+              child: EmptyState(
+                icon: Icons.check_circle_outline,
+                message: s.todoEmpty,
+                actionLabel: s.todoAddAction,
+                onAction: _showAddDialog,
+              ),
+            )
+          : isWidescreen && !_batchMode
+          ? Expanded(
+              child: Padding(padding: appleFramePadding, child: widescreenBody),
+            )
+          : Expanded(
+              child: ApplePageFrame(
+                horizontalInset: ApplePageFrame.gutter,
+                maxWidth: appleContentMaxWidth,
+                child: Column(
+                  children: [
+                    controlBand,
+                    Expanded(child: viewContent),
+                  ],
+                ),
+              ),
+            );
+
+      Widget page;
+      if (nativeDesktop) {
+        // 原生桌面：页头整行贴窗口（标题左对齐、动作在右侧 gutter 内），
+        // 内容继续居中并按 DesktopTokens 放宽内容列。
+        page = Column(
+          children: [
+            header,
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isWidescreen
+                        ? double.infinity
+                        : appleContentMaxWidth,
+                  ),
+                  child: Column(children: [contentSlot]),
+                ),
+              ),
+            ),
+          ],
+        );
+      } else {
+        // Web：沿用原结构（页头同样在 720 内容列内），行为不变。
+        page = Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isWidescreen
+                  ? double.infinity
+                  : ApplePageFrame.maxContentWidth,
+            ),
+            child: Column(children: [header, contentSlot]),
+          ),
+        );
+      }
+      if (canPop && nativeDesktop) {
+        page = CallbackShortcuts(
+          bindings: <ShortcutActivator, VoidCallback>{
+            const SingleActivator(LogicalKeyboardKey.escape): () {
+              if (ModalRoute.of(context)?.isCurrent == false) return;
+              Navigator.maybeOf(context)?.maybePop();
+            },
+          },
+          child: Focus(autofocus: true, child: page),
+        );
+      }
+
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(bottom: false, child: page),
         bottomNavigationBar: batchActionBar,
         floatingActionButton: createFab,
       );
@@ -834,6 +901,7 @@ class _TodoScreenState extends State<TodoScreen> {
                   onChanged: _setFilter,
                   onClear: _clearFilter,
                   compact: isCompactHeader,
+                  collapsible: useDesktopCollapsedFilters,
                 ),
                 if (!_batchMode && useTopFilterLayout)
                   _TodoViewSwitcher(
@@ -1104,6 +1172,12 @@ class _TodoFilterBar extends StatefulWidget {
   /// 桌面、Web 与非安卓窄屏保持原有的常驻筛选布局。
   final bool compact;
 
+  /// 原生 macOS 桌面：默认折叠成一行（数量 / 筛选开关 + 清空 + 展开箭头），
+  /// 展开后全部筛选条件用 Wrap 自动换行，不再藏在横向滚动里。
+  ///
+  /// 与 [compact] 分开：安卓手机与 Web 的既有行为不受影响。
+  final bool collapsible;
+
   const _TodoFilterBar({
     required this.filter,
     required this.totalCount,
@@ -1113,6 +1187,7 @@ class _TodoFilterBar extends StatefulWidget {
     required this.onChanged,
     required this.onClear,
     this.compact = false,
+    this.collapsible = false,
   });
 
   @override
@@ -1122,14 +1197,35 @@ class _TodoFilterBar extends StatefulWidget {
 class _TodoFilterBarState extends State<_TodoFilterBar> {
   bool _expanded = false;
 
+  /// 折叠行的焦点节点：鼠标点击之外，Tab 聚焦后 Enter / Space 也能展开。
+  final FocusNode _toggleFocus = FocusNode(debugLabel: 'todo_filter_toggle');
+
+  @override
+  void dispose() {
+    _toggleFocus.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
+
   @override
   Widget build(BuildContext context) {
+    final Widget content;
+    if (widget.compact) {
+      // 安卓窄屏：一行折叠栏 + 原有横向滚动筛选行。
+      content = _buildCollapsed(context, wrapControls: false);
+    } else if (widget.collapsible) {
+      // macOS 桌面：一行折叠栏 + 展开后的自动换行筛选条件。
+      content = _buildCollapsed(context, wrapControls: true);
+    } else {
+      content = _buildFull(context);
+    }
     return Padding(
       key: const ValueKey('todo_filter_bar'),
       padding: usesApplePageLayout(context)
           ? const EdgeInsets.fromLTRB(0, 0, 0, 10)
           : const EdgeInsets.fromLTRB(12, 0, 12, 10),
-      child: widget.compact ? _buildCompact(context) : _buildFull(context),
+      child: content,
     );
   }
 
@@ -1168,76 +1264,89 @@ class _TodoFilterBarState extends State<_TodoFilterBar> {
     );
   }
 
-  /// 原生安卓窄屏：一行折叠栏（图标 + 匹配数量 + 清空 + 展开箭头）。
-  Widget _buildCompact(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final active = widget.filter.hasActiveFilters;
+  /// 折叠布局：一行（图标 + 匹配数量 + 清空 + 展开箭头），展开后显示完整条件。
+  ///
+  /// [wrapControls] 为 true 时展开内容用 Wrap（桌面），否则保持横向滚动行。
+  Widget _buildCollapsed(BuildContext context, {required bool wrapControls}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            key: const ValueKey('todo_filter_toggle'),
-            borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Container(
-              constraints: const BoxConstraints(
-                minHeight: DesignTokens.controlMinHeight,
-              ),
-              padding: const EdgeInsets.only(left: DesignTokens.spaceMd),
-              decoration: BoxDecoration(
-                color: active
-                    ? cs.primary.withValues(alpha: 0.08)
-                    : cs.surfaceContainerHighest.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-                border: Border.all(
-                  color: active
-                      ? cs.primary.withValues(alpha: 0.28)
-                      : cs.outlineVariant.withValues(alpha: 0.45),
+        _buildToggleRow(context),
+        if (_expanded) ...[
+          const SizedBox(height: DesignTokens.spaceSm),
+          _filterControls(wrap: wrapControls),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildToggleRow(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = widget.filter.hasActiveFilters;
+    return Semantics(
+      button: true,
+      expanded: _expanded,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          key: const ValueKey('todo_filter_toggle'),
+          focusNode: _toggleFocus,
+          borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+          onTap: _toggleExpanded,
+          child: Container(
+            constraints: const BoxConstraints(
+              minHeight: DesignTokens.controlMinHeight,
+            ),
+            padding: const EdgeInsets.only(left: DesignTokens.spaceMd),
+            decoration: BoxDecoration(
+              color: active
+                  ? cs.primary.withValues(alpha: 0.08)
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
+              border: AppleButtonStyle.appliesTo(Theme.of(context))
+                  ? null
+                  : Border.all(
+                      color: active
+                          ? cs.primary.withValues(alpha: 0.28)
+                          : cs.outlineVariant.withValues(alpha: 0.45),
+                    ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.filter_alt_outlined,
+                  size: 18,
+                  color: active ? cs.primary : cs.onSurfaceVariant,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.filter_alt_outlined,
-                    size: 18,
-                    color: active ? cs.primary : cs.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '自定义视图 · ${widget.filteredCount}/${widget.totalCount}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: active ? cs.primary : cs.onSurfaceVariant,
-                      ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '自定义视图 · ${widget.filteredCount}/${widget.totalCount}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: active ? cs.primary : cs.onSurfaceVariant,
                     ),
                   ),
-                  _clearButton(active),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: AppMotion.feedback(context),
-                    curve: AppMotion.enterCurve,
-                    child: Icon(
-                      Icons.expand_more,
-                      size: DesignTokens.controlIconSize,
-                      color: cs.onSurfaceVariant,
-                    ),
+                ),
+                _clearButton(active),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0,
+                  duration: AppMotion.feedback(context),
+                  curve: AppMotion.enterCurve,
+                  child: Icon(
+                    Icons.expand_more,
+                    size: DesignTokens.controlIconSize,
+                    color: cs.onSurfaceVariant,
                   ),
-                  const SizedBox(width: DesignTokens.spaceXs),
-                ],
-              ),
+                ),
+                const SizedBox(width: DesignTokens.spaceXs),
+              ],
             ),
           ),
         ),
-        if (_expanded) ...[
-          const SizedBox(height: DesignTokens.spaceSm),
-          _filterControls(),
-        ],
-      ],
+      ),
     );
   }
 
@@ -1256,162 +1365,165 @@ class _TodoFilterBarState extends State<_TodoFilterBar> {
     );
   }
 
-  /// 完整筛选控件：4 个快捷条件 + 全部筛选菜单（折叠展开后完全一致）。
-  Widget _filterControls() {
-    final filter = widget.filter;
-    final onChanged = widget.onChanged;
+  /// 完整筛选控件：4 个快捷条件 + 全部筛选菜单（折叠 / 常驻共用同一份）。
+  Widget _filterControls({bool wrap = false}) {
+    final controls = _filterControlItems();
+    if (wrap) {
+      return Wrap(
+        spacing: DesignTokens.spaceSm,
+        runSpacing: DesignTokens.spaceSm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: controls,
+      );
+    }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _TodoQuickFilterChip(
-            label: '今日',
-            icon: Icons.today_outlined,
-            selected: filter.due == TodoDueFilter.dueToday,
-            onPressed: () => onChanged(
-              filter.copyWith(
-                due: filter.due == TodoDueFilter.dueToday
-                    ? TodoDueFilter.all
-                    : TodoDueFilter.dueToday,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _TodoQuickFilterChip(
-            label: '逾期',
-            icon: Icons.warning_amber_outlined,
-            selected: filter.due == TodoDueFilter.overdue,
-            onPressed: () => onChanged(
-              filter.copyWith(
-                due: filter.due == TodoDueFilter.overdue
-                    ? TodoDueFilter.all
-                    : TodoDueFilter.overdue,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _TodoQuickFilterChip(
-            label: '7天内',
-            icon: Icons.date_range_outlined,
-            selected: filter.due == TodoDueFilter.next7Days,
-            onPressed: () => onChanged(
-              filter.copyWith(
-                due: filter.due == TodoDueFilter.next7Days
-                    ? TodoDueFilter.all
-                    : TodoDueFilter.next7Days,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _TodoQuickFilterChip(
-            label: '已完成',
-            icon: Icons.check_circle_outline,
-            selected: filter.completion == TodoCompletionFilter.completed,
-            onPressed: () => onChanged(
-              filter.copyWith(
-                completion: filter.completion == TodoCompletionFilter.completed
-                    ? TodoCompletionFilter.all
-                    : TodoCompletionFilter.completed,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          _TodoFilterMenu<EisenhowerQuadrant>(
-            icon: Icons.grid_view_outlined,
-            label: filter.quadrant == null
-                ? '象限'
-                : _quadrantLabel(filter.quadrant!),
-            selected: filter.quadrant != null,
-            selectedValue: filter.quadrant,
-            options: [
-              const _TodoFilterOption(label: '全部象限'),
-              for (final quadrant in EisenhowerQuadrant.values)
-                _TodoFilterOption(
-                  label: _quadrantLabel(quadrant),
-                  value: quadrant,
-                ),
-            ],
-            onSelected: (value) => onChanged(filter.copyWith(quadrant: value)),
-          ),
-          const SizedBox(width: 8),
-          _TodoFilterMenu<TodoPriority>(
-            icon: Icons.flag_outlined,
-            label: filter.priority == null ? '优先级' : filter.priority!.label,
-            selected: filter.priority != null,
-            selectedValue: filter.priority,
-            options: [
-              const _TodoFilterOption(label: '全部优先级'),
-              for (final priority in TodoPriority.values)
-                _TodoFilterOption(label: priority.label, value: priority),
-            ],
-            onSelected: (value) => onChanged(filter.copyWith(priority: value)),
-          ),
-          const SizedBox(width: 8),
-          _TodoFilterMenu<TodoDueFilter>(
-            icon: Icons.event_outlined,
-            label: filter.due == TodoDueFilter.all
-                ? '日期'
-                : _dueFilterLabel(filter.due),
-            selected: filter.due != TodoDueFilter.all,
-            selectedValue: filter.due,
-            options: [
-              for (final due in TodoDueFilter.values)
-                _TodoFilterOption(label: _dueFilterLabel(due), value: due),
-            ],
-            onSelected: (value) => onChanged(filter.copyWith(due: value)),
-          ),
-          const SizedBox(width: 8),
-          _TodoFilterMenu<TodoCompletionFilter>(
-            icon: Icons.check_circle_outline,
-            label: filter.completion == TodoCompletionFilter.all
-                ? '完成状态'
-                : _completionFilterLabel(filter.completion),
-            selected: filter.completion != TodoCompletionFilter.all,
-            selectedValue: filter.completion,
-            options: [
-              for (final completion in TodoCompletionFilter.values)
-                _TodoFilterOption(
-                  label: _completionFilterLabel(completion),
-                  value: completion,
-                ),
-            ],
-            onSelected: (value) =>
-                onChanged(filter.copyWith(completion: value)),
-          ),
-          if (widget.availableTags.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            _TodoFilterMenu<String>(
-              icon: Icons.sell_outlined,
-              label: filter.tag == null ? '标签' : '#${filter.tag}',
-              selected: filter.tag != null,
-              selectedValue: filter.tag,
-              options: [
-                const _TodoFilterOption(label: '全部标签'),
-                for (final tag in widget.availableTags)
-                  _TodoFilterOption(label: '#$tag', value: tag),
-              ],
-              onSelected: (value) => onChanged(filter.copyWith(tag: value)),
-            ),
-          ],
-          if (widget.availableListGroups.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            _TodoFilterMenu<String>(
-              icon: Icons.folder_outlined,
-              label: filter.listGroupName ?? '清单',
-              selected: filter.listGroupName != null,
-              selectedValue: filter.listGroupName,
-              options: [
-                const _TodoFilterOption(label: '全部清单'),
-                for (final group in widget.availableListGroups)
-                  _TodoFilterOption(label: group, value: group),
-              ],
-              onSelected: (value) =>
-                  onChanged(filter.copyWith(listGroupName: value)),
-            ),
+          for (var i = 0; i < controls.length; i++) ...[
+            if (i > 0) SizedBox(width: i == 4 ? 10 : 8),
+            controls[i],
           ],
         ],
       ),
     );
+  }
+
+  List<Widget> _filterControlItems() {
+    final filter = widget.filter;
+    final onChanged = widget.onChanged;
+    return [
+      _TodoQuickFilterChip(
+        label: '今日',
+        icon: Icons.today_outlined,
+        selected: filter.due == TodoDueFilter.dueToday,
+        onPressed: () => onChanged(
+          filter.copyWith(
+            due: filter.due == TodoDueFilter.dueToday
+                ? TodoDueFilter.all
+                : TodoDueFilter.dueToday,
+          ),
+        ),
+      ),
+      _TodoQuickFilterChip(
+        label: '逾期',
+        icon: Icons.warning_amber_outlined,
+        selected: filter.due == TodoDueFilter.overdue,
+        onPressed: () => onChanged(
+          filter.copyWith(
+            due: filter.due == TodoDueFilter.overdue
+                ? TodoDueFilter.all
+                : TodoDueFilter.overdue,
+          ),
+        ),
+      ),
+      _TodoQuickFilterChip(
+        label: '7天内',
+        icon: Icons.date_range_outlined,
+        selected: filter.due == TodoDueFilter.next7Days,
+        onPressed: () => onChanged(
+          filter.copyWith(
+            due: filter.due == TodoDueFilter.next7Days
+                ? TodoDueFilter.all
+                : TodoDueFilter.next7Days,
+          ),
+        ),
+      ),
+      _TodoQuickFilterChip(
+        label: '已完成',
+        icon: Icons.check_circle_outline,
+        selected: filter.completion == TodoCompletionFilter.completed,
+        onPressed: () => onChanged(
+          filter.copyWith(
+            completion: filter.completion == TodoCompletionFilter.completed
+                ? TodoCompletionFilter.all
+                : TodoCompletionFilter.completed,
+          ),
+        ),
+      ),
+      _TodoFilterMenu<EisenhowerQuadrant>(
+        icon: Icons.grid_view_outlined,
+        label: filter.quadrant == null
+            ? '象限'
+            : _quadrantLabel(filter.quadrant!),
+        selected: filter.quadrant != null,
+        selectedValue: filter.quadrant,
+        options: [
+          const _TodoFilterOption(label: '全部象限'),
+          for (final quadrant in EisenhowerQuadrant.values)
+            _TodoFilterOption(label: _quadrantLabel(quadrant), value: quadrant),
+        ],
+        onSelected: (value) => onChanged(filter.copyWith(quadrant: value)),
+      ),
+      _TodoFilterMenu<TodoPriority>(
+        icon: Icons.flag_outlined,
+        label: filter.priority == null ? '优先级' : filter.priority!.label,
+        selected: filter.priority != null,
+        selectedValue: filter.priority,
+        options: [
+          const _TodoFilterOption(label: '全部优先级'),
+          for (final priority in TodoPriority.values)
+            _TodoFilterOption(label: priority.label, value: priority),
+        ],
+        onSelected: (value) => onChanged(filter.copyWith(priority: value)),
+      ),
+      _TodoFilterMenu<TodoDueFilter>(
+        icon: Icons.event_outlined,
+        label: filter.due == TodoDueFilter.all
+            ? '日期'
+            : _dueFilterLabel(filter.due),
+        selected: filter.due != TodoDueFilter.all,
+        selectedValue: filter.due,
+        options: [
+          for (final due in TodoDueFilter.values)
+            _TodoFilterOption(label: _dueFilterLabel(due), value: due),
+        ],
+        onSelected: (value) => onChanged(filter.copyWith(due: value)),
+      ),
+      _TodoFilterMenu<TodoCompletionFilter>(
+        icon: Icons.check_circle_outline,
+        label: filter.completion == TodoCompletionFilter.all
+            ? '完成状态'
+            : _completionFilterLabel(filter.completion),
+        selected: filter.completion != TodoCompletionFilter.all,
+        selectedValue: filter.completion,
+        options: [
+          for (final completion in TodoCompletionFilter.values)
+            _TodoFilterOption(
+              label: _completionFilterLabel(completion),
+              value: completion,
+            ),
+        ],
+        onSelected: (value) => onChanged(filter.copyWith(completion: value)),
+      ),
+      if (widget.availableTags.isNotEmpty)
+        _TodoFilterMenu<String>(
+          icon: Icons.sell_outlined,
+          label: filter.tag == null ? '标签' : '#${filter.tag}',
+          selected: filter.tag != null,
+          selectedValue: filter.tag,
+          options: [
+            const _TodoFilterOption(label: '全部标签'),
+            for (final tag in widget.availableTags)
+              _TodoFilterOption(label: '#$tag', value: tag),
+          ],
+          onSelected: (value) => onChanged(filter.copyWith(tag: value)),
+        ),
+      if (widget.availableListGroups.isNotEmpty)
+        _TodoFilterMenu<String>(
+          icon: Icons.folder_outlined,
+          label: filter.listGroupName ?? '清单',
+          selected: filter.listGroupName != null,
+          selectedValue: filter.listGroupName,
+          options: [
+            const _TodoFilterOption(label: '全部清单'),
+            for (final group in widget.availableListGroups)
+              _TodoFilterOption(label: group, value: group),
+          ],
+          onSelected: (value) =>
+              onChanged(filter.copyWith(listGroupName: value)),
+        ),
+    ];
   }
 }
 
@@ -1481,11 +1593,13 @@ class _TodoFilterControl extends StatelessWidget {
             ? cs.primary.withValues(alpha: 0.1)
             : cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
-        border: Border.all(
-          color: selected
-              ? cs.primary.withValues(alpha: 0.35)
-              : cs.outlineVariant.withValues(alpha: 0.45),
-        ),
+        border: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? null
+            : Border.all(
+                color: selected
+                    ? cs.primary.withValues(alpha: 0.35)
+                    : cs.outlineVariant.withValues(alpha: 0.45),
+              ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1745,8 +1859,10 @@ class _TodoBatchActionBar extends StatelessWidget {
                   label: const Text('删除'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: cs.error,
-                    side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
-                  ),
+                    side: AppleButtonStyle.appliesTo(Theme.of(context))
+                        ? null
+                        : BorderSide(color: cs.error.withValues(alpha: 0.5)),
+                  ).merge(AppleButtonStyle.outlined(Theme.of(context))),
                 ),
               ],
             ),
@@ -1772,6 +1888,7 @@ class _BatchMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final color = enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.38);
+    final apple = AppleButtonStyle.appliesTo(Theme.of(context));
     final border = enabled
         ? cs.outline.withValues(alpha: 0.5)
         : cs.outline.withValues(alpha: 0.24);
@@ -1780,7 +1897,10 @@ class _BatchMenuButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border),
+        color: apple && enabled
+            ? cs.surfaceContainerHighest.withValues(alpha: 0.45)
+            : null,
+        border: apple ? null : Border.all(color: border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

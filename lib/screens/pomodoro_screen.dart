@@ -6,6 +6,7 @@ import '../widgets/app_page_tabs.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -36,6 +37,7 @@ import '../widgets/focus_distraction_app_picker.dart';
 import '../widgets/pomodoro_floating_window_host.dart';
 import '../widgets/focus_sync_status.dart';
 import '../widgets/focus_rest_settings.dart';
+import '../widgets/focus_duration_picker.dart';
 
 String _focusRoomErrorText(Object error) {
   final message = error is ApiException ? error.message : error.toString();
@@ -659,19 +661,17 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                     ApplePageFrame.gutter,
                     0,
                   ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: ApplePageFrame.maxContentWidth,
-                      ),
-                      child: ApplePageHeader(
-                        title: s.focusTitle,
-                        trailing: PlatformInfo.isMacOS
-                            ? const PomodoroFloatingWindowButton()
-                            : null,
-                      ),
-                    ),
+                  // 页头整行不再套 720 内容列：标题仍左对齐，悬浮窗入口贴在
+                  // 窗口内容区右侧 gutter；下方计时卡沿用原内容宽度。
+                  child: ApplePageHeader(
+                    key: const ValueKey('focus_page_header'),
+                    title: s.focusTitle,
+                    trailing: PlatformInfo.isMacOS
+                        ? const KeyedSubtree(
+                            key: ValueKey('focus_header_trailing'),
+                            child: PomodoroFloatingWindowButton(),
+                          )
+                        : null,
                   ),
                 ),
                 Padding(
@@ -894,98 +894,124 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                                 ],
                               );
 
-                              final durationRow = ChipTheme(
-                                data: ChipTheme.of(context).copyWith(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      DesignTokens.radiusControl,
-                                    ),
-                                  ),
-                                  side: BorderSide(
-                                    color: cs.outlineVariant.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                  selectedColor: cs.primary.withValues(
-                                    alpha: 0.14,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 10,
-                                  ),
-                                  labelStyle: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        fontWeight:
-                                            DesignTokens.fontWeightMedium,
-                                      ),
-                                  secondaryLabelStyle: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: cs.primary,
-                                        fontWeight:
-                                            DesignTokens.fontWeightMedium,
-                                      ),
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 6,
-                                        ),
-                                        child: ChoiceChip(
-                                          visualDensity: VisualDensity.standard,
-                                          avatar: const Icon(
-                                            Icons.timer_outlined,
-                                            size: 16,
+                              // 原生桌面：单一可键盘操作的下拉时长选择，选项完整、
+                              // 无需横向拖动；手机与 Web 保留原有 chips。
+                              final durationRow =
+                                  usesDesktopFocusDurationPicker()
+                                  ? FocusDurationPicker(
+                                      // 取配置时长，自定义值也作为唯一值保留。
+                                      focusMinutes: focusMinutes,
+                                      isCountUp: state.isCountUp,
+                                      enabled: !durationLocked,
+                                      onMinutesSelected: (minutes) {
+                                        provider.setCountUpMode(false);
+                                        provider.setConfig(
+                                          provider.config
+                                            ..focusDuration = minutes * 60,
+                                        );
+                                      },
+                                      onCountUpChanged: (enabled) =>
+                                          provider.setCountUpMode(enabled),
+                                    )
+                                  : ChipTheme(
+                                      data: ChipTheme.of(context).copyWith(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            DesignTokens.radiusControl,
                                           ),
-                                          label: const Text('自由计时'),
-                                          selected: state.isCountUp,
-                                          onSelected: durationLocked
-                                              ? null
-                                              : (_) => provider.setCountUpMode(
-                                                  true,
+                                        ),
+                                        side:
+                                            AppleButtonStyle.appliesTo(
+                                              Theme.of(context),
+                                            )
+                                            ? AppleButtonStyle.chipBorder(
+                                                Theme.of(context),
+                                              )
+                                            : BorderSide(
+                                                color: cs.outlineVariant
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                        selectedColor: cs.primary.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 10,
+                                        ),
+                                        labelStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              fontWeight:
+                                                  DesignTokens.fontWeightMedium,
+                                            ),
+                                        secondaryLabelStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: cs.primary,
+                                              fontWeight:
+                                                  DesignTokens.fontWeightMedium,
+                                            ),
+                                      ),
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 6,
+                                              ),
+                                              child: ChoiceChip(
+                                                visualDensity:
+                                                    VisualDensity.standard,
+                                                avatar: const Icon(
+                                                  Icons.timer_outlined,
+                                                  size: 16,
                                                 ),
+                                                label: const Text('自由计时'),
+                                                selected: state.isCountUp,
+                                                onSelected: durationLocked
+                                                    ? null
+                                                    : (_) => provider
+                                                          .setCountUpMode(true),
+                                              ),
+                                            ),
+                                            ...[15, 25, 30, 45, 60, 90].map(
+                                              (min) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 6,
+                                                ),
+                                                child: ChoiceChip(
+                                                  visualDensity:
+                                                      VisualDensity.standard,
+                                                  label: Text('$min 分钟'),
+                                                  selected:
+                                                      !state.isCountUp &&
+                                                      state.totalSeconds ==
+                                                          min * 60 &&
+                                                      state.type ==
+                                                          PomodoroType.focus,
+                                                  onSelected: durationLocked
+                                                      ? null
+                                                      : (_) {
+                                                          provider
+                                                              .setCountUpMode(
+                                                                false,
+                                                              );
+                                                          provider.setConfig(
+                                                            provider.config
+                                                              ..focusDuration =
+                                                                  min * 60,
+                                                          );
+                                                        },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      ...[15, 25, 30, 45, 60, 90].map(
-                                        (min) => Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 6,
-                                          ),
-                                          child: ChoiceChip(
-                                            visualDensity:
-                                                VisualDensity.standard,
-                                            label: Text('$min 分钟'),
-                                            selected:
-                                                !state.isCountUp &&
-                                                state.totalSeconds ==
-                                                    min * 60 &&
-                                                state.type ==
-                                                    PomodoroType.focus,
-                                            onSelected: durationLocked
-                                                ? null
-                                                : (_) {
-                                                    provider.setCountUpMode(
-                                                      false,
-                                                    );
-                                                    provider.setConfig(
-                                                      provider.config
-                                                        ..focusDuration =
-                                                            min * 60,
-                                                    );
-                                                  },
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
+                                    );
 
                               final restSummary = FocusRestPlanSummary(
                                 shortBreakDuration:

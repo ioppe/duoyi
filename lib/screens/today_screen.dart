@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import '../widgets/app_page_tabs.dart';
 
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import 'package:provider/provider.dart';
 import '../core/app_clock.dart';
 import '../core/app_motion.dart';
@@ -2061,16 +2062,25 @@ class _TodayTodoStatusToggle extends StatelessWidget {
                     ? DesignTokens.homeStatusSize
                     : _TodayTodoLeading.statusButtonSize,
                 decoration: ShapeDecoration(
-                  color: background,
+                  color:
+                      AppleButtonStyle.appliesTo(Theme.of(context)) &&
+                          neutral &&
+                          !isCompleted
+                      ? cs.onSurface.withValues(alpha: 0.08)
+                      : background,
                   shape: CircleBorder(
-                    side: BorderSide(
-                      color: neutral && !isCompleted
-                          ? HomePageStyle.of(
-                              context,
-                            ).muted.withValues(alpha: 0.38)
-                          : accent.withValues(alpha: isCompleted ? 0.24 : 0.34),
-                      width: 0.9,
-                    ),
+                    side: AppleButtonStyle.appliesTo(Theme.of(context))
+                        ? BorderSide.none
+                        : BorderSide(
+                            color: neutral && !isCompleted
+                                ? HomePageStyle.of(
+                                    context,
+                                  ).muted.withValues(alpha: 0.38)
+                                : accent.withValues(
+                                    alpha: isCompleted ? 0.24 : 0.34,
+                                  ),
+                            width: 0.9,
+                          ),
                   ),
                 ),
                 child: isCompleted

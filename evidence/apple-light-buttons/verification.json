@@ -1,0 +1,36 @@
+{
+  "branch": "fix/v010-desktop-usability",
+  "scope": "Default Apple minimal theme button appearance; prior desktop usability changes preserved",
+  "status": "implemented and checked; not committed, merged or published",
+  "audit": {
+    "screen_and_widget_dart_files_scanned": 96,
+    "interactive_declaration_pattern_matches": 1019,
+    "approach": "Review global button/chip/segmented themes, secondary surface overrides and local button/self-drawn control borders. Input, ordinary card and data visualization boundaries retain their own rules."
+  },
+  "appearance": {
+    "secondary_actions": "soft neutral or semantic fill without a hard resting edge",
+    "idle_hover_pressed_selected_disabled_borders": "none for standard Apple button/chip variants",
+    "keyboard_focus": "subtle primary-colour border or existing focus overlay",
+    "disabled_secondary_fill": "transparent",
+    "danger_foreground": "preserved",
+    "today_completion_control": "visible translucent neutral fill, no dark edge; confirmation flow and checked semantics preserved",
+    "other_brand_themes": "existing outlines preserved"
+  },
+  "checks": {
+    "targeted_page_and_button_regressions": {"passed": 139, "failed": 0},
+    "today_completion_control_regression": {"passed": 1, "failed": 0},
+    "flutter_analyze": "No issues found; verified identical hashes for 726 source/test files in an ASCII path copy",
+    "git_diff_check": "passed",
+    "visual": "Inspected exported real Flutter todo pages with collapsed and expanded filters",
+    "review": "One bounded style review and a documentation consistency check completed"
+  },
+  "screenshots": [
+    "../screenshots/apple-light-buttons/macos-todo-collapsed-with-back.png",
+    "../screenshots/apple-light-buttons/macos-todo-expanded-with-back.png"
+  ],
+  "limits": [
+    "No installed application or physical-device E2E was executed.",
+    "Source audit plus representative runtime tests and screenshots, not a claim of opening every page on every platform."
+  ],
+  "remaining_blockers": []
+}

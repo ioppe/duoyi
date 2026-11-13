@@ -1,5 +1,6 @@
 import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import '../core/app_clock.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -192,12 +193,14 @@ class _CourseScheduleScreenState extends State<CourseScheduleScreen> {
                         ? selectedBackground
                         : (current ? cs.primary.withValues(alpha: 0.1) : null),
                     foregroundColor: selected ? cs.onSurface : null,
-                    side: BorderSide(
-                      color: selected
-                          ? cs.primary.withValues(alpha: 0.32)
-                          : cs.outlineVariant.withValues(alpha: 0.24),
-                      width: 0.45,
-                    ),
+                    side: AppleButtonStyle.appliesTo(Theme.of(context))
+                        ? null
+                        : BorderSide(
+                            color: selected
+                                ? cs.primary.withValues(alpha: 0.32)
+                                : cs.outlineVariant.withValues(alpha: 0.24),
+                            width: 0.45,
+                          ),
                   ),
                   child: Text(
                     _courseWeekLabel(w),

@@ -710,7 +710,28 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.bySemanticsLabel('标记为完成'), findsOneWidget);
+    final toggle = find.bySemanticsLabel('标记为完成');
+    expect(toggle, findsOneWidget);
+    final circle = tester.widget<Container>(
+      find.descendant(
+        of: toggle,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is ShapeDecoration &&
+              (widget.decoration! as ShapeDecoration).shape is CircleBorder,
+        ),
+      ),
+    );
+    final decoration = circle.decoration! as ShapeDecoration;
+    expect((decoration.shape as CircleBorder).side.style, BorderStyle.none);
+    expect(decoration.color!.a, greaterThan(0));
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text('确认完成任务'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '取消'));
+    await tester.pumpAndSettle();
+    expect(todos.todos.single.isCompleted, isFalse);
     expect(
       find.byKey(ValueKey('today_subtask_progress_${plain.id}')),
       findsNothing,
