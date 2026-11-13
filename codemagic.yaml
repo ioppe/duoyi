@@ -173,7 +173,9 @@ definitions:
       DB_PATH="$ROOT_DIR/build/codemagic/backend-tests.sqlite3"
       rm -f "$DB_PATH" "$DB_PATH-journal" "$DB_PATH-wal" "$DB_PATH-shm"
 
-      DUOYI_DB_PATH="$DB_PATH" DUOYI_ENV_FILE='' APP_UPDATE_REPOSITORY='' \
+      # The real-restart test starts a child process from backend/.
+      DUOYI_CONFIG_FILE="$ROOT_DIR/config/deployment.json" \
+        DUOYI_DB_PATH="$DB_PATH" DUOYI_ENV_FILE='' APP_UPDATE_REPOSITORY='' \
         "$PYTHON_BIN" -m unittest discover -s backend -v 2>&1 | tee "$LOG_DIR/backend-tests.log"
 
 workflows:
