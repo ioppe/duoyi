@@ -22,6 +22,13 @@ void main() {
       release,
       contains('body_path: \${{ steps.release_notes.outputs.body_path }}'),
     );
+    expect(
+      release,
+      contains(
+        "generate_release_notes: \${{ steps.release_notes.outputs.body_path == '' }}",
+      ),
+      reason: '手写功能介绍应作为完整发布正文，避免追加提交记录和流程信息',
+    );
     expect(release, contains('name: duoyi-android'));
     expect(release, contains('name: duoyi-web'));
     expect(release, contains('name: duoyi-macos-universal-unsigned'));
