@@ -24,6 +24,16 @@ class _PollingClient extends ApiClient {
 
   @override
   Stream<String> streamLines(String path) => events.stream;
+
+  /// 模拟服务端事务提交后的即时修订帧（event: sync + data + 空行）。心跳是
+  /// 注释行，不携带数据，因此不会触发拉取。
+  void emitSync({required int version, String updatedAt = ''}) {
+    events.add('event: sync');
+    events.add(
+      'data: ${jsonEncode({'server_version': version, 'server_updated_at': updatedAt})}',
+    );
+    events.add('');
+  }
 }
 
 Map<String, dynamic> _row(
@@ -157,9 +167,6 @@ void main() {
       var applied = Completer<void>();
       final pulls = <Map<String, dynamic>>[];
       final mock = MockClient((request) async {
-        if (request.url.path == '/api/sync/status') {
-          return _response({'server_version': version});
-        }
         expect(request.url.path, '/api/sync/pull');
         pulls.add(jsonDecode(request.body) as Map<String, dynamic>);
         return _response({
@@ -189,6 +196,7 @@ void main() {
         mock.close();
       });
       sync.startRemotePolling();
+      client.emitSync(version: version, updatedAt: '2026-10-01T00:00:00Z');
       await applied.future.timeout(const Duration(seconds: 3));
       sync.stopRemotePolling();
       expect(groups.groups.map((g) => g.name), containsAll(['旧清单', '远端旅行']));
@@ -199,6 +207,7 @@ void main() {
       version = 2;
       applied = Completer<void>();
       sync.startRemotePolling();
+      client.emitSync(version: version, updatedAt: '2026-10-02T00:00:00Z');
       await applied.future.timeout(const Duration(seconds: 3));
       sync.stopRemotePolling();
       expect(pulls, hasLength(2));

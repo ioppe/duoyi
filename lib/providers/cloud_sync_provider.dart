@@ -113,9 +113,39 @@ typedef SyncChangedCollectionsCallback =
 /// 云同步：服务器地址与 token 直接复用 AuthProvider(普通用户无需感知)。
 /// 登录后和本地数据变更后自动同步。
 class CloudSyncProvider extends ChangeNotifier {
-  static const _autoSyncDelay = Duration(seconds: 20);
-  static const _autoRetryDelay = Duration(minutes: 3);
-  static const _remotePollDelay = Duration(minutes: 2);
+  /// 本地落盘后的短合并窗口：连续编辑只在最后一次之后约 300ms 上传一次。
+  static const _autoSyncDelay = Duration(milliseconds: 300);
+
+  /// 连续编辑的最大合并等待：已有排队任务时复用原定时刻，超过该窗口才重排，
+  /// 避免高频写入把上传无限推迟。
+  static const _autoSyncMaxCoalesceDelay = Duration(milliseconds: 2000);
+  static const _autoRetryDelay = Duration(seconds: 30);
+
+  /// 突发事件合并窗口：多个事件在同一窗口内只排一次补齐。
+  static const _realtimeCoalesceDelay = Duration(milliseconds: 200);
+
+  /// 服务端心跳是 SSE 注释行(默认 15s，最大 60s)。静默超过该时长说明长连接
+  /// 已经死掉（心跳都收不到），此时重建订阅，而不是发周期数据探针。
+  static const _realtimeIdleTimeout = Duration(seconds: 75);
+
+  /// 断连重连退避：1/2/5/10/20/30s 封顶。
+  static const _realtimeReconnectBackoff = <Duration>[
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+    Duration(seconds: 20),
+    Duration(seconds: 30),
+  ];
+
+  /// 补齐失败后的有限退避（同步/回载失败保留待处理状态重试用）。
+  static const _remoteCatchUpBackoff = <Duration>[
+    Duration(milliseconds: 500),
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 15),
+    Duration(seconds: 30),
+  ];
   static const _serviceUnavailableMessage = '云同步暂不可用，请稍后重试或联系管理员';
   static const deletedItemsStorageKey = 'sync_deleted_items';
   static const _serverUpdatedAtStorageKey = 'sync_server_updated_at';
@@ -143,8 +173,21 @@ class CloudSyncProvider extends ChangeNotifier {
   bool _notifyQueued = false;
   String? _lastError;
   Timer? _autoSyncTimer;
-  Timer? _remotePollTimer;
+  DateTime? _autoSyncWindowStart;
+  Timer? _realtimeIdleTimer;
+  int _realtimeReconnectAttempt = 0;
+  bool _realtimeSawConnection = false;
+  bool _realtimeResyncOnConnect = false;
+  DateTime? _realtimeLastForceAt;
+  String _realtimeStreamIdentity = '';
+  int? _pendingRemoteVersion;
+  String _pendingRemoteUpdatedAt = '';
+  bool _remoteCatchUpForced = false;
+  bool _remoteCatchUpRunning = false;
+  int _remoteCatchUpFailureAttempt = 0;
+  Timer? _remoteCatchUpRetryTimer;
   Timer? _remoteEventRetryTimer;
+  Duration? _realtimeIdleTimeoutOverride;
   StreamSubscription<String>? _remoteEventSubscription;
   String _remoteEventName = '';
   final List<String> _remoteEventDataLines = <String>[];
@@ -290,7 +333,7 @@ class CloudSyncProvider extends ChangeNotifier {
       _notifySyncStateChanged();
     }
     unawaited(_persistPendingChanges(true));
-    _remotePollTimer?.cancel();
+    // 实时同步是唯一的前台远端变化来源，本地改动不再取消任何轮询定时器。
     _scheduleAutoSync();
   }
 
@@ -371,7 +414,6 @@ class CloudSyncProvider extends ChangeNotifier {
   }
 
   void _scheduleAutoSync([Duration delay = _autoSyncDelay]) {
-    _autoSyncTimer?.cancel();
     if (_syncSuspendedForAccountChange ||
         !_config.autoSync ||
         !FeatureFlags.cloudSyncV2) {
@@ -382,7 +424,18 @@ class CloudSyncProvider extends ChangeNotifier {
       return;
     }
     final accountGenerationAtStart = _accountGeneration;
+    final now = DateTime.now();
+    final windowStart = _autoSyncWindowStart;
+    if (_autoSyncTimer?.isActive == true && windowStart != null) {
+      // 已排队：复用原定时刻，只有超过最大合并窗口才重排，连续编辑不会把上传
+      // 无限推迟。
+      if (now.difference(windowStart) < _autoSyncMaxCoalesceDelay) return;
+    }
+    _autoSyncTimer?.cancel();
+    _autoSyncWindowStart = now;
     _autoSyncTimer = Timer(delay, () {
+      _autoSyncTimer = null;
+      _autoSyncWindowStart = null;
       if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
       if (_hasPendingChanges && _config.autoSync && !_isSyncing) {
         // ignore: discarded_futures
@@ -391,28 +444,100 @@ class CloudSyncProvider extends ChangeNotifier {
     });
   }
 
+  /// 兼容旧调用名：启动/重建远端实时同步（SSE 事件流）连接。
+  ///
+  /// 前台远端变化的唯一来源是服务端事务提交后的即时事件推送，这里不排任何
+  /// 周期数据拉取；只有连接断开才按退避重连。
   void startRemotePolling() {
+    ensureRealtimeSync(force: true);
+  }
+
+  /// 兼容旧调用名：停止实时同步订阅并丢弃其排队事件。
+  void stopRemotePolling() {
+    _stopRealtimeSync();
+  }
+
+  /// 确保实时同步订阅存在。`force` 为真时先拆掉旧订阅再重建，覆盖
+  /// 「订阅对象还在、底层 socket 已死」的场景（前后台切换后常见）。
+  void ensureRealtimeSync({bool force = false}) {
     if (_syncSuspendedForAccountChange) return;
-    final alreadyPolling =
-        _remoteEventSubscription != null || _remotePollTimer != null;
-    _startRemoteEvents();
-    if (!alreadyPolling) {
-      _scheduleRemotePoll(Duration.zero);
+    if (force) {
+      // 同一次前后台切换里 resume 与 coordinator 刷新都会要求重建；
+      // 2s 内只重建一次，避免重复拆流和重复补同步。
+      final now = DateTime.now();
+      final lastForcedAt = _realtimeLastForceAt;
+      final recentlyForced =
+          lastForcedAt != null &&
+          now.difference(lastForcedAt) < const Duration(seconds: 2);
+      if (!recentlyForced || _remoteEventSubscription == null) {
+        _realtimeLastForceAt = now;
+        _realtimeResyncOnConnect = true;
+        _realtimeReconnectAttempt = 0;
+        _cancelRealtimeSubscription();
+      }
+    }
+    _startRealtimeEvents();
+  }
+
+  /// 是否持有实时同步事件流订阅（诊断/测试用；不代表底层一定连通）。
+  bool get isRealtimeSyncConnected => _remoteEventSubscription != null;
+
+  Duration get _realtimeIdleTimeoutValue =>
+      _realtimeIdleTimeoutOverride ?? _realtimeIdleTimeout;
+
+  /// 仅测试用：缩短静默断流判定，避免运行时测试真的等 75s。
+  @visibleForTesting
+  set realtimeIdleTimeoutForTest(Duration value) {
+    _realtimeIdleTimeoutOverride = value;
+  }
+
+  void _stopRealtimeSync() {
+    _realtimeReconnectAttempt = 0;
+    _realtimeResyncOnConnect = false;
+    _remoteCatchUpFailureAttempt = 0;
+    _remoteCatchUpForced = false;
+    _remoteCatchUpRunning = false;
+    _remoteCatchUpRetryTimer?.cancel();
+    _remoteCatchUpRetryTimer = null;
+    _pendingRemoteVersion = null;
+    _pendingRemoteUpdatedAt = '';
+    _cancelRealtimeSubscription();
+  }
+
+  void _cancelRealtimeSubscription() {
+    _realtimeIdleTimer?.cancel();
+    _realtimeIdleTimer = null;
+    _remoteEventRetryTimer?.cancel();
+    _remoteEventRetryTimer = null;
+    final subscription = _remoteEventSubscription;
+    _remoteEventSubscription = null;
+    _realtimeStreamIdentity = '';
+    _realtimeSawConnection = false;
+    _remoteEventName = '';
+    _remoteEventDataLines.clear();
+    if (subscription != null) {
+      unawaited(subscription.cancel());
     }
   }
 
-  void stopRemotePolling() {
-    _remotePollTimer?.cancel();
-    _remotePollTimer = null;
-    _remoteEventRetryTimer?.cancel();
-    _remoteEventRetryTimer = null;
-    _remoteEventSubscription?.cancel();
-    _remoteEventSubscription = null;
-    _remoteEventName = '';
-    _remoteEventDataLines.clear();
+  static String _realtimeIdentityOf(ApiClient client) =>
+      '${client.baseUrl}|${client.token ?? ''}';
+
+  /// 事件流回调必须先确认身份未变：换账号、换服务器、换 token 之后旧回调
+  /// 既不能改写状态，也不能触发同步。
+  bool _isCurrentRealtimeStream(int generation, String identity) {
+    if (_syncSuspendedForAccountChange) return false;
+    if (generation != _accountGeneration) return false;
+    if (!_config.autoSync || !FeatureFlags.cloudSyncV2) return false;
+    if (identity != _realtimeStreamIdentity) return false;
+    final client = apiClientGetter?.call();
+    if (client == null || client.token == null || client.token!.isEmpty) {
+      return false;
+    }
+    return _realtimeIdentityOf(client) == identity;
   }
 
-  void _startRemoteEvents() {
+  void _startRealtimeEvents() {
     if (_remoteEventSubscription != null) return;
     if (_syncSuspendedForAccountChange ||
         !_config.autoSync ||
@@ -423,55 +548,98 @@ class CloudSyncProvider extends ChangeNotifier {
     if (client == null || client.token == null || client.token!.isEmpty) {
       return;
     }
-    final accountGenerationAtStart = _accountGeneration;
+    final generation = _accountGeneration;
+    final identity = _realtimeIdentityOf(client);
+    _realtimeStreamIdentity = identity;
+    _realtimeSawConnection = false;
     _remoteEventRetryTimer?.cancel();
     _remoteEventRetryTimer = null;
-    _remoteEventSubscription = client
+    final subscription = client
         .streamLines('/api/sync/events')
         .listen(
           (line) {
-            if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
+            if (!_isCurrentRealtimeStream(generation, identity)) return;
+            // 任意一行（含 `:` 心跳注释）都证明长连接还活着。
+            _noteRealtimeActivity(generation, identity);
             _handleRemoteEventLine(line);
           },
           onError: (Object error) {
-            if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
+            if (!_isCurrentRealtimeStream(generation, identity)) {
+              _dropStaleRealtimeStream(identity);
+              return;
+            }
             _lastError = _userVisibleSyncError(error);
-            _remoteEventSubscription = null;
-            _remoteEventName = '';
-            _remoteEventDataLines.clear();
-            _scheduleRemoteEventReconnect(_autoRetryDelay);
-            _scheduleRemotePoll(_autoRetryDelay);
             _notifySyncStateChanged();
+            _handleRealtimeDisconnect(generation);
           },
           onDone: () {
-            if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
-            _remoteEventSubscription = null;
-            _remoteEventName = '';
-            _remoteEventDataLines.clear();
-            _scheduleRemoteEventReconnect(_autoRetryDelay);
-            _scheduleRemotePoll(_autoRetryDelay);
+            if (!_isCurrentRealtimeStream(generation, identity)) {
+              _dropStaleRealtimeStream(identity);
+              return;
+            }
+            _handleRealtimeDisconnect(generation);
           },
           cancelOnError: true,
         );
+    if (!_isCurrentRealtimeStream(generation, identity)) {
+      _realtimeStreamIdentity = '';
+      unawaited(subscription.cancel());
+      return;
+    }
+    _remoteEventSubscription = subscription;
+    _armRealtimeIdleWatchdog(generation, identity);
   }
 
-  void _scheduleRemoteEventReconnect([Duration delay = _autoRetryDelay]) {
-    _remoteEventRetryTimer?.cancel();
+  void _dropStaleRealtimeStream(String identity) {
+    if (identity != _realtimeStreamIdentity) return;
+    _cancelRealtimeSubscription();
+  }
+
+  void _noteRealtimeActivity(int generation, String identity) {
+    _armRealtimeIdleWatchdog(generation, identity);
+    if (_realtimeSawConnection) return;
+    _realtimeSawConnection = true;
+    _realtimeReconnectAttempt = 0;
+    if (_realtimeResyncOnConnect) {
+      _realtimeResyncOnConnect = false;
+      // 首连/重连第一帧就是最新修订；这里只补一次同步，补齐断连期间错过的事件。
+      _requestRemoteCatchUp(force: true);
+    }
+  }
+
+  void _armRealtimeIdleWatchdog(int generation, String identity) {
+    _realtimeIdleTimer?.cancel();
+    _realtimeIdleTimer = Timer(_realtimeIdleTimeoutValue, () {
+      _realtimeIdleTimer = null;
+      if (!_isCurrentRealtimeStream(generation, identity)) return;
+      // 连心跳都收不到：静默断流，取消旧订阅后按快退避重建，不发数据探针。
+      _handleRealtimeDisconnect(generation);
+    });
+  }
+
+  void _handleRealtimeDisconnect(int generation) {
+    _realtimeResyncOnConnect = true;
+    _cancelRealtimeSubscription();
+    if (generation != _accountGeneration) return;
     if (_syncSuspendedForAccountChange ||
         !_config.autoSync ||
         !FeatureFlags.cloudSyncV2) {
       return;
     }
-    if (_remoteEventSubscription != null) return;
     final client = apiClientGetter?.call();
     if (client == null || client.token == null || client.token!.isEmpty) {
       return;
     }
-    final accountGenerationAtStart = _accountGeneration;
+    final backoff = _realtimeReconnectBackoff;
+    final index = _realtimeReconnectAttempt.clamp(0, backoff.length - 1);
+    _realtimeReconnectAttempt = index + 1;
+    final delay = backoff[index];
+    _remoteEventRetryTimer?.cancel();
     _remoteEventRetryTimer = Timer(delay, () {
       _remoteEventRetryTimer = null;
-      if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
-      _startRemoteEvents();
+      if (_syncSuspendedForAccountChange) return;
+      if (generation != _accountGeneration) return;
+      _startRealtimeEvents();
     });
   }
 
@@ -492,57 +660,152 @@ class CloudSyncProvider extends ChangeNotifier {
 
   void _dispatchRemoteEvent() {
     if (_syncSuspendedForAccountChange) return;
-    final accountGenerationAtStart = _accountGeneration;
     final eventName = _remoteEventName.isEmpty ? 'message' : _remoteEventName;
     final rawData = _remoteEventDataLines.join('\n');
     _remoteEventName = '';
     _remoteEventDataLines.clear();
     if (eventName != 'sync' || rawData.isEmpty) return;
-    if (_hasPendingChanges || _isSyncing || !_config.autoSync) return;
+    if (!_config.autoSync || !FeatureFlags.cloudSyncV2) return;
     try {
       final decoded = json.decode(rawData);
       if (decoded is! Map) return;
       final serverVersion = (decoded['server_version'] as num?)?.toInt();
       final serverUpdatedAt = decoded['server_updated_at']?.toString() ?? '';
-      final versionUnchanged =
-          serverVersion != null &&
-          _lastServerVersion != null &&
-          serverVersion <= _lastServerVersion!;
-      final timestampUnchanged =
-          serverVersion == null &&
-          serverUpdatedAt.isNotEmpty &&
-          serverUpdatedAt == _lastServerUpdatedAt;
-      if (versionUnchanged || timestampUnchanged) return;
-      // ignore: discarded_futures
-      _pullRemoteChanges(expectedAccountGeneration: accountGenerationAtStart);
+      if (!_recordRemoteRevision(serverVersion, serverUpdatedAt)) return;
+      // 本地 pending 或在途同步时也不能丢：先记录最新修订，之后走既有的
+      // 「上传 + 三方合并」保护本地更改，再补齐仍未消费的远端版本。
+      _requestRemoteCatchUp();
     } catch (e) {
       _lastError = _userVisibleSyncError(e);
       _notifySyncStateChanged();
     }
   }
 
-  void _scheduleRemotePoll([Duration delay = _remotePollDelay]) {
-    _remotePollTimer?.cancel();
+  /// 记录最新远端修订；返回是否仍需同步（重复/自己已确认的修订返回 false）。
+  bool _recordRemoteRevision(int? version, String updatedAt) {
+    if (version != null) {
+      final current = _pendingRemoteVersion;
+      if (current == null || version > current) {
+        _pendingRemoteVersion = version;
+      }
+    }
+    if (updatedAt.isNotEmpty) {
+      _pendingRemoteUpdatedAt = updatedAt;
+    }
+    if (_hasUnconsumedRemoteRevision) return true;
+    _consumePendingRemoteRevision();
+    return false;
+  }
+
+  bool get _hasUnconsumedRemoteRevision {
+    final version = _pendingRemoteVersion;
+    if (version != null) {
+      final confirmed = _lastServerVersion;
+      return confirmed == null || version > confirmed;
+    }
+    final stamp = _pendingRemoteUpdatedAt;
+    if (stamp.isEmpty) return false;
+    return stamp != _lastServerUpdatedAt;
+  }
+
+  void _requestRemoteCatchUp({bool force = false}) {
+    if (_syncSuspendedForAccountChange) return;
+    if (!_config.autoSync || !FeatureFlags.cloudSyncV2) return;
+    if (force) _remoteCatchUpForced = true;
+    if (!_remoteCatchUpForced && !_hasUnconsumedRemoteRevision) return;
+    unawaited(_drainRemoteChanges());
+  }
+
+  /// 消费远端修订：先上传/合并保护本地改动，再补齐仍未消费的远端版本，直到
+  /// 最新。最多一个在途补齐，突发事件只合并，不丢最新。
+  Future<void> _drainRemoteChanges() async {
+    if (_remoteCatchUpRunning) return;
     if (_syncSuspendedForAccountChange ||
         !_config.autoSync ||
         !FeatureFlags.cloudSyncV2) {
       return;
     }
-    if (_hasPendingChanges || _isSyncing) return;
+    final generation = _accountGeneration;
     final client = apiClientGetter?.call();
-    if (client == null || client.token == null || client.token!.isEmpty) {
-      return;
-    }
-    final accountGenerationAtStart = _accountGeneration;
-    _remotePollTimer = Timer(delay, () {
-      _remotePollTimer = null;
-      if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
-      if (_hasPendingChanges || !_config.autoSync || _isSyncing) {
-        _scheduleRemotePoll();
-        return;
+    if (client == null || client.token == null || client.token!.isEmpty) return;
+    _remoteCatchUpRunning = true;
+    _remoteCatchUpRetryTimer?.cancel();
+    _remoteCatchUpRetryTimer = null;
+    try {
+      while (_isCurrentAccountGeneration(generation)) {
+        if (!_remoteCatchUpForced && !_hasUnconsumedRemoteRevision) break;
+        if (!_config.autoSync || !FeatureFlags.cloudSyncV2) {
+          _remoteCatchUpForced = false;
+          break;
+        }
+        if (_isSyncing) {
+          // 在途同步结束时（[_syncNow] 尾部）会再请求一次，不并发第二个同步。
+          return;
+        }
+        _remoteCatchUpForced = false;
+        final pendingVersionBefore = _pendingRemoteVersion;
+        final pendingStampBefore = _pendingRemoteUpdatedAt;
+        final uploadedFirst = _hasPendingChanges;
+        if (uploadedFirst) {
+          // 先走既有「上传 + 三方合并」，本地改动不会被远端覆盖。
+          await _syncNow();
+        } else {
+          await _pullRemoteChanges(expectedAccountGeneration: generation);
+        }
+        if (!_isCurrentAccountGeneration(generation)) return;
+        if (_lastError != null) {
+          // 失败保留待处理状态，交给有限退避/后续事件/重连重试。
+          _scheduleRemoteCatchUpRetry(generation);
+          return;
+        }
+        _remoteCatchUpFailureAttempt = 0;
+        final revisionUnchanged =
+            _pendingRemoteVersion == pendingVersionBefore &&
+            _pendingRemoteUpdatedAt == pendingStampBefore;
+        if (!uploadedFirst) {
+          // 只消费本轮开始时的修订；请求途中到达的新修订仍须继续拉取。
+          if (revisionUnchanged) _consumePendingRemoteRevision();
+          continue;
+        }
+        if (!revisionUnchanged) continue; // 上传期间来了更新的修订 → 继续补齐
+        if (_hasUnconsumedRemoteRevision) continue; // 上传没覆盖 → 下一轮回载
+        if (_isSyncing) return;
+        _consumePendingRemoteRevision();
       }
-      // ignore: discarded_futures
-      _pollRemoteChanges();
+    } on _SyncCancelled {
+      return;
+    } finally {
+      _remoteCatchUpRunning = false;
+    }
+    if (!_isCurrentAccountGeneration(generation)) return;
+    if (_remoteCatchUpForced || _hasUnconsumedRemoteRevision) {
+      _scheduleRemoteCatchUpRetry(generation, delay: _realtimeCoalesceDelay);
+    }
+  }
+
+  void _consumePendingRemoteRevision() {
+    _pendingRemoteVersion = null;
+    _pendingRemoteUpdatedAt = '';
+  }
+
+  void _scheduleRemoteCatchUpRetry(int generation, {Duration? delay}) {
+    if (_syncSuspendedForAccountChange) return;
+    if (!_config.autoSync || !FeatureFlags.cloudSyncV2) return;
+    if (generation != _accountGeneration) return;
+    if (_remoteCatchUpRetryTimer?.isActive ?? false) return;
+    final Duration wait;
+    if (delay != null) {
+      wait = delay;
+    } else {
+      final backoff = _remoteCatchUpBackoff;
+      final index = _remoteCatchUpFailureAttempt.clamp(0, backoff.length - 1);
+      _remoteCatchUpFailureAttempt = index + 1;
+      wait = backoff[index];
+    }
+    _remoteCatchUpRetryTimer = Timer(wait, () {
+      _remoteCatchUpRetryTimer = null;
+      if (generation != _accountGeneration) return;
+      unawaited(_drainRemoteChanges());
     });
   }
 
@@ -626,55 +889,6 @@ class CloudSyncProvider extends ChangeNotifier {
   /// cloud_sync_v2 特性开关：关闭时 [syncNow] 直接返回，不发出网络请求。
   /// 对应 Requirements 12.6。
   bool get isCloudSyncV2Enabled => FeatureFlags.cloudSyncV2;
-
-  Future<void> _pollRemoteChanges() async {
-    if (_syncSuspendedForAccountChange ||
-        !_config.autoSync ||
-        !FeatureFlags.cloudSyncV2) {
-      return;
-    }
-    if (_hasPendingChanges || _isSyncing) {
-      _scheduleRemotePoll();
-      return;
-    }
-    final accountGenerationAtStart = _accountGeneration;
-    final client = apiClientGetter?.call();
-    if (client == null || client.token == null || client.token!.isEmpty) {
-      return;
-    }
-
-    try {
-      final status = await client.get('/api/sync/status');
-      if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
-      final serverVersion = (status['server_version'] as num?)?.toInt();
-      final serverUpdatedAt = status['server_updated_at']?.toString() ?? '';
-      final versionUnchanged =
-          serverVersion != null &&
-          _lastServerVersion != null &&
-          serverVersion <= _lastServerVersion!;
-      final timestampUnchanged =
-          serverVersion == null &&
-          serverUpdatedAt.isNotEmpty &&
-          serverUpdatedAt == _lastServerUpdatedAt;
-
-      if (versionUnchanged || timestampUnchanged) {
-        final hadError = _lastError != null;
-        _lastError = null;
-        _scheduleRemotePoll();
-        if (hadError) _notifySyncStateChanged();
-        return;
-      }
-
-      await _pullRemoteChanges(
-        expectedAccountGeneration: accountGenerationAtStart,
-      );
-    } catch (e) {
-      if (!_isCurrentAccountGeneration(accountGenerationAtStart)) return;
-      _lastError = _userVisibleSyncError(e);
-      _scheduleRemotePoll(_autoRetryDelay);
-      _notifySyncStateChanged();
-    }
-  }
 
   static const _stringEncodedListKeys = <String>{
     'todos',
@@ -1019,12 +1233,17 @@ class CloudSyncProvider extends ChangeNotifier {
     if (value) {
       resumeForActiveAccount();
     }
-    if (value && _hasPendingChanges) {
-      _scheduleAutoSync();
-    } else if (value) {
-      _scheduleRemotePoll(Duration.zero);
+    if (value) {
+      if (_hasPendingChanges) {
+        _scheduleAutoSync();
+      } else {
+        _requestRemoteCatchUp();
+      }
+      // 开启自动同步就建立实时事件流；关闭时下面立即拆除订阅。
+      ensureRealtimeSync(force: true);
     } else {
       _autoSyncTimer?.cancel();
+      _autoSyncWindowStart = null;
       stopRemotePolling();
     }
     _notifySyncStateChanged();
@@ -1147,7 +1366,7 @@ class CloudSyncProvider extends ChangeNotifier {
         if (_hasPendingChanges) {
           _scheduleAutoSync();
         } else {
-          _scheduleRemotePoll();
+          _requestRemoteCatchUp();
         }
         _notifySyncStateChanged();
         _scheduleQueuedSyncIfNeeded();
@@ -1233,7 +1452,7 @@ class CloudSyncProvider extends ChangeNotifier {
     } else if (_lastError == null && _hasPendingChanges) {
       _scheduleAutoSync();
     } else if (_lastError == null && !_hasPendingChanges) {
-      _scheduleRemotePoll();
+      _requestRemoteCatchUp();
     }
     _notifySyncStateChanged();
     _scheduleQueuedSyncIfNeeded();
@@ -1334,11 +1553,12 @@ class CloudSyncProvider extends ChangeNotifier {
       return;
     }
     if (_lastError == null && !_hasPendingChanges) {
-      _scheduleRemotePoll();
+      _requestRemoteCatchUp();
     } else if (_lastError == null && _hasPendingChanges) {
       _scheduleAutoSync();
     } else if (_lastError != null) {
-      _scheduleRemotePoll(_autoRetryDelay);
+      _scheduleAutoSync(_autoRetryDelay);
+      _requestRemoteCatchUp();
     }
     _notifySyncStateChanged();
     _scheduleQueuedSyncIfNeeded();
@@ -2146,9 +2366,9 @@ class CloudSyncProvider extends ChangeNotifier {
     _syncIdle?.complete();
     _syncIdle = null;
     _autoSyncTimer?.cancel();
-    _remotePollTimer?.cancel();
-    _remoteEventRetryTimer?.cancel();
-    _remoteEventSubscription?.cancel();
+    _cancelRealtimeSubscription();
+    _remoteCatchUpRetryTimer?.cancel();
+    _remoteCatchUpRetryTimer = null;
     super.dispose();
   }
 
