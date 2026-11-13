@@ -5,8 +5,10 @@ import 'package:duoyi/providers/focus_room_provider.dart';
 import 'package:duoyi/providers/pomodoro_provider.dart';
 import 'package:duoyi/providers/theme_provider.dart';
 import 'package:duoyi/screens/pomodoro_screen.dart';
+import 'package:duoyi/services/pomodoro_floating_window_service.dart';
 import 'package:duoyi/widgets/apple_page_frame.dart';
 import 'package:duoyi/widgets/focus_duration_picker.dart';
+import 'package:duoyi/widgets/pomodoro_floating_window_host.dart';
 import 'package:duoyi/widgets/surface_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +16,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Widget _app({double textScale = 1}) {
+/// 测试专用悬浮窗通道：不占用原生默认通道；注销由服务自身的
+/// [PomodoroFloatingWindowService.dispose]（内部 setMethodCallHandler(null)）完成。
+const MethodChannel _floatingWindowTestChannel = MethodChannel(
+  'com.duoyi.test/pomodoro_floating_window',
+);
+
+/// 悬浮窗入口能力来自注入的服务而不是运行平台：CI 的 Ubuntu runner 真实平台
+/// 不是 macOS，只有显式 supported 的服务才能覆盖页头入口的几何与显隐断言。
+PomodoroFloatingWindowService _floatingWindow({required bool supported}) {
+  final service = PomodoroFloatingWindowService(
+    supported: supported,
+    channel: _floatingWindowTestChannel,
+  );
+  addTearDown(service.dispose);
+  return service;
+}
+
+Widget _app({
+  double textScale = 1,
+  required PomodoroFloatingWindowService floatingWindow,
+}) {
   final theme = ThemeProvider();
   return MultiProvider(
     providers: [
@@ -23,6 +45,9 @@ Widget _app({double textScale = 1}) {
       ChangeNotifierProvider(create: (_) => theme),
       ChangeNotifierProvider(create: (_) => FocusRoomProvider()),
       ChangeNotifierProvider(create: (_) => CustomFocusSoundProvider()),
+      ChangeNotifierProvider<PomodoroFloatingWindowService>.value(
+        value: floatingWindow,
+      ),
     ],
     child: MaterialApp(
       theme: theme.brand.theme,
@@ -41,11 +66,17 @@ Future<PomodoroProvider> _pumpScreen(
   WidgetTester tester,
   Size size, {
   double textScale = 1,
+  bool floatingWindowSupported = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(_app(textScale: textScale));
+  await tester.pumpWidget(
+    _app(
+      textScale: textScale,
+      floatingWindow: _floatingWindow(supported: floatingWindowSupported),
+    ),
+  );
   await tester.pumpAndSettle();
   return Provider.of<PomodoroProvider>(
     tester.element(find.byType(PomodoroScreen)),
@@ -70,7 +101,11 @@ void main() {
     testWidgets(
       'macOS ${width.toInt()} 宽：页头入口贴右侧 gutter，计时卡仍按原宽度居中',
       (tester) async {
-        await _pumpScreen(tester, Size(width, 900));
+        await _pumpScreen(
+          tester,
+          Size(width, 900),
+          floatingWindowSupported: true,
+        );
 
         expect(tester.takeException(), isNull);
         final header = tester.getRect(
@@ -84,6 +119,14 @@ void main() {
         expect(trailing.right, closeTo(width - ApplePageFrame.gutter, 0.5));
         // 不再落在内容列中间：始终在窗口右侧 1/4 内。
         expect(trailing.left, greaterThan(width * 0.75));
+        // 入口必须是真实可点的按钮，而不是只渲染 key 的占位。
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('focus_header_trailing')),
+            matching: find.byType(IconButton),
+          ),
+          findsOneWidget,
+        );
 
         final card = tester.getRect(find.byType(AppSurfaceCard).first);
         expect(
@@ -95,6 +138,25 @@ void main() {
       variant: TargetPlatformVariant.only(TargetPlatform.macOS),
     );
   }
+
+  // 反向用例：布局仍是 macOS 的 Apple 页头，但服务声明不支持悬浮窗时，
+  // 只能保留页头，不能出现入口按钮。
+  testWidgets(
+    'macOS：服务不支持悬浮窗时保留页头且不显示入口',
+    (tester) async {
+      await _pumpScreen(
+        tester,
+        const Size(1280, 900),
+        floatingWindowSupported: false,
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('focus_page_header')), findsOneWidget);
+      expect(find.byKey(const ValueKey('focus_header_trailing')), findsNothing);
+      expect(find.byType(PomodoroFloatingWindowButton), findsNothing);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
   testWidgets(
     'macOS 桌面：下拉里鼠标选 90 分钟即写入时长，切回倒计时',
@@ -177,7 +239,12 @@ void main() {
     testWidgets(
       'macOS 窄窗 $size ×$scale 无溢出且下拉完整可用',
       (tester) async {
-        await _pumpScreen(tester, size, textScale: scale);
+        await _pumpScreen(
+          tester,
+          size,
+          textScale: scale,
+          floatingWindowSupported: true,
+        );
 
         expect(tester.takeException(), isNull);
         expect(_dropdown, findsOneWidget);
@@ -198,6 +265,7 @@ void main() {
       await _pumpScreen(tester, const Size(390, 844));
 
       expect(_dropdown, findsNothing);
+      expect(find.byType(PomodoroFloatingWindowButton), findsNothing);
       expect(find.widgetWithText(ChoiceChip, '25 分钟'), findsOneWidget);
       expect(find.widgetWithText(ChoiceChip, '自由计时'), findsOneWidget);
       expect(tester.takeException(), isNull);

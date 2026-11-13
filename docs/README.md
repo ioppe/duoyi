@@ -41,6 +41,7 @@
 - [主线集成与发布核验](mainline-integration.md)
 - [自托管构建与部署](self-hosting.md)
 - [受限 SSH Web 自动部署](web-auto-deploy.md)
+- [Codemagic 云端构建](codemagic.md)
 - [版本发布说明](releases/)
 
 ## 验证与对齐依据

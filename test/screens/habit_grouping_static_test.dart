@@ -410,7 +410,7 @@ void main() {
     expect(en, contains('"habitFlexPeriodTarget": "Target count"'));
   });
 
-  test('习惯创建和详情编辑暴露起止日期并禁用周期外补卡', () {
+  test('习惯创建和详情编辑暴露起止日期，仅生效的历史日期可补卡', () {
     final screen = File('lib/screens/habit_screen.dart').readAsStringSync();
     final detail = File(
       'lib/screens/habit_detail_screen.dart',
@@ -444,13 +444,44 @@ void main() {
     );
     expect(detail, contains('final active = habit.activeForDate(date)'));
     expect(detail, contains("I18n.tr('habit.records.inactive')"));
-    expect(detail, contains('widget.allowRecordActions && active && !future'));
     expect(
       detail,
-      contains('provider.incrementHabitForDate(widget.habitId, widget.date)'),
+      contains('widget.allowRecordActions && active && _habitDateIsPast(date)'),
     );
     expect(
       detail,
+      matches(
+        RegExp(
+          r'bool _habitDateIsPast\(DateTime date\) \{\s*'
+          r'final today = AppClock\.today\(\);\s*'
+          r'return DateTime\(date\.year, date\.month, date\.day\)'
+          r'\.isBefore\(today\);',
+        ),
+      ),
+      reason: '补卡用应用日期比较，必须排除今天和未来日期。',
+    );
+    final actionStart = detail.indexOf('Future<void> _run(_HabitDayAction');
+    final action = detail.substring(
+      actionStart,
+      detail.indexOf('} finally {', actionStart),
+    );
+    expect(
+      action,
+      matches(
+        RegExp(
+          r'if \(!widget\.allowRecordActions \|\|\s*habit == null \|\|\s*'
+          r'!_habitDateIsPast\(widget\.date\) \|\|\s*'
+          r'!habit\.activeForDate\(widget\.date\)\)\s*\{\s*return;\s*\}',
+        ),
+      ),
+      reason: '执行补记或撤回时重新检查权限、生效周期及应用日期。',
+    );
+    expect(
+      action,
+      contains('provider.incrementHabitForDate(widget.habitId, widget.date)'),
+    );
+    expect(
+      action,
       contains('provider.decrementHabitForDate(widget.habitId, widget.date)'),
     );
 

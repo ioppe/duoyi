@@ -125,7 +125,46 @@ void main() {
       contains('cs.primary.withValues(alpha: isDark ? 0.34 : 0.30)'),
     );
     expect(controls, contains('BorderSide(color: color, width: 0.4)'));
-    expect(controls, contains('side: BorderSide(color: subtleBorder'));
+    final outlined = controls.substring(
+      controls.indexOf('outlinedButtonTheme:'),
+      controls.indexOf('filledButtonTheme:'),
+    );
+    expect(
+      outlined,
+      matches(
+        RegExp(
+          r'side: AppleButtonStyle\.appliesTo\(theme\)\s*\? null\s*'
+          r': BorderSide\(color: subtleBorder, width: 0\.4\)',
+        ),
+      ),
+      reason: '非默认主题仍保留原有细描边，默认主题交给共享样式。',
+    );
+    expect(outlined, contains('.merge(AppleButtonStyle.outlined(theme))'));
+    expect(
+      controls,
+      matches(
+        RegExp(
+          r'side: AppleButtonStyle\.appliesTo\(theme\)\s*'
+          r'\? AppleButtonStyle\.chipBorder\(theme\)\s*'
+          r': BorderSide\(color: subtleBorder, width: 0\.4\)',
+        ),
+      ),
+    );
+    expect(controls, contains('? AppleButtonStyle.border(theme)'));
+    final appleButtons = File(
+      'lib/core/apple_button_style.dart',
+    ).readAsStringSync();
+    expect(
+      appleButtons,
+      matches(
+        RegExp(
+          r'if \(states\.contains\(WidgetState\.disabled\) \|\|\s*'
+          r'!states\.contains\(WidgetState\.focused\)\)\s*'
+          r'\{\s*return BorderSide\.none;',
+        ),
+      ),
+      reason: '默认主题在静止或禁用时不显示硬边，保留键盘焦点边框。',
+    );
 
     final selectedForeground = source.substring(
       source.indexOf('final selectedControlForeground'),

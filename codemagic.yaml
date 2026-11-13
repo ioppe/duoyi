@@ -1,0 +1,422 @@
+# yaml-language-server: $schema=https://codemagic.io/codemagic-schema.json
+#
+# Codemagic bootstrap configuration for Duoyi (多仪).
+#
+# Three explicit workflows, deliberately independent of GitHub Actions:
+#   duoyi-ci              - default test workflow, automatic on push to main
+#   duoyi-macos           - manual only, ad-hoc universal macOS packaging
+#   duoyi-android-release - manual only, signed Android release artifacts
+#
+# Nothing here publishes a GitHub Release, sends email, or deploys a server.
+# The Android release workflow never falls back to debug signing.
+
+definitions:
+  shared_environment: &shared_environment
+    flutter: 3.44.1
+    java: 17
+    xcode: latest
+    vars:
+      DUOYI_CONFIG_FILE: config/deployment.json
+      TZ: UTC
+  shared_cache: &shared_cache
+    cache_paths:
+      - $HOME/.pub-cache
+      - $HOME/.gradle/caches
+
+  prepare_python: &prepare_python
+    name: Prepare Python 3.12, venv, and dependencies
+    script: |
+      set -euo pipefail
+      export HOMEBREW_NO_AUTO_UPDATE=1
+      LOG_DIR="$PWD/build/codemagic/logs"
+      mkdir -p "$LOG_DIR"
+
+      PYTHON_312=""
+      for candidate in "$(command -v python3.12 || true)" /opt/homebrew/bin/python3.12 /usr/local/bin/python3.12; do
+        if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+          PYTHON_312="$candidate"
+          break
+        fi
+      done
+      if [ -z "$PYTHON_312" ]; then
+        echo "python3.12 not found; installing python@3.12 with Homebrew"
+        brew install python@3.12 > "$LOG_DIR/brew-python.log" 2>&1 || {
+          tail -n 50 "$LOG_DIR/brew-python.log" >&2
+          echo "Failed to install python@3.12" >&2
+          exit 1
+        }
+        if [ -x /opt/homebrew/bin/python3.12 ]; then
+          PYTHON_312=/opt/homebrew/bin/python3.12
+        else
+          PYTHON_312="$(command -v python3.12 || true)"
+        fi
+      fi
+      if [ -z "$PYTHON_312" ]; then
+        echo "python3.12 is unavailable after bootstrap" >&2
+        exit 1
+      fi
+      "$PYTHON_312" --version
+
+      VENV_DIR="$PWD/build/codemagic/venv"
+      if [ ! -x "$VENV_DIR/bin/python" ]; then
+        "$PYTHON_312" -m venv "$VENV_DIR"
+      fi
+      VENV_PYTHON="$VENV_DIR/bin/python"
+      "$VENV_PYTHON" -m pip install --upgrade pip > "$LOG_DIR/pip-upgrade.log" 2>&1
+      "$VENV_PYTHON" -m pip install -r backend/requirements.txt -r scripts/requirements-icons.txt \
+        > "$LOG_DIR/pip-requirements.log" 2>&1 || {
+          tail -n 50 "$LOG_DIR/pip-requirements.log" >&2
+          echo "Failed to install Python dependencies" >&2
+          exit 1
+        }
+      "$VENV_PYTHON" -m pip freeze > "$LOG_DIR/pip-freeze.log"
+
+      # Hand the venv interpreter to later steps. This line uses the local
+      # variable directly instead of assuming $CM_ENV is already sourced.
+      if [ -n "${CM_ENV:-}" ]; then
+        printf 'PYTHON_BIN=%s\n' "$VENV_PYTHON" >> "$CM_ENV"
+      fi
+      echo "PYTHON_BIN=$VENV_PYTHON"
+
+  build_metadata: &build_metadata
+    name: Resolve version and commit metadata
+    script: |
+      set -euo pipefail
+      : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+      LOG_DIR="$PWD/build/codemagic/logs"
+      mkdir -p "$LOG_DIR"
+
+      COMMIT_SHA="$(git rev-parse HEAD)"
+      if [ -z "$COMMIT_SHA" ]; then
+        echo "Unable to resolve the current commit with git rev-parse HEAD" >&2
+        exit 1
+      fi
+      SHORT_SHA="$(printf '%s' "$COMMIT_SHA" | cut -c1-8)"
+      APP_VERSION="$("$PYTHON_BIN" -c "import pathlib,re;text=pathlib.Path('lib/core/app_version.dart').read_text();match=re.search(r\"name = '([^']+)'\",text);print(match.group(1) if match else '')")"
+      APP_BUILD="$("$PYTHON_BIN" -c "import pathlib,re;text=pathlib.Path('lib/core/app_version.dart').read_text();match=re.search(r'build = ([0-9]+)',text);print(match.group(1) if match else '')")"
+      if [ -z "$APP_VERSION" ] || [ -z "$APP_BUILD" ]; then
+        echo "Unable to read version name/build from lib/core/app_version.dart" >&2
+        exit 1
+      fi
+
+      if [ -n "${CM_ENV:-}" ]; then
+        {
+          printf 'COMMIT_SHA=%s\n' "$COMMIT_SHA"
+          printf 'SHORT_SHA=%s\n' "$SHORT_SHA"
+          printf 'APP_VERSION=%s\n' "$APP_VERSION"
+          printf 'APP_BUILD=%s\n' "$APP_BUILD"
+        } >> "$CM_ENV"
+      fi
+      printf 'commit=%s\nversion=%s+%s\n' "$COMMIT_SHA" "$APP_VERSION" "$APP_BUILD" | tee "$LOG_DIR/build-metadata.log"
+
+  shared_quality: &shared_quality
+    name: Shared quality checks (config, lockfile, icons, analyze, tests)
+    script: |
+      set -euo pipefail
+      : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+      LOG_DIR="$PWD/build/codemagic/logs"
+      mkdir -p "$LOG_DIR"
+
+      "$PYTHON_BIN" scripts/project_config.py validate | tee "$LOG_DIR/project-config.log"
+
+      # Compare the pinned toolchain profile against the machine that is building.
+      "$PYTHON_BIN" - <<'PY' 2>&1 | tee "$LOG_DIR/toolchain-check.log"
+      import json
+      import pathlib
+      import re
+      import subprocess
+      import sys
+
+      expected = json.loads(pathlib.Path("config/toolchain.json").read_text())
+
+
+      def capture(command):
+          completed = subprocess.run(command, capture_output=True, text=True)
+          return f"{completed.stdout}\n{completed.stderr}"
+
+
+      flutter_match = re.search(r"Flutter\s+(\d+\.\d+\.\d+)", capture(["flutter", "--version"]))
+      java_match = re.search(r'version\s+"(\d+)', capture(["java", "-version"]))
+      actual = {
+          "flutter": flutter_match.group(1) if flutter_match else None,
+          "java": java_match.group(1) if java_match else None,
+          "python": f"{sys.version_info.major}.{sys.version_info.minor}",
+      }
+      print(f"expected: {expected}")
+      print(f"actual: {actual}")
+      problems = [
+          f"{key}: expected {expected[key]}, got {actual[key]}"
+          for key in expected
+          if actual[key] != expected[key]
+      ]
+      if problems:
+          print("Toolchain mismatch: " + "; ".join(problems), file=sys.stderr)
+          sys.exit(1)
+      print("Toolchain matches config/toolchain.json")
+      PY
+
+      flutter pub get --enforce-lockfile 2>&1 | tee "$LOG_DIR/pub-get.log"
+      "$PYTHON_BIN" scripts/sync_app_icons.py --check 2>&1 | tee "$LOG_DIR/sync-app-icons.log"
+      flutter analyze --no-pub 2>&1 | tee "$LOG_DIR/flutter-analyze.log"
+      "$PYTHON_BIN" scripts/flutter_with_config.py test --no-pub --reporter expanded 2>&1 \
+        | tee "$LOG_DIR/flutter-test.log"
+
+  backend_tests: &backend_tests
+    name: Backend unit tests on an isolated SQLite database
+    script: |
+      set -euo pipefail
+      : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+      ROOT_DIR="$PWD"
+      LOG_DIR="$ROOT_DIR/build/codemagic/logs"
+      mkdir -p "$LOG_DIR"
+
+      DB_PATH="$ROOT_DIR/build/codemagic/backend-tests.sqlite3"
+      rm -f "$DB_PATH" "$DB_PATH-journal" "$DB_PATH-wal" "$DB_PATH-shm"
+
+      DUOYI_DB_PATH="$DB_PATH" DUOYI_ENV_FILE='' APP_UPDATE_REPOSITORY='' \
+        "$PYTHON_BIN" -m unittest discover -s backend -v 2>&1 | tee "$LOG_DIR/backend-tests.log"
+
+workflows:
+  duoyi-ci:
+    name: Duoyi CI (tests + debug APK + Web bundles)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      <<: *shared_environment
+    cache: *shared_cache
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: true
+    scripts:
+      - *prepare_python
+      - *build_metadata
+      - *shared_quality
+      - *backend_tests
+      - name: Build debug APK for testing only
+        script: |
+          set -euo pipefail
+          LOG_DIR="$PWD/build/codemagic/logs"
+          mkdir -p "$LOG_DIR"
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          "$PYTHON_BIN" scripts/flutter_with_config.py build apk --debug --no-pub 2>&1 \
+            | tee "$LOG_DIR/android-debug-build.log"
+      - name: Build Web desktop and mobile bundles
+        script: |
+          set -euo pipefail
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          : "${APP_VERSION:?APP_VERSION must be exported by the metadata step}"
+          : "${APP_BUILD:?APP_BUILD must be exported by the metadata step}"
+          : "${SHORT_SHA:?SHORT_SHA must be exported by the metadata step}"
+          LOG_DIR="$PWD/build/codemagic/logs"
+          ARTIFACT_DIR="$PWD/build/codemagic/artifacts"
+          mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
+
+          rm -rf build/web build/web-desktop build/web-mobile
+          "$PYTHON_BIN" scripts/flutter_with_config.py build web --release --no-pub \
+            --dart-define=DUOYI_WEB_TARGET=desktop 2>&1 | tee "$LOG_DIR/web-desktop-build.log"
+          mv build/web build/web-desktop
+          "$PYTHON_BIN" scripts/flutter_with_config.py build web --release --no-pub \
+            --dart-define=DUOYI_WEB_TARGET=mobile 2>&1 | tee "$LOG_DIR/web-mobile-build.log"
+          mv build/web build/web-mobile
+
+          BASE_NAME="duoyi-web-${APP_VERSION}+${APP_BUILD}-${SHORT_SHA}"
+          tar -czf "$ARTIFACT_DIR/$BASE_NAME-desktop.tar.gz" -C build/web-desktop .
+          tar -czf "$ARTIFACT_DIR/$BASE_NAME-mobile.tar.gz" -C build/web-mobile .
+          ls -lh "$ARTIFACT_DIR"
+      - name: Collect debug APK, Web tarballs, and checksums
+        script: |
+          set -euo pipefail
+          : "${APP_VERSION:?APP_VERSION must be exported by the metadata step}"
+          : "${APP_BUILD:?APP_BUILD must be exported by the metadata step}"
+          : "${SHORT_SHA:?SHORT_SHA must be exported by the metadata step}"
+          ARTIFACT_DIR="$PWD/build/codemagic/artifacts"
+          LOG_DIR="$PWD/build/codemagic/logs"
+          mkdir -p "$ARTIFACT_DIR"
+
+          DEBUG_APK_SOURCE="build/app/outputs/flutter-apk/app-debug.apk"
+          if [ ! -f "$DEBUG_APK_SOURCE" ]; then
+            echo "Expected debug APK at $DEBUG_APK_SOURCE" >&2
+            exit 1
+          fi
+          DEBUG_APK_NAME="duoyi-${APP_VERSION}+${APP_BUILD}-${SHORT_SHA}-debug.apk"
+          cp "$DEBUG_APK_SOURCE" "$ARTIFACT_DIR/$DEBUG_APK_NAME"
+
+          # This workflow only ever produces a debug-signed test APK.
+          printf 'artifact=%s\nsigned_with=debug\nnote=debug test build, not a release APK\n' \
+            "$DEBUG_APK_NAME" > "$ARTIFACT_DIR/$DEBUG_APK_NAME.txt"
+
+          cd "$ARTIFACT_DIR"
+          shasum -a 256 ./*.apk ./*.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          ls -lh ./*.apk ./*.tar.gz SHA256SUMS.txt "$LOG_DIR"/*.log
+    artifacts:
+      - build/codemagic/artifacts/*.apk
+      - build/codemagic/artifacts/*.apk.txt
+      - build/codemagic/artifacts/*.tar.gz
+      - build/codemagic/artifacts/SHA256SUMS.txt
+      - build/codemagic/logs/*.log
+
+  duoyi-macos:
+    name: Duoyi macOS ad-hoc universal package (manual)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      <<: *shared_environment
+    cache: *shared_cache
+    scripts:
+      - *prepare_python
+      - *build_metadata
+      - *shared_quality
+      - *backend_tests
+      - name: Build universal macOS application
+        script: |
+          set -euo pipefail
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          LOG_DIR="$PWD/build/codemagic/logs"
+          mkdir -p "$LOG_DIR"
+          "$PYTHON_BIN" scripts/flutter_with_config.py build macos --release --no-pub \
+            --dart-define=DUOYI_MACOS_USE_DATA_PROTECTION_KEYCHAIN=false 2>&1 \
+            | tee "$LOG_DIR/macos-build.log"
+      - name: Package ad-hoc application and verify architectures
+        script: |
+          set -euo pipefail
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          APP_PATH="$("$PYTHON_BIN" - <<'PY'
+          from pathlib import Path
+
+          apps = sorted(Path("build/macos/Build/Products/Release").glob("*.app"))
+          if len(apps) != 1:
+              raise SystemExit(f"Expected one application, found {len(apps)}")
+          print(apps[0])
+          PY
+          )"
+          APP_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")"
+          APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")"
+          "$PYTHON_BIN" scripts/macos_adhoc_package.py prepare --app "$APP_PATH"
+
+          APP_BINARY="$APP_PATH/Contents/MacOS/$APP_EXECUTABLE"
+          lipo "$APP_BINARY" -archs
+          lipo "$APP_BINARY" -verify_arch arm64
+          lipo "$APP_BINARY" -verify_arch x86_64
+
+          COMMIT_SHA="$(git rev-parse HEAD)"
+          if [ -z "$COMMIT_SHA" ]; then
+            echo "Unable to resolve the current commit with git rev-parse HEAD" >&2
+            exit 1
+          fi
+          SHORT_SHA="$(printf '%s' "$COMMIT_SHA" | cut -c1-8)"
+          ARTIFACT_NAME="duoyi-${APP_VERSION}-${SHORT_SHA}-macos-universal-unsigned"
+          PACKAGE_DIR="$PWD/build/macos/packages"
+          STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/duoyi-dmg.XXXXXX")"
+          trap 'rm -rf "$STAGING_DIR"' EXIT
+          mkdir -p "$PACKAGE_DIR"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$PACKAGE_DIR/$ARTIFACT_NAME.zip"
+          ditto "$APP_PATH" "$STAGING_DIR/多仪.app"
+          ln -s /Applications "$STAGING_DIR/Applications"
+          hdiutil create -volname '多仪 Duoyi' -srcfolder "$STAGING_DIR" -ov -format UDZO "$PACKAGE_DIR/$ARTIFACT_NAME.dmg"
+          cd "$PACKAGE_DIR"
+          shasum -a 256 ./*.zip ./*.dmg > SHA256SUMS-macos.txt
+          ls -lh ./*.dmg ./*.zip SHA256SUMS-macos.txt
+          cat SHA256SUMS-macos.txt
+      - name: Verify packaged macOS artifacts (launch, window, liveness, keychain)
+        script: |
+          set -euo pipefail
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          mkdir -p build/codemagic
+          "$PYTHON_BIN" scripts/macos_adhoc_package.py check-packages \
+            --package-dir build/macos/packages \
+            --output build/codemagic/duoyi-macos-validation.json
+    artifacts:
+      - build/macos/packages/*.dmg
+      - build/macos/packages/*.zip
+      - build/macos/packages/SHA256SUMS-macos.txt
+      - build/codemagic/duoyi-macos-validation.json
+      - build/codemagic/logs/*.log
+
+  duoyi-android-release:
+    name: Duoyi Android signed release (manual)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      <<: *shared_environment
+      groups:
+        - duoyi_android_signing
+    cache: *shared_cache
+    scripts:
+      - name: Verify signing secrets are present without printing them
+        script: |
+          set -euo pipefail
+          missing=""
+          for name in DUOYI_KEYSTORE_BASE64 DUOYI_KEYSTORE_PASSWORD DUOYI_KEY_ALIAS DUOYI_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "Missing required signing secrets from the duoyi_android_signing group:$missing" >&2
+            echo "This workflow fails instead of falling back to debug signing." >&2
+            exit 1
+          fi
+          echo "Signing secrets present: DUOYI_KEYSTORE_BASE64, DUOYI_KEYSTORE_PASSWORD, DUOYI_KEY_ALIAS, DUOYI_KEY_PASSWORD"
+      - *prepare_python
+      - *build_metadata
+      - *shared_quality
+      - *backend_tests
+      - name: Build signed release APKs and app bundle
+        script: |
+          set -euo pipefail
+          : "${PYTHON_BIN:?PYTHON_BIN must be exported by the Python bootstrap step}"
+          LOG_DIR="$PWD/build/codemagic/logs"
+          mkdir -p "$LOG_DIR"
+          "$PYTHON_BIN" scripts/flutter_with_config.py build apk --release --split-per-abi --no-pub 2>&1 \
+            | tee "$LOG_DIR/android-release-split-build.log"
+          "$PYTHON_BIN" scripts/flutter_with_config.py build apk --release --no-pub 2>&1 \
+            | tee "$LOG_DIR/android-release-universal-build.log"
+          "$PYTHON_BIN" scripts/flutter_with_config.py build appbundle --release --no-pub 2>&1 \
+            | tee "$LOG_DIR/android-release-bundle.log"
+      - name: Collect signed APKs, AAB, and checksums
+        script: |
+          set -euo pipefail
+          : "${APP_VERSION:?APP_VERSION must be exported by the metadata step}"
+          : "${APP_BUILD:?APP_BUILD must be exported by the metadata step}"
+          : "${SHORT_SHA:?SHORT_SHA must be exported by the metadata step}"
+          ARTIFACT_DIR="$PWD/build/codemagic/artifacts"
+          mkdir -p "$ARTIFACT_DIR"
+          BASE_NAME="duoyi-${APP_VERSION}+${APP_BUILD}-${SHORT_SHA}"
+
+          APK_FOUND=""
+          for apk in build/app/outputs/flutter-apk/*-release.apk; do
+            if [ ! -f "$apk" ]; then
+              continue
+            fi
+            APK_FOUND="yes"
+            apk_name="$(basename "$apk")"
+            apk_variant="${apk_name%-release.apk}"
+            cp "$apk" "$ARTIFACT_DIR/${BASE_NAME}-${apk_variant}-release.apk"
+          done
+          if [ -z "$APK_FOUND" ]; then
+            echo "No release APK was produced" >&2
+            exit 1
+          fi
+
+          AAB_SOURCE="build/app/outputs/bundle/release/app-release.aab"
+          if [ ! -f "$AAB_SOURCE" ]; then
+            echo "Expected app bundle at $AAB_SOURCE" >&2
+            exit 1
+          fi
+          cp "$AAB_SOURCE" "$ARTIFACT_DIR/${BASE_NAME}-release.aab"
+
+          cd "$ARTIFACT_DIR"
+          shasum -a 256 ./*.apk ./*.aab > SHA256SUMS-android.txt
+          cat SHA256SUMS-android.txt
+          ls -lh ./*.apk ./*.aab SHA256SUMS-android.txt
+    artifacts:
+      - build/codemagic/artifacts/*.apk
+      - build/codemagic/artifacts/*.aab
+      - build/codemagic/artifacts/SHA256SUMS-android.txt
+      - build/codemagic/logs/*.log

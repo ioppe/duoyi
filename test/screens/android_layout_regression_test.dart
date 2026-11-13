@@ -41,7 +41,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 原生安卓窄屏布局打磨的回归保护：
-/// 1. 待办页顶部在安卓手机上压缩为「页签 + 折叠筛选栏」，桌面/Web 不变；
+/// 1. 待办页顶部在安卓手机上压缩为「页签 + 折叠筛选栏」；Web 窄屏仍保留概要卡
+///    与常驻筛选条，macOS 窄窗保留概要卡但筛选默认折成一行；
 /// 2. 待办页不再有右下角悬浮创建按钮，创建入口收进 AppBar；
 /// 3. 首页快速捕获与 HabitScreen 复用同一个 [AppCreateFab] 视觉与尺寸；
 /// 4. 「我的」功能分组的卡片内左右留白 ≥16，分隔线两侧留白。
@@ -277,28 +278,51 @@ void main() {
   );
 
   testWidgets(
-    'Web 与桌面窄屏保持概要卡和常驻筛选布局',
+    'Web 窄屏保持概要卡和常驻筛选布局',
     (tester) async {
-      // Web 窄屏（原有行为）。
       WebTarget.debugWebBuild = true;
+
       await _pumpTodoScreen(tester, size: const Size(390, 844));
+
       expect(_summaryCard, findsOneWidget);
       expect(_filterToggle, findsNothing);
       expect(
         find.descendant(of: _filterBar, matching: find.text('7天内')),
         findsOneWidget,
       );
-      // 清理本次 Web 模拟，避免影响后续桌面断言。
-      await tester.pumpWidget(const SizedBox.shrink());
-      WebTarget.debugWebBuild = null;
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
-      // macOS 桌面窄窗口（非安卓原生）：保持概要卡 + 常驻筛选。
+  // macOS 原生窄窗：概要卡保留，筛选默认折成一行，展开后才出现完整条件。
+  testWidgets(
+    'macOS 窄窗保留概要卡，筛选默认折叠且展开收起都不溢出',
+    (tester) async {
       await _pumpTodoScreen(tester, size: const Size(390, 844));
+
       expect(_summaryCard, findsOneWidget);
-      expect(_filterToggle, findsNothing);
+      expect(_filterBar, findsOneWidget);
+      expect(_filterToggle, findsOneWidget);
+      expect(
+        find.descendant(of: _filterBar, matching: find.text('7天内')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(_filterToggle);
+      await tester.pumpAndSettle();
       expect(
         find.descendant(of: _filterBar, matching: find.text('7天内')),
         findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(_filterToggle);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: _filterBar, matching: find.text('7天内')),
+        findsNothing,
       );
       expect(tester.takeException(), isNull);
     },

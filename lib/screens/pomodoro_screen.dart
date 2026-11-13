@@ -14,7 +14,6 @@ import '../core/design_tokens.dart';
 import '../widgets/apple_page_frame.dart';
 import '../core/focus_report.dart';
 import '../core/focus_sound_catalog.dart';
-import '../core/platform_info.dart';
 import '../models/focus_room.dart';
 import '../models/pomodoro.dart';
 import '../providers/custom_focus_sound_provider.dart';
@@ -25,6 +24,7 @@ import '../providers/theme_provider.dart';
 import '../services/api_client.dart';
 import '../services/focus_room_api.dart';
 import '../services/focus_sound_service.dart';
+import '../services/pomodoro_floating_window_service.dart';
 import '../widgets/app_date_picker.dart';
 import '../widgets/app_time_picker.dart';
 import '../widgets/brand_background.dart';
@@ -622,6 +622,11 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
     }
 
     final appleLayout = usesApplePageLayout(context);
+    // 悬浮窗入口的能力来自可注入服务：测试可注入 supported: true 的替身，
+    // 生产环境回退全局单例（原生默认要求 macOS 且非 Web）。
+    final floatingWindow =
+        context.read<PomodoroFloatingWindowService?>() ??
+        PomodoroFloatingWindowService.instance;
     final focusTabs = AppPageTabs(
       controller: _tabCtrl,
       height: AppPageTabs.heightFor(context),
@@ -641,8 +646,8 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
             ? null
             : AppBar(
                 title: Text(s.focusTitle),
-                actions: PlatformInfo.isMacOS
-                    ? const [PomodoroFloatingWindowButton()]
+                actions: floatingWindow.isSupported
+                    ? [PomodoroFloatingWindowButton(service: floatingWindow)]
                     : null,
                 bottom: focusTabs,
               ),
@@ -666,10 +671,12 @@ class _PomodoroScreenState extends State<_PomodoroScreenBody>
                   child: ApplePageHeader(
                     key: const ValueKey('focus_page_header'),
                     title: s.focusTitle,
-                    trailing: PlatformInfo.isMacOS
-                        ? const KeyedSubtree(
-                            key: ValueKey('focus_header_trailing'),
-                            child: PomodoroFloatingWindowButton(),
+                    trailing: floatingWindow.isSupported
+                        ? KeyedSubtree(
+                            key: const ValueKey('focus_header_trailing'),
+                            child: PomodoroFloatingWindowButton(
+                              service: floatingWindow,
+                            ),
                           )
                         : null,
                   ),
