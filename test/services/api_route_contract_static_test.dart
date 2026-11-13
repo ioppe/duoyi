@@ -890,7 +890,6 @@ void main() {
 
     for (final call in [
       "'/api/sync/events'",
-      "'/api/sync/status'",
       "'/api/sync'",
       "'/api/sync/item-delta'",
       "'/api/sync/delta'",
@@ -898,6 +897,11 @@ void main() {
     ]) {
       expect(syncProvider, contains(call), reason: call);
     }
+    expect(
+      syncProvider,
+      isNot(contains("'/api/sync/status'")),
+      reason: '个人数据变化由 SSE 通知触发，客户端不得恢复版本探针轮询。',
+    );
 
     for (final call in [
       "'/api/reminders/email/once'",
@@ -1140,11 +1144,6 @@ void main() {
       const _RouteContract(
         method: 'GET',
         path: '/api/sync/events',
-        location: '',
-      ),
-      const _RouteContract(
-        method: 'GET',
-        path: '/api/sync/status',
         location: '',
       ),
       const _RouteContract(method: 'POST', path: '/api/sync', location: ''),

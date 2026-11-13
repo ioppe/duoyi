@@ -35,6 +35,7 @@ import 'providers/calendar_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/notification_service.dart';
 import 'providers/auth_provider.dart';
+import 'models/server_config_status.dart';
 import 'providers/countdown_provider.dart';
 import 'providers/note_provider.dart';
 import 'providers/anniversary_provider.dart';
@@ -4027,6 +4028,7 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
       _checkUpdatePolicy(force: true);
       _refreshAccountProfileOnResume();
       _refreshBackendConfigOnResume();
+      _ensureRealtimeSyncOnResume();
       // 先处理时区变更（可能影响调度），再做跨日 rollover。
       unawaited(() async {
         await _maybeResyncOnTimezoneChange();
@@ -4086,6 +4088,26 @@ class _DuoyiAppState extends State<DuoyiApp> with WidgetsBindingObserver {
         debugPrint('[DuoyiApp] resume config failed: $e\n$st');
       }
     }());
+  }
+
+  /// 回到前台强制重建实时同步事件流：订阅对象可能还在，但底层 socket 已死。
+  /// 首帧拿到最新修订后只补一次同步，不启动任何周期数据轮询。
+  void _ensureRealtimeSyncOnResume() {
+    final ctx = mainShellKey.currentContext ?? context;
+    try {
+      final auth = Provider.of<AuthProvider>(ctx, listen: false);
+      final cloudSync = Provider.of<CloudSyncProvider>(ctx, listen: false);
+      if (!auth.state.isLoggedIn ||
+          auth.serverConfigStatus != ServerConfigStatus.ready ||
+          auth.serverConfig['backup_enabled'] == false ||
+          !cloudSync.config.autoSync) {
+        return;
+      }
+      cloudSync.startRemotePolling();
+    } on ProviderNotFoundException {
+      // 独立页面测试未注入同步服务时不发起网络操作。
+      return;
+    }
   }
 
   void _checkUpdatePolicy({bool force = false}) {

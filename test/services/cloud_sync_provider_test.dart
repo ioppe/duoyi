@@ -27,7 +27,9 @@ void main() {
       'await activeWriteback;',
       'void resumeForActiveAccount()',
       'expectedAccountGeneration',
-      '_pullRemoteChanges(expectedAccountGeneration: accountGenerationAtStart)',
+      '_pullRemoteChanges(expectedAccountGeneration: generation)',
+      'bool _isCurrentRealtimeStream(int generation, String identity)',
+      'if (!_isCurrentRealtimeStream(generation, identity)) return;',
       'accountGenerationAtStart: accountGenerationAtStart',
     ]) {
       expect(providerSource, contains(field), reason: field);
@@ -318,7 +320,7 @@ void main() {
     expect(source, contains('_scheduleAutoSync(_autoRetryDelay);'));
   });
 
-  test('登录后启用远端轮询拉取，登出或关闭自动同步会停止轮询', () {
+  test('前台远端变化只走实时事件流，登录后订阅、登出或关闭自动同步即停止', () {
     final providerSource = File(
       'lib/providers/cloud_sync_provider.dart',
     ).readAsStringSync();
@@ -327,29 +329,46 @@ void main() {
       'lib/services/backend_sync_coordinator.dart',
     ).readAsStringSync();
 
-    expect(providerSource, contains('static const _remotePollDelay'));
-    expect(providerSource, contains('Timer? _remotePollTimer'));
+    // 正常同步不允许任何周期数据探针：没有轮询定时器，也不查 /api/sync/status。
+    expect(providerSource, isNot(contains('_remotePollTimer')));
+    expect(providerSource, isNot(contains('_remotePollDelay')));
+    expect(providerSource, isNot(contains('_scheduleRemotePoll')));
+    expect(providerSource, isNot(contains('_pollRemoteChanges')));
+    expect(providerSource, isNot(contains("client.get('/api/sync/status')")));
+
+    // 旧 public 名称保留为兼容包装，实现落到 SSE 实时订阅。
+    expect(providerSource, contains('void startRemotePolling()'));
+    expect(providerSource, contains('void stopRemotePolling()'));
+    expect(
+      providerSource,
+      contains('ensureRealtimeSync({bool force = false})'),
+    );
     expect(
       providerSource,
       contains('StreamSubscription<String>? _remoteEventSubscription'),
     );
-    expect(providerSource, contains('void startRemotePolling()'));
-    expect(providerSource, contains('void stopRemotePolling()'));
-    expect(providerSource, contains('void _startRemoteEvents()'));
-    expect(providerSource, contains('void _scheduleRemoteEventReconnect('));
-    expect(providerSource, contains('void _scheduleRemotePoll'));
-    expect(providerSource, contains('Future<void> _pollRemoteChanges()'));
-    expect(providerSource, contains("client.get('/api/sync/status')"));
+    expect(providerSource, contains('void _startRealtimeEvents()'));
     expect(providerSource, contains(".streamLines('/api/sync/events')"));
-    expect(providerSource, contains("'server_version'"));
-    expect(providerSource, contains('_lastServerVersion'));
-    expect(providerSource, contains('serverVersion <= _lastServerVersion!'));
     expect(
       providerSource,
-      contains('await _pullRemoteChanges(\n        expectedAccountGeneration:'),
+      contains('void _handleRealtimeDisconnect(int generation)'),
     );
-    expect(providerSource, contains('_hasPendingChanges || _isSyncing'));
-    expect(providerSource, contains('_scheduleRemotePoll();'));
+    expect(providerSource, contains('void _stopRealtimeSync()'));
+
+    // 心跳只重置静默超时（75s），重连退避 1/2/5/10/20/30s 封顶。
+    expect(providerSource, contains('static const _realtimeIdleTimeout'));
+    expect(providerSource, contains('Duration(seconds: 75)'));
+    expect(providerSource, contains('Timer(_realtimeIdleTimeout'));
+    expect(providerSource, contains('static const _realtimeReconnectBackoff'));
+    expect(providerSource, contains('Duration(seconds: 1),'));
+    expect(providerSource, contains('Duration(seconds: 20),'));
+    expect(providerSource, contains('Duration(seconds: 30),'));
+
+    // 本地落盘后尽快上传：短合并窗口 + 最大等待，不是全局周期同步。
+    expect(providerSource, contains('static const _autoSyncDelay'));
+    expect(providerSource, contains('Duration(milliseconds: 300)'));
+    expect(providerSource, contains('_autoSyncMaxCoalesceDelay'));
+
     expect(mainSource, contains('Future<void> startCloudSyncAfterAuth'));
     expect(mainSource, contains('await backendSyncCoordinator.refresh();'));
     expect(
@@ -358,6 +377,9 @@ void main() {
     );
     expect(coordinatorSource, contains('_cloud.startRemotePolling();'));
     expect(mainSource, contains('cloudSyncProvider.stopRemotePolling();'));
+    // 回到前台强制重建订阅（订阅对象在但 socket 已死的场景）。
+    expect(mainSource, contains('_ensureRealtimeSyncOnResume();'));
+    expect(mainSource, contains('cloudSyncProvider.startRemotePolling();'));
   });
 
   test('同步回写不会用旧主题或旧时光币对象覆盖本地新状态', () {
@@ -379,7 +401,7 @@ void main() {
     expect(providerSource, contains(r'skipped stale object $remoteKey'));
   });
 
-  test('同步事件流收到新版本后即时拉取，轮询仍作为兜底', () {
+  test('实时事件到达即补齐远端修订，pending/在途时也不丢事件与本地编辑', () {
     final providerSource = File(
       'lib/providers/cloud_sync_provider.dart',
     ).readAsStringSync();
@@ -391,24 +413,38 @@ void main() {
       ".streamLines('/api/sync/events')",
       'void _handleRemoteEventLine(String line)',
       'void _dispatchRemoteEvent()',
-      'void _scheduleRemoteEventReconnect(',
+      'void _handleRealtimeDisconnect(int generation)',
       "line.startsWith('event:')",
       "line.startsWith('data:')",
       "final eventName = _remoteEventName.isEmpty ? 'message' : _remoteEventName",
       "if (eventName != 'sync' || rawData.isEmpty) return;",
-      "json.decode(rawData)",
+      'json.decode(rawData)',
       "decoded['server_version']",
       "decoded['server_updated_at']",
-      'if (versionUnchanged || timestampUnchanged) return;',
-      'if (_hasPendingChanges || _isSyncing || !_config.autoSync) return;',
+      'bool _recordRemoteRevision(int? version, String updatedAt)',
+      'if (!_recordRemoteRevision(serverVersion, serverUpdatedAt)) return;',
+      'bool get _hasUnconsumedRemoteRevision',
+      'Future<void> _drainRemoteChanges() async',
+      'if (_remoteCatchUpRunning) return;',
+      'await _syncNow();',
+      'await _pullRemoteChanges(',
+      '_scheduleRemoteCatchUpRetry(generation);',
+      '_noteRealtimeActivity(generation, identity);',
       'cancelOnError: true',
-      '_scheduleRemoteEventReconnect(_autoRetryDelay)',
-      '_scheduleRemotePoll(_autoRetryDelay)',
-      '_remoteEventRetryTimer?.cancel();',
-      '_remoteEventSubscription?.cancel();',
+      'unawaited(subscription.cancel());',
     ]) {
-      expect(providerSource, contains(field));
+      expect(providerSource, contains(field), reason: field);
     }
+
+    // 旧实现「pending / 在途就丢弃事件」的守卫必须消失，否则多端即时同步会漏事件。
+    expect(
+      providerSource,
+      isNot(
+        contains(
+          'if (_hasPendingChanges || _isSyncing || !_config.autoSync) return;',
+        ),
+      ),
+    );
 
     for (final field in [
       '@app.get("/api/sync/events")',
@@ -420,11 +456,11 @@ void main() {
       '"Cache-Control": "no-cache"',
       '"X-Accel-Buffering": "no"',
     ]) {
-      expect(backendSource, contains(field));
+      expect(backendSource, contains(field), reason: field);
     }
   });
 
-  test('远端轮询使用轻量版本探针，未变化时跳过全量同步', () {
+  test('服务端修订号只在事件与同步响应里比对，未变化不重复同步', () {
     final providerSource = File(
       'lib/providers/cloud_sync_provider.dart',
     ).readAsStringSync();
@@ -444,7 +480,16 @@ void main() {
       providerSource,
       contains('prefs.setString(_serverUpdatedAtStorageKey'),
     );
-    expect(providerSource, contains('versionUnchanged || timestampUnchanged'));
+    // 未变化判定必须来自待消费的远端修订，而不是任何周期版本探针。
+    expect(providerSource, contains('bool get _hasUnconsumedRemoteRevision'));
+    expect(
+      providerSource,
+      contains('return confirmed == null || version > confirmed;'),
+    );
+    expect(
+      providerSource,
+      isNot(contains('versionUnchanged || timestampUnchanged')),
+    );
 
     expect(backendSource, contains('sync_version INTEGER DEFAULT 0'));
     expect(backendSource, contains('("sync_data", "sync_version", "0")'));
@@ -477,14 +522,18 @@ void main() {
     expect(providerSource, contains('await _applySyncResponse('));
     expect(
       providerSource,
-      contains('await _pullRemoteChanges(\n        expectedAccountGeneration:'),
+      contains(
+        'await _pullRemoteChanges(expectedAccountGeneration: generation)',
+      ),
     );
 
-    final pollBody = providerSource.substring(
-      providerSource.indexOf('Future<void> _pollRemoteChanges()'),
-      providerSource.indexOf('static const _stringEncodedListKeys'),
+    // 无本地改动时只走集合 hash 增量回载；只有本地待同步才先整包/delta 上传。
+    final drainBody = providerSource.substring(
+      providerSource.indexOf('Future<void> _drainRemoteChanges()'),
+      providerSource.indexOf('void _consumePendingRemoteRevision()'),
     );
-    expect(pollBody, isNot(contains('await syncNow();')));
+    expect(drainBody, contains('await _pullRemoteChanges('));
+    expect(drainBody, contains('final uploadedFirst = _hasPendingChanges;'));
 
     expect(backendSource, contains('class SyncPullRequest'));
     expect(backendSource, contains('@app.post("/api/sync/pull")'));

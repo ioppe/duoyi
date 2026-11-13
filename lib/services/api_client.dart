@@ -9,7 +9,8 @@ import '../core/app_config.dart';
 /// 跨平台 HTTP 封装(web/android/linux 通用)。
 class ApiClient {
   static const String requiredApiContractVersion = '2026-06-01.3';
-  static const String requiredApiContractRoutesHash = 'ce1546700ea8ce32';
+  static const String requiredApiContractRoutesHash = '1f46e6023a2435e8';
+  static const String _focusRuntimeApiContractRoutesHash = 'ce1546700ea8ce32';
   static const String _legacyApiContractRoutesHash = '48881df2412c4ae0';
   static const String _focusRuntimeContractDate = '2026-06-01';
   static const int _focusRuntimeContractRevision = 8;
@@ -23,6 +24,9 @@ class ApiClient {
     String routesHash,
   ) {
     if (routesHash == requiredApiContractRoutesHash) return true;
+    if (routesHash == _focusRuntimeApiContractRoutesHash) {
+      return contractVersion == '2026-06-01.8';
+    }
     if (routesHash != _legacyApiContractRoutesHash) return false;
     final match = _apiContractRevisionPattern.firstMatch(contractVersion);
     if (match == null) return false;

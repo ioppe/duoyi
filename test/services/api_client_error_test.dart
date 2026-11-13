@@ -384,6 +384,24 @@ void main() {
       '48881df2412c4ae0',
       true,
     ),
+    (
+      'focus runtime revision keeps its pre-push hash compatible',
+      '2026-06-01.8',
+      'ce1546700ea8ce32',
+      false,
+    ),
+    (
+      'sync push revision accepts the current route hash',
+      '2026-06-01.9',
+      ApiClient.requiredApiContractRoutesHash,
+      false,
+    ),
+    (
+      'sync push revision rejects the pre-push route hash',
+      '2026-06-01.9',
+      'ce1546700ea8ce32',
+      true,
+    ),
   ];
   for (final (name, contractVersion, routesHash, mismatch) in routeHashCases) {
     test(name, () async {

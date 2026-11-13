@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "transport": "real localhost TCP HTTP + SSE",
+  "base_url": "http://127.0.0.1:18823",
+  "cases": [
+    "two ordinary login sessions remain valid together",
+    "three TCP SSE connections receive authenticated initial snapshots",
+    "committed change reaches both same-account SSE connections within 1.5 seconds",
+    "another account receives no owner revision",
+    "receiving device incrementally pulls the committed todo",
+    "idle SSE heartbeat arrives without a new sync event",
+    "reconnecting device receives latest committed revision as its first event",
+    "revoked SSE credential closes before another account event is sent"
+  ],
+  "cases_passed": 8,
+  "post_start_to_sse_ms": [
+    6.94,
+    7.99
+  ],
+  "source_sha256": {
+    "backend/main.py": "9f2dfef5ec10edbd6d849f22ff3034c70bbbc7cf5f5b9bc93491397ba9ce1c38",
+    "backend/sync_events.py": "24728045f34473bd47a9de1121602d5d3360733a44e90d064e4f668acbad3161",
+    "lib/providers/cloud_sync_provider.dart": "c2771dd2718b50820109314f16bfc0c3d105c4c9b566898708091e2b9be7eb62",
+    "lib/services/backend_sync_coordinator.dart": "0dab126994ec78a89d34e11929badaf6e35875aea3f2ea751f49ce9ee12457e3",
+    "lib/main.dart": "15d16f9546c3b579fe8b9b77a8f21dcdc6224f39f213db592bef187694e4df97"
+  },
+  "scope": "backend protocol integration; no installed-client or device UI validation",
+  "database": "isolated scratch fixture; no production data"
+}
