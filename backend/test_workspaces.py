@@ -32,6 +32,16 @@ class WorkspaceApiTest(unittest.TestCase):
         api.TOKEN_LAST_ACTIVE.clear()
         self._tmp.cleanup()
 
+    def _older_release_version(self, version: str) -> str:
+        current = tuple(int(part) for part in version.split("."))
+        older = list(current)
+        for index in (2, 1, 0):
+            if older[index] > 0:
+                older[index] -= 1
+                break
+        self.assertLess(tuple(older), current)
+        return ".".join(str(part) for part in older)
+
     def _register(self, username: str) -> str:
         db = api.get_db()
         try:
@@ -3453,6 +3463,7 @@ class WorkspaceApiTest(unittest.TestCase):
         current_version, current_build = version_line.split(":", 1)[1].strip().split("+")
         self.assertRegex(current_version, r"^\d+\.\d+\.\d+$")
         current_version_code = int(current_build)
+        stale_version = self._older_release_version(current_version)
         admin_id = self._make_admin("force-update-stale-version", ["settings"])
         self.assertEqual(api.APP_CURRENT_VERSION, current_version)
         self.assertEqual(api.APP_CURRENT_VERSION_CODE, current_version_code)
@@ -3466,9 +3477,9 @@ class WorkspaceApiTest(unittest.TestCase):
             try:
                 api._setting_set(db, "force_update_required", True)
                 api._setting_set(db, "force_app_update_enabled", True)
-                api._setting_set(db, "latest_version", "1.1.20")
-                api._setting_set(db, "latest_version_name", "1.1.20")
-                api._setting_set(db, "minimum_supported_version", "1.1.20")
+                api._setting_set(db, "latest_version", stale_version)
+                api._setting_set(db, "latest_version_name", stale_version)
+                api._setting_set(db, "minimum_supported_version", stale_version)
                 api._setting_set(db, "update_notes", "旧版本强更配置")
                 api._setting_set(db, "release_notes", "旧版本强更配置")
                 db.commit()
@@ -3483,7 +3494,7 @@ class WorkspaceApiTest(unittest.TestCase):
             self.assertEqual(settings["latest_version_code"], current_version_code)
             self.assertEqual(settings["minimum_supported_version"], current_version)
             self.assertNotIn(
-                "1.1.20",
+                stale_version,
                 json.dumps(settings["version_options"], ensure_ascii=False),
             )
 
@@ -3512,8 +3523,8 @@ class WorkspaceApiTest(unittest.TestCase):
 
             updated = api.admin_update_settings(
                 api.SettingsUpdate(
-                    latest_version="1.1.20",
-                    minimum_supported_version="1.1.20",
+                    latest_version=stale_version,
+                    minimum_supported_version=stale_version,
                 ),
                 actor=admin_id,
             )
@@ -3583,12 +3594,14 @@ class WorkspaceApiTest(unittest.TestCase):
         old_github_latest = api._github_latest_mobile_release
         old_mobile_apk_dir = api.MOBILE_APK_DIR
         api.MOBILE_APK_DIR = os.path.join(self._tmp.name, "empty_mobile_apps")
+        stale_version = self._older_release_version(api.APP_CURRENT_VERSION)
+        stale_code = api.APP_CURRENT_VERSION_CODE - 1
 
         def stale_release():
             return {
-                "latest_version_name": "1.1.12",
-                "latest_version_code": 110012,
-                "download_url": "https://example.test/duoyi-1.1.12.apk",
+                "latest_version_name": stale_version,
+                "latest_version_code": stale_code,
+                "download_url": f"https://example.test/duoyi-{stale_version}.apk",
                 "release_notes": "旧发布不应覆盖当前版本",
             }
 
@@ -3596,17 +3609,17 @@ class WorkspaceApiTest(unittest.TestCase):
         try:
             db = api.get_db()
             try:
-                api._setting_set(db, "latest_version", "1.1.12")
-                api._setting_set(db, "latest_version_name", "1.1.12")
+                api._setting_set(db, "latest_version", stale_version)
+                api._setting_set(db, "latest_version_name", stale_version)
                 api._setting_set(
                     db,
                     "download_url",
-                    "https://example.test/duoyi-1.1.12.apk",
+                    f"https://example.test/duoyi-{stale_version}.apk",
                 )
                 api._setting_set(
                     db,
                     "update_download_url",
-                    "https://example.test/duoyi-1.1.12.apk",
+                    f"https://example.test/duoyi-{stale_version}.apk",
                 )
                 db.commit()
             finally:
@@ -3615,8 +3628,8 @@ class WorkspaceApiTest(unittest.TestCase):
                 response = client.get(
                     "/api/mobile/apps/duoyi/update",
                     params={
-                        "current_version": "1.1.12",
-                        "current_version_code": "110012",
+                        "current_version": stale_version,
+                        "current_version_code": str(stale_code),
                     },
                 )
             self.assertEqual(response.status_code, 200)
@@ -3625,7 +3638,7 @@ class WorkspaceApiTest(unittest.TestCase):
             self.assertEqual(mobile["latest_version_name"], api.APP_CURRENT_VERSION)
             self.assertEqual(mobile["latest_version_code"], api.APP_CURRENT_VERSION_CODE)
             self.assertEqual(mobile["download_url"], "")
-            self.assertNotIn("1.1.12", mobile["release_url"])
+            self.assertNotIn(f"v{stale_version}", mobile["release_url"])
 
             current_response = client.get(
                 "/api/mobile/apps/duoyi/update",

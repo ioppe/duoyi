@@ -189,12 +189,21 @@ class MobileUpdateVersionSemanticsTest(unittest.TestCase):
         self.assertFalse(payload["force_update"])
 
     def test_newer_installed_client_is_never_told_to_downgrade(self):
+        current = tuple(int(part) for part in api.APP_CURRENT_VERSION.split("."))
+        older = list(current)
+        for index in (2, 1, 0):
+            if older[index] > 0:
+                older[index] -= 1
+                break
+        self.assertLess(tuple(older), current)
+        stale_version = ".".join(str(part) for part in older)
+
         def stale_release():
             return {
-                "latest_version_name": "1.1.20",
-                "latest_version_code": 200000,
+                "latest_version_name": stale_version,
+                "latest_version_code": api.APP_CURRENT_VERSION_CODE + 1,
                 "latest_version_code_source": api.RELEASE_CODE_SOURCE_MANIFEST,
-                "download_url": "https://example.test/duoyi-1.1.20.apk",
+                "download_url": f"https://example.test/duoyi-{stale_version}.apk",
             }
 
         with patch.object(api, "_github_latest_mobile_release", stale_release):
@@ -202,7 +211,7 @@ class MobileUpdateVersionSemanticsTest(unittest.TestCase):
                 force_update_required=True,
                 force_app_update_enabled=True,
             )
-            payload = self._mobile_update("2.0.0", 142023)
+            payload = self._mobile_update(api.APP_CURRENT_VERSION, api.APP_CURRENT_VERSION_CODE)
 
         self.assertEqual(payload["latest_version_name"], api.APP_CURRENT_VERSION)
         self.assertFalse(payload["available"])
