@@ -379,7 +379,24 @@ void main() {
     expect(mainSource, contains('cloudSyncProvider.stopRemotePolling();'));
     // 回到前台强制重建订阅（订阅对象在但 socket 已死的场景）。
     expect(mainSource, contains('_ensureRealtimeSyncOnResume();'));
-    expect(mainSource, contains('cloudSyncProvider.startRemotePolling();'));
+    final resumeStart = mainSource.indexOf(
+      'void _ensureRealtimeSyncOnResume()',
+    );
+    expect(resumeStart, isNonNegative);
+    final resumeSource = mainSource.substring(
+      resumeStart,
+      mainSource.indexOf('void _checkUpdatePolicy(', resumeStart),
+    );
+    for (final guard in [
+      'Provider.of<CloudSyncProvider>(ctx, listen: false)',
+      '!auth.state.isLoggedIn',
+      'auth.serverConfigStatus != ServerConfigStatus.ready',
+      "auth.serverConfig['backup_enabled'] == false",
+      '!cloudSync.config.autoSync',
+      'cloudSync.startRemotePolling();',
+    ]) {
+      expect(resumeSource, contains(guard), reason: guard);
+    }
   });
 
   test('同步回写不会用旧主题或旧时光币对象覆盖本地新状态', () {
