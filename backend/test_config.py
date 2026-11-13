@@ -65,7 +65,7 @@ class ConfigTest(unittest.TestCase):
         profile = Path(__file__).resolve().parents[1] / "config" / "deployment.json"
         settings = config.load_settings({}, backend_dir=self.root, deployment_file=profile)
         self.assertEqual(settings.cors_origins, ("https://todo.skydrow.site",))
-        self.assertEqual(settings.app_update_repository, "ioppe/duoyi")
+        self.assertEqual(settings.app_update_repository, "skydrow98/duoyi")
         self.assertEqual(settings.public_source, profile)
 
     def test_environment_file_and_process_override_public_defaults(self):

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
@@ -255,12 +256,14 @@ class ThemePickerScreen extends StatelessWidget {
         cs.surface,
       ),
       backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.42),
-      side: BorderSide(
-        color: selected
-            ? cs.primary.withValues(alpha: 0.24)
-            : cs.outlineVariant.withValues(alpha: 0.16),
-        width: 0.45,
-      ),
+      side: AppleButtonStyle.appliesTo(Theme.of(context))
+          ? AppleButtonStyle.chipBorder(Theme.of(context))
+          : BorderSide(
+              color: selected
+                  ? cs.primary.withValues(alpha: 0.24)
+                  : cs.outlineVariant.withValues(alpha: 0.16),
+              width: 0.45,
+            ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       showCheckmark: false,
       visualDensity: VisualDensity.compact,

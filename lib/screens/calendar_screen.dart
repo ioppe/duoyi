@@ -1,3 +1,4 @@
+import '../core/apple_button_style.dart';
 import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
 import '../widgets/app_page_tabs.dart';
@@ -527,12 +528,14 @@ class _CalendarScreenState extends State<CalendarScreen>
         labelStyle: appSecondaryControlLabelStyle(context),
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.padded,
-        side: BorderSide(
-          color: selected
-              ? cs.primary.withValues(alpha: 0.24)
-              : cs.outlineVariant.withValues(alpha: 0.16),
-          width: 0.45,
-        ),
+        side: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? AppleButtonStyle.chipBorder(Theme.of(context))
+            : BorderSide(
+                color: selected
+                    ? cs.primary.withValues(alpha: 0.24)
+                    : cs.outlineVariant.withValues(alpha: 0.16),
+                width: 0.45,
+              ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
         labelPadding: const EdgeInsets.symmetric(horizontal: 2),
       ),
@@ -553,10 +556,12 @@ class _CalendarScreenState extends State<CalendarScreen>
         labelStyle: appSecondaryControlLabelStyle(context),
         visualDensity: VisualDensity.compact,
         materialTapTargetSize: MaterialTapTargetSize.padded,
-        side: BorderSide(
-          color: cs.outlineVariant.withValues(alpha: 0.16),
-          width: 0.45,
-        ),
+        side: AppleButtonStyle.appliesTo(Theme.of(context))
+            ? AppleButtonStyle.chipBorder(Theme.of(context))
+            : BorderSide(
+                color: cs.outlineVariant.withValues(alpha: 0.16),
+                width: 0.45,
+              ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
         labelPadding: const EdgeInsets.symmetric(horizontal: 2),
         onPressed: onPressed,

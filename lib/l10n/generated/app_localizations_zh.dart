@@ -2276,6 +2276,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get habitTrendBucketDetails => '区间明细';
 
   @override
+  String get habitTrendNoActiveDays => '此区间没有生效日期';
+
+  @override
   String get habitTrendOneYear => '一年';
 
   @override

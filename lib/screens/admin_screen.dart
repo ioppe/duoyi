@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -300,13 +301,15 @@ class _AdminGlassControlTheme extends StatelessWidget {
       return OutlinedButton.styleFrom(
         foregroundColor: cs.onSurface,
         disabledForegroundColor: cs.onSurface.withValues(alpha: 0.36),
-        side: BorderSide(color: defaultBorder, width: 0.45),
+        side: AppleButtonStyle.appliesTo(theme)
+            ? null
+            : BorderSide(color: defaultBorder, width: 0.45),
         textStyle: controlText,
         minimumSize: const Size(0, 34),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      );
+      ).merge(AppleButtonStyle.outlined(theme));
     }
 
     ButtonStyle adminFilledButtonStyle() {
@@ -315,13 +318,15 @@ class _AdminGlassControlTheme extends StatelessWidget {
         foregroundColor: cs.onSurface,
         disabledBackgroundColor: glassFill.withValues(alpha: 0.42),
         disabledForegroundColor: cs.onSurface.withValues(alpha: 0.34),
-        side: BorderSide(color: defaultBorder, width: 0.45),
+        side: AppleButtonStyle.appliesTo(theme)
+            ? null
+            : BorderSide(color: defaultBorder, width: 0.45),
         textStyle: controlText,
         minimumSize: const Size(0, 34),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      );
+      ).merge(AppleButtonStyle.borderless(theme));
     }
 
     return Theme(
@@ -341,10 +346,14 @@ class _AdminGlassControlTheme extends StatelessWidget {
           disabledColor: glassFill.withValues(alpha: 0.36),
           checkmarkColor: selectedForeground,
           iconTheme: IconThemeData(size: 15, color: selectedForeground),
-          side: BorderSide(color: defaultBorder, width: 0.45),
+          side: AppleButtonStyle.appliesTo(theme)
+              ? AppleButtonStyle.chipBorder(theme)
+              : BorderSide(color: defaultBorder, width: 0.45),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
-            side: BorderSide(color: selectedBorder, width: 0.45),
+            side: AppleButtonStyle.appliesTo(theme)
+                ? BorderSide.none
+                : BorderSide(color: selectedBorder, width: 0.45),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           labelPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1785,12 +1794,14 @@ class _AdminPaginationBar extends StatelessWidget {
                             ? Colors.transparent
                             : glassControlFill,
                         disabledBackgroundColor: Colors.transparent,
-                        side: BorderSide(
-                          color: onPressed == null
-                              ? glassControlBorder.withValues(alpha: 0.50)
-                              : glassControlBorder,
-                          width: 0.45,
-                        ),
+                        side: AppleButtonStyle.appliesTo(theme)
+                            ? null
+                            : BorderSide(
+                                color: onPressed == null
+                                    ? glassControlBorder.withValues(alpha: 0.50)
+                                    : glassControlBorder,
+                                width: 0.45,
+                              ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             DesignTokens.radiusControl,
@@ -1939,10 +1950,14 @@ class _AdminPaginationLabeledControl extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: isDark ? 0.14 : 0.16),
-          width: 0.55,
-        ),
+        border: AppleButtonStyle.appliesTo(theme)
+            ? null
+            : Border.all(
+                color: cs.outlineVariant.withValues(
+                  alpha: isDark ? 0.14 : 0.16,
+                ),
+                width: 0.55,
+              ),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 68, minHeight: 32),

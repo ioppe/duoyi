@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import '../core/i18n.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -93,27 +94,33 @@ ButtonStyle _habitDangerFilledButtonStyle(BuildContext context) {
 }
 
 ButtonStyle _habitDetailActionButtonStyle(BuildContext context) {
-  final cs = Theme.of(context).colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
   return OutlinedButton.styleFrom(
     foregroundColor: cs.onSurface,
-    side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.32)),
+    side: AppleButtonStyle.appliesTo(theme)
+        ? null
+        : BorderSide(color: cs.outlineVariant.withValues(alpha: 0.32)),
     textStyle: appSecondaryControlTextStyle(context),
     visualDensity: VisualDensity.compact,
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-  );
+  ).merge(AppleButtonStyle.outlined(theme));
 }
 
 ButtonStyle _habitDangerOutlinedButtonStyle(BuildContext context) {
-  final cs = Theme.of(context).colorScheme;
+  final theme = Theme.of(context);
+  final cs = theme.colorScheme;
   return OutlinedButton.styleFrom(
     foregroundColor: cs.error,
-    side: BorderSide(color: cs.error.withValues(alpha: 0.42), width: 0.45),
+    side: AppleButtonStyle.appliesTo(theme)
+        ? null
+        : BorderSide(color: cs.error.withValues(alpha: 0.42), width: 0.45),
     textStyle: appSecondaryControlTextStyle(context),
     visualDensity: VisualDensity.compact,
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-  );
+  ).merge(AppleButtonStyle.outlined(theme));
 }
 
 Future<bool> _confirmHabitDelete(BuildContext context, Habit habit) async {
@@ -670,7 +677,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
       );
     }
     final habit = matches.first;
-    final heatmapData = habit.heatmapData(20);
+    final heatmapData = habit.heatmapData(104);
     final cs = Theme.of(context).colorScheme;
     final color = Color(habit.colorValue);
     final flexProgress = habit.flexProgressForDate(AppClock.now());
@@ -858,7 +865,21 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               ),
             ),
           ),
-          HabitHeatmap(heatmapData: heatmapData, weeks: 20),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Wider windows reveal more history without stretching each day
+              // into a large tile. Trend windows below remain unchanged.
+              final weeks = ((constraints.maxWidth - 48) / 21).floor().clamp(
+                20,
+                104,
+              );
+              return HabitHeatmap(
+                heatmapData: heatmapData,
+                weeks: weeks,
+                fitToWidth: true,
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, DesignTokens.spaceMd),
             child: _HabitTrendCard(
@@ -1025,7 +1046,15 @@ class _HabitTrendBreakdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Color(habit.colorValue);
-    final points = summary.points.reversed.toList(growable: false);
+    final points = summary.points.reversed
+        .where((point) => point.active)
+        .toList(growable: false);
+    if (points.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: DesignTokens.spaceMd),
+        child: Text(I18n.tr('habit.trend.no_active_days')),
+      );
+    }
     switch (summary.window) {
       case HabitTrendWindow.days14:
         return Column(
@@ -1040,7 +1069,9 @@ class _HabitTrendBreakdown extends StatelessWidget {
       case HabitTrendWindow.days365:
         return Column(
           children: [
-            for (final bucket in summary.buckets.reversed)
+            for (final bucket in summary.buckets.reversed.where(
+              (bucket) => bucket.activeDays > 0,
+            ))
               _HabitTrendBucketRow(bucket: bucket, color: color, unit: unit),
           ],
         );
@@ -1881,6 +1912,7 @@ class _HabitCalendarDayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final future = date.isAfter(today);
+    final locked = !DateTime(date.year, date.month, date.day).isBefore(today);
     final active = habit.activeForDate(date);
     final completed = active && !future && habit.isCompletedForDate(date);
     final recordedOccurrence =
@@ -1892,7 +1924,7 @@ class _HabitCalendarDayCell extends StatelessWidget {
         date.year == today.year &&
         date.month == today.month &&
         date.day == today.day;
-    final accent = future
+    final accent = locked
         ? cs.onSurfaceVariant.withValues(alpha: 0.54)
         : !active
         ? cs.onSurfaceVariant
@@ -1912,7 +1944,7 @@ class _HabitCalendarDayCell extends StatelessWidget {
         : I18n.tr('habit.day.pending');
     final semanticsLabel =
         '${date.year}/${date.month}/${date.day} · $statusLabel';
-    final fill = future
+    final fill = locked
         ? Colors.transparent
         : (completed || recordedOccurrence
                   ? accent
@@ -1933,10 +1965,10 @@ class _HabitCalendarDayCell extends StatelessWidget {
         child: Semantics(
           container: true,
           label: semanticsLabel,
-          button: !future,
-          enabled: !future,
+          button: !locked,
+          enabled: !locked,
           excludeSemantics: true,
-          onTap: future ? null : openDetails,
+          onTap: locked ? null : openDetails,
           child: Material(
             color: Colors.transparent,
             child: Ink(
@@ -1949,7 +1981,7 @@ class _HabitCalendarDayCell extends StatelessWidget {
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: future ? null : openDetails,
+                onTap: locked ? null : openDetails,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -1971,7 +2003,7 @@ class _HabitCalendarDayCell extends StatelessWidget {
                       height: _habitCalendarDotSize,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: active && !future
+                          color: active && !locked
                               ? accent
                               : Colors.transparent,
                           shape: BoxShape.circle,
@@ -2070,7 +2102,7 @@ class _HabitDayDetailsCardState extends State<_HabitDayDetailsCard> {
         .firstOrNull;
     if (!widget.allowRecordActions ||
         habit == null ||
-        _habitDateIsFuture(widget.date) ||
+        !_habitDateIsPast(widget.date) ||
         !habit.activeForDate(widget.date)) {
       return;
     }
@@ -2088,6 +2120,7 @@ class _HabitDayDetailsCardState extends State<_HabitDayDetailsCard> {
 
   @override
   Widget build(BuildContext context) {
+    AppClock.watch(context);
     final cs = Theme.of(context).colorScheme;
     final media = MediaQuery.of(context);
     final matches = context.watch<HabitProvider>().habits.where(
@@ -2122,7 +2155,8 @@ class _HabitDayDetailsCardState extends State<_HabitDayDetailsCard> {
     final flexLabel = habit.hasFlexRule
         ? _localizedFlexProgressLabel(habit.flexProgressForDate(date))
         : null;
-    final canWrite = widget.allowRecordActions && active && !future;
+    final canWrite =
+        widget.allowRecordActions && active && _habitDateIsPast(date);
     final cardWidth = media.size.width >= 400 ? 360.0 : 340.0;
 
     final card = Container(
@@ -2336,6 +2370,11 @@ bool _habitDateIsFuture(DateTime date) {
     date.month,
     date.day,
   ).isAfter(DateTime(today.year, today.month, today.day));
+}
+
+bool _habitDateIsPast(DateTime date) {
+  final today = AppClock.today();
+  return DateTime(date.year, date.month, date.day).isBefore(today);
 }
 
 String _habitTrendPointDescription(Habit habit, HabitTrendPoint point) {

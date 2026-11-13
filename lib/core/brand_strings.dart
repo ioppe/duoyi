@@ -216,7 +216,7 @@ class BrandStrings {
     todoMatrixView: '四象限',
     todoListView: '列表',
     todoEmpty: '暂无待办任务',
-    todoAddAction: '添加第一个任务',
+    todoAddAction: '添加任务',
     todoCreateTitle: '新建任务',
     quadrantQ1Label: '重要且紧急',
     quadrantQ1Sub: '马上做',

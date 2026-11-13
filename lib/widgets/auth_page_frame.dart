@@ -1,3 +1,4 @@
+import '../core/apple_button_style.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -450,27 +451,35 @@ class AuthMethodSelector extends StatelessWidget {
                           onPressed: onChanged == null
                               ? null
                               : () => onChanged!(options[index].$1),
-                          style: TextButton.styleFrom(
-                            textStyle: style,
-                            minimumSize: Size(0, height),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.spaceSm,
-                            ),
-                            foregroundColor: selected == options[index].$1
-                                ? cs.primary
-                                : cs.onSurfaceVariant,
-                            backgroundColor: selected == options[index].$1
-                                ? cs.primary.withValues(alpha: 0.10)
-                                : Colors.transparent,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: DesignTokens.borderRadiusMd,
-                            ),
-                            side: BorderSide(
-                              color: selected == options[index].$1
-                                  ? cs.primary.withValues(alpha: 0.3)
-                                  : cs.outlineVariant,
-                            ),
-                          ),
+                          style:
+                              TextButton.styleFrom(
+                                textStyle: style,
+                                minimumSize: Size(0, height),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: DesignTokens.spaceSm,
+                                ),
+                                foregroundColor: selected == options[index].$1
+                                    ? cs.primary
+                                    : cs.onSurfaceVariant,
+                                backgroundColor: selected == options[index].$1
+                                    ? cs.primary.withValues(alpha: 0.10)
+                                    : Colors.transparent,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: DesignTokens.borderRadiusMd,
+                                ),
+                                side:
+                                    AppleButtonStyle.appliesTo(
+                                      Theme.of(context),
+                                    )
+                                    ? null
+                                    : BorderSide(
+                                        color: selected == options[index].$1
+                                            ? cs.primary.withValues(alpha: 0.3)
+                                            : cs.outlineVariant,
+                                      ),
+                              ).merge(
+                                AppleButtonStyle.borderless(Theme.of(context)),
+                              ),
                           child: Text(options[index].$2, maxLines: 1),
                         ),
                       ),

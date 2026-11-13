@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/app_config.dart';
+import '../core/app_release_channel.dart';
 import '../core/server_connection.dart';
 import '../core/app_update_policy.dart';
 import 'api_client.dart';
@@ -21,6 +22,7 @@ class AppUpdateService extends ChangeNotifier {
   static const _downloadedUrlKey = 'duoyi_update_downloaded_apk_url';
   static const _downloadedAssetNameKey =
       'duoyi_update_downloaded_apk_asset_name';
+  static const _downloadRepositoryKey = 'duoyi_update_download_repository';
 
   final String repo; // owner/repository, supplied by deployment configuration.
   final String currentVersion; // e.g. "1.0.0"
@@ -54,6 +56,7 @@ class AppUpdateService extends ChangeNotifier {
   String? _forceUpdateBlockedReason;
   bool _forceUpdateRequired = false;
   bool _serverPolicyLoaded = false;
+  bool _backendReleaseSourceMismatch = false;
   bool _checking = false;
   bool _serverPolicyRefreshQueued = false;
   bool _downloading = false;
@@ -164,6 +167,7 @@ class AppUpdateService extends ChangeNotifier {
     if (_checking) return;
     _checking = true;
     _error = null;
+    _backendReleaseSourceMismatch = false;
     notifyListeners();
     try {
       await _restoreDownloadedInstaller(allowPopulateUpdateInfo: true);
@@ -233,6 +237,7 @@ class AppUpdateService extends ChangeNotifier {
     if (_checking) return;
     _checking = true;
     _error = null;
+    _backendReleaseSourceMismatch = false;
     notifyListeners();
     try {
       await _restoreDownloadedInstaller(allowPopulateUpdateInfo: true);
@@ -263,6 +268,12 @@ class AppUpdateService extends ChangeNotifier {
         _forceUpdateBlockedReason = null;
         _forceUpdateRequired = false;
         _serverPolicyLoaded = false;
+      }
+      if (_backendReleaseSourceMismatch) {
+        await _mergeGitHubLatestRelease(
+          keepServerPolicy: false,
+          fillMissingOnly: false,
+        );
       }
       if (configLoaded == true) {
         if ((_latestUrl == null || _latestUrl!.trim().isEmpty) &&
@@ -296,6 +307,7 @@ class AppUpdateService extends ChangeNotifier {
   }
 
   Future<bool?> _checkServerConfig() async {
+    if (_backendReleaseSourceMismatch) return false;
     try {
       final base = _serverBaseUrl;
       if (base.isEmpty && !kIsWeb) return null;
@@ -325,6 +337,7 @@ class AppUpdateService extends ChangeNotifier {
       final data = decoded['app_update'] is Map
           ? Map<String, dynamic>.from(decoded['app_update'] as Map)
           : rawConfig;
+      if (_rejectDifferentReleaseChannel(data)) return false;
       final rawLatest = _stringValue(data['latest_version']);
       final latest = _versionAtLeastCurrent(rawLatest);
       final latestCodeRaw = _intValue(data['latest_version_code']);
@@ -437,6 +450,7 @@ class AppUpdateService extends ChangeNotifier {
           allowGitHubFallback: true,
         );
       }
+      if (_rejectDifferentReleaseChannel(data)) return false;
       final rawLatest = _stringValue(data['latest_version_name']);
       final latest = _versionAtLeastCurrent(rawLatest);
       final latestCodeRaw = _intValue(data['latest_version_code']);
@@ -519,6 +533,34 @@ class AppUpdateService extends ChangeNotifier {
       backendBaseUrlGetter?.call() ??
       backendBaseUrl ??
       ServerConnection.defaultBaseUrl();
+
+  bool _rejectDifferentReleaseChannel(Map<String, dynamic> data) {
+    if (AppReleaseChannel.normalizeRepository(repo) !=
+        AppReleaseChannel.repository) {
+      return false;
+    }
+    final declared = [
+      data['release_repository'],
+      data['update_repository'],
+      data['app_update_repository'],
+    ].map(_stringValue).where((value) => value.isNotEmpty);
+    final conflictingDeclaration = declared.any(
+      (value) =>
+          AppReleaseChannel.normalizeRepository(value) !=
+          AppReleaseChannel.repository,
+    );
+    final conflictingUrl = [
+      data['release_url'],
+      data['download_url'],
+      data['update_download_url'],
+    ].any((value) => _differentReleaseUrl(_stringValue(value)));
+    if (!conflictingDeclaration && !conflictingUrl) return false;
+    _backendReleaseSourceMismatch = true;
+    return true;
+  }
+
+  bool _differentReleaseUrl(String value) =>
+      AppReleaseChannel.conflictsWithOfficialChannel(repo, value);
 
   String _stringValue(dynamic value) => (value ?? '').toString().trim();
 
@@ -918,6 +960,14 @@ class AppUpdateService extends ChangeNotifier {
       codeSource: cachedVersionCodeSource,
     );
     final cachedUrl = (prefs.getString(_downloadedUrlKey) ?? '').trim();
+    final cachedRepository = prefs.getString(_downloadRepositoryKey);
+    if ((cachedRepository != null &&
+            AppReleaseChannel.normalizeRepository(cachedRepository) !=
+                AppReleaseChannel.normalizeRepository(repo)) ||
+        _differentReleaseUrl(cachedUrl)) {
+      await _clearDownloadedInstaller(prefs);
+      return;
+    }
     if (_downloadUrlLooksStaleForVersion(cachedUrl, cachedVersion)) {
       await _clearDownloadedInstaller(prefs);
       return;
@@ -1002,6 +1052,7 @@ class AppUpdateService extends ChangeNotifier {
   Future<void> _rememberDownloadedInstaller(String path) async {
     final prefs = await _downloadedInstallerPrefs();
     if (prefs == null) return;
+    await prefs.setString(_downloadRepositoryKey, repo);
     await prefs.setString(_downloadedPathKey, path);
     final version = _latestVersion?.trim();
     if (version != null && version.isNotEmpty) {
@@ -1035,6 +1086,7 @@ class AppUpdateService extends ChangeNotifier {
     await storage.remove(_downloadedVersionCodeSourceKey);
     await storage.remove(_downloadedUrlKey);
     await storage.remove(_downloadedAssetNameKey);
+    await storage.remove(_downloadRepositoryKey);
   }
 
   Future<SharedPreferences?> _downloadedInstallerPrefs() async {
@@ -1189,6 +1241,8 @@ class AppUpdateService extends ChangeNotifier {
     _downloadTotalBytes = null;
     _safeNotify();
     try {
+      final prefs = await _downloadedInstallerPrefs();
+      await prefs?.setString(_downloadRepositoryKey, repo);
       final snapshot = await AppUpdateInstaller.startBackgroundDownload(
         url: url,
         fileName: _latestAssetName ?? 'duoyi-$versionName.apk',
@@ -1278,6 +1332,16 @@ class AppUpdateService extends ChangeNotifier {
   Future<void> _applyDownloadSnapshot(
     AppUpdateDownloadSnapshot snapshot,
   ) async {
+    final prefs = await _downloadedInstallerPrefs();
+    final savedRepository = prefs?.getString(_downloadRepositoryKey);
+    if (_differentReleaseUrl(snapshot.url ?? '') ||
+        (savedRepository != null &&
+            AppReleaseChannel.normalizeRepository(savedRepository) !=
+                AppReleaseChannel.normalizeRepository(repo))) {
+      await cancelDownload();
+      await _clearDownloadedInstaller(prefs);
+      return;
+    }
     _downloadId = snapshot.downloadId;
     _downloadStatus = snapshot.status;
     _downloadReceivedBytes = snapshot.receivedBytes;

@@ -66,6 +66,7 @@ Future<void> _openTodo(
   required Size size,
   required ThemeData theme,
   double textScale = 1,
+  bool pushed = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -109,25 +110,43 @@ Future<void> _openTodo(
             ).copyWith(textScaler: TextScaler.linear(textScale)),
             child: child!,
           ),
-          home: const TodoScreen(),
+          home: pushed
+              ? Builder(
+                  builder: (context) => Scaffold(
+                    body: TextButton(
+                      key: const ValueKey('open_todo_route'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const TodoScreen(),
+                        ),
+                      ),
+                      child: const Text('Open tasks'),
+                    ),
+                  ),
+                )
+              : const TodoScreen(),
         ),
       ),
     ),
   );
   await tester.pumpAndSettle();
+  if (pushed) {
+    await tester.tap(find.byKey(const ValueKey('open_todo_route')));
+    await tester.pumpAndSettle();
+  }
 }
 
 /// 顶部筛选布局（Web 与 macOS 共用）：概要 → 筛选 → 页签 → 内容，
 /// 任何宽度都不出现右侧筛选栏或 VerticalDivider。
-void _expectTopFilterLayout(WidgetTester tester) {
+void _expectTopFilterLayout(WidgetTester tester, {String? reason}) {
   final summary = tester.getRect(_summary);
   final filters = tester.getRect(_filters);
   final views = tester.getRect(_views);
-  expect(summary.bottom, lessThanOrEqualTo(filters.top));
-  expect(filters.bottom, lessThanOrEqualTo(views.top));
-  expect(summary.left, closeTo(filters.left, 0.01));
-  expect(summary.right, closeTo(filters.right, 0.01));
-  expect(find.byType(VerticalDivider), findsNothing);
+  expect(summary.bottom, lessThanOrEqualTo(filters.top), reason: reason);
+  expect(filters.bottom, lessThanOrEqualTo(views.top), reason: reason);
+  expect(summary.left, closeTo(filters.left, 0.01), reason: reason);
+  expect(summary.right, closeTo(filters.right, 0.01), reason: reason);
+  expect(find.byType(VerticalDivider), findsNothing, reason: reason);
 }
 
 /// 顶部筛选布局的行为基线：筛选计数与清空态、筛选前后 rect 不位移、
@@ -139,6 +158,8 @@ Future<void> _expectTopFilterBehavior(
   double textScale = 1,
   String? exportInitial,
   String? exportTodaySelected,
+  bool expandFilters = false,
+  bool collapseBeforeViewSwitch = false,
 }) async {
   await _openTodo(tester, size: size, theme: theme, textScale: textScale);
   expect(
@@ -146,6 +167,10 @@ Future<void> _expectTopFilterBehavior(
     size.width >= DesktopTokens.breakpointThreeColumn,
     reason: '最宽 Web/macOS 档保留单行四列，窄屏使用 2×2',
   );
+  if (expandFilters) {
+    await tester.tap(find.byKey(const ValueKey('todo_filter_toggle')));
+    await tester.pumpAndSettle();
+  }
   if (exportInitial != null) await _exportPng(tester, exportInitial);
   _expectTopFilterLayout(tester);
   expect(find.text('自定义视图 · 2/2'), findsOneWidget);
@@ -183,13 +208,20 @@ Future<void> _expectTopFilterBehavior(
   expect(tester.getRect(_filters), initialFilterRect);
   expect(tester.getRect(_views), initialViewsRect);
 
+  // 桌面收起是默认态：视图切换在收起态验证，避免展开面板压缩内容区
+  // （看板泳道按可视区懒加载，压缩后末位卡片可能不在构建范围）。
+  if (collapseBeforeViewSwitch) {
+    await tester.tap(find.byKey(const ValueKey('todo_filter_toggle')));
+    await tester.pumpAndSettle();
+  }
+
   for (final label in ['列表', '看板', '四象限']) {
     await tester.tap(find.descendant(of: _views, matching: find.text(label)));
     await tester.pumpAndSettle();
-    _expectTopFilterLayout(tester);
-    expect(find.text('今日任务'), findsOneWidget);
-    expect(find.text('稍后任务'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    _expectTopFilterLayout(tester, reason: label);
+    expect(find.text('今日任务'), findsOneWidget, reason: '$label 视图应保留今日任务');
+    expect(find.text('稍后任务'), findsOneWidget, reason: '$label 视图应保留稍后任务');
+    expect(tester.takeException(), isNull, reason: label);
   }
 }
 
@@ -293,6 +325,8 @@ void main() {
             size: size,
             theme: brand.theme,
             textScale: scale,
+            expandFilters: true,
+            collapseBeforeViewSwitch: true,
             exportInitial: !exportBrand
                 ? null
                 : exportWide
@@ -320,6 +354,9 @@ void main() {
         size: const Size(1440, 732),
         theme: AppBrands.defaultBrand.theme,
       );
+      // 桌面筛选默认收起：先展开再验证控件几何与位置稳定。
+      await tester.tap(find.byKey(const ValueKey('todo_filter_toggle')));
+      await tester.pumpAndSettle();
       final initialFilters = tester.getRect(_filters);
       final initialViews = tester.getRect(_views);
       final controlHeight = tester.getSize(_quickFilter('今日')).height;
@@ -339,6 +376,103 @@ void main() {
       expect(find.text('自定义视图 · 2/2'), findsOneWidget);
       expect(tester.getRect(_filters), initialFilters);
       expect(tester.getRect(_views), initialViews);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'macOS 桌面筛选默认收起一行，鼠标/键盘展开后全部条件可达且值保留',
+    (tester) async {
+      WebTarget.debugWebBuild = false;
+      expect(defaultTargetPlatform, TargetPlatform.macOS);
+      await _openTodo(
+        tester,
+        size: const Size(1440, 732),
+        theme: AppBrands.defaultBrand.theme,
+      );
+
+      // 默认收起：一行数量 / 筛选开关 + 清空 + 箭头，摘要卡仍在。
+      // 「象限」菜单只在展开后存在，用它判断收起 / 展开，避免「今日」
+      // 同时出现在快捷 chip 与日期菜单标签上造成歧义。
+      final quadrantMenu = find.descendant(
+        of: _filters,
+        matching: find.byTooltip('象限'),
+      );
+      final toggle = find.byKey(const ValueKey('todo_filter_toggle'));
+      expect(toggle, findsOneWidget);
+      expect(_summary, findsOneWidget);
+      expect(find.text('自定义视图 · 2/2'), findsOneWidget);
+      expect(quadrantMenu, findsNothing);
+      final collapsedRect = tester.getRect(_filters);
+      expect(collapsedRect.height, lessThan(80));
+
+      // 鼠标展开：全部快捷条件与下拉菜单同屏可达。
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(_filters).height,
+        greaterThan(collapsedRect.height),
+      );
+      for (final label in ['今日', '逾期', '7天内', '已完成']) {
+        expect(
+          find.descendant(of: _filters, matching: find.text(label)),
+          findsWidgets,
+          reason: '展开后 $label 应可见',
+        );
+      }
+      for (final tooltip in ['象限', '优先级', '日期', '完成状态']) {
+        expect(
+          find.descendant(of: _filters, matching: find.byTooltip(tooltip)),
+          findsOneWidget,
+          reason: '展开后 $tooltip 菜单应可见',
+        );
+      }
+      // 桌面用 Wrap 自动换行，不靠横向拖动：控件右缘不越出筛选栏。
+      final expandedRect = tester.getRect(_filters);
+      expect(
+        tester.getRect(quadrantMenu).right,
+        lessThanOrEqualTo(expandedRect.right + 0.01),
+      );
+      expect(
+        tester.getRect(find.byTooltip('完成状态')).right,
+        lessThanOrEqualTo(expandedRect.right + 0.01),
+      );
+      // 桌面展开不靠横向拖动：筛选区里没有横向滚动容器。
+      expect(
+        find.descendant(
+          of: _filters,
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsNothing,
+      );
+
+      // 选择条件后收起 / 再展开，筛选值不丢。
+      await tester.tap(_quickFilter('今日'));
+      await tester.pumpAndSettle();
+      expect(find.text('自定义视图 · 1/2'), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text('自定义视图 · 1/2'), findsOneWidget);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(find.text('自定义视图 · 1/2'), findsOneWidget);
+      expect(tester.widget<TextButton>(_clear).onPressed, isNotNull);
+
+      // 键盘：聚焦折叠行后 Enter 与鼠标同一激活路径。
+      tester.widget<InkWell>(toggle).focusNode!.requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(quadrantMenu, findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(quadrantMenu, findsOneWidget);
+
+      // 清空恢复 2/2。
+      await tester.tap(_clear);
+      await tester.pumpAndSettle();
+      expect(find.text('自定义视图 · 2/2'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.macOS),
@@ -400,5 +534,62 @@ void main() {
       expect(tester.takeException(), isNull);
     },
     variant: TargetPlatformVariant.only(TargetPlatform.linux),
+  );
+  testWidgets(
+    'macOS 路由待办页提供返回按钮和稳定的添加任务文案',
+    (tester) async {
+      WebTarget.debugWebBuild = false;
+      await _openTodo(
+        tester,
+        size: const Size(2000, 900),
+        theme: AppBrands.defaultBrand.theme,
+        pushed: true,
+      );
+      expect(find.byKey(const ValueKey('todo_back_button')), findsOneWidget);
+      expect(find.text('添加任务'), findsOneWidget);
+      expect(find.text('添加第一个任务'), findsNothing);
+      expect(find.byKey(const ValueKey('todo_filter_toggle')), findsOneWidget);
+      expect(
+        find.descendant(of: _filters, matching: find.text('今日')),
+        findsNothing,
+      );
+      await _exportPng(tester, 'macos-todo-collapsed-with-back.png');
+      await tester.tap(find.byKey(const ValueKey('todo_back_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('open_todo_route')), findsOneWidget);
+      expect(find.byType(TodoScreen), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'macOS 路由 Escape 先关闭筛选菜单，再返回上一页',
+    (tester) async {
+      WebTarget.debugWebBuild = false;
+      await _openTodo(
+        tester,
+        size: const Size(1280, 900),
+        theme: AppBrands.defaultBrand.theme,
+        pushed: true,
+      );
+      await tester.tap(find.byKey(const ValueKey('todo_filter_toggle')));
+      await tester.pumpAndSettle();
+      await _exportPng(tester, 'macos-todo-expanded-with-back.png');
+      await tester.tap(
+        find.descendant(of: _filters, matching: find.text('象限')),
+      );
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(TodoScreen), findsOneWidget);
+      expect(find.byKey(const ValueKey('todo_back_button')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(TodoScreen), findsNothing);
+      expect(find.byKey(const ValueKey('open_todo_route')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
   );
 }

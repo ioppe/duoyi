@@ -1,0 +1,33 @@
+{
+  "branch": "fix/v010-desktop-usability",
+  "base_commit": "727363ddd4e8df5fb8d5b8179165f8f1c47dfc83",
+  "version": "0.1.0+142026",
+  "status": "implemented and verified in the branch worktree; not committed or published",
+  "changes": [
+    "Default release repository is skydrow98/duoyi; historical distribution build arguments migrate to it while custom repositories and explicit empty values remain supported.",
+    "Official-channel update checks reject metadata from a different GitHub repository and isolate cached installers and background download tasks by source.",
+    "Native desktop focus duration uses a mouse/keyboard dropdown plus count-up toggle; running, paused and read-only states retain duration locks.",
+    "Focus header spans the page so the macOS floating-window entry stays at the right gutter.",
+    "Habit detail heatmap adapts its visible history from 20 to 104 weeks while trend statistics retain their chosen window.",
+    "Period details omit inactive days and buckets without active days, with a localized empty state.",
+    "Make-up calendar disables today and future dates and rechecks application date boundaries before writes; ordinary today check-in remains supported.",
+    "macOS todo filters collapse by default and wrap when expanded; the page has a route-aware back header and Escape handling, and the create action reads Add task."
+  ],
+  "verification": {
+    "flutter_targeted_tests": {"passed": 168, "failed": 0, "scope": "Update source and policy, desktop focus, todo layout/navigation, habit detail, heatmap, trends and localization guards"},
+    "backend_configuration_tests": {"passed": 38, "failed": 0},
+    "flutter_analyze": "No issues found in a hash-verified ASCII path copy of 724 source/test files",
+    "git_diff_check": "passed",
+    "code_review": "One read-only review found no blocking defects; additional declared-source and inactive-weekday tests were added and passed.",
+    "visual_check": "Inspected real Flutter RenderRepaintBoundary screenshots for collapsed and expanded desktop todo layouts."
+  },
+  "screenshots": [
+    "../screenshots/desktop-usability/macos-todo-collapsed-with-back.png",
+    "../screenshots/desktop-usability/macos-todo-expanded-with-back.png"
+  ],
+  "limits": [
+    "No installed macOS application or physical device regression was run in this task.",
+    "No mainline merge, remote push, new release or production data/configuration changes were performed."
+  ],
+  "remaining_blockers": []
+}

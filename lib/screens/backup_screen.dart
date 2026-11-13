@@ -1,3 +1,4 @@
+import '../core/apple_button_style.dart';
 import 'package:flutter/material.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
@@ -1555,8 +1556,10 @@ class _BackupScreenState extends State<BackupScreen> {
                     style: TextStyle(color: Colors.red),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.red.shade300),
-                  ),
+                    side: AppleButtonStyle.appliesTo(Theme.of(context))
+                        ? null
+                        : BorderSide(color: Colors.red.shade300),
+                  ).merge(AppleButtonStyle.outlined(Theme.of(context))),
                 ),
               ],
             ),

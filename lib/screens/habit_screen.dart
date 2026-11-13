@@ -1,5 +1,6 @@
 import '../widgets/app_create_fab.dart';
 import 'package:flutter/material.dart';
+import '../core/apple_button_style.dart';
 import '../widgets/app_page_tabs.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -2048,11 +2049,13 @@ class _HabitUndoButton extends StatelessWidget {
             fixedSize: const Size.square(_habitActionTouchHeight),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             padding: EdgeInsets.zero,
-            side: BorderSide(color: color.withValues(alpha: 0.12), width: 0.45),
+            side: AppleButtonStyle.appliesTo(Theme.of(context))
+                ? null
+                : BorderSide(color: color.withValues(alpha: 0.12), width: 0.45),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(DesignTokens.radiusControl),
             ),
-          ),
+          ).merge(AppleButtonStyle.borderless(Theme.of(context))),
         ),
       ),
     );

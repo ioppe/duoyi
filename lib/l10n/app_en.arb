@@ -747,6 +747,7 @@
   "habitTrendLongestStreak": "Longest streak",
   "habitTrendVsPrevious": "Vs previous",
   "habitTrendBucketDetails": "Period details",
+  "habitTrendNoActiveDays": "No active dates in this period",
   "habitTrendOneYear": "1 year",
   "habitDateRangeTitle": "Habit period",
   "habitDateRangeStart": "Start date",

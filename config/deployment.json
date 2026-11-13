@@ -1,6 +1,6 @@
 {
   "DUOYI_SERVER_URL": "https://todo.skydrow.site",
-  "DUOYI_UPDATE_REPOSITORY": "ioppe/duoyi",
+  "DUOYI_UPDATE_REPOSITORY": "skydrow98/duoyi",
   "DUOYI_HTTP_TIMEOUT_SECONDS": 12,
   "DUOYI_FILE_TIMEOUT_SECONDS": 30,
   "DUOYI_AI_TIMEOUT_SECONDS": 180,

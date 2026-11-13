@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_motion.dart';
+import '../core/apple_button_style.dart';
 import '../core/design_tokens.dart';
 import '../core/i18n.dart';
 import '../providers/theme_provider.dart';
@@ -247,7 +248,9 @@ ButtonStyle appSecondaryFilledButtonStyle(BuildContext context) {
       disabledBackground,
       cs.onSurfaceVariant,
     ).withValues(alpha: 0.70),
-    side: BorderSide(color: background.withValues(alpha: 0.16), width: 0.45),
+    side: AppleButtonStyle.appliesTo(theme)
+        ? null
+        : BorderSide(color: background.withValues(alpha: 0.16), width: 0.45),
     visualDensity: VisualDensity.standard,
     tapTargetSize: MaterialTapTargetSize.padded,
     minimumSize: const Size(0, DesignTokens.controlMinHeight),
@@ -256,7 +259,7 @@ ButtonStyle appSecondaryFilledButtonStyle(BuildContext context) {
       fontSize: DesignTokens.fontSizeButton,
       fontWeight: DesignTokens.fontWeightMedium,
     ),
-  );
+  ).merge(AppleButtonStyle.borderless(theme));
 }
 
 class AppSecondaryControlTheme extends StatelessWidget {
@@ -399,8 +402,10 @@ class AppSecondaryControlTheme extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.padded,
-            side: BorderSide(color: subtleBorder, width: 0.4),
-          ),
+            side: AppleButtonStyle.appliesTo(theme)
+                ? null
+                : BorderSide(color: subtleBorder, width: 0.4),
+          ).merge(AppleButtonStyle.outlined(theme)),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: appSecondaryFilledButtonStyle(
@@ -425,18 +430,20 @@ class AppSecondaryControlTheme extends StatelessWidget {
               }
               return Colors.transparent;
             }),
-            side: WidgetStateProperty.resolveWith((states) {
-              final color = states.contains(WidgetState.selected)
-                  ? cs.primary.withValues(alpha: isDark ? 0.34 : 0.30)
-                  : subtleBorder;
-              return BorderSide(color: color, width: 0.4);
-            }),
+            side: AppleButtonStyle.appliesTo(theme)
+                ? AppleButtonStyle.border(theme)
+                : WidgetStateProperty.resolveWith((states) {
+                    final color = states.contains(WidgetState.selected)
+                        ? cs.primary.withValues(alpha: isDark ? 0.34 : 0.30)
+                        : subtleBorder;
+                    return BorderSide(color: color, width: 0.4);
+                  }),
             minimumSize: const WidgetStatePropertyAll(
               Size(0, DesignTokens.controlMinHeight),
             ),
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.padded,
-          ),
+          ).merge(AppleButtonStyle.outlined(theme)),
         ),
         chipTheme: theme.chipTheme.copyWith(
           labelStyle: labelText.copyWith(color: cs.onSurface),
@@ -446,7 +453,9 @@ class AppSecondaryControlTheme extends StatelessWidget {
           selectedColor: selectedControlBackground,
           checkmarkColor: selectedControlIcon,
           iconTheme: IconThemeData(size: 16, color: selectedControlIcon),
-          side: BorderSide(color: subtleBorder, width: 0.4),
+          side: AppleButtonStyle.appliesTo(theme)
+              ? AppleButtonStyle.chipBorder(theme)
+              : BorderSide(color: subtleBorder, width: 0.4),
         ),
       ),
       child: DefaultTextStyle.merge(style: controlText, child: child),
@@ -2148,7 +2157,9 @@ class AppPickerSheet<T> extends StatelessWidget {
             : cs.surfaceContainerHighest.withValues(alpha: 0.22),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: borderColor, width: 0.45),
+          side: AppleButtonStyle.appliesTo(theme)
+              ? BorderSide.none
+              : BorderSide(color: borderColor, width: 0.45),
         ),
         clipBehavior: Clip.antiAlias,
         child: ListTile(

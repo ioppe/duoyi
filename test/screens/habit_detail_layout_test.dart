@@ -10,6 +10,7 @@ import 'package:duoyi/core/i18n.dart';
 import 'package:duoyi/models/habit.dart';
 import 'package:duoyi/providers/habit_provider.dart';
 import 'package:duoyi/screens/habit_detail_screen.dart';
+import 'package:duoyi/widgets/habit_heatmap.dart';
 
 /// 固定应用墙钟：2026-03-10（周二），让日期格与补卡日历可预测。
 ///
@@ -78,7 +79,7 @@ void main() {
               textScaler: TextScaler.linear(textScale),
               disableAnimations: disableAnimations,
             ),
-            child: child!,
+            child: AppClockScope(child: child!),
           ),
           home: HabitDetailScreen(habitId: habitId),
         ),
@@ -194,13 +195,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('30 天视图是 30 个等高日期格，语义与方法可达的详情浮层', (tester) async {
+  testWidgets('30 天视图仅显示生效日期格，语义与详情浮层可达', (tester) async {
     addTearDown(tester.view.reset);
     final semantics = tester.ensureSemantics();
     try {
       final provider = HabitProvider();
       // 目标 2、今天 3：今天是「达标」，昨天是「有记录但未达标」，
-      // 生效期之前的日子是「未在周期内」，三种状态同时出现。
+      // 生效期之前的日子不出现在区间明细中。
       final habit = Habit(
         id: 'h30',
         name: '喝水',
@@ -213,20 +214,20 @@ void main() {
       await pumpDetail(tester, provider: provider, habitId: 'h30');
       await selectWindow(tester, HabitTrendWindow.days30);
 
-      // 30 个稳定 key 的日期格，最近日期在最前。
+      // 只显示 6 个生效日期格，最近日期在最前。
       final cells = _cellsWithPrefix(habitTrendDayKeyPrefix);
-      expect(cells, findsNWidgets(30));
+      expect(cells, findsNWidgets(6));
       final keys = _cellsWithPrefix(habitTrendDayKeyPrefix)
           .evaluate()
           .map((element) => (element.widget.key! as ValueKey<String>).value)
           .toList();
       expect(keys.first, '$habitTrendDayKeyPrefix${_dateKey(_fixedToday)}');
-      expect(keys.last, '$habitTrendDayKeyPrefix${_dateKey(_daysAgo(29))}');
-      expect(keys.toSet().length, 30, reason: '30 个日期格的 key 必须唯一，不能被同一日期重复命中');
+      expect(keys.last, '$habitTrendDayKeyPrefix${_dateKey(_daysAgo(5))}');
+      expect(keys.toSet().length, 6, reason: '生效日期格的 key 必须唯一');
 
       // 全部等高、等宽、行对齐，且不小于 44 触控尺寸。
       final rects = _cellRects(tester, habitTrendDayKeyPrefix);
-      expect(rects, hasLength(30));
+      expect(rects, hasLength(6));
       for (final rect in rects) {
         expect(rect.height, closeTo(rects.first.height, 0.1));
         expect(rect.width, closeTo(rects.first.width, 0.1));
@@ -263,7 +264,7 @@ void main() {
         findsNothing,
       );
 
-      // 内容：完成日显示数量并带「达标」语义，未完成显示 0，未在周期内显示 –。
+      // 完成日显示数量和状态；非生效日期不生成占位格。
       final todayCell = find.byKey(_trendDayKey(_fixedToday));
       expect(
         find.descendant(of: todayCell, matching: find.byType(Text)),
@@ -279,10 +280,7 @@ void main() {
         findsOneWidget,
       );
       final inactiveCell = find.byKey(_trendDayKey(_daysAgo(6)));
-      expect(
-        find.descendant(of: inactiveCell, matching: find.text('–')),
-        findsOneWidget,
-      );
+      expect(inactiveCell, findsNothing);
 
       // 读屏保留完整日期、数量与状态。
       final todayNode = tester.widget<Semantics>(cellSemantics(todayCell));
@@ -291,14 +289,11 @@ void main() {
       expect(todayDescription, contains('2026/3/10'));
       expect(todayDescription, contains(I18n.tr('habit.trend.completed')));
       expect(todayDescription, contains('3'));
-      final inactiveDescription = tester
-          .widget<Semantics>(cellSemantics(inactiveCell))
-          .properties
-          .label!;
-      expect(inactiveDescription, contains('2026/3/4'));
-      expect(inactiveDescription, contains(I18n.tr('habit.records.inactive')));
       expect(find.bySemanticsLabel(todayDescription), findsOneWidget);
-      expect(find.bySemanticsLabel(inactiveDescription), findsOneWidget);
+      expect(
+        trendTexts(tester),
+        isNot(contains(I18n.tr('habit.records.inactive'))),
+      );
 
       // 点击日期格 → 主题详情浮层（趋势区只读，不提供写入按钮）。
       await tester.ensureVisible(todayCell);
@@ -400,7 +395,7 @@ void main() {
     await selectWindow(tester, HabitTrendWindow.days30);
 
     final rects = _cellRects(tester, habitTrendDayKeyPrefix);
-    expect(rects, hasLength(30));
+    expect(rects, hasLength(10));
     for (final rect in rects) {
       expect(rect.height, closeTo(rects.first.height, 0.1));
       expect(rect.width, closeTo(rects.first.width, 0.1));
@@ -802,7 +797,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('日历里未来日期不可写，生效期外日期只读', (tester) async {
+  testWidgets('补卡日历今天及未来日期不可写，生效期外历史日期只读', (tester) async {
     addTearDown(tester.view.reset);
     final provider = HabitProvider();
     await provider.addHabit(
@@ -811,6 +806,20 @@ void main() {
 
     await pumpDetail(tester, provider: provider, habitId: 'hfuture');
     await expandCalendar(tester);
+
+    final todayCell = find.byKey(_calendarDayKey(_fixedToday));
+    await tester.ensureVisible(todayCell);
+    await tester.pumpAndSettle();
+    final todaySemantics = tester.widget<Semantics>(cellSemantics(todayCell));
+    expect(todaySemantics.properties.enabled, isFalse);
+    expect(todaySemantics.properties.onTap, isNull);
+    await tester.tap(todayCell, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.byKey(habitDayDetailsCardKey), findsNothing);
+    expect(provider.habits.single.countForDate(_fixedToday), 0);
+    // 普通当天打卡入口仍可写，不受补卡日历限制。
+    await provider.incrementHabit('hfuture');
+    expect(provider.habits.single.countForDate(_fixedToday), 1);
 
     final futureCell = find.byKey(_calendarDayKey(DateTime(2026, 3, 20)));
     await tester.ensureVisible(futureCell);
@@ -940,7 +949,7 @@ void main() {
 
       await selectWindow(tester, HabitTrendWindow.days30);
       final trendRects = _cellRects(tester, habitTrendDayKeyPrefix);
-      expect(trendRects, hasLength(30));
+      expect(trendRects, hasLength(13));
       for (final rect in trendRects) {
         expect(rect.height, closeTo(trendRects.first.height, 0.1));
       }
@@ -969,5 +978,127 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
     }
+  });
+  testWidgets('拉宽详情窗口会展示更多历史周，热力图铺满可用宽度', (tester) async {
+    addTearDown(tester.view.reset);
+    final provider = HabitProvider();
+    await provider.addHabit(Habit(id: 'wide-heatmap', name: '阅读'));
+    var previousWeeks = 0;
+    for (final width in [390.0, 1280.0, 2000.0]) {
+      await pumpDetail(
+        tester,
+        provider: provider,
+        habitId: 'wide-heatmap',
+        size: Size(width, 1100),
+      );
+      final heatmap = find.byType(HabitHeatmap);
+      await scrollDetailTo(tester, heatmap);
+      final chart = tester.widget<HabitHeatmap>(heatmap);
+      expect(chart.fitToWidth, isTrue);
+      expect(chart.weeks, greaterThan(previousWeeks));
+      previousWeeks = chart.weeks;
+      final today = find.byKey(
+        ValueKey('habit_heatmap_date_${_dateKey(_fixedToday)}'),
+      );
+      final dayRect = tester.getRect(today);
+      final chartRect = tester.getRect(heatmap);
+      expect(dayRect.right, closeTo(chartRect.right - 10, 0.2));
+      expect(dayRect.width, lessThan(24));
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('四种明细只包含生效日期或有生效日的区间', (tester) async {
+    addTearDown(tester.view.reset);
+    final provider = HabitProvider();
+    await provider.addHabit(
+      Habit(id: 'active-only', name: '阅读', startDate: _daysAgo(2)),
+    );
+    await pumpDetail(tester, provider: provider, habitId: 'active-only');
+    for (final window in HabitTrendWindow.values) {
+      await selectWindow(tester, window);
+      expect(
+        trendTexts(tester),
+        isNot(contains(I18n.tr('habit.records.inactive'))),
+      );
+      if (window == HabitTrendWindow.days30) {
+        expect(_cellsWithPrefix(habitTrendDayKeyPrefix), findsNWidgets(3));
+      }
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('四种区间全无生效日期时显示空态', (tester) async {
+    addTearDown(tester.view.reset);
+    final provider = HabitProvider();
+    await provider.addHabit(
+      Habit(id: 'inactive-window', name: '阅读', startDate: _daysAgo(-1)),
+    );
+    await pumpDetail(tester, provider: provider, habitId: 'inactive-window');
+    for (final window in HabitTrendWindow.values) {
+      await selectWindow(tester, window);
+      expect(find.text(I18n.tr('habit.trend.no_active_days')), findsOneWidget);
+      expect(_cellsWithPrefix(habitTrendDayKeyPrefix), findsNothing);
+    }
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('补卡入口随应用日期变化更新，打开的详情也重新检查边界', (tester) async {
+    addTearDown(tester.view.reset);
+    final provider = HabitProvider();
+    await provider.addHabit(
+      Habit(id: 'clock-boundary', name: '阅读', startDate: _daysAgo(3)),
+    );
+    await pumpDetail(tester, provider: provider, habitId: 'clock-boundary');
+    await expandCalendar(tester);
+    final originalToday = find.byKey(_calendarDayKey(_fixedToday));
+    await tester.ensureVisible(originalToday);
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Semantics>(cellSemantics(originalToday)).properties.enabled,
+      isFalse,
+    );
+
+    AppClock.debugNow = () => DateTime(2026, 3, 11, 9);
+    AppClock.notifyDayChanged();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Semantics>(cellSemantics(originalToday)).properties.enabled,
+      isTrue,
+    );
+    await tester.tap(originalToday);
+    await tester.pumpAndSettle();
+    expect(find.byKey(habitDayDetailsPrimaryKey), findsOneWidget);
+
+    AppClock.debugNow = () => _fixedNow;
+    AppClock.notifyDayChanged();
+    await tester.pumpAndSettle();
+    expect(find.byKey(habitDayDetailsPrimaryKey), findsNothing);
+    expect(find.byKey(habitDayDetailsUndoKey), findsNothing);
+    expect(provider.habits.single.countForDate(_fixedToday), 0);
+  });
+  testWidgets('补卡日历中的历史休息日只读，不提供补记或撤回', (tester) async {
+    addTearDown(tester.view.reset);
+    final provider = HabitProvider();
+    final restDate = DateTime(2026, 3, 3);
+    await provider.addHabit(
+      Habit(
+        id: 'rest-day',
+        name: '阅读',
+        activeWeekdays: [0, 2],
+        startDate: _daysAgo(30),
+      ),
+    );
+    await pumpDetail(tester, provider: provider, habitId: 'rest-day');
+    await expandCalendar(tester);
+    final cell = find.byKey(_calendarDayKey(restDate));
+    await tester.ensureVisible(cell);
+    await tester.pumpAndSettle();
+    await tester.tap(cell);
+    await tester.pumpAndSettle();
+    expect(find.byKey(habitDayDetailsCardKey), findsOneWidget);
+    expect(find.byKey(habitDayDetailsPrimaryKey), findsNothing);
+    expect(find.byKey(habitDayDetailsUndoKey), findsNothing);
+    expect(provider.habits.single.countForDate(restDate), 0);
+    expect(tester.takeException(), isNull);
   });
 }
