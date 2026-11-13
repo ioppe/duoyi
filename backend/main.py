@@ -12,6 +12,7 @@ import hashlib
 import html
 import secrets
 import json
+import logging
 import os
 import re
 import shutil
@@ -41,8 +42,10 @@ else:
 
 if __package__:
     from . import focus_runtime, login_session_store
+    from . import sync_events as sync_event_hub
 else:
     import focus_runtime, login_session_store
+    import sync_events as sync_event_hub
 
 SETTINGS = load_settings()
 BUILD_GIT_SHA = SETTINGS.build_git_sha
@@ -53,7 +56,7 @@ REMINDER_EMAIL_POLL_SECONDS = SETTINGS.reminder_email_poll_seconds
 
 app = FastAPI(title="多仪 Sync API", version="3.1.0")
 
-API_CONTRACT_VERSION = "2026-06-01.8"
+API_CONTRACT_VERSION = "2026-06-01.9"
 API_CONTRACT_FEATURES = {
     "email_code": True,
     "email_code_login_gating": True,
@@ -76,6 +79,7 @@ API_CONTRACT_FEATURES = {
     "theme_shop": True,
     "list_groups": True,
     "focus_runtime_sync": True,
+    "sync_push_events": True,
 }
 API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/config",
@@ -144,6 +148,7 @@ API_CONTRACT_REQUIRED_ROUTES = [
     "GET /api/focus/runtime",
     "POST /api/focus/runtime/commands",
     "WS /ws/focus/runtime/events",
+    "GET /api/sync/events",
 ]
 API_CONTRACT_ROUTES_HASH = hashlib.sha256(
     "\n".join(API_CONTRACT_REQUIRED_ROUTES).encode("utf-8")
@@ -4605,6 +4610,7 @@ def admin_backup_wipe(user_id: str, actor: str = Depends(_require_admin)):
             "location_reminders='[]', "
             "virtual_rewards='{}', focus_rooms='{}', theme_shop_state='{}', "
             "preferences='{}', quick_capture_templates='{}', list_groups='[]', deleted_items='{}', "
+            "sync_version=COALESCE(sync_version, 0) + 1, "
             "updated_at=datetime('now') WHERE user_id=?",
             (user_id,),
         )
@@ -4615,6 +4621,7 @@ def admin_backup_wipe(user_id: str, actor: str = Depends(_require_admin)):
             "backup.wipe", target=user_id,
         )
         db.commit()
+        _publish_sync_revision(user_id)
         return {"status": "ok"}
     finally:
         db.close()
@@ -6616,6 +6623,7 @@ def apply_theme_shop_item(
                 ),
             )
             db.commit()
+            _publish_sync_revision(user_id)
         else:
             next_sync_version = int(row["sync_version"] or 0) if row else 0
 
@@ -9612,6 +9620,7 @@ def _sync_impl(
             ),
         )
         db.commit()
+        _publish_sync_revision(user_id)
 
         return _sync_response(
             server_updated_at=sync_updated_at,
@@ -9761,40 +9770,108 @@ def sync_status(user_id: str = Depends(_verify_token)):
         db.close()
 
 
+def _sync_revision(user_id: str) -> dict:
+    db = get_db()
+    try:
+        row = db.execute(
+            "SELECT updated_at, sync_version FROM sync_data WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
+        return {
+            "server_updated_at": row["updated_at"] if row else "",
+            "server_version": int(row["sync_version"] or 0) if row else 0,
+        }
+    finally:
+        db.close()
+
+
+def _publish_sync_revision(user_id: str) -> None:
+    """Wake online SSE subscribers after a committed sync_data revision.
+
+    Call this only after ``commit()``.  When nobody is streaming the account
+    this returns immediately and does no database work at all.
+    """
+    if not sync_event_hub.SYNC_EVENTS_HUB.has_subscribers(user_id):
+        return
+    try:
+        payload = _sync_revision(user_id)
+        sync_event_hub.SYNC_EVENTS_HUB.publish(
+            user_id,
+            payload["server_version"],
+            payload["server_updated_at"],
+        )
+    except Exception:
+        # The transaction has already committed. Notification failure must not
+        # report a failed write and make the caller replay the successful edit.
+        logging.getLogger(__name__).exception("Committed sync revision notification failed")
+
+
+def _sync_event_frame(payload: dict) -> str:
+    return "event: sync\n" f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+def _sync_events_credential_valid(authorization: Optional[str], user_id: str) -> bool:
+    """Recheck the live credential before an application event is sent."""
+    if not isinstance(authorization, str) or not authorization.strip():
+        # Internal callers already resolved the account through the dependency.
+        return True
+    token = authorization[7:] if authorization.lower().startswith("bearer ") else ""
+    try:
+        return _verify_token_value(token) == user_id
+    except HTTPException:
+        return False
+    except Exception:
+        return False
+
+
 @app.get("/api/sync/events")
 async def sync_events(
     interval_seconds: int = Query(15, ge=2, le=60),
     user_id: str = Depends(_verify_token),
+    authorization: Optional[str] = Header(None),
 ):
-    def _sync_revision() -> dict:
-        db = get_db()
-        try:
-            row = db.execute(
-                "SELECT updated_at, sync_version FROM sync_data WHERE user_id=?",
-                (user_id,),
-            ).fetchone()
-            return {
-                "server_updated_at": row["updated_at"] if row else "",
-                "server_version": int(row["sync_version"] or 0) if row else 0,
-            }
-        finally:
-            db.close()
+    """Server-push revision stream: subscribe first, then snapshot, then push.
+
+    ``interval_seconds`` only paces comment-only heartbeats; business data is
+    never polled, so an online phone reacts as soon as the desktop commits.
+    """
 
     async def event_stream():
-        last_signature: Optional[tuple[int, str]] = None
-        while True:
-            payload = _sync_revision()
-            signature = (
-                int(payload.get("server_version") or 0),
-                str(payload.get("server_updated_at") or ""),
-            )
-            if last_signature != signature:
-                last_signature = signature
-                yield (
-                    "event: sync\n"
-                    f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-                )
-            await asyncio.sleep(interval_seconds)
+        subscriber = sync_event_hub.SYNC_EVENTS_HUB.subscribe(user_id)
+        try:
+            payload = await asyncio.to_thread(_sync_revision, user_id)
+            last_version = int(payload.get("server_version") or 0)
+            last_updated_at = str(payload.get("server_updated_at") or "")
+            # First frame fills the gap between subscribing and reading, and
+            # also covers everything missed while the client was disconnected.
+            if not await asyncio.to_thread(
+                _sync_events_credential_valid, authorization, user_id
+            ):
+                return
+            yield _sync_event_frame(payload)
+            while True:
+                try:
+                    payload = await asyncio.wait_for(
+                        subscriber.queue.get(), timeout=interval_seconds
+                    )
+                except asyncio.TimeoutError:
+                    yield ": heartbeat\n\n"
+                    continue
+                version = int(payload.get("server_version") or 0)
+                updated_at = str(payload.get("server_updated_at") or "")
+                if (version, updated_at) == (last_version, last_updated_at):
+                    continue
+                if version < last_version:
+                    continue
+                if not await asyncio.to_thread(
+                    _sync_events_credential_valid, authorization, user_id
+                ):
+                    break
+                last_version = version
+                last_updated_at = updated_at
+                yield _sync_event_frame(payload)
+        finally:
+            sync_event_hub.SYNC_EVENTS_HUB.unsubscribe(subscriber)
 
     return StreamingResponse(
         event_stream(),
@@ -11651,6 +11728,7 @@ def admin_update_user(
         )
         db.commit()
         if coin_adjustment_result is not None:
+            _publish_sync_revision(user_id)
             return coin_adjustment_result
         fresh = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
         return _user_response(fresh, db=db)
@@ -11709,6 +11787,7 @@ def _admin_adjust_user_coins_impl(
     try:
         result = _admin_adjust_user_coins_in_db(db, user_id, req, actor)
         db.commit()
+        _publish_sync_revision(user_id)
         return result
     finally:
         db.close()
@@ -11943,6 +12022,8 @@ def admin_create_welfare_grant(
             ),
         )
         db.commit()
+        for target in users:
+            _publish_sync_revision(target["id"])
         return {
             "status": "ok",
             "id": grant_id,
@@ -12966,6 +13047,8 @@ def _focus_runtime_read(user_id: str) -> tuple[dict, bool]:
         changed = focus_runtime.advance_due(db, user_id, now)
         envelope = focus_runtime.read_state(db, user_id, now)
         db.commit()
+        if changed:
+            _publish_sync_revision(user_id)
         return envelope, changed
     except BaseException:
         db.rollback()
@@ -12988,9 +13071,11 @@ def _focus_runtime_apply(user_id: str, command: dict, token: str) -> dict:
             db.execute("ROLLBACK TO focus_command")
             db.execute("RELEASE focus_command")
             db.commit()  # Keep natural expiry even when the user command conflicts.
+            _publish_sync_revision(user_id)
             raise
         db.execute("RELEASE focus_command")
         db.commit()
+        _publish_sync_revision(user_id)
         return envelope
     except BaseException:
         db.rollback()

@@ -40,6 +40,11 @@ class _Harness {
     httpClient: MockClient((request) async {
       final route = request.url.path;
       requests.add('${request.method} $route');
+      if (route == '/api/sync/events') {
+        // 保持实时同步订阅常开：连接断开会被客户端按退避重连并补一次同步，
+        // 那是真实行为，但会干扰本文件对「每次刷新一次同步」的计数。
+        return Completer<http.Response>().future;
+      }
       if (route == '/api/config') {
         if (!configStarted.isCompleted) configStarted.complete();
         if (configGate != null && request.url.host == 'fixture.test') {

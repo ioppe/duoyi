@@ -1,0 +1,112 @@
+{
+  "status": "implemented_and_locally_verified_uncommitted_not_deployed",
+  "branch": "fix/realtime-cloud-sync",
+  "base_commit": "8be7d411c2b84924f84e2eb240045cdda765f9c4",
+  "scope": "Same-account cloud data sync for online foreground clients",
+  "api_contract": {
+    "version": "2026-06-01.9",
+    "feature": "sync_push_events",
+    "required_routes_hash": "1f46e6023a2435e8",
+    "event_endpoint": "GET /api/sync/events",
+    "event_format": "event: sync; data: {server_version, server_updated_at}",
+    "status_endpoint_retained_for_legacy_and_diagnostics": true,
+    "new_client_periodic_status_polling": false
+  },
+  "behavior": {
+    "upload_coalesce_ms": 300,
+    "continuous_edit_coalesce_max_ms": 2000,
+    "upload_window_is_not_an_end_to_end_latency_guarantee": true,
+    "server_events_only_after_successful_commit": true,
+    "subscriber_queue_capacity": 1,
+    "publish_thread_safe": true,
+    "heartbeat_business_revision_reads": 0,
+    "heartbeat_default_seconds": 15,
+    "silent_connection_timeout_seconds": 75,
+    "reconnect_backoff_seconds": [1, 2, 5, 10, 20, 30],
+    "busy_sync_retains_newer_remote_revisions": true,
+    "account_server_credential_scoped_callbacks": true,
+    "foreground_resume_rebuilds_event_subscription": true,
+    "local_edits_merge_before_remote_catch_up": true
+  },
+  "verification": [
+    {
+      "name": "Client sync regression",
+      "passed": 72,
+      "files": [
+        "test/services/cloud_sync_realtime_test.dart",
+        "test/services/cloud_sync_provider_test.dart",
+        "test/services/backend_sync_coordinator_test.dart",
+        "test/services/manual_sync_refresh_test.dart",
+        "test/services/list_group_cloud_sync_test.dart",
+        "test/services/startup_habit_sync_test.dart"
+      ],
+      "log": "realtime-client-targeted-final.log.gz"
+    },
+    {
+      "name": "Final client protocol and realtime regression",
+      "passed": 67,
+      "files": [
+        "test/services/cloud_sync_realtime_test.dart",
+        "test/services/api_route_contract_static_test.dart",
+        "test/services/api_client_error_test.dart",
+        "test/services/backend_sync_coordinator_test.dart"
+      ],
+      "log": "realtime-client-contract-complete.log.gz"
+    },
+    {
+      "name": "Final backend events and legacy contracts",
+      "passed": 22,
+      "new_event_tests": 19,
+      "legacy_event_and_contract_tests": 3,
+      "log": "realtime-backend-final.log.gz"
+    },
+    {
+      "name": "Real local TCP HTTP and SSE protocol checks",
+      "passed": 8,
+      "result": "http-sse-result.json",
+      "post_start_to_event_ms_for_two_connections": [6.94, 7.99],
+      "latency_scope": "Loopback only, measured from POST request start; no public-network or installed-client latency claim"
+    },
+    {
+      "name": "flutter analyze --no-pub",
+      "result": "No issues found",
+      "environment": "Physical ASCII-path source copy with SHA256 verification",
+      "source_and_test_files_matched": 750,
+      "source_hashes": "source-sha256.json",
+      "log": "realtime-analyze-complete.log.gz"
+    },
+    {
+      "name": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "test_group_counts_overlap": true,
+  "review": {
+    "bounded_code_review_completed": true,
+    "concrete_findings_fixed_and_retested": [
+      "Retain v3 when its SSE event arrives during a v2 pull",
+      "Notify all affected accounts after a welfare batch commit",
+      "Notification failure does not fail an already committed write",
+      "Credential verification errors close the stream; first frame is revalidated"
+    ],
+    "documentation_consistency_review_completed": true
+  },
+  "preservation": {
+    "application_version": "0.1.0+142026",
+    "version_files_and_pubspec_lock_unchanged": true,
+    "main_tracked_files_unchanged": true,
+    "main_preexisting_untracked_paths_unchanged": 180,
+    "production_database_or_deployment_changed": false,
+    "isolated_test_service_stopped": true
+  },
+  "remaining_validation_and_deployment_boundaries": [
+    "No installed macOS and phone simultaneous UI regression was performed",
+    "No full test suite, release build or E2E suite was run",
+    "No production deployment or production worker-count check was performed",
+    "The in-process event hub requires a single API worker; multi-worker or multi-instance operation needs a shared pub/sub bus before rollout",
+    "Suspended or terminated mobile/browser clients catch up on resume; no OS background wake-up push service was added",
+    "Cross-account workspace-member notifications are outside this same-account sync change",
+    "Complete instant behavior requires updated clients and backend together"
+  ],
+  "archive_integrity": "log-archives.json"
+}

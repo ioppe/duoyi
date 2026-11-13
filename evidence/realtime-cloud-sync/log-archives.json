@@ -1,0 +1,18 @@
+{
+  "realtime-backend-final.log.gz": {
+    "raw_sha256": "0aac3ee68c7c126f1490849da6e0013be72bcc92c8ff21c22a1fa221d107c5da",
+    "archive_sha256": "237be9eaeb1003dfa7bd73ecf3b5e48372cd7262d91eb4672e23126cc76763b7"
+  },
+  "realtime-client-targeted-final.log.gz": {
+    "raw_sha256": "497dc1cf3b574282bcd879257b3b0ccaa27fb05785a2f4b3b61d9dc5b949249d",
+    "archive_sha256": "c3255af203367216d28adacc3aa84b9a4fd8ff8b4bf59b202050c45138d706a2"
+  },
+  "realtime-client-contract-complete.log.gz": {
+    "raw_sha256": "5ddb7b3436f48c4d25a996aa2b77746c9aaf502814099f3cdb308b99defe40c1",
+    "archive_sha256": "d0a0cb0e6d6d9861dae5aa0ef1fececce465c4ee001474d20a09168ccffebdd1"
+  },
+  "realtime-analyze-complete.log.gz": {
+    "raw_sha256": "710e065766ffe73b61aac6735d28fcdddb381e83b7407a443486acdbbb8f14b7",
+    "archive_sha256": "138f2c6dda5927994b37ce040a44deccc3b93fd8387877062e4f94e396ec49af"
+  }
+}
