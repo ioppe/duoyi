@@ -57,5 +57,5 @@
 ## 当前边界
 
 - 是否通过以所选提交的 Codemagic 构建日志、状态及产物为准；配置被识别不等于构建成功。
-- 没有自动部署、没有应用商店上传、没有生效的自动发布；现有生产部署路径仍是 GitHub Actions 与 `scripts/deploy_*`。
+- 没有自动部署、没有应用商店上传、没有生效的自动发布；Codemagic 只构建并产出安装包，不参与部署。生产部署协议仍是 GitHub Actions 同一次 run 的限定 Web 发布与 `scripts/deploy_*`，但 GitHub Actions 的 `main` push 构建及其后的自动 Web 部署当前已停用（`main` 不在 push 构建分支白名单内），恢复前不会自动发布任何生产内容。
 - `DUOYI_UPDATE_REPOSITORY` 等产品行为未改动，迁移更新源不在本配置范围内。

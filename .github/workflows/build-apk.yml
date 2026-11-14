@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main, self-hosted-skydrow, build/macos-dmg, fix/android-input-settings-device-test]
+    branches: [self-hosted-skydrow, build/macos-dmg, fix/android-input-settings-device-test]
     tags: ['v*']
   pull_request:
     branches: [main, self-hosted-skydrow]

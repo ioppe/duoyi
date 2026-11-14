@@ -1,18 +1,20 @@
 # Web 自动部署（自托管站点）
 
+> **当前状态：暂停。** `main` 已从 `.github/workflows/build-apk.yml` 的 `on.push.branches` 移除，直接 push `main` 不再触发构建，同一次运行中的 `deploy-self-hosted-web` 也就不会运行，生产站点不会被自动更新。恢复时必须把 `main` 加回 `on.push.branches`，并确认服务器入口与唯一 Secret 齐备；下方作业范围、发布协议、受限脚本与回滚机制均保持不变。
+
 生产站点是用户自己配置的自托管站点。开启自动部署后，推送到 `main` 的 Web 构建会在同一次 GitHub Actions 运行中，把本次 `web` 作业产出的桌面包发布到该站点；发布失败不会改变线上 `current`，也不需要手工拷贝文件到服务器。
 
-各开发分支合并进入 `main` 后，生产站点以主线的同次构建产物为准。此部署链只发布 Web 静态资源，不重建后端、不迁移数据库、不修改 Nginx；线上版本与提交以公开的 `duoyi-deployment.json` 和 `version.json` 为准。
+各开发分支合并进入 `main` 后，生产站点以主线的同次构建产物为准。此部署链只发布 Web 静态资源，不重建后端、不迁移数据库、不修改 Nginx；线上版本与提交以公开的 `duoyi-deployment.json` 和 `version.json` 为准。自动发布暂停期间，线上保持上一次已发布的 release，不会随 `main` 前进。
 
 ## 需要用户做什么
 
 1. 在 GitHub 网页登录仓库，进入 **Settings → Secrets and variables → Actions → New repository secret**。
 2. 名称只用一个：`DUOYI_WEB_DEPLOY_SSH_KEY`。值是该专用部署密钥的 **OpenSSH 私钥全文**（含 `-----BEGIN OPENSSH PRIVATE KEY-----` 与结束行）。
-3. 保持分支 `main` 的现有 Web 构建可用；下一次推送到该分支即自动发布。
+3. 保持分支 `main` 的现有 Web 构建可用；恢复自动发布时还需把 `main` 加回工作流的 `on.push.branches`，下一次推送到该分支才会自动发布。
 
 Secrets 只用网页登录管理，不需要 GitHub token 或命令行 `gh`。Secret 不随 Fork 复制；缺失时 `deploy-self-hosted-web` 作业会明确报错失败，不会假成功。
 
-首次启用前必须先完成下一节的服务端入口安装并添加这个唯一 Secret；两项就绪后，下一次推送到 `main` 即自动发布。
+首次启用前必须先完成下一节的服务端入口安装并添加这个唯一 Secret；两项就绪后，再把 `main` 加回 push 构建分支白名单，下一次推送到 `main` 即自动发布。
 
 ## 已固定的服务器入口
 
@@ -35,7 +37,7 @@ Secrets 只用网页登录管理，不需要 GitHub token 或命令行 `gh`。Se
 
 ## 发布范围
 
-- 仅 `github.event_name == 'push'` 且 `github.ref == 'refs/heads/main'`，并且同一次运行的 `web` 作业成功（`needs: [web]`）。
+- 仅 `github.event_name == 'push'` 且 `github.ref == 'refs/heads/main'`，并且同一次运行的 `web` 作业成功（`needs: [web]`）。当前 `main` 不在 push 构建分支白名单，这类事件不会产生，作业因此暂停；恢复白名单后该条件立即生效。
 - 只取本次运行名为 `duoyi-web` 的 artifact 中的桌面包 `duoyi-web-desktop-YYYYMMDD-<sha7>.tar.gz`，文件名必须包含当前提交前 7 位；通用包与手机包不会用于发布。
 - PR、非 `main` 分支、tag 与手动运行都不会触发自动部署；GitHub Pages 仍只在 `main` 部署，正式 Release 仍只在 `v*` tag 创建。
 - 发布作业自身使用 concurrency `duoyi-production-web` 且 `cancel-in-progress: false`，因此多个发布作业之间不会互相取消；父工作流原有的 `build-<ref>` `cancel-in-progress: true` 仍然生效，同分支新推送仍可能取消整次运行（包括尚未完成的发布作业）。
@@ -66,7 +68,7 @@ curl -fsS "https://todo.example.com/duoyi-deployment.json?sha=<完整SHA>"
 
 - 发布失败（校验、解包、Nginx 读取、线上清单不一致）：`current` 保持/恢复为旧版本，旧目录与站点继续可用，错误信息只含非敏感元数据。
 - 发布进程收到 SIGTERM/SIGHUP 会转为可捕获错误并按上述逻辑回滚；SIGKILL/OOM 等无法捕获的终止可能留下 `releases/.stage-*` 临时目录。在切换 `current` 前被强杀时，线上指针保持不变；在切换与线上校验之间被强杀时，需人工确认 `current` 指向及站点健康。临时目录需运维确认没有发布运行后手工清理，发布程序不会自动扫描清理。
-- 需要回退已发布版本：对引入问题的提交做普通 `git revert` 并再次推送到 `main`，新提交会发布新的 release 目录；服务器不会自动删除旧版本。
+- 需要回退已发布版本：对引入问题的提交做普通 `git revert` 并再次推送到 `main`，新提交会发布新的 release 目录；服务器不会自动删除旧版本。自动发布暂停期间推送不会产生新 release，恢复白名单后该流程才重新可用。
 - 同一次运行重跑：同 SHA、同归档哈希会复用并校验既有 release 目录，再走一次在线校验，不会产生重复目录。
 - 本地只读检查：
 
@@ -85,7 +87,7 @@ curl -fsS "https://todo.example.com/duoyi-deployment.json?sha=<完整SHA>"
 | 现象 | 原因 | 处理 |
 | --- | --- | --- |
 | 作业提示缺少 Secret | 未配置 `DUOYI_WEB_DEPLOY_SSH_KEY` | 按上文在网页添加后重跑 |
-| `only pushes to refs/heads/main` | 分支或触发方式不符 | 从指定分支 push 触发 |
+| `only pushes to refs/heads/main` | 分支或触发方式不符 | 从指定分支 push 触发；该作业在暂停期间不会运行，恢复 `main` push 白名单后才会出现此报错 |
 | `expected exactly one duoyi-web-desktop-*.tar.gz` | artifact 选错或构建未上传 | 确认同次运行的 `web` 成功并上传 `duoyi-web` |
 | `Host key verification failed` | 服务器主机指纹变化 | 核实服务器后更新 `config/web-deploy.known_hosts`，不要关闭校验 |
 | `online verification failed` | 线上清单/首页未更新或缓存异常 | 查看作业日志与 Nginx；`current` 已回滚 |

@@ -24,10 +24,10 @@
 
 ## 构建与发布
 
-`.github/workflows/build-apk.yml` 是多平台构建入口。`main` 等工作流配置的构建分支 push 均保留安装包构建；Android、Web 与可复用 macOS 流程等待同一配置、分析与测试门禁。macOS 包仍未签名、未公证。
+`.github/workflows/build-apk.yml` 是多平台构建入口。工作流配置的构建分支 push 均保留安装包构建；`main` 已不在 push 白名单内，直接 push `main` 不触发构建，主线安装包仍可由 `v*` 标签、PR 或手动 `workflow_dispatch` 产出。Android、Web 与可复用 macOS 流程等待同一配置、分析与测试门禁。macOS 包仍未签名、未公证。
 
-生产 Web 仅由 `main` 的 push 发布。部署任务下载同次 Actions 运行的桌面 Web 产物，验证完整提交 SHA 与压缩包 SHA-256，通过固定 SSH 主机密钥和受限发布器写入独立 release 目录，再原子切换 `current` 并进行 HTTPS 健康检查。标签和其他分支不发布生产 Web，GitHub Release 仍由版本标签触发。
+生产 Web 仅由 `main` 的 push 发布，当前已暂停：`main` 不再是构建 push 分支，`deploy-self-hosted-web` 作业不会触发。恢复条件是把 `main` 加回 `on.push.branches`，并已就绪服务端入口与唯一 Secret。部署任务下载同次 Actions 运行的桌面 Web 产物，验证完整提交 SHA 与压缩包 SHA-256，通过固定 SSH 主机密钥和受限发布器写入独立 release 目录，再原子切换 `current` 并进行 HTTPS 健康检查。标签和其他分支不发布生产 Web，GitHub Release 仍由版本标签触发。
 
 生产发布只更新静态 Web。后端容器、数据库、Nginx 与凭据不随此流程修改；旧 Web release 保留以供回滚。服务器公共 profile 的 `branch` 与仓库 `config/web-deploy.json` 一致为 `main`。详见 [Web 自动部署](web-auto-deploy.md)。
 
-交付必须同时核验：全部分支祖先关系、批准资源只读生成检查、Flutter 分析/测试、后端测试、相关原生检查，以及实际 `main` push 对应的构建与部署结果。线上 `duoyi-deployment.json`、`version.json`、服务器 `current` 与同次构建产物必须一致；本地测试通过或任务已启动均不能代替线上验证。
+交付必须同时核验：全部分支祖先关系、批准资源只读生成检查、Flutter 分析/测试、后端测试、相关原生检查，以及实际产物构建结果（`v*` 标签或手动运行）；自动部署恢复后还需核对 `main` push 对应的部署结果，当前该路径暂停，不得以旧线上版本冒充本次发布。线上 `duoyi-deployment.json`、`version.json`、服务器 `current` 与同次构建产物必须一致；本地测试通过或任务已启动均不能代替线上验证。

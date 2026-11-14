@@ -174,15 +174,15 @@ Workflow `.github/workflows/build-apk.yml` validates a shared profile first and 
 
 | Trigger | Job | Output |
 |---------|-----|--------|
-| Push to build branches configured in `build-apk.yml`, push a `v*` tag, or PR targeting its configured PR branches | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
+| Push to build branches configured in `build-apk.yml` (`main` is deliberately not one of them, so a direct `main` push runs no build), push a `v*` tag, or PR targeting its configured PR branches | `configuration` → `analyze` | Shared profile validation, `flutter analyze`, complete Flutter tests and backend tests |
 | Same triggers, after checks pass | `android` | Signed universal APK + per-ABI APKs (armeabi-v7a, arm64-v8a, x86_64) |
 | Same triggers, after checks pass | `macos` → reusable `build-macos.yml` | Universal unsigned macOS DMG + ZIP + SHA-256 checksums from the same commit/profile as Android |
-| Push to a configured build branch, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only, except the `main` desktop tarball which auto-deploys once the server entry and single Secret are configured; Pages stays `main`-only |
+| Push to a configured build branch, push a `v*` tag, or set manual `build_web` to `true` | `web` | `duoyi-web-*.tar.gz` for desktop/mobile from the same commit/profile; branch pushes upload the artifact only; the `main` desktop tarball auto-deploy is currently paused because `main` is not a push branch; Pages stays `main`-only |
 | Tag `v*` push, after Android/Web/macOS succeed | `release` | Auto-creates GitHub Release with APKs, AAB, web tarballs and macOS packages |
 
-Each push to a configured build branch must enter the main `build` workflow so Android and macOS cannot drift onto different commits. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release (the `main` desktop Web tarball also auto-deploys once the server entry and single Secret are configured); newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.
+Each push to a configured build branch must enter the GitHub Actions `build` workflow so Android and macOS cannot drift onto different commits. Direct pushes to `main` do not trigger that workflow; Actions still runs for configured PRs, `v*` tags and manual `workflow_dispatch` events. The separate Codemagic `duoyi-ci` push configuration is unchanged. The reusable macOS workflow has no separate push trigger; keep its manual entry. Manual main runs default `build_macos` to true and can explicitly skip it. Ordinary branch pushes upload Actions artifacts without creating a Release; the `main` desktop Web tarball stays upload-only while `deploy-self-hosted-web` is paused, and automatic deployment resumes only once `main` is back in the push branch list and the server entry plus the single Secret are ready. Newer pushes cancel unfinished runs on the same branch. Guard changes to these triggers/dependencies with `test/services/multi_platform_build_workflow_static_test.dart`.
 
-Mainline integration follows `docs/mainline-integration.md`: verify the candidate contains every intended local/origin head, the approved Logo reference and generator checks, and the main-only deployment job. Keep unrelated worktrees and uncommitted files intact.
+Mainline integration follows `docs/mainline-integration.md`: verify the candidate contains every intended local/origin head, the approved Logo reference and generator checks, and the main-only deployment job, which is still gated on `push` + `refs/heads/main` + a successful same-run Web job and is currently dormant while direct `main` push builds are disabled. Keep unrelated worktrees and uncommitted files intact.
 
 ### Required Repository Secrets
 
@@ -250,7 +250,7 @@ Accessible in-app via "我的 → 管理员后台" (admin users only). Tabs cove
 
 ### Web Client
 
-Only a `main` push publishes the same-run desktop Web artifact through `deploy-self-hosted-web`, `scripts/deploy_web_ci.py` and the restricted `/usr/local/sbin/duoyi-web-deploy` entry. The checked-in public profile and pinned host key, archive/commit verification, atomic symlink switch and rollback remain required. Production Web publication does not change backend/DB/Nginx or credentials; tags and other branches do not publish it. See `docs/web-auto-deploy.md`.
+Only a `main` push publishes the same-run desktop Web artifact through `deploy-self-hosted-web`, `scripts/deploy_web_ci.py` and the restricted `/usr/local/sbin/duoyi-web-deploy` entry. That path is currently paused: `main` is no longer a build-push branch, so the job never fires; restoring it means adding `main` back to the workflow push branches with the server entry and single Secret ready. The checked-in public profile and pinned host key, archive/commit verification, atomic symlink switch and rollback remain required. Production Web publication does not change backend/DB/Nginx or credentials; tags and other branches do not publish it. See `docs/web-auto-deploy.md`.
 
 Use the shared build entrypoint for same-origin deployment:
 

@@ -86,21 +86,19 @@ Set<String> _keysAt(String block, int indent) {
 }
 
 void main() {
-  test('push 到受支持分支时同时触发 Android 与 macOS 安装包构建', () {
+  test('main 普通推送不触发 Actions，构建分支、标签、PR 与手动入口保留', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
     final on = _block(workflow, 'on');
     final push = _block(on, 'push', indent: 2);
 
     expect(
       _inlineList(push, 'branches'),
-      containsAll(<String>[
-        'main',
+      unorderedEquals(<String>[
         'self-hosted-skydrow',
         'build/macos-dmg',
         'fix/android-input-settings-device-test',
       ]),
-      reason:
-          '推送 main/self-hosted-skydrow/build/macos-dmg/Android 测试分支都必须触发多端安装包构建.',
+      reason: '只有明确列出的专用分支响应 push，不允许 main 或覆盖 main 的通配符.',
     );
     expect(
       _inlineList(push, 'tags'),
@@ -112,7 +110,12 @@ void main() {
     expect(
       _inlineList(pullRequest, 'branches'),
       unorderedEquals(<String>['main', 'self-hosted-skydrow']),
-      reason: '分支推送纳入自动构建不应扩大拉取请求的触发范围.',
+      reason: '关闭 main 普通 push 构建不应改变 PR 的目标分支.',
+    );
+    expect(
+      _keysAt(on, 2),
+      unorderedEquals(<String>['push', 'pull_request', 'workflow_dispatch']),
+      reason: '保留手动触发入口且不新增其他自动事件.',
     );
   });
 
@@ -199,7 +202,7 @@ void main() {
     );
   });
 
-  test('Web 作业在 main、自动分支推送、手动构建与标签时都产出 duoyi-web 安装包', () {
+  test('Web 作业保留手动 main、构建分支推送及版本标签的制品条件', () {
     final workflow = File('.github/workflows/build-apk.yml').readAsStringSync();
     final jobs = _block(workflow, 'jobs');
     final web = _block(jobs, 'web', indent: 2);
